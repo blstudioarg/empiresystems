@@ -44,11 +44,18 @@ Datos fiscales del emisor + config de facturación.
 | aplica_recargo_equivalencia | boolean | |
 | logo_path | varchar | para el PDF |
 | verifactu_activo | boolean | activa el registro con huella/QR |
-| activo | boolean | |
+| activo | boolean | en `false` bloquea el login de todos sus usuarios |
+| data | json, nullable | requerida por `stancl/tenancy` (virtual column); no se usa directamente |
 | timestamps | | |
 
+> Implementado hasta ahora (feature 001-user-auth): `nombre_comercial`, `razon_social`, `nif`,
+> `email`, `activo`, `data`. El resto de columnas fiscales las agrega la primera feature de
+> facturación que las necesite.
+
 ### `users` (Laravel) — usuarios que operan un tenant
-Se añade `tenant_id` (fk) + `rol` (`super_admin`, `admin`, `usuario`). El `super_admin` gestiona todos los tenants.
+Se añade `tenant_id` (fk, nullable solo para `super_admin`) + `rol` (`super_admin`, `admin`,
+`usuario`) + `activo` (boolean; en `false` bloquea el login). El `super_admin` gestiona todos los
+tenants y no pertenece a ninguno (`tenant_id` null).
 
 > **Nota:** por ahora **no se modela el billing del SaaS** (planes, suscripciones, cobro a los tenants). Los precios son flexibles y se gestionan fuera del sistema. Ningún registro indica qué plan o suscripción tiene un tenant.
 
