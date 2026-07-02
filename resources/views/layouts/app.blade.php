@@ -21,9 +21,9 @@
 <body>
 	@include('partials.preloader')
 
-	<div id="main-wrapper" class="menu-toggle">
+	<div id="main-wrapper">
 		@include('partials.nav-header')
-		@include('partials.header')
+		@include('partials.header', ['CurrentPage' => ''])
 		@include('partials.sidebar')
 
 		@yield('content')
