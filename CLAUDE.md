@@ -15,6 +15,14 @@ Léela antes de tocar código de negocio; toda spec/plan/PR debe respetarla.
   assets globales del template NexaDash ya importados (`public/css`, `public/js`,
   `public/vendor`, `public/icons`). El template completo queda en `template/` (fuera de git,
   no lo borres) como banco de piezas para ir trasplantando vistas puntuales.
+- El template solo tiene 2 layouts reales (`default` con sidebar, `fullwidth` sin sidebar para
+  login/errores); las ~150 "demos" son páginas de ejemplo sobre esos 2 layouts, no estructuras
+  distintas. El motor de estilo real es `dzSettingsOptions` en `public/js/deznav-init.js`
+  (sidebar full/mini/compact/modern/overlay/icon-hover, layout vertical/horizontal, 15 esquemas
+  de color, light/dark) — ya soportado por `style.css`. Default actual: sidebar `full`, modo
+  claro con toggle persistido en `localStorage` (`public/js/theme-persist.js`). No volver a
+  descartar este motor al simplificar: lo que se sacó a propósito fue el `config/dz.php` que
+  cargaba CSS/JS distinto por cada demo page, no el selector de layout.
 
 ## Flujo de trabajo (Spec-Driven Development / spec-kit)
 

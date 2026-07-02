@@ -34,7 +34,7 @@ function getUrlParams(dParam)
 	
 	dzSettingsOptions = {
 		typography: "poppins",
-		version: "light",
+		version: localStorage.getItem('theme-version') || "light",
 		layout: "vertical",
 		primary: "color_1",
 		headerBg: "color_4",

@@ -36,6 +36,7 @@
 	<script src="{{ asset('vendor/bootstrap-select/dist/js/bootstrap-select.min.js') }}"></script>
 	<script src="{{ asset('js/deznav-init.js') }}"></script>
 	<script src="{{ asset('js/custom.js') }}"></script>
+	<script src="{{ asset('js/theme-persist.js') }}"></script>
 
 	@stack('scripts')
 </body>
