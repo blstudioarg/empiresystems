@@ -71,6 +71,18 @@
 	margin-bottom: 0.25rem;
 }
 
+/* Ícono de mostrar/ocultar contraseña (resources/views/auth/{login,register}.blade.php):
+   style.css posiciona `.eye` con `top: 38px` fijo, pensado para la altura grande original del
+   input (form-control-lg). Con la altura "sm" de arriba ese valor fijo ya no coincide y el
+   ícono queda descolocado por debajo del input. El markup ahora envuelve solo input+ícono en su
+   propio `.position-relative` (sin el label), así el ícono se puede centrar con `top: 50%` +
+   `translateY(-50%)`, independiente de cualquier altura de input. */
+.position-relative > .show-pass.eye {
+	top: 50%;
+	right: 0.5rem;
+	transform: translateY(-50%);
+}
+
 /* Selects potenciados por bootstrap-select (bootstrap-select.min.js) no heredan de
    .form-select/.form-control; su tamaño lo controla .bootstrap-select .dropdown-toggle. */
 .bootstrap-select .dropdown-toggle {
@@ -194,6 +206,30 @@
 	color: #6f767e;
 }
 
+/* Sidebar comprimido (estilo "mini" fijo, o "full" colapsado con el botón toggle vía
+   body.menu-toggle): igual que el template oculta .header-profile .header-info en ese modo,
+   ocultamos nombre y rol y dejamos solo el avatar, más chico, para que quepa en el ancho de
+   5rem que le da style.css. */
+[data-sidebar-style="mini"] .sidebar-user-name,
+[data-sidebar-style="mini"] .sidebar-user-role,
+[data-sidebar-style="full"][data-layout="vertical"] .menu-toggle .sidebar-user-name,
+[data-sidebar-style="full"][data-layout="vertical"] .menu-toggle .sidebar-user-role {
+	display: none;
+}
+
+[data-sidebar-style="mini"] .sidebar-user-card,
+[data-sidebar-style="full"][data-layout="vertical"] .menu-toggle .sidebar-user-card {
+	padding: 1rem 0.5rem;
+}
+
+[data-sidebar-style="mini"] .sidebar-user-avatar,
+[data-sidebar-style="mini"] .sidebar-user-avatar img,
+[data-sidebar-style="full"][data-layout="vertical"] .menu-toggle .sidebar-user-avatar,
+[data-sidebar-style="full"][data-layout="vertical"] .menu-toggle .sidebar-user-avatar img {
+	width: 3rem;
+	height: 3rem;
+}
+
 /* Ítem activo del menú lateral (li.mm-active, clase que metismenu asigna al link de la
    pestaña actual). El fondo del link activo es transparente por defecto (igual que el resto
    de .deznav, que es blanco): una sombra sola no se nota sin relleno propio contra el que
@@ -203,4 +239,74 @@
 .deznav .metismenu > li > a:hover {
 	background-color: #fff;
 	box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+}
+
+/* Layout del sidebar: la tarjeta de usuario queda arriba, el bloque help-desk + mode-btn
+   pegado abajo, y el menú (<ul#menu>) al medio ocupando el espacio disponible con scroll
+   vertical propio.
+   Por defecto style.css hace que TODO el .deznav-scroll scrollee como un bloque único
+   (height:100% + overflow-y:scroll) y PerfectScrollbar (js/custom.js) se engancha a ese mismo
+   elemento. Lo convertimos en una columna flex sin scroll propio: user-card y help-desk/mode-btn
+   quedan a tamaño fijo (flex:0 0 auto) arriba y abajo, y el menú toma el resto (flex:1) con su
+   propio overflow-y (min-height:0 es necesario para que un ítem flex pueda encoger y scrollear).
+   PerfectScrollbar deja de mostrar riel porque el contenedor ya no desborda. Scope a layout
+   vertical para no pisar el `.grid-menu` horizontal (que style.css pone en flex-direction: row). */
+[data-layout="vertical"] .deznav .deznav-scroll.grid-menu {
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+}
+
+[data-layout="vertical"] .deznav .deznav-scroll.grid-menu > .sidebar-user-card,
+[data-layout="vertical"] .deznav .deznav-scroll.grid-menu > .help-desk,
+[data-layout="vertical"] .deznav .deznav-scroll.grid-menu > .mode-btn {
+	flex: 0 0 auto;
+}
+
+[data-layout="vertical"] .deznav .deznav-scroll.grid-menu > #menu {
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow-y: auto;
+}
+
+/* Banda de marca sobre la imagen del login (resources/views/auth/login.blade.php): título +
+   redes sociales del tenant, centrados verticalmente sobre la imagen con una franja
+   translúcida detrás del bloque de redes. Reemplaza el bloque `.text-white` simple que traía
+   el template por defecto. */
+.login-brand-band {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 50%;
+	transform: translateY(-50%);
+}
+
+.login-brand-title {
+	color: #fff;
+	font-weight: 700;
+	font-size: 2.5rem;
+	text-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+	margin-bottom: 1rem;
+}
+
+.login-brand-socials {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.75rem;
+	padding: 0.75rem 0;
+	background: rgba(255, 255, 255, 0.25);
+	backdrop-filter: blur(2px);
+}
+
+.login-brand-socials a {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 2rem;
+	height: 2rem;
+	border-radius: 0.25rem;
+	background: var(--primary, #1D69D6);
+	color: #fff;
+	font-size: 1rem;
 }

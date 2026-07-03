@@ -13,14 +13,6 @@ class FacturaCrudTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function loginAs(User $user): void
-    {
-        $this->post('/login', [
-            'email' => $user->email,
-            'password' => 'secret123',
-        ]);
-    }
-
     public function test_store_crea_borrador_con_totales_calculados_en_servidor(): void
     {
         $tenant = Tenant::factory()->create(['regimen_impositivo' => 'iva']);

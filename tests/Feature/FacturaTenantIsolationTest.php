@@ -13,14 +13,6 @@ class FacturaTenantIsolationTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function loginAs(User $user): void
-    {
-        $this->post('/login', [
-            'email' => $user->email,
-            'password' => 'secret123',
-        ]);
-    }
-
     private function payloadValido(Cliente $cliente): array
     {
         return [

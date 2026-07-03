@@ -5,8 +5,15 @@
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimal-ui">
+	<meta name="csrf-token" content="{{ csrf_token() }}">
 	<title>@yield('title', 'Empire Systems')</title>
-	<link rel="shortcut icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
+	@php
+		$__tenantFavicon = function_exists('tenant') ? tenant() : null;
+		$__favicon = $__tenantFavicon && $__tenantFavicon->favicon_path
+			? asset('storage/'.$__tenantFavicon->favicon_path)
+			: asset('images/fav.png');
+	@endphp
+	<link rel="shortcut icon" type="image/png" href="{{ $__favicon }}">
 
 	{{-- Assets base del template NexaDash (siempre cargados) --}}
 	<link href="{{ asset('vendor/bootstrap-select/dist/css/bootstrap-select.min.css') }}" rel="stylesheet">

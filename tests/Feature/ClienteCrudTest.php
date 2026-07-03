@@ -12,14 +12,6 @@ class ClienteCrudTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function loginAs(User $user): void
-    {
-        $this->post('/login', [
-            'email' => $user->email,
-            'password' => 'secret123',
-        ]);
-    }
-
     public function test_index_muestra_la_vista_sin_clientes_embebidos(): void
     {
         $tenant = Tenant::factory()->create();

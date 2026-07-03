@@ -14,14 +14,6 @@ class ConfiguracionTenantIsolationTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function loginAs(User $user): void
-    {
-        $this->post('/login', [
-            'email' => $user->email,
-            'password' => 'secret123',
-        ]);
-    }
-
     public function test_guardar_colores_como_a_no_afecta_configuraciones_de_b(): void
     {
         $tenantA = Tenant::factory()->create();

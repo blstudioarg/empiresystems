@@ -100,6 +100,35 @@
 			</div>
 		</div>
 	</div>
+
+	<div class="modal fade" id="rectificarFacturaModal" tabindex="-1" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered">
+			<form id="rectificarFacturaForm" method="POST" class="modal-content">
+				@csrf
+				<div class="modal-header">
+					<h5 class="modal-title">Rectificar factura</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+				</div>
+				<div class="modal-body">
+					<div class="mb-3">
+						<label for="rectificarTipo" class="form-label">Modalidad</label>
+						<select id="rectificarTipo" name="tipo_rectificacion" class="form-control" required>
+							<option value="sustitucion">Por sustitución</option>
+							<option value="diferencias">Por diferencias</option>
+						</select>
+					</div>
+					<div class="mb-3">
+						<label for="rectificarMotivo" class="form-label">Motivo</label>
+						<textarea id="rectificarMotivo" name="motivo_rectificacion" class="form-control" rows="3" required></textarea>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+					<button type="submit" class="btn btn-primary">Rectificar</button>
+				</div>
+			</form>
+		</div>
+	</div>
 @endsection
 
 @push('scripts')

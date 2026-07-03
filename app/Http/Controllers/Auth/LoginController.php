@@ -57,6 +57,11 @@ class LoginController extends Controller
             $attempted = false;
         }
 
+        if ($attempted && ! $this->dominioCoincideConUsuario(Auth::user())) {
+            Auth::logout();
+            $attempted = false;
+        }
+
         if (! $attempted) {
             RateLimiter::hit($throttleKey, 60);
 
@@ -100,5 +105,20 @@ class LoginController extends Controller
         }
 
         return (bool) $user->tenant()->first()?->activo;
+    }
+
+    /**
+     * Gate login<->dominio (research.md D3): el tenant resuelto por el host de la petición
+     * (SetTenantContext, ya ejecutado en el grupo `guest`) debe coincidir con el tenant del
+     * usuario. Super admin (tenant_id null) solo es válido en contexto central (sin tenant
+     * resuelto por dominio).
+     */
+    private function dominioCoincideConUsuario(User $user): bool
+    {
+        if (! tenancy()->initialized) {
+            return $user->tenant_id === null;
+        }
+
+        return $user->tenant_id === tenant('id');
     }
 }

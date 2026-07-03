@@ -2,6 +2,8 @@
 
 namespace Tests\Unit;
 
+use App\Models\Cliente;
+use App\Models\Factura;
 use App\Models\Serie;
 use App\Models\Tenant;
 use App\Services\NumeradorFacturas;
@@ -12,20 +14,38 @@ class NumeradorFacturasTest extends TestCase
 {
     use RefreshDatabase;
 
+    /**
+     * La fuente de verdad es MAX(numero) de las facturas ya emitidas de la serie en el año
+     * (research.md § D1): el numerador no avanza solo, hace falta persistir cada factura emitida
+     * con su número entre llamadas para que la siguiente vea el máximo real.
+     */
+    private function marcarEmitida(Factura $factura, int $numero, ?string $numeroCompleto = null): void
+    {
+        $factura->update([
+            'estado' => 'emitida',
+            'numero' => $numero,
+            'numero_completo' => $numeroCompleto ?? "F-{$factura->fecha_expedicion->year}-".str_pad((string) $numero, 4, '0', STR_PAD_LEFT),
+        ]);
+    }
+
     public function test_llamadas_secuenciales_generan_correlativo_sin_huecos(): void
     {
         $tenant = Tenant::factory()->create();
-        $serie = Serie::where('tenant_id', $tenant->id)->first()
-            ?? Serie::factory()->for($tenant, 'tenant')->create();
+        $serie = Serie::factory()->for($tenant, 'tenant')->create();
+        $cliente = Cliente::factory()->for($tenant, 'tenant')->create();
+        $hoy = now();
 
         $numerador = new NumeradorFacturas;
 
-        $primero = $numerador->siguienteNumero($serie);
-        $segundo = $numerador->siguienteNumero($serie);
-        $tercero = $numerador->siguienteNumero($serie);
-
+        $primero = $numerador->siguienteNumero($serie, $hoy);
         $this->assertEquals(1, $primero['numero']);
+        $this->marcarEmitida(Factura::factory()->for($tenant, 'tenant')->for($serie, 'serie')->for($cliente, 'cliente')->create(), $primero['numero']);
+
+        $segundo = $numerador->siguienteNumero($serie, $hoy);
         $this->assertEquals(2, $segundo['numero']);
+        $this->marcarEmitida(Factura::factory()->for($tenant, 'tenant')->for($serie, 'serie')->for($cliente, 'cliente')->create(), $segundo['numero']);
+
+        $tercero = $numerador->siguienteNumero($serie, $hoy);
         $this->assertEquals(3, $tercero['numero']);
     }
 
@@ -34,40 +54,30 @@ class NumeradorFacturasTest extends TestCase
         $tenant = Tenant::factory()->create();
         $serie = Serie::factory()->for($tenant, 'tenant')->create([
             'codigo' => 'F',
-            'ejercicio' => 2026,
-            'proximo_numero' => 1,
             'formato' => '{serie}-{anio}-{numero:0000}',
         ]);
 
         $numerador = new NumeradorFacturas;
-        $resultado = $numerador->siguienteNumero($serie);
+        $resultado = $numerador->siguienteNumero($serie, \DateTime::createFromFormat('Y-m-d', '2026-01-15'));
 
         $this->assertEquals('F-2026-0001', $resultado['numeroCompleto']);
     }
 
-    public function test_concurrencia_no_duplica_ni_salta_numeros(): void
+    public function test_el_numero_se_reinicia_a_1_en_un_nuevo_anio(): void
     {
-        if (config('database.default') !== 'mysql') {
-            $this->markTestSkipped('lockForUpdate solo es significativo bajo MySQL/MariaDB.');
-        }
-
         $tenant = Tenant::factory()->create();
-        $serie = Serie::factory()->for($tenant, 'tenant')->create(['proximo_numero' => 1]);
+        $serie = Serie::factory()->for($tenant, 'tenant')->create();
+        $cliente = Cliente::factory()->for($tenant, 'tenant')->create();
+
+        $this->marcarEmitida(
+            Factura::factory()->for($tenant, 'tenant')->for($serie, 'serie')->for($cliente, 'cliente')
+                ->create(['fecha_expedicion' => '2025-12-30']),
+            5,
+        );
 
         $numerador = new NumeradorFacturas;
-        $numeros = [];
+        $resultado = $numerador->siguienteNumero($serie, \DateTime::createFromFormat('Y-m-d', '2026-01-05'));
 
-        $procesos = [];
-        for ($i = 0; $i < 5; $i++) {
-            $procesos[] = function () use ($numerador, $serie, &$numeros) {
-                $numeros[] = $numerador->siguienteNumero(Serie::find($serie->id))['numero'];
-            };
-        }
-        foreach ($procesos as $proceso) {
-            $proceso();
-        }
-
-        sort($numeros);
-        $this->assertEquals([1, 2, 3, 4, 5], $numeros);
+        $this->assertEquals(1, $resultado['numero']);
     }
 }

@@ -12,15 +12,15 @@ tenants ──< clientes
 tenants ──< series ──< facturas
 tenants ──< facturas ──< factura_lineas
                       ├──< factura_impuestos   (desglose por tipo)
-                      ├──< pagos
+                      ├──< pagos                (Fase 2)
                       └──< factura_eventos      (log Verifactu)
 clientes ──< facturas
 facturas ──< facturas   (rectificativa → factura_rectificada_id)
 articulos ──(opcional)── factura_lineas
-articulos ──< movimientos_stock   (kardex, solo producto con stock)
-facturas ──< movimientos_stock    (salida al emitir)
+articulos ──< movimientos_stock   (Fase 2 — kardex, solo producto con stock)
+facturas ──< movimientos_stock    (Fase 2 — salida al emitir)
 proveedores ──< compras ──< compra_lineas    (Fase 2)
-compras ──< movimientos_stock     (entrada al confirmar)
+compras ──< movimientos_stock     (Fase 2 — entrada al confirmar)
 ```
 
 ---
@@ -42,15 +42,24 @@ Datos fiscales del emisor + config de facturación.
 | regimen_impositivo | enum | **`iva`** (Península/Baleares), `igic` (Canarias), `ipsi` (Ceuta/Melilla) — impuesto indirecto por defecto |
 | irpf_defecto | decimal(5,2) | retención por defecto (ej. 15.00) |
 | aplica_recargo_equivalencia | boolean | |
-| logo_path | varchar | para el PDF |
+| logo_path | varchar, nullable | logo del menú expandido; sin configurar usa `public/images/image.png` |
+| logo_mini_path | varchar, nullable | logo del menú comprimido; sin configurar usa `public/images/contracted.png` |
+| login_logo_path | varchar, nullable | logo mostrado en la pantalla de login; sin configurar usa el logo/texto por defecto de la marca |
+| login_imagen_path | varchar, nullable | imagen lateral de la pantalla de login; sin configurar usa `public/images/login.png` |
+| logo_facturacion_path | varchar, nullable | logo mostrado en el PDF de factura; sin configurar usa `public/images/logardo.png` |
+| favicon_path | varchar, nullable | favicon del panel (`<link rel="shortcut icon">`); sin configurar usa `public/images/fav.png` |
 | verifactu_activo | boolean | activa el registro con huella/QR |
 | activo | boolean | en `false` bloquea el login de todos sus usuarios |
 | data | json, nullable | requerida por `stancl/tenancy` (virtual column); no se usa directamente |
 | timestamps | | |
 
-> Implementado hasta ahora (feature 001-user-auth): `nombre_comercial`, `razon_social`, `nif`,
-> `email`, `activo`, `data`. El resto de columnas fiscales las agrega la primera feature de
-> facturación que las necesite.
+> Implementado hasta ahora: `nombre_comercial`, `razon_social`, `nif`, `email`, `activo`, `data`
+> (feature 001-user-auth) + `direccion`, `cp`, `ciudad`, `provincia`, `pais` (domicilio fiscal del
+> emisor, mismo patrón que `clientes`: selects encadenados provincia→ciudad contra
+> `provincias`/`localidades`, `pais` texto libre con default `'ES'`; se muestra en la cabecera del
+> emisor del PDF de factura). El resto de columnas fiscales (`regimen_fiscal`, `irpf_defecto`,
+> `aplica_recargo_equivalencia`, `verifactu_activo`) las agrega la primera feature de facturación
+> que las necesite.
 
 ### `users` (Laravel) — usuarios que operan un tenant
 Se añade `tenant_id` (fk, nullable solo para `super_admin`) + `rol` (`super_admin`, `admin`,
@@ -65,6 +74,21 @@ de correspondencia estado↔activo en `specs/006-registro-usuarios/data-model.md
 `(tenant_id, estado)`.
 
 > **Nota:** por ahora **no se modela el billing del SaaS** (planes, suscripciones, cobro a los tenants). Los precios son flexibles y se gestionan fuera del sistema. Ningún registro indica qué plan o suscripción tiene un tenant.
+
+### `domains` (feature 007-super-admin-tenants) — dominio de cada tenant
+Tabla estándar de `stancl/tenancy` (modelo `Domain::class`), grupo central. El host de la petición
+se resuelve contra esta tabla para fijar el tenant activo (`docs/01-arquitectura.md`, Decisión 4).
+
+| Campo | Tipo | Notas |
+|-------|------|-------|
+| id | bigint PK | |
+| domain | varchar(255) | **único**; normalizado (minúsculas, sin esquema/path/barra final) |
+| tenant_id | fk → tenants | `onDelete cascade` |
+| timestamps | | |
+
+Relación `Tenant hasMany Domain`, restringida a nivel de aplicación a **un** dominio por tenant
+(helper `Tenant::dominio()`). El panel `super_admin` (`app/Http/Controllers/SuperAdmin/TenantController.php`)
+gestiona `tenants` + su `domains` como una unidad (alta/edición transaccional).
 
 ---
 
@@ -126,6 +150,7 @@ Cabecera de factura. **Núcleo del sistema.**
 | forma_pago | enum | `transferencia`, `tarjeta`, `efectivo`, `domiciliacion`… |
 | moneda | char(3) | default `EUR` |
 | regimen_impositivo | enum | `iva` / `igic` / `ipsi` — **congelado al emitir** (copiado del tenant/cliente) |
+| aplica_recargo | boolean | si la factura lleva recargo de equivalencia (copiado del cliente/tenant al emitir) |
 | **Totales (calculados desde líneas):** | | |
 | base_total | decimal(12,2) | suma de bases |
 | cuota_impuesto_total | decimal(12,2) | cuota del impuesto indirecto (IVA/IGIC/IPSI según régimen) |
@@ -190,7 +215,7 @@ Detalle de conceptos.
 | base_imponible | decimal(12,2) | base sujeta a ese tipo |
 | cuota | decimal(12,2) | |
 
-### `pagos`
+### `pagos` — (Fase 2, no implementada)
 Cobros aplicados a facturas (soporta pagos parciales).
 
 | Campo | Tipo | Notas |
@@ -235,6 +260,7 @@ Catálogo del que se pueden traer líneas de factura. Un artículo puede ser un 
 | gestion_stock | boolean | si `false` o es servicio → no se controla stock |
 | stock_actual | decimal(12,4) | nullable; solo si `gestion_stock` |
 | stock_minimo | decimal(12,4) | nullable; umbral de alerta de reposición |
+| aplica_recargo_equivalencia | boolean | minorista en recargo (mismo criterio que `clientes`) |
 | activo | boolean | |
 | softDeletes, timestamps | | |
 
@@ -242,8 +268,10 @@ Catálogo del que se pueden traer líneas de factura. Un artículo puede ser un 
 
 > **Adaptabilidad:** el `tipo servicio` cubre mantenimiento, horas de trabajo, consultoría, etc. — sin stock. El `tipo producto` con `gestion_stock=false` cubre productos que no querés inventariar. Solo `producto` + `gestion_stock=true` mueve inventario.
 
-### `movimientos_stock` — kardex de inventario
+### `movimientos_stock` — kardex de inventario (Fase 2, no implementada)
 Historial de entradas/salidas de stock. Solo aplica a artículos `producto` con `gestion_stock=true`. Da trazabilidad y permite recalcular/auditar el stock.
+
+> **Estado actual:** `articulos` ya tiene `gestion_stock`/`stock_actual`/`stock_minimo` en base de datos, pero la emisión de facturas (`app/Services/EmisorFacturas.php`) todavía no descuenta stock ni escribe en esta tabla — las reglas de abajo son el diseño previsto, no el comportamiento actual.
 
 | Campo | Tipo | Notas |
 |-------|------|-------|
@@ -354,8 +382,49 @@ Almacén clave-valor por tenant para parámetros ajustables sin tocar código (t
 | `verifactu.activo` | verifactu | `false` |
 | `verifactu.entorno` | verifactu | `pruebas` / `produccion` |
 | `email.remitente` | email | `facturas@empresa.com` |
+| `apariencia.color_primario` | apariencia | `#1D69D6` (default en `AparienciaTenant::DEFAULT_PRIMARIO`) |
+| `apariencia.color_secundario` | apariencia | `#1F2025` (default en `AparienciaTenant::DEFAULT_SECUNDARIO`) |
+| `apariencia.color_topbar` | apariencia | `#FFFFFF` (default en `AparienciaTenant::DEFAULT_TOPBAR`) |
+| `apariencia.facebook_url` | apariencia | `` (vacío, default en `AparienciaTenant::DEFAULT_FACEBOOK`) |
+| `apariencia.instagram_url` | apariencia | `` (vacío, default en `AparienciaTenant::DEFAULT_INSTAGRAM`) |
+| `apariencia.titulo_login` | apariencia | `Iniciar sesión` (default en `AparienciaTenant::DEFAULT_TITULO_LOGIN`) |
 
 > Alternativa/complemento: parámetros de facturación muy usados (IVA/IRPF por defecto, recargo) también viven como columnas en `tenants` para acceso directo; `configuraciones` cubre el resto de ajustes flexibles y los globales del SaaS.
+
+#### Cómo agregar un nuevo elemento de configuración
+
+Añadir una clave nueva a `configuraciones` implica siempre estos tres pasos, no solo el registro en base de datos:
+
+1. **Alta en base de datos** — agregar la fila en `database/seeders/ConfiguracionSeeder.php` (clave,
+   valor por defecto, `tipo`, `grupo`, `descripcion`), usando `firstOrCreate` por `(tenant_id, clave)`
+   como ya hace el seeder para no pisar valores modificados por el usuario en re-seeds.
+2. **Registrar el default en el catálogo centralizado** — toda clave de configuración con un valor
+   por defecto debe quedar reflejada en la tabla de "Ejemplos de claves" de esta sección (arriba) o,
+   si el grupo tiene lógica de resolución propia (colores de apariencia, feature flags, etc.), en la
+   clase `Support` correspondiente (p. ej. `App\Support\AparienciaTenant`, que centraliza claves y
+   defaults como constantes `CLAVE_*` / `DEFAULT_*`). Esta tabla/clase es la fuente de verdad de
+   "qué configuraciones existen y cuál es su default" — **actualizarla es obligatorio al agregar una
+   clave nueva**, no opcional.
+3. **Input en la vista de configuración** — agregar el campo correspondiente (texto, color picker,
+   select, switch, etc.) en la tab de `resources/views/configuracion/` que coincida con el `grupo` de
+   la clave (p. ej. `grupo: apariencia` → `_tab_apariencia.blade.php`; si no existe tab para el grupo,
+   crearla siguiendo el patrón de `index.blade.php`). Sin este paso el valor existe en BD pero el
+   usuario no tiene forma de editarlo.
+
+> **Excepción — valores tipo archivo ligados directo al tenant:** los logos/imágenes (`logo_path`,
+> `logo_mini_path`, `login_logo_path`, `login_imagen_path`, `logo_facturacion_path`) NO usan la tabla
+> `configuraciones`; son columnas propias de `tenants` (ver tabla arriba), porque son 1:1 con el
+> tenant y no necesitan resolución tenant→global. El mismo criterio de "3 pasos" aplica igual: (1)
+> columna nueva vía migración + `$fillable`/`getCustomColumns()` en `App\Models\Tenant`, (2) default
+> documentado aquí (ruta a un asset de `public/images/`) y usado como fallback donde se renderiza
+> (p. ej. `logo_facturacion_path` → `public/images/logardo.png` en `facturas/pdf.blade.php`), (3)
+> input de archivo en la tab correspondiente, subida vía `ConfiguracionController::update()`. El
+> logo de facturación vive en la tab **Facturación** (`_tab_facturacion.blade.php`), no en
+> Apariencia/Marca, porque se usa específicamente en el PDF de factura — no en el resto de la marca
+> visual del panel (menú, login).
+
+Los tres pasos son parte del mismo cambio: no dar por cerrada una clave de configuración nueva sin
+los tres.
 
 ---
 

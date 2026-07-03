@@ -57,6 +57,8 @@ class RegistroTest extends TestCase
             'password' => bcrypt('secret123'),
         ]);
 
+        $this->actingOnDomain($this->domainFor($user->tenant()->first()));
+
         $response = $this->from('/login')->post('/login', [
             'email' => $user->email,
             'password' => 'secret123',

@@ -4,6 +4,8 @@ namespace App\Models;
 
 use App\Enums\RegimenImpositivo;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Stancl\Tenancy\Database\Models\Domain;
 use Stancl\Tenancy\Database\Models\Tenant as BaseTenant;
 
 class Tenant extends BaseTenant
@@ -18,11 +20,20 @@ class Tenant extends BaseTenant
         'nombre_comercial',
         'razon_social',
         'nif',
+        'direccion',
+        'cp',
+        'ciudad',
+        'provincia',
+        'pais',
         'regimen_impositivo',
         'email',
         'activo',
         'logo_path',
         'logo_mini_path',
+        'login_logo_path',
+        'login_imagen_path',
+        'logo_facturacion_path',
+        'favicon_path',
     ];
 
     protected function casts(): array
@@ -31,6 +42,20 @@ class Tenant extends BaseTenant
             'activo' => 'boolean',
             'regimen_impositivo' => RegimenImpositivo::class,
         ];
+    }
+
+    public function domains(): HasMany
+    {
+        return $this->hasMany(Domain::class);
+    }
+
+    /**
+     * Regla de negocio: un único dominio por tenant (data-model.md), aunque la relación
+     * subyacente sea hasMany (idiomática de stancl, deja la puerta abierta a alias futuros).
+     */
+    public function dominio(): ?Domain
+    {
+        return $this->domains()->first();
     }
 
     protected static function booted(): void
@@ -55,11 +80,20 @@ class Tenant extends BaseTenant
             'nombre_comercial',
             'razon_social',
             'nif',
+            'direccion',
+            'cp',
+            'ciudad',
+            'provincia',
+            'pais',
             'regimen_impositivo',
             'email',
             'activo',
             'logo_path',
             'logo_mini_path',
+            'login_logo_path',
+            'login_imagen_path',
+            'logo_facturacion_path',
+            'favicon_path',
             'created_at',
             'updated_at',
         ];

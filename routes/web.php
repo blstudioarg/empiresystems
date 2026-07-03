@@ -8,11 +8,12 @@ use App\Http\Controllers\ConfiguracionController;
 use App\Http\Controllers\FacturaController;
 use App\Http\Controllers\LocalidadController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SuperAdmin\TenantController as SuperAdminTenantController;
 use App\Http\Controllers\UnidadController;
 use App\Http\Controllers\UsuarioController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware('guest')->group(function () {
+Route::middleware(['tenant.context', 'guest'])->group(function () {
     Route::get('/login', [LoginController::class, 'create'])->name('login');
     Route::post('/login', [LoginController::class, 'store'])->name('login.attempt');
 
@@ -22,7 +23,7 @@ Route::middleware('guest')->group(function () {
         ->name('register.store');
 });
 
-Route::middleware(['auth', 'tenant.context'])->group(function () {
+Route::middleware(['tenant.context', 'auth'])->group(function () {
     Route::get('/', function () {
         return view('dashboard');
     })->name('dashboard');
@@ -40,6 +41,8 @@ Route::middleware(['auth', 'tenant.context'])->group(function () {
     Route::get('/facturas/{factura}/editar', [FacturaController::class, 'edit'])->name('facturas.edit');
     Route::match(['put', 'patch'], '/facturas/{factura}', [FacturaController::class, 'update'])->name('facturas.update');
     Route::delete('/facturas/{factura}', [FacturaController::class, 'destroy'])->name('facturas.destroy');
+    Route::post('/facturas/{factura}/emitir', [FacturaController::class, 'emitir'])->name('facturas.emitir');
+    Route::post('/facturas/{factura}/rectificar', [FacturaController::class, 'rectificar'])->name('facturas.rectificar');
     Route::get('/facturas/{factura}/pdf', [FacturaController::class, 'pdf'])->name('facturas.pdf');
 
     Route::get('/perfil', [ProfileController::class, 'show'])->name('profile.show');
@@ -52,4 +55,8 @@ Route::middleware(['auth', 'tenant.context'])->group(function () {
     Route::get('/usuarios', [UsuarioController::class, 'index'])->name('usuarios.index');
     Route::patch('/usuarios/{usuario}/aprobar', [UsuarioController::class, 'aprobar'])->name('usuarios.aprobar');
     Route::patch('/usuarios/{usuario}/rechazar', [UsuarioController::class, 'rechazar'])->name('usuarios.rechazar');
+});
+
+Route::middleware(['tenant.context', 'auth', 'super_admin'])->prefix('super_admin')->name('super_admin.')->group(function () {
+    Route::resource('tenants', SuperAdminTenantController::class)->only(['index', 'store', 'update', 'destroy']);
 });

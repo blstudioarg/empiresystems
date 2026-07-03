@@ -2,40 +2,61 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\DominioTenant;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Stancl\Tenancy\Database\Models\Domain;
 use Symfony\Component\HttpFoundation\Response;
 
 class SetTenantContext
 {
     /**
-     * Inicializa el contexto de tenancy a partir del usuario autenticado.
+     * Inicializa el contexto de tenancy a partir del HOST de la petición (research.md D2),
+     * no del usuario autenticado:
      *
-     * - Usuario con tenant activo -> inicializa tenancy con ese tenant.
-     * - Super admin (tenant_id null) -> no inicializa, contexto central.
-     * - Usuario cuyo tenant fue desactivado a mitad de sesión -> logout forzado.
+     * - Host en central_domains -> contexto central, sin tenant.
+     * - Host con registro en `domains` -> inicializa tenancy con ese tenant. Si el tenant no
+     *   está activo -> logout forzado (si había sesión) y redirect a login.
+     * - Host sin registro ni central -> 404 controlado (no se expone ningún tenant).
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $user = Auth::user();
+        $host = DominioTenant::normalizar($request->getHost());
 
-        if ($user && $user->tenant_id) {
-            // Consulta fresca: no usar la relación cacheada en $user->tenant, que puede haber
-            // quedado stale si el guard reutilizó la misma instancia de otro request (p. ej.
-            // justo después de Auth::attempt() en el login).
-            $tenant = $user->tenant()->first();
+        if (in_array($host, config('tenancy.central_domains'), true)) {
+            // En tests (y en general, si el proceso PHP se reutiliza entre requests) el estado de
+            // tenancy podría seguir inicializado de una petición anterior a un dominio de tenant;
+            // el contexto central debe partir siempre limpio.
+            if (tenancy()->initialized) {
+                tenancy()->end();
+            }
 
-            if (! $tenant || ! $tenant->activo) {
+            $response = $next($request);
+            $response->headers->set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+
+            return $response;
+        }
+
+        $domain = Domain::where('domain', $host)->first();
+
+        if (! $domain) {
+            abort(404);
+        }
+
+        $tenant = $domain->tenant;
+
+        if (! $tenant || ! $tenant->activo) {
+            if (Auth::check()) {
                 Auth::logout();
                 $request->session()->invalidate();
                 $request->session()->regenerateToken();
-
-                return redirect()->route('login');
             }
 
-            tenancy()->initialize($tenant);
+            return redirect()->route('login');
         }
+
+        tenancy()->initialize($tenant);
 
         $response = $next($request);
 

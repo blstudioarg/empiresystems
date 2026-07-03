@@ -60,7 +60,9 @@
         });
     });
 
-    // Logo: preview inmediato + subida automática al seleccionar el archivo.
+    // Logo: preview inmediato + subida automática al seleccionar el archivo. `claseMenu` es
+    // opcional: solo los logos del menú lateral (nav-header) necesitan reflejarse ahí en vivo;
+    // los de la pantalla de login no tienen equivalente visible en la propia configuración.
     function registrarInputLogo(inputId, previewId, campo, claseMenu) {
         $(inputId).on("change", function (event) {
             var file = event.target.files[0];
@@ -82,13 +84,28 @@
             formData.append(campo, file);
 
             enviarCampo(formData, function () {
-                actualizarLogoEnMenu(claseMenu, $preview.attr("src"));
+                if (claseMenu) {
+                    actualizarLogoEnMenu(claseMenu, $preview.attr("src"));
+                }
             });
         });
     }
 
     registrarInputLogo("#logo", "#logo-preview", "logo", "brand-title");
     registrarInputLogo("#logo_mini", "#logo-mini-preview", "logo_mini", "logo-abbr");
+    registrarInputLogo("#login_logo", "#login-logo-preview", "login_logo");
+    registrarInputLogo("#login_imagen", "#login-imagen-preview", "login_imagen");
+    registrarInputLogo("#logo_facturacion", "#logo-facturacion-preview", "logo_facturacion");
+    registrarInputLogo("#favicon", "#favicon-preview", "favicon");
+
+    // Campos de texto (título de login, redes sociales): se guardan al perder el foco.
+    $("#titulo_login, #facebook_url, #instagram_url").on("change", function () {
+        var $input = $(this);
+        var campo = $input.attr("name");
+        var valor = $input.val();
+
+        enviarCampo(construirFormData(campo, valor));
+    });
 
     function actualizarLogoEnMenu(claseMenu, dataUrl) {
         var $navLogo = $(".nav-header .brand-logo");

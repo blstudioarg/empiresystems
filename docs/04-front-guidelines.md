@@ -130,13 +130,13 @@ template) se subió ligeramente a `0.9375rem` en `app-overrides.css`. Si se agre
 al sidebar, replicar `size="30"` y `class="nav-text ms-2"` a mano (no hay override CSS que fuerce
 el tamaño del ícono porque `<lord-icon>` lo define vía atributo `style`, no clase).
 
-## Confirmación de eliminación
+## Confirmación de acciones irreversibles (borrado y otras)
 
-Nunca usar `confirm()` nativo del navegador antes de un borrado. Usar siempre el modal genérico
-`resources/views/partials/confirm-delete-modal.blade.php` (incluido una única vez en
-`layouts/app.blade.php`, junto con `public/js/confirm-delete.js` cargado siempre), que muestra el
-lordicon `wired-outline-185-trash-bin-hover-empty` (`trigger="loop"`) + el mensaje + botones
-Cancelar/Eliminar.
+Nunca usar `confirm()` nativo del navegador antes de una acción irreversible (borrado, emitir,
+etc.). Usar siempre el modal genérico `resources/views/partials/confirm-delete-modal.blade.php`
+(incluido una única vez en `layouts/app.blade.php`, junto con `public/js/confirm-delete.js` cargado
+siempre). Por defecto se ve/comporta como confirmación de **borrado**: lordicon
+`wired-outline-185-trash-bin-hover-empty` (`trigger="loop"`) + botón rojo "Eliminar".
 
 Desde cualquier `*.init.js`, reemplazar:
 
@@ -153,15 +153,69 @@ window.confirmDelete('¿Eliminar...?', function () {
 });
 ```
 
-`confirmDelete(mensaje, onConfirm)` reescribe el texto del modal y el handler del botón Eliminar
-en cada llamada (soporta múltiples filas de una misma tabla sin acumular handlers), así que no
-hace falta instanciar nada por vista. Referencia de uso:
-`clientes-modal.init.js`, `articulos-modal.init.js`, `facturas-datatable.init.js`.
+`confirmDelete(mensaje, onConfirm, opciones?)` reescribe el texto del modal y el handler del botón
+en cada llamada (soporta múltiples filas de una misma tabla sin acumular handlers), así que no hace
+falta instanciar nada por vista.
+
+**No reutilizar el modal "tal cual" para una acción que no sea borrado** (el icono de papelera y el
+botón "Eliminar" en rojo confunden al usuario, p. ej. "Emitir factura" mostrando "Eliminar"). Pasar
+`opciones` para adaptar ícono/texto/color del botón sin duplicar el modal:
+
+```js
+window.confirmDelete('¿Emitir esta factura?', onConfirm, {
+	confirmLabel: 'Emitir',
+	confirmClass: 'btn-primary', // reemplaza btn-danger
+	icon: 'invoice',              // debe existir en public/icons/lordicon/
+});
+```
+
+Referencia de uso: `clientes-modal.init.js`, `articulos-modal.init.js` (borrado, sin opciones),
+`facturas-datatable.init.js` (borrado sin opciones + emitir con opciones).
 
 ## Notificaciones
 
 Siempre toastr (`window.showToast(type, message)` / flash de sesión), nunca alerts Bootstrap
 ad-hoc. Detalle completo en `CLAUDE.md`.
+
+## CRUD simple: alta/edición en modal + AJAX (patrón por defecto)
+
+Para cualquier listado nuevo (DataTable) cuyo formulario de alta/edición sea "plano" (unos pocos
+campos de texto/select/checkbox, sin secciones dinámicas), el patrón por defecto es **un único
+modal reutilizado para crear y editar**, con submit vía AJAX — no páginas `create.blade.php` /
+`edit.blade.php` separadas. Referencia: `clientes/index.blade.php` +
+`public/js/plugins-init/clientes-modal.init.js` (y su equivalente `articulos-modal.init.js`,
+`super-admin-tenants-modal.init.js`).
+
+- **Un solo modal, un solo `<form>`**: el botón "+ Agregar X" del `card-header` resetea el form y
+  apunta su `action` al `store` route; el botón "Editar" del dropdown de acciones (ver "Columna
+  Acciones" más abajo) rellena el mismo form con los datos de esa fila y cambia `action` al
+  `update` route + un input oculto `_method=PUT`. Nunca dos modales (uno alta, uno edición) para
+  la misma entidad.
+- **Los datos de cada fila para editar viajan en `data-*` del botón**, no se piden por un segundo
+  endpoint `GET .../{id}/editar`: el JSON que ya alimenta la DataTable (`index` con
+  `wantsJson()`) trae todos los campos que el form necesita repoblar. El `renderAcciones()` del
+  `*-datatable.init.js` los vuelca como atributos `data-*` del botón "Editar"; el
+  `*-modal.init.js` los lee con `$(this).data('campo')` y llama a `fillForm(...)`.
+  - Consecuencia de rutas: si el CRUD sigue este patrón, **no hace falta** registrar las rutas
+    `create`/`edit` de `Route::resource` — solo `index, store, update, destroy`
+    (`Route::resource('x', XController::class)->only([...])`), y el controller no necesita
+    métodos `create()`/`edit()` que devuelvan una vista de formulario.
+- **Submit y errores**: el form se envía por `$.ajax` con `dataType: 'json'` y
+  `headers: { Accept: 'application/json' }`; el controller responde `response()->json([...])` en
+  vez de `redirect()` cuando `$request->wantsJson()`. Un 422 rellena `.invalid-feedback` por campo
+  (ver `data-error-for` en el partial `_form.blade.php`); cualquier otro error usa
+  `window.showToast('danger', ...)`. Éxito: `modal.hide()` + toast de éxito +
+  `table.ajax.reload(null, false)` (recarga la tabla sin resetear la paginación actual).
+- **El partial `_form.blade.php` no lleva `value`/`old()` ni `@error`**: como el mismo form sirve
+  para alta y edición y se rellena/limpia siempre por JS (`resetForm()`/`fillForm()`), los campos
+  se declaran "vacíos" en el Blade; el estado (valores y errores) lo pone el JS en cada apertura
+  del modal, no el server-side rendering de una vista de edición.
+
+**Cuándo NO aplica este patrón** (usar la vista full-page en su lugar, ver sección siguiente):
+formularios con varias secciones o líneas dinámicas donde un modal quedaría apretado o exigiría
+demasiado scroll interno — el caso ya documentado es `facturas` (emisor + cliente + fechas +
+líneas + totales). Si un CRUD nuevo empieza simple pero crece hasta ese punto, migrar a full-page
+en vez de forzar el modal.
 
 ## Vista full-page de creación con preview en vivo (facturas)
 

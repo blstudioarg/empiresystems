@@ -31,6 +31,8 @@ class SeederTest extends TestCase
     {
         $this->seed(AuthSeeder::class);
 
+        $this->actingOnDomain(AuthSeeder::DEMO_TENANT_DOMAIN);
+
         $response = $this->post('/login', [
             'email' => 'demo@empiresystems.es',
             'password' => AuthSeeder::DEMO_ADMIN_PASSWORD,

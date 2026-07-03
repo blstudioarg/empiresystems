@@ -41,6 +41,32 @@ Aun en base compartida, conviene separar conceptualmente:
 
 ---
 
+## Decisión 4 — Resolución de tenant por dominio + panel Super Admin (007-super-admin-tenants)
+
+**Elegido:** el tenant activo se resuelve por el **host de la petición**, no por el `tenant_id` del
+usuario autenticado. Cada tenant tiene un registro 1:1 en la tabla `domains` (estándar de
+`stancl/tenancy`, modelo `Domain::class`, grupo central). El middleware `SetTenantContext`
+consulta `domains` por host en cada request:
+
+- Host en `central_domains` (`config/tenancy.php`) → contexto central, sin tenant. Es el único
+  contexto donde vive el panel `super_admin` (prefijo de ruta, guard `EnsureSuperAdmin`: rol
+  `super_admin` + `tenant_id` null + dominio central).
+- Host con registro en `domains` → `tenancy()->initialize($tenant)` (o corta el acceso si el
+  tenant está `activo=false`).
+- Host sin registro ni central → 404 controlado (nunca expone qué tenants existen).
+
+El login se refuerza en consecuencia: un usuario solo autentica desde el dominio de **su propio**
+tenant (`user.tenant_id == tenant del dominio resuelto`); `super_admin` solo autentica en el
+dominio central. Detalle de la decisión y alternativas descartadas en
+`specs/007-super-admin-tenants/research.md` (D1–D7).
+
+El panel Super Admin (CRUD de tenants + su dominio) es la única área de la app que opera **fuera**
+del scope de tenant (excepción explícita del Principio I de la constitución): consultas directas a
+`tenants`/`domains` en contexto central, con filtrado explícito por `tenant_id` cuando necesita
+mirar datos de un tenant concreto (p. ej. comprobar facturas emitidas antes de permitir el borrado).
+
+---
+
 ## Infraestructura (estado actual)
 - **Hosting:** compartido (cPanel/Hostinger) como punto de partida.
 - **Camino de escalado:** VPS (Hostinger/DigitalOcean/Hetzner) + Laravel Forge/Ploi cuando el tráfico lo exija.

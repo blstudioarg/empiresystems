@@ -12,14 +12,6 @@ class UsuariosTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function loginAs(User $user): void
-    {
-        $this->post('/login', [
-            'email' => $user->email,
-            'password' => 'secret123',
-        ]);
-    }
-
     public function test_aprobar_pendiente_lo_habilita_para_iniciar_sesion(): void
     {
         $tenant = Tenant::factory()->create();

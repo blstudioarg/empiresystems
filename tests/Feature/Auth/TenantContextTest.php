@@ -20,10 +20,7 @@ class TenantContextTest extends TestCase
             'password' => bcrypt('secret123'),
         ]);
 
-        $this->post('/login', [
-            'email' => 'user@example.com',
-            'password' => 'secret123',
-        ]);
+        $this->loginAs($user);
 
         $this->get('/');
 
@@ -48,10 +45,7 @@ class TenantContextTest extends TestCase
             'password' => bcrypt('secret123'),
         ]);
 
-        $this->post('/login', [
-            'email' => 'usera@example.com',
-            'password' => 'secret123',
-        ]);
+        $this->loginAs($userA);
         $this->get('/');
 
         $this->assertEquals($tenantA->id, tenant('id'));
@@ -84,10 +78,7 @@ class TenantContextTest extends TestCase
             'password' => bcrypt('secret123'),
         ]);
 
-        $this->post('/login', [
-            'email' => 'user@example.com',
-            'password' => 'secret123',
-        ]);
+        $this->loginAs($user);
         $this->assertAuthenticatedAs($user);
 
         $tenant->update(['activo' => false]);

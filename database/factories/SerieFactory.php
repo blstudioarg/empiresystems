@@ -29,4 +29,12 @@ class SerieFactory extends Factory
             'activa' => true,
         ];
     }
+
+    public function rectificativa(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'codigo' => 'R',
+            'tipo' => TipoFactura::Rectificativa,
+        ]);
+    }
 }

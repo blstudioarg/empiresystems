@@ -24,6 +24,8 @@ class RouteProtectionTest extends TestCase
             'password' => bcrypt('secret123'),
         ]);
 
+        $this->actingOnDomain($this->domainFor($user->tenant()->first()));
+
         $this->post('/login', [
             'email' => 'user@example.com',
             'password' => 'secret123',
@@ -42,6 +44,8 @@ class RouteProtectionTest extends TestCase
             'email' => 'user@example.com',
             'password' => bcrypt('secret123'),
         ]);
+
+        $this->actingOnDomain($this->domainFor($user->tenant()->first()));
 
         $this->post('/login', [
             'email' => 'user@example.com',

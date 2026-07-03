@@ -12,14 +12,6 @@ class ClienteTenantIsolationTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function loginAs(User $user): void
-    {
-        $this->post('/login', [
-            'email' => $user->email,
-            'password' => 'secret123',
-        ]);
-    }
-
     public function test_el_listado_de_un_tenant_no_incluye_clientes_de_otro(): void
     {
         $tenantA = Tenant::factory()->create();

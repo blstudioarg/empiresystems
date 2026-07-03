@@ -16,24 +16,46 @@
 		.totales { width: 300px; margin-left: auto; margin-top: 15px; }
 		.totales td { border: none; padding: 3px 8px; }
 		.totales .total-final { font-size: 15px; font-weight: bold; border-top: 2px solid #222; }
-		.logo { height: 50px; margin-bottom: 10px; }
+		.logo-wrap { display: block; clear: both; margin-bottom: 10px; }
+		.logo { display: block; max-height: 50px; max-width: 220px; width: auto; height: auto; }
+		.emisor-info { display: block; clear: both; }
 		.badge { display: inline-block; padding: 2px 8px; background: #eee; border-radius: 4px; }
 	</style>
 </head>
 <body>
 	<div class="header">
 		<div class="col">
-			@if ($factura->tenant->logo_path)
-				<img class="logo" src="{{ public_path('storage/'.$factura->tenant->logo_path) }}" alt="Logo">
-			@endif
-			<strong>{{ $factura->tenant->nombre_comercial }}</strong><br>
-			{{ $factura->tenant->razon_social }}<br>
-			NIF: {{ $factura->tenant->nif }}<br>
+			@php
+				$__logoFacturacion = $factura->tenant->logo_facturacion_path
+					? public_path('storage/'.$factura->tenant->logo_facturacion_path)
+					: public_path('images/logardo.png');
+			@endphp
+			<div class="logo-wrap">
+				<img class="logo" src="{{ $__logoFacturacion }}" alt="Logo">
+			</div>
+			<div class="emisor-info">
+				<strong>{{ $factura->tenant->nombre_comercial }}</strong><br>
+				{{ $factura->tenant->razon_social }}<br>
+				NIF: {{ $factura->tenant->nif }}<br>
+				@if ($factura->tenant->direccion)
+					{{ $factura->tenant->direccion }}<br>
+				@endif
+				@if ($factura->tenant->cp || $factura->tenant->ciudad || $factura->tenant->provincia)
+					{{ trim($factura->tenant->cp.' '.$factura->tenant->ciudad) }}@if ($factura->tenant->provincia) ({{ $factura->tenant->provincia }})@endif<br>
+				@endif
+				@if ($factura->tenant->pais)
+					{{ $factura->tenant->pais }}<br>
+				@endif
 			{{ $factura->tenant->email }}
+			</div>
 		</div>
 		<div class="col right">
 			<h1>{{ $factura->numero_completo ?? 'Factura (borrador)' }}</h1>
-			<span class="badge">{{ ucfirst($factura->estado->value) }}</span><br><br>
+			<span class="badge">{{ ucfirst($factura->estado->value) }}</span>
+				@if ($factura->es_rectificativa)
+					<span class="badge">Factura rectificativa</span>
+				@endif
+				<br><br>
 			Fecha de expedición: {{ $factura->fecha_expedicion->format('d/m/Y') }}<br>
 			@if ($factura->fecha_operacion && $factura->fecha_operacion->ne($factura->fecha_expedicion))
 				Fecha de operación: {{ $factura->fecha_operacion->format('d/m/Y') }}<br>
@@ -101,6 +123,18 @@
 			<td class="text-right">{{ number_format((float) $factura->total, 2, ',', '.') }} €</td>
 		</tr>
 	</table>
+
+	@if ($factura->es_rectificativa)
+		<div style="margin-top:20px">
+			<strong>Factura rectificativa</strong> ({{ $factura->tipo_rectificacion?->value === 'diferencias' ? 'por diferencias' : 'por sustitución' }})<br>
+			Rectifica a la factura {{ $factura->facturaRectificada->numero_completo }}<br>
+			Motivo: {{ $factura->motivo_rectificacion }}
+		</div>
+	@elseif ($factura->rectificativa)
+		<div style="margin-top:20px">
+			<strong>Rectificada</strong> por la factura {{ $factura->rectificativa->numero_completo }}
+		</div>
+	@endif
 
 	@if ($factura->notas)
 		<div style="margin-top:20px">

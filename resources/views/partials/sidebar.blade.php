@@ -15,46 +15,59 @@
 					<div class="sidebar-user-role">{{ auth()->user()->rol->value }}</div>
 				</div>
 				<ul class="metismenu" id="menu">
-					<li><a class="has-arrow " href="javascript:void(0);" aria-expanded="false">
-							<div class="menu-icon">
-								<x-lordicon icon="empresa" size="30" trigger="hover" />
-							</div>
-							<span class="nav-text ms-2">Clientes</span>
-						</a>
-						<ul aria-expanded="false">
-							<li><a href="{{ route('clientes.index') }}">Cartera de clientes</a></li>
-						</ul>
-					</li>
-					<li><a class="has-arrow " href="javascript:void(0);" aria-expanded="false">
-							<div class="menu-icon">
-								<x-lordicon icon="box" size="30" trigger="hover" />
-							</div>
-							<span class="nav-text ms-2">Productos/Servicios</span>
-						</a>
-						<ul aria-expanded="false">
-							<li><a href="{{ route('articulos.index') }}">Catálogo</a></li>
-						</ul>
-					</li>
-					<li><a class="has-arrow " href="javascript:void(0);" aria-expanded="false">
-							<div class="menu-icon">
-								<x-lordicon icon="invoice" size="30" trigger="hover" />
-							</div>
-							<span class="nav-text ms-2">Facturas</span>
-						</a>
-						<ul aria-expanded="false">
-							<li><a href="{{ route('facturas.index') }}">Facturas</a></li>
-						</ul>
-					</li>
-					<li><a class="has-arrow " href="javascript:void(0);" aria-expanded="false">
-							<div class="menu-icon">
-								<x-lordicon icon="person" size="30" trigger="hover" />
-							</div>
-							<span class="nav-text ms-2">Usuarios</span>
-						</a>
-						<ul aria-expanded="false">
-							<li><a href="{{ route('usuarios.index') }}">Usuarios</a></li>
-						</ul>
-					</li>
+					@if (auth()->user()->isSuperAdmin())
+						<li><a class="has-arrow " href="javascript:void(0);" aria-expanded="false">
+								<div class="menu-icon">
+									<x-lordicon icon="empresa" size="30" trigger="hover" />
+								</div>
+								<span class="nav-text ms-2">Tenants</span>
+							</a>
+							<ul aria-expanded="false">
+								<li><a href="{{ route('super_admin.tenants.index') }}">Gestión de tenants</a></li>
+							</ul>
+						</li>
+					@else
+						<li><a class="has-arrow " href="javascript:void(0);" aria-expanded="false">
+								<div class="menu-icon">
+									<x-lordicon icon="empresa" size="30" trigger="hover" />
+								</div>
+								<span class="nav-text ms-2">Clientes</span>
+							</a>
+							<ul aria-expanded="false">
+								<li><a href="{{ route('clientes.index') }}">Cartera de clientes</a></li>
+							</ul>
+						</li>
+						<li><a class="has-arrow " href="javascript:void(0);" aria-expanded="false">
+								<div class="menu-icon">
+									<x-lordicon icon="box" size="30" trigger="hover" />
+								</div>
+								<span class="nav-text ms-2">Productos/Servicios</span>
+							</a>
+							<ul aria-expanded="false">
+								<li><a href="{{ route('articulos.index') }}">Catálogo</a></li>
+							</ul>
+						</li>
+						<li><a class="has-arrow " href="javascript:void(0);" aria-expanded="false">
+								<div class="menu-icon">
+									<x-lordicon icon="invoice" size="30" trigger="hover" />
+								</div>
+								<span class="nav-text ms-2">Facturas</span>
+							</a>
+							<ul aria-expanded="false">
+								<li><a href="{{ route('facturas.index') }}">Facturas</a></li>
+							</ul>
+						</li>
+						<li><a class="has-arrow " href="javascript:void(0);" aria-expanded="false">
+								<div class="menu-icon">
+									<x-lordicon icon="person" size="30" trigger="hover" />
+								</div>
+								<span class="nav-text ms-2">Usuarios</span>
+							</a>
+							<ul aria-expanded="false">
+								<li><a href="{{ route('usuarios.index') }}">Usuarios</a></li>
+							</ul>
+						</li>
+					@endif
 				</ul>
 				<div class="help-desk">
 					<a href="https://nexadash.dexignzone.com/laravel/doc/" target="_blank" class="btn btn-light">

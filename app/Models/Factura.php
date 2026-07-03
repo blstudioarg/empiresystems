@@ -6,11 +6,13 @@ use App\Enums\EstadoFactura;
 use App\Enums\FormaPago;
 use App\Enums\RegimenImpositivo;
 use App\Enums\TipoFactura;
+use App\Enums\TipoRectificacion;
 use Database\Factories\FacturaFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
@@ -26,6 +28,10 @@ class Factura extends Model
         'numero_completo',
         'tipo',
         'estado',
+        'es_rectificativa',
+        'factura_rectificada_id',
+        'motivo_rectificacion',
+        'tipo_rectificacion',
         'cliente_id',
         'cliente_nombre',
         'cliente_razon_social',
@@ -56,6 +62,8 @@ class Factura extends Model
         return [
             'tipo' => TipoFactura::class,
             'estado' => EstadoFactura::class,
+            'es_rectificativa' => 'boolean',
+            'tipo_rectificacion' => TipoRectificacion::class,
             'forma_pago' => FormaPago::class,
             'regimen_impositivo' => RegimenImpositivo::class,
             'aplica_recargo' => 'boolean',
@@ -96,5 +104,20 @@ class Factura extends Model
     public function impuestos(): HasMany
     {
         return $this->hasMany(FacturaImpuesto::class);
+    }
+
+    public function eventos(): HasMany
+    {
+        return $this->hasMany(FacturaEvento::class)->orderBy('ocurrido_at');
+    }
+
+    public function facturaRectificada(): BelongsTo
+    {
+        return $this->belongsTo(Factura::class, 'factura_rectificada_id');
+    }
+
+    public function rectificativa(): HasOne
+    {
+        return $this->hasOne(Factura::class, 'factura_rectificada_id');
     }
 }

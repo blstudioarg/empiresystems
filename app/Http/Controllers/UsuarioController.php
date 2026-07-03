@@ -32,6 +32,7 @@ class UsuarioController extends Controller
                     'rol' => $usuario->rol->value,
                     'estado' => $usuario->estado->value,
                     'activo' => $usuario->activo,
+                    'es_actual' => $usuario->id === auth()->id(),
                     'aprobar_url' => route('usuarios.aprobar', $usuario),
                     'rechazar_url' => route('usuarios.rechazar', $usuario),
                 ])->values(),

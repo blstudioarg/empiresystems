@@ -50,4 +50,21 @@ class FacturaFactory extends Factory
             'notas' => null,
         ];
     }
+
+    public function emitida(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'estado' => EstadoFactura::Emitida,
+            'numero' => fake()->unique()->numberBetween(1, 100000),
+            'numero_completo' => 'F-'.now()->year.'-'.fake()->unique()->numerify('####'),
+        ]);
+    }
+
+    public function rectificativa(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'tipo' => TipoFactura::Rectificativa,
+            'es_rectificativa' => true,
+        ]);
+    }
 }

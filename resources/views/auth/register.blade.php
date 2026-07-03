@@ -38,14 +38,16 @@
 									<span class="invalid-feedback d-block">{{ $message }}</span>
 								@enderror
 							</div>
-							<div class="mb-4 position-relative">
+							<div class="mb-4">
 								<label class="mb-1">Contraseña<span class="text-danger"> *</span></label>
-								<input type="password" name="password" id="dz-password"
-									class="form-control @error('password') is-invalid @enderror">
-								<span class="show-pass eye">
-									<i class="fa fa-eye-slash"></i>
-									<i class="fa fa-eye"></i>
-								</span>
+								<div class="position-relative">
+									<input type="password" name="password" id="dz-password"
+										class="form-control @error('password') is-invalid @enderror">
+									<span class="show-pass eye">
+										<i class="fa fa-eye-slash"></i>
+										<i class="fa fa-eye"></i>
+									</span>
+								</div>
 								@error('password')
 									<span class="invalid-feedback d-block">{{ $message }}</span>
 								@enderror

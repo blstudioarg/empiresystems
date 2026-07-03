@@ -1,5 +1,7 @@
 # Empire Systems CRM
 
+Responder siempre en español, en toda interacción con el usuario en este proyecto.
+
 SaaS de facturación para España (multi-tenant). Ver `docs/00-vision.md` para la visión completa
 del producto y `docs/01-arquitectura.md`, `docs/02-facturacion-espana.md`, `docs/03-modelo-datos.md`
 para las decisiones técnicas, normativa y modelo de datos.

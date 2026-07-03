@@ -13,14 +13,34 @@ class AparienciaTenant
 
     private const CLAVE_TOPBAR = 'apariencia.color_topbar';
 
-    private const DEFAULT_PRIMARIO = '#1D69D6';
+    private const CLAVE_FACEBOOK = 'apariencia.facebook_url';
 
-    private const DEFAULT_SECUNDARIO = '#1F2025';
+    private const CLAVE_INSTAGRAM = 'apariencia.instagram_url';
 
-    private const DEFAULT_TOPBAR = '#FFFFFF';
+    private const CLAVE_TITULO_LOGIN = 'apariencia.titulo_login';
+
+    public const DEFAULT_PRIMARIO = '#1D69D6';
+
+    public const DEFAULT_SECUNDARIO = '#1F2025';
+
+    public const DEFAULT_TOPBAR = '#FFFFFF';
+
+    public const DEFAULT_FACEBOOK = '';
+
+    public const DEFAULT_INSTAGRAM = '';
+
+    public const DEFAULT_TITULO_LOGIN = 'Iniciar sesión';
 
     /**
-     * @return array{color_primario: string|null, color_secundario: string|null, color_topbar: string|null}
+     * Topbar del panel central (super_admin): no pertenece a ningún tenant, así que no hay color
+     * de marca que aplicar; un gris neutro lo distingue visualmente del área de negocio de un
+     * tenant (que sí usa DEFAULT_TOPBAR/colores configurados).
+     */
+    public const DEFAULT_TOPBAR_CENTRAL = '#6C757D';
+
+    /**
+     * @return array{color_primario: string|null, color_secundario: string|null, color_topbar: string|null,
+     *     facebook_url: string|null, instagram_url: string|null, titulo_login: string|null}
      */
     public static function valoresConfigurados(int $tenantId): array
     {
@@ -37,6 +57,9 @@ class AparienciaTenant
                     'color_primario' => $configuraciones->get(self::CLAVE_PRIMARIO),
                     'color_secundario' => $configuraciones->get(self::CLAVE_SECUNDARIO),
                     'color_topbar' => $configuraciones->get(self::CLAVE_TOPBAR),
+                    'facebook_url' => $configuraciones->get(self::CLAVE_FACEBOOK),
+                    'instagram_url' => $configuraciones->get(self::CLAVE_INSTAGRAM),
+                    'titulo_login' => $configuraciones->get(self::CLAVE_TITULO_LOGIN),
                 ];
             }
         );
@@ -55,6 +78,22 @@ class AparienciaTenant
             'color_primario' => $valores['color_primario'] ?? self::DEFAULT_PRIMARIO,
             'color_secundario' => $valores['color_secundario'] ?? self::DEFAULT_SECUNDARIO,
             'color_topbar' => $valores['color_topbar'] ?? self::DEFAULT_TOPBAR,
+        ];
+    }
+
+    /**
+     * Redes sociales y título de login efectivos: valor configurado por el tenant o default.
+     *
+     * @return array{facebook_url: string, instagram_url: string, titulo_login: string}
+     */
+    public static function extrasEfectivos(int $tenantId): array
+    {
+        $valores = self::valoresConfigurados($tenantId);
+
+        return [
+            'facebook_url' => $valores['facebook_url'] ?? self::DEFAULT_FACEBOOK,
+            'instagram_url' => $valores['instagram_url'] ?? self::DEFAULT_INSTAGRAM,
+            'titulo_login' => $valores['titulo_login'] ?? self::DEFAULT_TITULO_LOGIN,
         ];
     }
 

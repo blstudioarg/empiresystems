@@ -14,14 +14,6 @@ class FacturaPdfTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function loginAs(User $user): void
-    {
-        $this->post('/login', [
-            'email' => $user->email,
-            'password' => 'secret123',
-        ]);
-    }
-
     public function test_el_pdf_responde_200_para_el_tenant_propietario(): void
     {
         $tenant = Tenant::factory()->create();

@@ -25,5 +25,15 @@ class SerieSeeder extends Seeder
                 'activa' => true,
             ]
         );
+
+        Serie::firstOrCreate(
+            ['tenant_id' => $tenant->id, 'codigo' => 'R', 'ejercicio' => null],
+            [
+                'tipo' => 'rectificativa',
+                'proximo_numero' => 1,
+                'formato' => '{serie}-{anio}-{numero:0000}',
+                'activa' => true,
+            ]
+        );
     }
 }

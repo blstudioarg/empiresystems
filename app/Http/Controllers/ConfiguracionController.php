@@ -18,8 +18,13 @@ class ConfiguracionController extends Controller
 
         return view('configuracion.index', [
             'colores' => AparienciaTenant::coloresEfectivos($tenantId),
+            'extras' => AparienciaTenant::extrasEfectivos($tenantId),
             'logoPath' => tenant()->logo_path,
             'logoMiniPath' => tenant()->logo_mini_path,
+            'loginLogoPath' => tenant()->login_logo_path,
+            'loginImagenPath' => tenant()->login_imagen_path,
+            'logoFacturacionPath' => tenant()->logo_facturacion_path,
+            'faviconPath' => tenant()->favicon_path,
         ]);
     }
 
@@ -37,14 +42,28 @@ class ConfiguracionController extends Controller
                     'apariencia.color_primario',
                     'apariencia.color_secundario',
                     'apariencia.color_topbar',
+                    'apariencia.facebook_url',
+                    'apariencia.instagram_url',
+                    'apariencia.titulo_login',
                 ])
                 ->delete();
 
             $this->borrarLogo($tenant, 'logo_path');
             $this->borrarLogo($tenant, 'logo_mini_path');
-            $tenant->update(['logo_path' => null, 'logo_mini_path' => null]);
+            $this->borrarLogo($tenant, 'login_logo_path');
+            $this->borrarLogo($tenant, 'login_imagen_path');
+            $this->borrarLogo($tenant, 'logo_facturacion_path');
+            $this->borrarLogo($tenant, 'favicon_path');
+            $tenant->update([
+                'logo_path' => null,
+                'logo_mini_path' => null,
+                'login_logo_path' => null,
+                'login_imagen_path' => null,
+                'logo_facturacion_path' => null,
+                'favicon_path' => null,
+            ]);
         } else {
-            foreach (['color_primario', 'color_secundario', 'color_topbar'] as $campo) {
+            foreach (['color_primario', 'color_secundario', 'color_topbar', 'facebook_url', 'instagram_url', 'titulo_login'] as $campo) {
                 if (! empty($datos[$campo])) {
                     Configuracion::query()->updateOrCreate(
                         ['tenant_id' => $tenantId, 'clave' => "apariencia.{$campo}"],
@@ -65,6 +84,34 @@ class ConfiguracionController extends Controller
 
                 $ruta = $request->file('logo_mini')->store("logos/{$tenantId}", 'public');
                 $tenant->update(['logo_mini_path' => $ruta]);
+            }
+
+            if ($request->hasFile('login_logo')) {
+                $this->borrarLogo($tenant, 'login_logo_path');
+
+                $ruta = $request->file('login_logo')->store("logos/{$tenantId}", 'public');
+                $tenant->update(['login_logo_path' => $ruta]);
+            }
+
+            if ($request->hasFile('login_imagen')) {
+                $this->borrarLogo($tenant, 'login_imagen_path');
+
+                $ruta = $request->file('login_imagen')->store("logos/{$tenantId}", 'public');
+                $tenant->update(['login_imagen_path' => $ruta]);
+            }
+
+            if ($request->hasFile('logo_facturacion')) {
+                $this->borrarLogo($tenant, 'logo_facturacion_path');
+
+                $ruta = $request->file('logo_facturacion')->store("logos/{$tenantId}", 'public');
+                $tenant->update(['logo_facturacion_path' => $ruta]);
+            }
+
+            if ($request->hasFile('favicon')) {
+                $this->borrarLogo($tenant, 'favicon_path');
+
+                $ruta = $request->file('favicon')->store("logos/{$tenantId}", 'public');
+                $tenant->update(['favicon_path' => $ruta]);
             }
         }
 

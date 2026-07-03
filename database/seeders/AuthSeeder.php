@@ -8,6 +8,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Stancl\Tenancy\Database\Models\Domain;
 
 class AuthSeeder extends Seeder
 {
@@ -21,6 +22,8 @@ class AuthSeeder extends Seeder
     public const DEMO_ADMIN_EMAIL = 'demo@empiresystems.es';
 
     public const DEMO_ADMIN_PASSWORD = 'password';
+
+    public const DEMO_TENANT_DOMAIN = 'demo.test';
 
     public function run(): void
     {
@@ -41,6 +44,11 @@ class AuthSeeder extends Seeder
                 'regimen_impositivo' => RegimenImpositivo::Iva,
                 'activo' => true,
             ]
+        );
+
+        Domain::firstOrCreate(
+            ['domain' => self::DEMO_TENANT_DOMAIN],
+            ['tenant_id' => $tenant->id]
         );
 
         User::firstOrCreate(

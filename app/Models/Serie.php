@@ -43,4 +43,9 @@ class Serie extends Model
     {
         return $this->hasMany(Factura::class);
     }
+
+    public static function activaPorTipo(TipoFactura $tipo): Serie
+    {
+        return self::where('tipo', $tipo)->where('activa', true)->firstOrFail();
+    }
 }

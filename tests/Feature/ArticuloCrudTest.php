@@ -12,14 +12,6 @@ class ArticuloCrudTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function loginAs(User $user): void
-    {
-        $this->post('/login', [
-            'email' => $user->email,
-            'password' => 'secret123',
-        ]);
-    }
-
     // --- Régimen fiscal (FR-008/FR-009, Principio II) ---
 
     public function test_tenant_iva_rechaza_tipo_impositivo_de_igic(): void

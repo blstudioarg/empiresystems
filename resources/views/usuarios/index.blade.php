@@ -2,6 +2,29 @@
 
 @section('title', 'Usuarios')
 
+@push('styles')
+	<link href="{{ asset('vendor/datatables/css/jquery.dataTables.min.css') }}" rel="stylesheet">
+	<link href="{{ asset('vendor/datatables/responsive/responsive.css') }}" rel="stylesheet">
+	<link href="{{ asset('vendor/datatables/css/buttons.dataTables.min.css') }}" rel="stylesheet">
+	<style>
+		/* El template estiliza previous/next como flechas de 24px; con texto
+		   ("Anterior"/"Siguiente") se rompe en vertical. Dejamos que el ancho
+		   se ajuste al texto en una sola línea. */
+		#usuarios-table_wrapper .dataTables_paginate .paginate_button.previous,
+		#usuarios-table_wrapper .dataTables_paginate .paginate_button.next {
+			width: auto;
+			padding: 0 0.75rem;
+			white-space: nowrap;
+		}
+
+		/* style.css oculta .dt-buttons globalmente (display: none) salvo en .active-projects;
+		   lo reactivamos solo dentro de esta tabla para el botón nativo de colVis. */
+		#usuarios-table_wrapper .dt-buttons {
+			display: inline-block;
+		}
+	</style>
+@endpush
+
 @section('content')
 	<div class="content-body">
 		<div class="container-fluid">
@@ -13,7 +36,7 @@
 							<div class="d-flex justify-content-between align-items-center">
 								<div>
 									<h6 class="mb-1">Total de usuarios</h6>
-									<h3 class="mb-0">{{ $totales['total'] }}</h3>
+									<h3 class="mb-0" data-metric="total">0</h3>
 								</div>
 								<div>
 									<x-lordicon icon="people" size="50" trigger="hover" target=".card" />
@@ -28,7 +51,7 @@
 							<div class="d-flex justify-content-between align-items-center">
 								<div>
 									<h6 class="mb-1">Pendientes de aprobación</h6>
-									<h3 class="mb-0">{{ $totales['pendientes'] }}</h3>
+									<h3 class="mb-0" data-metric="pendientes">0</h3>
 								</div>
 								<div>
 									<x-lordicon icon="person" size="50" trigger="hover" target=".card" />
@@ -43,7 +66,7 @@
 							<div class="d-flex justify-content-between align-items-center">
 								<div>
 									<h6 class="mb-1">Usuarios activos</h6>
-									<h3 class="mb-0">{{ $totales['activos'] }}</h3>
+									<h3 class="mb-0" data-metric="activos">0</h3>
 								</div>
 								<div>
 									<x-lordicon icon="box" size="50" trigger="hover" target=".card" />
@@ -54,59 +77,31 @@
 				</div>
 			</div>
 
-			<div class="card">
-				<div class="card-header">
-					<h4 class="card-title">Usuarios del tenant</h4>
-				</div>
-				<div class="card-body">
-					<div class="table-responsive">
-						<table class="table table-responsive-md">
-							<thead>
-								<tr>
-									<th>Nombre</th>
-									<th>Email</th>
-									<th>Rol</th>
-									<th>Estado</th>
-									<th>Acciones</th>
-								</tr>
-							</thead>
-							<tbody>
-								@foreach ($usuarios as $usuario)
-									<tr>
-										<td>{{ $usuario->name }}</td>
-										<td>{{ $usuario->email }}</td>
-										<td>{{ $usuario->rol->value }}</td>
-										<td>
-											@if ($usuario->estado === \App\Enums\EstadoUsuario::Pendiente)
-												<span class="badge badge-warning">Pendiente</span>
-											@elseif ($usuario->estado === \App\Enums\EstadoUsuario::Aprobado)
-												<span class="badge badge-success">Aprobado</span>
-											@else
-												<span class="badge badge-danger">Rechazado</span>
-											@endif
-										</td>
-										<td>
-											@unless ($usuario->id === auth()->id())
-												@if ($usuario->estado !== \App\Enums\EstadoUsuario::Aprobado)
-													<form action="{{ route('usuarios.aprobar', $usuario) }}" method="POST" class="d-inline">
-														@csrf
-														@method('PATCH')
-														<button type="submit" class="btn btn-sm btn-success">Aprobar</button>
-													</form>
-												@endif
-												@if ($usuario->estado !== \App\Enums\EstadoUsuario::Rechazado)
-													<form action="{{ route('usuarios.rechazar', $usuario) }}" method="POST" class="d-inline">
-														@csrf
-														@method('PATCH')
-														<button type="submit" class="btn btn-sm btn-danger">Rechazar</button>
-													</form>
-												@endif
-											@endunless
-										</td>
-									</tr>
-								@endforeach
-							</tbody>
-						</table>
+			<div class="row">
+				<div class="col-xl-12">
+					<div class="card">
+						<div class="card-header border-0 flex-wrap">
+							<h4 class="card-title mb-0">Usuarios del tenant</h4>
+							<div class="d-flex gap-2 align-items-center">
+								<div id="usuarios-colvis"></div>
+							</div>
+						</div>
+						<div class="card-body pt-0">
+							<div class="table-responsive">
+								<table id="usuarios-table" class="display responsive nowrap w-100">
+									<thead>
+										<tr>
+											<th>Nombre</th>
+											<th>Email</th>
+											<th>Rol</th>
+											<th>Estado</th>
+											<th>Acciones</th>
+										</tr>
+									</thead>
+									<tbody id="usuarios-table-body"></tbody>
+								</table>
+							</div>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -114,3 +109,16 @@
 		</div>
 	</div>
 @endsection
+
+@push('scripts')
+	<script>
+		window.usuariosState = {
+			csrfToken: @json(csrf_token()),
+		};
+	</script>
+	<script src="{{ asset('vendor/datatables/js/jquery.dataTables.min.js') }}"></script>
+	<script src="{{ asset('vendor/datatables/responsive/responsive.js') }}"></script>
+	<script src="{{ asset('vendor/datatables/js/dataTables.buttons.min.js') }}"></script>
+	<script src="{{ asset('vendor/datatables/js/buttons.colVis.min.js') }}"></script>
+	<script src="{{ asset('js/plugins-init/usuarios-datatable.init.js') }}"></script>
+@endpush
