@@ -2,19 +2,23 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Enums\EstadoUsuario;
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
 
 class LoginController extends Controller
 {
-    public function create(): \Illuminate\View\View
+    public function create(): View
     {
         return view('auth.login');
     }
@@ -56,6 +60,18 @@ class LoginController extends Controller
         if (! $attempted) {
             RateLimiter::hit($throttleKey, 60);
 
+            $pendienteORechazado = User::where('email', $credentials['email'])
+                ->whereIn('estado', [EstadoUsuario::Pendiente, EstadoUsuario::Rechazado])
+                ->first();
+
+            if ($pendienteORechazado && Hash::check($credentials['password'], $pendienteORechazado->password)) {
+                throw ValidationException::withMessages([
+                    'email' => $pendienteORechazado->estado === EstadoUsuario::Pendiente
+                        ? __('Tu cuenta aún no está aprobada.')
+                        : __('Tu cuenta no está habilitada.'),
+                ]);
+            }
+
             throw ValidationException::withMessages([
                 'email' => __('Estas credenciales no coinciden con nuestros registros.'),
             ]);
@@ -77,7 +93,7 @@ class LoginController extends Controller
         return redirect()->route('login');
     }
 
-    private function tenantIsUsable(\App\Models\User $user): bool
+    private function tenantIsUsable(User $user): bool
     {
         if (! $user->tenant_id) {
             return true;

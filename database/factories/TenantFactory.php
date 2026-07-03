@@ -21,6 +21,7 @@ class TenantFactory extends Factory
             'nombre_comercial' => fake()->unique()->company(),
             'razon_social' => fake()->company().' S.L.',
             'nif' => fake()->unique()->numerify('B########'),
+            'regimen_impositivo' => 'iva',
             'email' => fake()->unique()->companyEmail(),
             'activo' => true,
         ];

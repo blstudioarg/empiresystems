@@ -54,6 +54,9 @@
 								<button type="submit" class="btn btn-primary">Iniciar sesión</button>
 							</div>
 						</form>
+						<div class="text-center">
+							<p>¿No tenés cuenta? <a href="{{ route('register.create') }}">Crear cuenta</a></p>
+						</div>
 					</div>
 				</div>
 				<div class="col-xl-6 col-lg-6">

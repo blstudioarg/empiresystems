@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'lordicon' => [
+        'token' => env('LORDICON_API_TOKEN'),
+    ],
+
 ];

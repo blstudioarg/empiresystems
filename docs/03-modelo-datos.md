@@ -57,6 +57,13 @@ Se añade `tenant_id` (fk, nullable solo para `super_admin`) + `rol` (`super_adm
 `usuario`) + `activo` (boolean; en `false` bloquea el login). El `super_admin` gestiona todos los
 tenants y no pertenece a ninguno (`tenant_id` null).
 
+Registro y aprobación: `estado` (enum `pendiente`/`aprobado`/`rechazado`, default `pendiente`) +
+`aprobado_por` (fk nullable a `users`) + `aprobado_en` (timestamp nullable). El auto-registro
+público crea la cuenta en `pendiente` con `activo=false`; cualquier usuario aprobado del mismo
+tenant puede aprobar o rechazar desde `/usuarios`, lo que ajusta `activo` en consecuencia (tabla
+de correspondencia estado↔activo en `specs/006-registro-usuarios/data-model.md`). Índice
+`(tenant_id, estado)`.
+
 > **Nota:** por ahora **no se modela el billing del SaaS** (planes, suscripciones, cobro a los tenants). Los precios son flexibles y se gestionan fuera del sistema. Ningún registro indica qué plan o suscripción tiene un tenant.
 
 ---
@@ -76,8 +83,6 @@ Receptor de las facturas.
 | direccion, cp, ciudad, provincia, pais | varchar | pais default 'ES' |
 | email, telefono | varchar | |
 | aplica_recargo_equivalencia | boolean | minorista en recargo |
-| irpf_defecto | decimal(5,2) | nullable |
-| tipo_impositivo_defecto | decimal(5,2) | nullable (% IVA/IGIC/IPSI habitual del cliente) |
 | notas | text | |
 | softDeletes, timestamps | | |
 
@@ -113,6 +118,8 @@ Cabecera de factura. **Núcleo del sistema.**
 | tipo | enum | `ordinaria`, `simplificada`, `rectificativa` |
 | estado | enum | `borrador`, `emitida`, `pagada`, `vencida`, `anulada`, `rectificada` |
 | cliente_id | fk → clientes | nullable en simplificada |
+| cliente_nombre, cliente_razon_social, cliente_nif | varchar | **snapshot** del receptor, precargado desde `clientes` al elegirlo pero editable y propio de la factura (no se re-sincroniza si el cliente cambia después) |
+| cliente_direccion, cliente_cp, cliente_ciudad, cliente_provincia, cliente_pais | varchar | ídem; domicilio del receptor congelado en la factura (pais default 'ES') |
 | fecha_expedicion | date | |
 | fecha_operacion | date | nullable si = expedición |
 | fecha_vencimiento | date | nullable |

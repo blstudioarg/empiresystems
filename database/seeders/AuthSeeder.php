@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Enums\RegimenImpositivo;
 use App\Enums\UserRole;
 use App\Models\Tenant;
 use App\Models\User;
@@ -37,6 +38,7 @@ class AuthSeeder extends Seeder
         $tenant = Tenant::firstOrCreate(
             ['nombre_comercial' => 'Empresa Demo SL'],
             [
+                'regimen_impositivo' => RegimenImpositivo::Iva,
                 'activo' => true,
             ]
         );

@@ -13,9 +13,19 @@
 	<link href="{{ asset('icons/fontawesome/css/all.min.css') }}" rel="stylesheet">
 	<link href="{{ asset('icons/themify-icons/css/themify-icons.css') }}" rel="stylesheet">
 	<link href="{{ asset('css/perfect-scrollbar.css') }}" rel="stylesheet">
-	<link href="{{ asset('css/style.css') }}" rel="stylesheet">
+	<link href="{{ asset('vendor/toastr/css/toastr.min.css') }}" rel="stylesheet">
 
+	{{-- CSS de plugins específicos de cada vista (@push('styles')): DEBE cargar antes que
+	     style.css. style.css ya trae sus propias reglas de theming para varios plugins del
+	     banco (p. ej. .asColorPicker-trigger) y necesita ser la última hoja con esos selectores
+	     para que gane en el cascade — si un plugin se carga después, su CSS base pisa el theming
+	     del template aunque tenga la misma especificidad. --}}
 	@stack('styles')
+
+	<link href="{{ asset('css/style.css') }}" rel="stylesheet">
+	<link href="{{ asset('css/app-overrides.css') }}" rel="stylesheet">
+
+	@include('partials.apariencia-tenant')
 </head>
 
 <body>
@@ -31,12 +41,23 @@
 		@include('partials.footer')
 	</div>
 
+	@include('partials.confirm-delete-modal')
+
 	{{-- Assets base del template NexaDash (siempre cargados) --}}
 	<script src="{{ asset('vendor/global/global.min.js') }}"></script>
 	<script src="{{ asset('vendor/bootstrap-select/dist/js/bootstrap-select.min.js') }}"></script>
 	<script src="{{ asset('js/deznav-init.js') }}"></script>
 	<script src="{{ asset('js/custom.js') }}"></script>
 	<script src="{{ asset('js/theme-persist.js') }}"></script>
+	<script src="{{ asset('vendor/toastr/js/toastr.min.js') }}"></script>
+	<script src="{{ asset('js/toastr-config.js') }}"></script>
+	<script src="{{ asset('js/confirm-delete.js') }}"></script>
+
+	{{-- Player de Lordicon (cuenta propia): renderiza <lord-icon> a partir de los JSON
+	     descargados con `php artisan lordicon:get` y cacheados en public/icons/lordicon/. --}}
+	<script src="https://cdn.lordicon.com/ritcuqlt.js"></script>
+
+	@include('partials.flash-toastr')
 
 	@stack('scripts')
 </body>

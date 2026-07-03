@@ -1,0 +1,128 @@
+{
+    "system/regular/1": {
+        "family": "system",
+        "style": "regular",
+        "index": 1,
+        "name": "share",
+        "title": "Share",
+        "premium": false,
+        "file": "icons/lordicon/system-regular-1-share.json"
+    },
+    "system/regular/22": {
+        "family": "system",
+        "style": "regular",
+        "index": 22,
+        "name": "build",
+        "title": "Build",
+        "premium": false,
+        "file": "icons/lordicon/system-regular-22-build.json"
+    },
+    "system/regular/28": {
+        "family": "system",
+        "style": "regular",
+        "index": 28,
+        "name": "info",
+        "title": "Info",
+        "premium": false,
+        "file": "icons/lordicon/system-regular-28-info.json"
+    },
+    "system/regular/40": {
+        "family": "system",
+        "style": "regular",
+        "index": 40,
+        "name": "add-card",
+        "title": "Add Card",
+        "premium": false,
+        "file": "icons/lordicon/system-regular-40-add-card.json"
+    },
+    "system/regular/48": {
+        "family": "system",
+        "style": "regular",
+        "index": 48,
+        "name": "favorite-heart",
+        "title": "Favorite Heart",
+        "premium": false,
+        "file": "icons/lordicon/system-regular-48-favorite-heart.json"
+    },
+    "system/regular/49": {
+        "family": "system",
+        "style": "regular",
+        "index": 49,
+        "name": "upload-file",
+        "title": "Upload File",
+        "premium": false,
+        "file": "icons/lordicon/system-regular-49-upload-file.json"
+    },
+    "system/regular/178": {
+        "family": "system",
+        "style": "regular",
+        "index": 178,
+        "name": "work",
+        "title": "Work",
+        "premium": false,
+        "file": "icons/lordicon/system-regular-178-work.json"
+    },
+    "wired/outline/1": {
+        "family": "wired",
+        "style": "outline",
+        "index": 1,
+        "name": "cloud",
+        "title": "Cloud",
+        "premium": false,
+        "file": "icons/lordicon/wired-outline-1-cloud.json"
+    },
+    "wired/outline/49": {
+        "family": "wired",
+        "style": "outline",
+        "index": 49,
+        "name": "plus-circle",
+        "title": "Plus Circle",
+        "premium": false,
+        "file": "icons/lordicon/wired-outline-49-plus-circle.json"
+    },
+    "wired/outline/50": {
+        "family": "wired",
+        "style": "outline",
+        "index": 50,
+        "name": "minus-circle",
+        "title": "Minus Circle",
+        "premium": false,
+        "file": "icons/lordicon/wired-outline-50-minus-circle.json"
+    },
+    "wired/outline/153": {
+        "family": "wired",
+        "style": "outline",
+        "index": 153,
+        "name": "bar-chart",
+        "title": "Bar Chart",
+        "premium": false,
+        "file": "icons/lordicon/wired-outline-153-bar-chart.json"
+    },
+    "wired/outline/1910": {
+        "family": "wired",
+        "style": "outline",
+        "index": 1910,
+        "name": "beverages",
+        "title": "Beverages",
+        "premium": false,
+        "file": "icons/lordicon/wired-outline-1910-beverages.json"
+    },
+    "box": {
+        "name": "box",
+        "title": "Box",
+        "premium": false,
+        "file": "icons/lordicon/box.json"
+    },
+    "producto": {
+        "name": "producto",
+        "title": "Producto",
+        "premium": false,
+        "file": "icons/lordicon/producto.json"
+    },
+    "servicio": {
+        "name": "servicio",
+        "title": "Servicio",
+        "premium": false,
+        "file": "icons/lordicon/servicio.json"
+    }
+}

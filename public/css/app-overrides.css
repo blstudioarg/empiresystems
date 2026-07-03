@@ -1,0 +1,206 @@
+/* Overrides puntuales sobre style.css (NexaDash). Ver docs/04-front-guidelines.md. */
+
+/* El padding horizontal y superior del content-body debe ser igual al padding interno de las
+   cards (--bs-card-spacer-x: 1rem), no el 1.875rem por defecto del template. Si no, el margen
+   entre el borde de la página y las cards se ve mayor que el padding interno de cada card. */
+.content-body .container-fluid,
+.content-body .container-sm,
+.content-body .container-md,
+.content-body .container-lg,
+.content-body .container-xl,
+.content-body .container-xxl {
+	padding-top: 1rem;
+	padding-right: 1rem;
+	padding-left: 1rem;
+}
+
+/* Formularios "sm" por defecto: inputs, selects y botones nacen pequeños sin tener que
+   agregar .form-control-sm / .form-select-sm / .btn-sm a mano en cada vista. Los valores
+   copian los de esas clases -sm del propio style.css para no inventar una escala nueva.
+   Van con !important porque style.css redefine .form-control y .btn más abajo en el propio
+   archivo con `height`/`padding` en valores literales (no basados en variables), pisando
+   cualquier override que no use !important aunque se cargue después. */
+.form-control,
+.form-select {
+	height: calc(1.5em + 0.5rem + calc(var(--bs-border-width) * 2)) !important;
+	min-height: calc(1.5em + 0.5rem + calc(var(--bs-border-width) * 2)) !important;
+	padding: 0.25rem 0.5rem !important;
+	font-size: 0.76563rem !important;
+	border-radius: var(--bs-border-radius-sm) !important;
+}
+
+.form-select {
+	padding-top: 0.25rem !important;
+	padding-bottom: 0.25rem !important;
+	padding-left: 0.5rem !important;
+}
+
+/* Controles nativos de DataTables ("Mostrar _MENU_ registros" / "Buscar:"): el <select> y el
+   <input> que genera el propio plugin no llevan clase .form-control/.form-select (no vendorizamos
+   la integración datatables.bootstrap5), así que no heredan el override "sm" de arriba y quedan
+   con el tamaño nativo del navegador, grande y desalineado del resto de inputs "sm" de la UI.
+   Replicamos a mano los mismos valores para que se vean consistentes en cualquier tabla. */
+.dataTables_wrapper .dataTables_length select,
+.dataTables_wrapper .dataTables_filter input {
+	height: calc(1.5em + 0.5rem + calc(var(--bs-border-width) * 2));
+	min-height: calc(1.5em + 0.5rem + calc(var(--bs-border-width) * 2));
+	padding: 0.25rem 0.5rem;
+	font-size: 0.76563rem;
+	border-radius: var(--bs-border-radius-sm);
+	border: var(--bs-border-width) solid var(--bs-border-color, #e4e4e4);
+}
+
+/* style.css fija line-height: 2.375rem para inputs type=file (pensado para su altura por
+   defecto, 45px); con la altura "sm" de arriba ese line-height alto empuja el texto del
+   pseudo-botón "Seleccionar archivo" fuera del input y lo solapa con lo que venga debajo. */
+.form-control[type="file"] {
+	line-height: 1.5 !important;
+	padding-top: 0.25rem !important;
+	padding-bottom: 0.25rem !important;
+}
+
+.btn,
+.btn-group > .btn {
+	padding: 0.25rem 0.5rem !important;
+	font-size: 0.76563rem !important;
+	border-radius: var(--bs-border-radius-sm) !important;
+}
+
+.form-label {
+	font-size: 0.8125rem;
+	margin-bottom: 0.25rem;
+}
+
+/* Selects potenciados por bootstrap-select (bootstrap-select.min.js) no heredan de
+   .form-select/.form-control; su tamaño lo controla .bootstrap-select .dropdown-toggle. */
+.bootstrap-select .dropdown-toggle {
+	min-height: 2.5rem;
+	padding: 0.25rem 1.563rem;
+	font-size: 0.76563rem;
+}
+
+/* Modales: style.css redefine .modal-header/.modal-body/.modal-footer más abajo en el propio
+   archivo con 1.875rem de padding (mismo problema que .form-control/.btn de arriba, valores
+   literales que pisan cualquier override sin !important). Con controles "sm" adentro, ese
+   padding queda desproporcionado — lo igualamos al 1rem del resto de la UI. */
+.modal-header,
+.modal-body,
+.modal-footer {
+	padding: 1rem !important;
+}
+
+/* El gutter de Bootstrap por defecto (25px, ver .row en style.css) deja mucho aire entre
+   columnas/filas de cards y de formularios, en cualquier .row del sitio, no solo en modales.
+   Lo bajamos a 1rem (equivalente a `g-3`) en todos lados, para no depender de que cada vista
+   nueva se acuerde de agregar la clase `g-3` a mano. --bs-gutter-y también, así las filas que
+   wrappean (ej. las cards de métricas en 2 líneas en mobile) quedan separadas por lo mismo. */
+.row {
+	--bs-gutter-x: 1rem;
+	--bs-gutter-y: 1rem;
+}
+
+/* .card trae su propio `margin-bottom` (más abajo en style.css, con el mismo patrón de valores
+   literales que .form-control/.btn: 1.563rem, o sea 25px) para separar cards que están una
+   debajo de la otra dentro de la misma columna, y usa `height: calc(100% - 25px)` para que,
+   dentro de una fila de cards de igual altura, el margin no rompa el alto visual entre ellas.
+   Se ve como "mucho aire" porque no está alineado con el resto del espaciado (1rem). Bajamos
+   ambos valores juntos — si se cambia uno hay que cambiar el otro o las cards de una misma fila
+   quedan de alturas distintas. */
+.card {
+	margin-bottom: 1rem !important;
+	height: calc(100% - 1rem) !important;
+}
+
+/* Logo del tenant en el nav-header: style.css solo oculta .brand-title cuando el sidebar
+   está colapsado (#main-wrapper.menu-toggle), pero deja .logo-abbr visible siempre a
+   propósito, porque el combo por defecto del template es icono+texto conviviendo en el
+   menú expandido. Con logos subidos por el tenant (uno para expandido, otro para
+   comprimido) ese comportamiento se ve como "dos logos a la vez"; se quiere exclusivo:
+   solo <img>.logo-abbr (el mini) cuando está colapsado, solo <img>.brand-title (el full)
+   cuando está expandido. No toca los SVG por defecto (siguen combinados como diseñó el
+   template) porque el selector apunta solo a <img>. */
+#main-wrapper:not(.menu-toggle) .nav-header .brand-logo img.logo-abbr {
+	display: none;
+}
+
+/* .nav-header .brand-logo trae justify-content: flex-start (con padding lateral) para el
+   combo icono+texto por defecto, pensado para que el texto arranque pegado al icono. Con un
+   único logo (imagen) ocupando todo el ancho del nav-header, ese layout lo deja pegado a la
+   izquierda en vez de centrado. */
+.nav-header .brand-logo {
+	justify-content: center;
+}
+
+/* style.css fija margin-left: 0.6375rem en .brand-title, pensado para separarlo del icono
+   .logo-abbr en el combo por defecto. Con el logo del tenant como imagen única y centrada,
+   ese margen la descentra. */
+.nav-header .brand-title {
+	margin-left: 0;
+}
+
+/* Menú lateral: la fuente de los .nav-text (14px, ver .deznav .metismenu > li > a en style.css)
+   queda un poco chica al lado de los lordicon de 30x30 de resources/views/partials/sidebar.blade.php. */
+.deznav .metismenu > li > a .nav-text {
+	font-size: 0.9375rem;
+}
+
+/* Bloque de usuario (foto + nombre + rol) en la cabecera del sidebar, con botón de cámara
+   superpuesto para cambiar la foto sin salir del menú (ver partials/sidebar.blade.php). */
+.sidebar-user-card {
+	padding: 1.5rem 1rem 1rem;
+}
+
+.sidebar-user-avatar {
+	position: relative;
+	display: inline-block;
+	width: 80px;
+	height: 80px;
+}
+
+.sidebar-user-avatar img {
+	width: 80px;
+	height: 80px;
+	border-radius: 50%;
+	object-fit: cover;
+	border: 3px solid var(--rgba-primary-1, #fff);
+}
+
+.sidebar-user-avatar-edit {
+	position: absolute;
+	right: 0;
+	bottom: 0;
+	width: 26px;
+	height: 26px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: var(--primary);
+	color: #fff;
+	border-radius: 50%;
+	border: 2px solid #fff;
+	cursor: pointer;
+	font-size: 0.75rem;
+	margin: 0;
+}
+
+.sidebar-user-name {
+	margin-top: 0.75rem;
+	font-weight: 600;
+	font-size: 0.9375rem;
+}
+
+.sidebar-user-role {
+	font-size: 0.8125rem;
+	color: #6f767e;
+}
+
+/* Ítem activo del menú lateral (li.mm-active, clase que metismenu asigna al link de la
+   pestaña actual). El fondo del link activo es transparente por defecto (igual que el resto
+   de .deznav, que es blanco): una sombra sola no se nota sin relleno propio contra el que
+   contrastar, así que se le da un fondo blanco explícito + sombra para que la pill quede
+   "levantada" sobre el sidebar en vez de plana. */
+.deznav .metismenu > li.mm-active > a,
+.deznav .metismenu > li > a:hover {
+	background-color: #fff;
+	box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+}

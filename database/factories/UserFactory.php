@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\EstadoUsuario;
 use App\Enums\UserRole;
 use App\Models\Tenant;
 use App\Models\User;
@@ -35,6 +36,7 @@ class UserFactory extends Factory
             'tenant_id' => Tenant::factory(),
             'rol' => UserRole::Usuario,
             'activo' => true,
+            'estado' => EstadoUsuario::Aprobado,
         ];
     }
 
@@ -75,6 +77,28 @@ class UserFactory extends Factory
     public function inactive(): static
     {
         return $this->state(fn (array $attributes) => [
+            'activo' => false,
+        ]);
+    }
+
+    /**
+     * Solicitante pendiente de aprobación.
+     */
+    public function pendiente(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'estado' => EstadoUsuario::Pendiente,
+            'activo' => false,
+        ]);
+    }
+
+    /**
+     * Solicitud rechazada.
+     */
+    public function rechazado(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'estado' => EstadoUsuario::Rechazado,
             'activo' => false,
         ]);
     }
