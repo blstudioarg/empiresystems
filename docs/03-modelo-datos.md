@@ -9,18 +9,24 @@
 ```
 tenants ──< users
 tenants ──< clientes
+tenants ──< cuentas_bancarias
+bancos ──< cuentas_bancarias
 tenants ──< series ──< facturas
 tenants ──< facturas ──< factura_lineas
                       ├──< factura_impuestos   (desglose por tipo)
-                      ├──< pagos                (Fase 2)
+                      ├──< pagos                (010-pagos-facturas)
                       └──< factura_eventos      (log Verifactu)
 clientes ──< facturas
+cuentas_bancarias ──(opcional, solo forma_pago=transferencia)── facturas
 facturas ──< facturas   (rectificativa → factura_rectificada_id)
 articulos ──(opcional)── factura_lineas
-articulos ──< movimientos_stock   (Fase 2 — kardex, solo producto con stock)
-facturas ──< movimientos_stock    (Fase 2 — salida al emitir)
-proveedores ──< compras ──< compra_lineas    (Fase 2)
-compras ──< movimientos_stock     (Fase 2 — entrada al confirmar)
+articulos ──< movimientos_stock   (kardex, solo producto con stock)
+facturas ──< movimientos_stock    (salida al emitir)
+proveedores ──< compras ──< compra_lineas
+compras ──< movimientos_stock     (entrada al confirmar)
+tenants ──< carpetas ──< carpetas   (árbol autorreferenciado, gestor documental)
+carpetas ──< archivos
+users ──< archivos                (subido_por, opcional)
 ```
 
 ---
@@ -73,6 +79,12 @@ tenant puede aprobar o rechazar desde `/usuarios`, lo que ajusta `activo` en con
 de correspondencia estado↔activo en `specs/006-registro-usuarios/data-model.md`). Índice
 `(tenant_id, estado)`.
 
+Segunda vía de alta (sin flujo de aprobación): al crear un tenant, el super admin indica el
+email y la contraseña de un administrador inicial en el mismo formulario; ese `User` se crea
+junto con el tenant, ya con `rol=admin`, `estado=aprobado`, `activo=true` (evita el problema
+huevo-y-gallina de un tenant nuevo sin nadie que apruebe al primer usuario). Ver
+`specs/020-tenant-admin-inicial/data-model.md`.
+
 > **Nota:** por ahora **no se modela el billing del SaaS** (planes, suscripciones, cobro a los tenants). Los precios son flexibles y se gestionan fuera del sistema. Ningún registro indica qué plan o suscripción tiene un tenant.
 
 ### `domains` (feature 007-super-admin-tenants) — dominio de cada tenant
@@ -89,6 +101,25 @@ se resuelve contra esta tabla para fijar el tenant activo (`docs/01-arquitectura
 Relación `Tenant hasMany Domain`, restringida a nivel de aplicación a **un** dominio por tenant
 (helper `Tenant::dominio()`). El panel `super_admin` (`app/Http/Controllers/SuperAdmin/TenantController.php`)
 gestiona `tenants` + su `domains` como una unidad (alta/edición transaccional).
+
+### `bancos` — catálogo de entidades bancarias (por tenant)
+Catálogo **tenant-dependiente**: cada tenant gestiona su propia lista de bancos (mismo patrón que
+`unidades`). Pasa por el global scope de tenant vía `BelongsToTenant`. El `BancoSeeder` solo siembra
+el catálogo de partida (principales entidades que operan en España) para el **primer tenant**; el
+resto de tenants parten vacíos y crean sus propios bancos desde la app.
+
+| Campo | Tipo | Notas |
+|-------|------|-------|
+| id | bigint PK | |
+| tenant_id | fk → tenants | global scope de tenant |
+| nombre | varchar | ej. `BBVA`, `CaixaBank`, `Banco Santander`; único por `(tenant_id, nombre)` |
+| timestamps | | |
+
+> Se gestiona con el `<x-banco-select>`: un Select2 dinámico (cargado por AJAX desde `GET /bancos`)
+> con botones inline de alta/edición/borrado (CRUD completo vía `bancos.store/update/destroy`,
+> mismo patrón que `<x-unidad-select>`), usado al dar de alta o editar una `cuenta_bancaria` (ver
+> Capa TENANT). El `banco_id` de una cuenta se valida acotado al tenant activo. Un banco no se
+> puede borrar si alguna cuenta lo referencia (FK `RESTRICT`).
 
 ---
 
@@ -129,6 +160,32 @@ Series de numeración. Numeración correlativa sin huecos por serie.
 
 Índice único: `(tenant_id, codigo, ejercicio)`.
 
+### `cuentas_bancarias` — cuentas del tenant para cobrar por transferencia
+Un tenant puede dar de alta una o varias cuentas bancarias propias desde la vista de
+configuración (alta y baja lógica, sin tocar código). Al crear una factura con `forma_pago =
+transferencia`, el usuario elige una de estas cuentas para mostrarla en el PDF.
+
+| Campo | Tipo | Notas |
+|-------|------|-------|
+| id | bigint PK | |
+| tenant_id | fk | índice |
+| banco_id | fk → bancos | |
+| alias | varchar | nombre identificativo para el usuario, ej. "Cuenta principal" |
+| iban | varchar(34) | validado por formato (ISO 13616), no contra el banco real |
+| titular | varchar | nombre/razón social del titular (normalmente el propio tenant) |
+| activa | boolean | default `true`; controla si aparece en el selector de facturas nuevas |
+| softDeletes, timestamps | | |
+
+Índices: `(tenant_id, activa)`.
+
+> **Baja lógica, no física:** eliminar una cuenta desde configuración es un soft delete /
+> desactivación (`activa = false` + `deleted_at`), nunca un borrado físico — evita romper las
+> facturas ya creadas que la referencian (ver snapshot en `facturas` más abajo).
+>
+> **Fuera de alcance:** IBAN/mandato SEPA del **cliente** para domiciliación bancaria (distinto
+> caso de uso: cobrar de la cuenta del cliente, no mostrar la del tenant); cuenta bancaria por
+> defecto/predeterminada; múltiples divisas por cuenta; conciliación o integración bancaria real.
+
 ### `facturas`
 Cabecera de factura. **Núcleo del sistema.**
 
@@ -151,6 +208,9 @@ Cabecera de factura. **Núcleo del sistema.**
 | moneda | char(3) | default `EUR` |
 | regimen_impositivo | enum | `iva` / `igic` / `ipsi` — **congelado al emitir** (copiado del tenant/cliente) |
 | aplica_recargo | boolean | si la factura lleva recargo de equivalencia (copiado del cliente/tenant al emitir) |
+| **Cuenta bancaria (solo si `forma_pago = transferencia`):** | | |
+| cuenta_bancaria_id | fk → cuentas_bancarias | nullable; referencia informativa elegida al crear la factura |
+| cuenta_bancaria_banco, cuenta_bancaria_iban, cuenta_bancaria_titular | varchar | **snapshot** de la cuenta elegida, precargado al crear la factura y congelado igual que los campos `cliente_*` — editar o dar de baja la cuenta en configuración no afecta a facturas ya creadas |
 | **Totales (calculados desde líneas):** | | |
 | base_total | decimal(12,2) | suma de bases |
 | cuota_impuesto_total | decimal(12,2) | cuota del impuesto indirecto (IVA/IGIC/IPSI según régimen) |
@@ -179,6 +239,30 @@ Cabecera de factura. **Núcleo del sistema.**
 Índices: `(tenant_id, serie_id, numero)` único, `(tenant_id, cliente_id)`, `(tenant_id, estado)`, `(tenant_id, fecha_expedicion)`.
 
 > **Regla de inmutabilidad:** una factura `emitida` no se edita ni se borra (Verifactu). Cualquier corrección se hace con una **rectificativa**. En `borrador` sí es editable.
+
+> **Facturas simplificadas — implementado en la feature 012 (módulo POS):**
+> el `tipo = simplificada` vive en su propio módulo **POS** (`pos.*`), separado del de facturas
+> ordinarias pero sobre la misma tabla `facturas`. Decisiones tomadas:
+> - **Serie propia "S"** (mismo patrón que "R"), numeración correlativa con reinicio anual
+>   reutilizando `NumeradorFacturas`. **Corrección 2026-07-04:** "F"/"R"/"S" se siembran ahora las
+>   tres automáticamente en `Tenant::booted()` (`Tenant::seriesPorDefecto()`) para todo tenant
+>   nuevo; antes solo se creaba "F" ahí y "R"/"S" dependían de `SerieSeeder` (que solo corría una
+>   vez para el tenant demo), dejando a cualquier tenant real sin esas series y provocando un
+>   `ModelNotFoundException` al primer intento de rectificar o emitir un ticket. `SerieSeeder` sigue
+>   existiendo como red de seguridad idempotente para datos anteriores a la corrección.
+> - **Receptor opcional**: la variante simple deja `cliente_id` y el snapshot `cliente_*` vacíos; la
+>   **cualificada** los completa (NIF+domicilio). Se hizo `facturas.cliente_id` nullable vía migración
+>   `2026_07_04_120000_make_cliente_id_nullable_on_facturas` (el snapshot `cliente_*` ya lo era).
+> - **Tope de importe con bloqueo duro**: 400 € por defecto, 3.000 € si el tenant marca el flag de
+>   configuración `factura.simplificada_tope_ampliado` (`App\Support\TopeSimplificada`). Se valida en
+>   backend en `App\Services\RegistroTicket` sobre el importe bruto (impuestos incl.).
+> - **PDF** del ticket en 80 mm (`facturas/ticket-80mm.blade.php`) o A4 (reutiliza `facturas/pdf`),
+>   elegible al ver/descargar (`pos.pdf?formato=ticket|a4`).
+> - El `FacturaController::index` excluye las simplificadas; el listado POS sólo muestra `tipo = simplificada`.
+>
+> **Fuera de alcance (012):** la "rectificativa en formato simplificado" (la normativa permite
+> simplificada sin tope cuando el motivo es rectificar) sigue sin soportarse — `simplificada` y
+> `rectificativa` siguen siendo valores mutuamente excluyentes de `tipo`.
 
 ### `factura_lineas`
 Detalle de conceptos.
@@ -215,8 +299,9 @@ Detalle de conceptos.
 | base_imponible | decimal(12,2) | base sujeta a ese tipo |
 | cuota | decimal(12,2) | |
 
-### `pagos` — (Fase 2, no implementada)
-Cobros aplicados a facturas (soporta pagos parciales).
+### `pagos` — implementada (feature 010-pagos-facturas)
+Cobros aplicados a facturas **emitidas** (soporta pagos parciales). Sin pasarelas ni conciliación
+bancaria (fuera de alcance).
 
 | Campo | Tipo | Notas |
 |-------|------|-------|
@@ -224,10 +309,16 @@ Cobros aplicados a facturas (soporta pagos parciales).
 | tenant_id | fk | |
 | factura_id | fk | |
 | fecha | date | |
-| importe | decimal(12,2) | |
+| importe | decimal(12,2) | > 0 |
 | metodo | enum | igual que forma_pago |
-| referencia | varchar | nullable |
+| referencia | varchar(100) | nullable |
+| anulado_at | dateTime | nullable; `NULL` = vigente, con valor = anulado (soft, sin `deleted_at`) |
 | timestamps | | |
+
+El **estado de cobro** (`pendiente` / `parcial` / `cobrada`) y el **saldo pendiente** son
+**derivados**, no columnas: se calculan en `Factura::estadoCobro()` / `saldoPendiente()` a partir de
+la suma de `pagos` vigentes (`anulado_at IS NULL`), comparando en céntimos para evitar residuos de
+redondeo. La columna `Factura::estado` (fiscal) no cambia al cobrarse.
 
 ### `factura_eventos`
 **Registro de eventos** exigido por Verifactu (log inalterable de operaciones del SIF).
@@ -237,10 +328,15 @@ Cobros aplicados a facturas (soporta pagos parciales).
 | id | bigint PK | |
 | tenant_id | fk | |
 | factura_id | fk | nullable (eventos de sistema) |
-| tipo_evento | varchar | `alta`, `anulacion`, `rectificacion`, `envio_aeat`, `error`… |
+| tipo_evento | varchar | `alta`, `anulacion`, `rectificacion`, `envio_aeat`, `envio_email`, `error`… |
 | detalle | json | payload del evento |
-| huella | varchar(64) | hash del evento |
+| huella | varchar(64) | hash del evento; `null` en eventos que no participan del encadenamiento Verifactu (p. ej. `envio_email`) |
 | ocurrido_at | datetime | |
+
+**`tipo_evento = 'envio_email'`** (envío de factura por correo, feature `017-envio-facturas-email`):
+`detalle` = `{ destinatario, resultado: 'ok'|'error', error? }`. Una factura se considera "enviada"
+(`Factura::fueEnviada()`) si existe ≥1 evento de este tipo con `resultado = 'ok'`; el reenvío añade un
+evento nuevo sin borrar los anteriores (log append-only, igual que el resto de `factura_eventos`).
 
 ### `articulos` — catálogo unificado (producto o servicio)
 Catálogo del que se pueden traer líneas de factura. Un artículo puede ser un **producto** (bien físico, puede llevar stock) o un **servicio** (mano de obra, mantenimiento… nunca lleva stock). El catálogo es opcional: siempre se puede facturar un concepto libre sin artículo asociado.
@@ -268,10 +364,8 @@ Catálogo del que se pueden traer líneas de factura. Un artículo puede ser un 
 
 > **Adaptabilidad:** el `tipo servicio` cubre mantenimiento, horas de trabajo, consultoría, etc. — sin stock. El `tipo producto` con `gestion_stock=false` cubre productos que no querés inventariar. Solo `producto` + `gestion_stock=true` mueve inventario.
 
-### `movimientos_stock` — kardex de inventario (Fase 2, no implementada)
-Historial de entradas/salidas de stock. Solo aplica a artículos `producto` con `gestion_stock=true`. Da trazabilidad y permite recalcular/auditar el stock.
-
-> **Estado actual:** `articulos` ya tiene `gestion_stock`/`stock_actual`/`stock_minimo` en base de datos, pero la emisión de facturas (`app/Services/EmisorFacturas.php`) todavía no descuenta stock ni escribe en esta tabla — las reglas de abajo son el diseño previsto, no el comportamiento actual.
+### `movimientos_stock` — kardex de inventario (implementado)
+Historial de entradas/salidas de stock. Solo aplica a artículos `producto` con `gestion_stock=true`. Da trazabilidad y permite recalcular/auditar el stock. Ledger append-only: el único punto de escritura es `App\Services\RegistroMovimientoStock`.
 
 | Campo | Tipo | Notas |
 |-------|------|-------|
@@ -295,8 +389,11 @@ Historial de entradas/salidas de stock. Solo aplica a artículos `producto` con 
 - Al **anular/rectificar** una venta, se genera el movimiento inverso (`entrada`/`devolucion`).
 - Compras/reposición y ajustes manuales generan `entrada`/`ajuste`.
 - `stock_actual` en `articulos` es el valor vivo (rápido de leer); `movimientos_stock` es la fuente de verdad histórica.
+- **Stock negativo permitido:** la emisión de una factura nunca se bloquea por falta de stock —
+  `stock_resultante` puede quedar negativo (decisión explícita de producto). El listado de kardex
+  (`/stock`) marca visualmente los artículos con `stock_actual` negativo como descuadre a corregir.
 
-### `proveedores` — (Fase 2) proveedores de compra
+### `proveedores` — proveedores de compra (implementado)
 Para trazar de quién se compra el stock. Estructura análoga a `clientes`.
 
 | Campo | Tipo | Notas |
@@ -312,7 +409,7 @@ Para trazar de quién se compra el stock. Estructura análoga a `clientes`.
 
 Índices: `(tenant_id, nif)`, `(tenant_id, nombre)`.
 
-### `compras` — (Fase 2) documento de compra / factura de proveedor
+### `compras` — documento de compra / factura de proveedor (implementado)
 Registra la factura recibida del proveedor. Al confirmarla, genera **entradas** de stock.
 
 | Campo | Tipo | Notas |
@@ -331,7 +428,7 @@ Registra la factura recibida del proveedor. Al confirmarla, genera **entradas** 
 
 Índices: `(tenant_id, proveedor_id)`, `(tenant_id, fecha)`.
 
-### `compra_lineas` — (Fase 2)
+### `compra_lineas` — (implementado)
 Detalle de la compra. Igual que las líneas de factura, con `articulo_id` opcional.
 
 | Campo | Tipo | Notas |
@@ -349,6 +446,47 @@ Detalle de la compra. Igual que las líneas de factura, con `articulo_id` opcion
 | cuota_impuesto | decimal(12,2) | |
 
 > **Flujo de stock en compras:** al **confirmar** una compra, cada línea con `articulo` producto+`gestion_stock` genera una **`entrada`** en `movimientos_stock` (origen `compra`, con `compra_id`) y suma a `stock_actual`. Al **anular** la compra, movimiento inverso.
+
+### `carpetas` — árbol de organización del gestor documental (feature 019)
+Nodo del árbol de carpetas del tenant, autorreferenciado. Sin permisos por carpeta ni versionado
+(todos los usuarios aprobados del tenant ven y gestionan todo el espacio).
+
+| Campo | Tipo | Notas |
+|-------|------|-------|
+| id | bigint PK | |
+| tenant_id | fk | índice; `BelongsToTenant` |
+| parent_id | fk → carpetas | nullable = raíz |
+| nombre | varchar(255) | único por `(tenant_id, parent_id)` sobre no borrados (FR-005) |
+| softDeletes, timestamps | | |
+
+Índice `(tenant_id, parent_id)`. Borrar una carpeta borra en cascada (subcarpetas + archivos,
+registros soft-deleted + ficheros físicos eliminados) tras confirmación reforzada (FR-018). Mover
+carpetas (cambiar `parent_id`, por drag&drop en el explorador o `PUT /archivos/carpetas/{id}`) está
+soportado, validando que el destino no sea la propia carpeta ni uno de sus descendientes
+(`Carpeta::descendientesIds()`, evita ciclos en el árbol).
+
+### `archivos` — documentos del gestor documental (feature 019)
+Documento subido por un usuario del tenant, opcionalmente dentro de una carpeta.
+
+| Campo | Tipo | Notas |
+|-------|------|-------|
+| id | bigint PK | |
+| tenant_id | fk | índice; `BelongsToTenant` |
+| carpeta_id | fk → carpetas | nullable = raíz |
+| nombre | varchar(255) | nombre visible, renombrable sin tocar el fichero físico (FR-020) |
+| nombre_original | varchar(255) | nombre del fichero tal como se subió |
+| ruta | varchar(255) | path en el disco privado `documentos`: `tenants/{tenant_id}/documentos/{uuid}.{ext}` |
+| mime | varchar(150) | MIME real detectado en el servidor (no solo por extensión) |
+| extension | varchar(20) | para ícono/preview |
+| tamano | unsignedBigInteger | bytes |
+| subido_por | fk → users | nullable, `nullOnDelete` |
+| softDeletes, timestamps | | `created_at` = fecha de subida |
+
+Índice `(tenant_id, carpeta_id)`. El nombre visible **no** es único dentro de una carpeta (a
+diferencia de `carpetas`). Lista blanca de tipos permitidos y límite de tamaño configurables
+(`App\Support\ArchivosTenant`, ver clave `archivos.limite_mb` más abajo). Los binarios nunca se
+sirven por URL pública: `archivos.descargar`/`archivos.preview` resuelven el modelo manualmente
+bajo el tenant activo (ver Decisión 6 de `docs/01-arquitectura.md`).
 
 ### `configuraciones` — valores de configuración
 Almacén clave-valor por tenant para parámetros ajustables sin tocar código (textos legales del pie de factura, IVA/IRPF por defecto, datos de contacto para el PDF, integraciones, etc.). Un valor puede ser global del SaaS si `tenant_id` es nulo.
@@ -378,16 +516,26 @@ Almacén clave-valor por tenant para parámetros ajustables sin tocar código (t
 | `serie.reset_anual` | facturacion | `true` |
 | `factura.pie_legal` | facturacion | texto de protección de datos / condiciones |
 | `factura.dias_vencimiento` | facturacion | `30` |
+| `factura.simplificada_tope_ampliado` | facturacion | `false` (tope 400 €) / `true` (sector con tope ampliado, 3.000 €). Default en `App\Support\TopeSimplificada` |
 | `articulo.precio_incluye_iva` | facturacion | `false` (precios sin IVA) / `true` (IVA incluido, retail) |
 | `verifactu.activo` | verifactu | `false` |
 | `verifactu.entorno` | verifactu | `pruebas` / `produccion` |
-| `email.remitente` | email | `facturas@empresa.com` |
+| `logs.retencion_dias` | seguridad | `730` (2 años, referencia RD 1720/2007); plazo de retención del registro de accesos antes de purgar |
+| `email.smtp_host` | email | `smtp.hostinger.com` (default en `EmailTenant::DEFAULT_SMTP_HOST`, `''`) |
+| `email.smtp_port` | email | `465` (default en `EmailTenant::DEFAULT_SMTP_PORT`) |
+| `email.smtp_encryption` | email | `ssl` / `tls` (default en `EmailTenant::DEFAULT_SMTP_ENCRYPTION`) |
+| `email.smtp_usuario` | email | `facturas@empresa.com` (default en `EmailTenant::DEFAULT_SMTP_USUARIO`, `''`) |
+| `email.smtp_password` | email | **cifrada** con `Crypt::encryptString`; nunca en claro ni devuelta al front (default `''`) |
+| `email.remitente` | email | `facturas@empresa.com` (default en `EmailTenant::DEFAULT_REMITENTE`, `''`) |
+| `email.remitente_nombre` | email | `Empresa Demo SL` (default en `EmailTenant::DEFAULT_REMITENTE_NOMBRE`, `''`) |
+| `email.responder_a` | email | opcional; `Reply-To` del correo de factura (default en `EmailTenant::DEFAULT_RESPONDER_A`, `''`) |
 | `apariencia.color_primario` | apariencia | `#1D69D6` (default en `AparienciaTenant::DEFAULT_PRIMARIO`) |
 | `apariencia.color_secundario` | apariencia | `#1F2025` (default en `AparienciaTenant::DEFAULT_SECUNDARIO`) |
 | `apariencia.color_topbar` | apariencia | `#FFFFFF` (default en `AparienciaTenant::DEFAULT_TOPBAR`) |
 | `apariencia.facebook_url` | apariencia | `` (vacío, default en `AparienciaTenant::DEFAULT_FACEBOOK`) |
 | `apariencia.instagram_url` | apariencia | `` (vacío, default en `AparienciaTenant::DEFAULT_INSTAGRAM`) |
 | `apariencia.titulo_login` | apariencia | `Iniciar sesión` (default en `AparienciaTenant::DEFAULT_TITULO_LOGIN`) |
+| `archivos.limite_mb` | archivos | `10` (default en `App\Support\ArchivosTenant::DEFAULT_LIMITE_MB`) — tamaño máximo por archivo subido en el gestor documental |
 
 > Alternativa/complemento: parámetros de facturación muy usados (IVA/IRPF por defecto, recargo) también viven como columnas en `tenants` para acceso directo; `configuraciones` cubre el resto de ajustes flexibles y los globales del SaaS.
 
@@ -425,6 +573,105 @@ Añadir una clave nueva a `configuraciones` implica siempre estos tres pasos, no
 
 Los tres pasos son parte del mismo cambio: no dar por cerrada una clave de configuración nueva sin
 los tres.
+
+### `plantillas_email` — plantillas reutilizables de email marketing (feature 018)
+Asunto + cuerpo HTML reutilizables al crear campañas.
+
+| Campo | Tipo | Notas |
+|-------|------|-------|
+| id | bigint PK | |
+| tenant_id | fk | indexado (`BelongsToTenant`) |
+| titulo | varchar(150) | nombre interno |
+| asunto | varchar(255) | |
+| cuerpo | longtext | HTML |
+| activa | boolean | default `true`; solo las activas se ofrecen al crear campaña |
+| softDeletes | | eliminar = baja lógica; las campañas ya creadas conservan su copia |
+| timestamps | | `updated_at` → "modificado" en el listado |
+
+### `campanas` — campaña de email a clientes (feature 018)
+Cabecera de una campaña. Envío síncrono por tandas desde el front (sin colas ni cron, Principio V).
+
+| Campo | Tipo | Notas |
+|-------|------|-------|
+| id | bigint PK | |
+| tenant_id | fk | indexado (`BelongsToTenant`) |
+| user_id | fk | nullable; autor (`nullOnDelete`) |
+| plantilla_email_id | fk | nullable; plantilla de origen (`nullOnDelete`) |
+| asunto | varchar(255) | copiado/editado, independiente de la plantilla |
+| cuerpo | longtext | HTML final enviado |
+| estado | enum | `borrador`, `en_curso`, `finalizada` |
+| total_destinatarios / enviados / fallidos | int unsigned | contadores cache, recalculados desde `campana_destinatarios` |
+| enviada_at | datetime | nullable; primera vez que se lanza el envío |
+| timestamps | | |
+
+### `campana_destinatarios` — resultado por destinatario (feature 018)
+Una fila por cliente incluido; **fuente de verdad** del resultado del envío.
+
+| Campo | Tipo | Notas |
+|-------|------|-------|
+| id | bigint PK | |
+| tenant_id | fk | indexado (derivado de la campaña; se afirma el scope igual) |
+| campana_id | fk | `cascadeOnDelete` |
+| cliente_id | fk | `cascadeOnDelete` |
+| email | varchar(255) | dirección usada (copiada del cliente; nullable si sin email) |
+| estado | enum | `pendiente`, `enviado`, `fallido` |
+| error | varchar(500) | nullable; motivo del fallo ("Sin email", excepción SMTP) |
+| enviado_at | datetime | nullable; marca del intento con resultado ok |
+| timestamps | | |
+
+Único `(campana_id, cliente_id)` (dedup). Índice `(campana_id, estado)` (reintento de fallidos).
+Reutiliza la infra SMTP del tenant (`TenantMailer`/`EmailTenant`, feature 017) vía el Mailable
+`CampanaMail` (cuerpo HTML libre, sin adjunto).
+
+### `logs_actividad` — historial de actividad + registro de accesos (feature 021)
+**Auditoría general de uso** (quién hizo qué, sobre qué y cuándo): login/logout y altas/bajas/
+modificaciones de clientes, artículos, facturas, configuración y usuarios. Distinta de
+`factura_eventos` (huella/encadenamiento Verifactu, solo facturas) — ambas conviven, no se
+sustituyen. Append-only: sin edición ni borrado desde la UI.
+
+Además de la auditoría de negocio, esta tabla cumple la función de **registro de accesos** exigible
+bajo **RGPD (Art. 32) + LOPDGDD** (referencia técnica: registro de accesos del RD 1720/2007). Para
+ello incorpora IP de origen, agente de usuario y resultado del evento, y registra también los
+**intentos de login fallidos** (ver `02`/normativa RGPD).
+
+| Campo | Tipo | Notas |
+|-------|------|-------|
+| id | bigint PK | |
+| tenant_id | unsignedBigInteger, indexado | `BelongsToTenant`, igual patrón que `factura_eventos` |
+| usuario_id | fk `users`, nullable | `nullOnDelete()`; **null en login fallido** cuando el email no corresponde a un usuario |
+| usuario_nombre | varchar(150) | snapshot del nombre en el momento del evento; sobrevive al borrado del usuario. En login fallido guarda el **email intentado** |
+| accion | varchar(20) | enum `login`, `logout`, `alta`, `baja`, `modificacion` |
+| resultado | varchar(10) | enum `exito` / `fallo`, default `exito`. Distingue acceso **autorizado o denegado** (requisito del registro de accesos). `fallo` en intentos de login rechazados |
+| ip_origen | varchar(45), nullable | IP de origen de la petición (soporta IPv6). Campo clave del registro de accesos |
+| user_agent | varchar(255), nullable | navegador/dispositivo de origen (ayuda a investigar accesos indebidos) |
+| entidad_tipo | varchar(20), nullable | enum `cliente`, `articulo`, `factura`, `configuracion`, `usuario`; `null` en login/logout |
+| entidad_id | unsignedBigInteger, nullable | referencia débil sin FK (apunta a 5 tablas distintas) |
+| descripcion | varchar(255) | texto legible, siempre generado en backend |
+| ocurrido_at | datetime | |
+| timestamps | | |
+
+Índices: `(tenant_id, ocurrido_at)`, `(tenant_id, entidad_tipo)`, `(tenant_id, accion)`,
+`(tenant_id, resultado)` (para filtrar accesos denegados). Único punto de escritura:
+`App\Services\RegistradorActividad`, invocado desde los controladores de negocio y desde
+`LogAuthenticationActivity` (login éxito/fallo, logout). Los super admins sin tenant (dominio
+central) no generan fila: el historial es siempre por tenant. Listado accesible desde "Logs" en el
+dropdown de usuario, con paginación **server-side real** (a diferencia de usuarios/facturas, que
+cargan el listado completo client-side) por crecer sin cota temporal.
+
+**Login fallido:** se registra una fila con `accion=login`, `resultado=fallo`, `usuario_nombre` = email
+intentado, `ip_origen`/`user_agent` de la petición y `usuario_id=null` si el email no existe. Es lo
+que permite detectar fuerza bruta y accesos no autorizados.
+
+**Retención (RGPD — minimización):** los logs **no** se conservan indefinidamente. El plazo es
+**configurable por tenant** (`configuraciones` → `logs.retencion_dias`, default **730 días / 2 años**,
+referencia RD 1720/2007). Un comando programado (p. ej. `logs:purgar`) elimina por lotes las filas
+cuyo `ocurrido_at` supere el plazo del tenant. Esta purga por antigüedad **no viola** el carácter
+append-only: append-only significa que una fila no se **edita** ni se borra selectivamente durante su
+vida útil; la eliminación por política de retención es cumplimiento, no manipulación.
+
+> **RGPD — tratamiento:** el propio registro (usuario + IP + actividad) es dato personal. Debe figurar
+> en el **Registro de Actividades de Tratamiento (RAT)** del responsable, con acceso restringido y su
+> plazo de conservación documentado.
 
 ---
 

@@ -2,6 +2,63 @@
 
 @section('title', 'Crear cuenta')
 
+@push('styles')
+	<style>
+		.login-form .form-control {
+			height: calc(2.1rem + 2px) !important;
+			padding: 0.35rem 0.75rem !important;
+			font-size: 0.8rem !important;
+		}
+
+		.login-form .btn-primary {
+			padding-top: 0.4rem !important;
+			padding-bottom: 0.4rem !important;
+			font-size: 0.85rem !important;
+		}
+
+		.login-eu-funding {
+			margin-top: 0.5rem;
+		}
+
+		.login-eu-badges {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			flex-wrap: nowrap;
+			gap: 1rem;
+		}
+
+		.login-eu-badges img {
+			height: 44px;
+			width: auto;
+			flex: 0 0 auto;
+		}
+
+		.login-eu-quote {
+			flex: 0 1 9rem;
+			margin: 0;
+			font-size: 0.72rem;
+			line-height: 1.25;
+			text-align: center;
+		}
+
+		@media (max-width: 575.98px) {
+			.login-eu-badges {
+				flex-wrap: wrap;
+			}
+		}
+
+		.login-eu-disclaimer {
+			margin: 1.25rem auto 0;
+			max-width: 34rem;
+			font-size: 0.75rem;
+			line-height: 1.4;
+			text-align: center;
+			color: #6c757d;
+		}
+	</style>
+@endpush
+
 @section('content')
 	<div class="authincation h-100">
 		<div class="container-fluid h-100">
@@ -9,13 +66,12 @@
 				<div class="col-lg-6 col-md-12 col-sm-12 mx-auto align-self-center">
 					<div class="login-form">
 						<div class="text-center">
-							<a href="{{ url('/') }}" class="brand-logo justify-content-center mb-3 d-flex align-items-center">
-								<svg width="30" height="33" viewBox="0 0 30 33" fill="none" xmlns="http://www.w3.org/2000/svg">
-									<path fill-rule="evenodd" clip-rule="evenodd"
-										d="M17.9757 0.803847C16.1193 -0.267949 13.8322 -0.267949 11.9757 0.803847L3 5.986C1.14359 7.05779 0 9.03856 0 11.1822V21.5464C0 23.69 1.14359 25.6708 3 26.7426L11.9757 31.9247C13.8322 32.9965 16.1193 32.9965 17.9757 31.9247L26.9515 26.7426C28.8079 25.6708 29.9515 23.69 29.9515 21.5464V11.1821C29.9515 9.03855 28.8079 7.05779 26.9515 5.986L17.9757 0.803847ZM16.4757 6.08629C15.5475 5.5504 14.4039 5.5504 13.4757 6.0863L6.8247 9.92627C5.8965 10.4622 5.3247 11.4526 5.3247 12.5243V20.2043C5.3247 21.2761 5.8965 22.2665 6.82471 22.8024L13.4757 26.6423C14.4039 27.1782 15.5475 27.1782 16.4757 26.6423L23.1268 22.8024C24.055 22.2665 24.6268 21.2761 24.6268 20.2043V12.5243C24.6268 11.4525 24.055 10.4622 23.1268 9.92627L16.4757 6.08629Z"
-										fill="var(--primary)" />
-								</svg>
-								<span class="ms-2 fw-bold fs-4">Empire Systems</span>
+							<a href="{{ url('/') }}" class="brand-logo justify-content-center mb-1 d-flex align-items-center">
+								@if (function_exists('tenant') && tenant() && tenant()->login_logo_path)
+									<img src="{{ asset('storage/'.tenant()->login_logo_path) }}" alt="Logo" style="max-width: 360px;">
+								@else
+									<img src="{{ asset('images/logardo.png') }}" alt="Logo" style="max-width: 360px;">
+								@endif
 							</a>
 							<h3 class="title">Crear cuenta</h3>
 							<p>Registrá tu solicitud de acceso. Un administrador deberá aprobarla.</p>
@@ -59,20 +115,56 @@
 							<div class="text-center mb-4 d-grid">
 								<button type="submit" class="btn btn-primary">Solicitar acceso</button>
 							</div>
-							<div class="text-center">
-								<p>¿Ya tenés cuenta? <a href="{{ route('login') }}">Iniciar sesión</a></p>
-							</div>
 						</form>
+						<div class="text-center mb-4">
+							<p class="mb-0">¿Ya tenés cuenta? <a href="{{ route('login') }}">Iniciar sesión</a></p>
+						</div>
+
+						<div class="login-eu-funding">
+							<div class="login-eu-badges">
+								<p class="login-eu-quote">«Financiado por la Unión Europea&nbsp;&ndash; NextGenerationEU.»</p>
+								<img src="{{ asset('images/login/1.png') }}"
+									alt="Plan de Recuperación, Transformación y Resiliencia">
+								<img src="{{ asset('images/login/2.png') }}"
+									alt="Financiado por la Unión Europea - NextGenerationEU">
+							</div>
+							<p class="login-eu-disclaimer">
+								«Financiado por la Unión Europea&nbsp;&ndash; NextGenerationEU. Sin embargo, los puntos de
+								vista y las opiniones expresadas son únicamente los del autor o autores y no reflejan
+								necesariamente los de la Unión Europea o la Comisión Europea. Ni la Unión Europea ni la
+								Comisión Europea pueden ser consideradas responsables de las mismas»
+							</p>
+						</div>
 					</div>
 				</div>
-				<div class="col-xl-6 col-lg-6">
-					<div class="pages-left h-100">
-						<div class="login-content">
-							<p>Sistema de facturación para España. Tu verdadero valor se mide en cuánto más
-								das que lo que tomás a cambio.</p>
-						</div>
-						<div class="login-media text-center">
-							<img src="{{ asset('images/login.png') }}" alt="">
+				<div class="col-xl-6 col-lg-6 d-none d-lg-block">
+					@php
+						$__tenantLogin = function_exists('tenant') ? tenant() : null;
+						$__loginImagen = $__tenantLogin && $__tenantLogin->login_imagen_path
+							? asset('storage/'.$__tenantLogin->login_imagen_path)
+							: asset('images/login.png');
+						$__extrasLogin = $__tenantLogin
+							? \App\Support\AparienciaTenant::extrasEfectivos($__tenantLogin->getTenantKey())
+							: ['titulo_login' => \App\Support\AparienciaTenant::DEFAULT_TITULO_LOGIN, 'facebook_url' => '', 'instagram_url' => ''];
+					@endphp
+					<div class="pages-left h-100 position-relative text-center"
+						style="background-image: url('{{ $__loginImagen }}'); background-size: cover; background-position: center; background-repeat: no-repeat;">
+						<div class="login-brand-band">
+							<h2 class="login-brand-title">{{ $__extrasLogin['titulo_login'] }}</h2>
+							@if ($__extrasLogin['facebook_url'] || $__extrasLogin['instagram_url'])
+								<div class="login-brand-socials">
+									@if ($__extrasLogin['facebook_url'])
+										<a href="{{ $__extrasLogin['facebook_url'] }}" target="_blank" rel="noopener">
+											<i class="fa-brands fa-facebook"></i>
+										</a>
+									@endif
+									@if ($__extrasLogin['instagram_url'])
+										<a href="{{ $__extrasLogin['instagram_url'] }}" target="_blank" rel="noopener">
+											<i class="fa-brands fa-instagram"></i>
+										</a>
+									@endif
+								</div>
+							@endif
 						</div>
 					</div>
 				</div>

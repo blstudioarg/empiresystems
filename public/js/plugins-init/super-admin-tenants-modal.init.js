@@ -83,12 +83,19 @@
 			}
 		}
 
+		var $adminFields = $form.find('.admin-field');
+		var $adminEmail = $form.find('#admin_email');
+		var $adminPassword = $form.find('#admin_password');
+
 		function resetForm() {
 			clearErrors();
 			$form[0].reset();
 			$form.find('#tenant_method').val('POST');
 			$form.attr('action', state.storeUrl);
 			$ciudad.html('<option value="">Selecciona una provincia primero</option>');
+			$adminFields.removeClass('d-none');
+			$adminEmail.prop('required', true);
+			$adminPassword.prop('required', true);
 			$('#tenantModalLabel').text('Agregar tenant');
 		}
 
@@ -109,6 +116,10 @@
 			$form.find('#regimen_impositivo').val(data.regimenImpositivo);
 			$form.find('#email').val(data.email);
 			$form.find('#activo').prop('checked', data.activo === '1');
+			// Editar un tenant no crea ni modifica su administrador (research.md D5).
+			$adminFields.addClass('d-none');
+			$adminEmail.prop('required', false).val('');
+			$adminPassword.prop('required', false).val('');
 			$('#tenantModalLabel').text('Editar tenant');
 		}
 
@@ -140,14 +151,15 @@
 			event.preventDefault();
 
 			var $submitBtn = $form.find('button[type="submit"]');
-			$submitBtn.prop('disabled', true);
 
-			$.ajax({
-				url: $form.attr('action'),
-				method: 'POST',
-				data: $form.serialize(),
-				dataType: 'json',
-				headers: { Accept: 'application/json' },
+			window.withButtonLoading($submitBtn, function () {
+				return $.ajax({
+					url: $form.attr('action'),
+					method: 'POST',
+					data: $form.serialize(),
+					dataType: 'json',
+					headers: { Accept: 'application/json' },
+				});
 			})
 				.done(function (response) {
 					modal.hide();
@@ -160,9 +172,6 @@
 					} else {
 						showAlert('danger', 'Ocurrió un error inesperado. Inténtalo de nuevo.');
 					}
-				})
-				.always(function () {
-					$submitBtn.prop('disabled', false);
 				});
 		});
 
@@ -170,7 +179,7 @@
 			var url = $(this).data('delete-url');
 
 			window.confirmDelete('¿Eliminar este tenant? Esta acción no se puede deshacer.', function () {
-				$.ajax({
+				return $.ajax({
 					url: url,
 					method: 'POST',
 					data: { _method: 'DELETE', _token: $('meta[name="csrf-token"]').attr('content') || $form.find('input[name="_token"]').val() },

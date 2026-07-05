@@ -60,10 +60,81 @@ tenant (`user.tenant_id == tenant del dominio resuelto`); `super_admin` solo aut
 dominio central. Detalle de la decisión y alternativas descartadas en
 `specs/007-super-admin-tenants/research.md` (D1–D7).
 
+El **registro público** (`RegisterController`) sigue la misma regla: el usuario nuevo se asigna
+**siempre al tenant del dominio de la petición** (`tenant('id')`, ya inicializado por
+`SetTenantContext`), nunca al "primer tenant que exista en la base". En el dominio central (sin
+tenant resuelto) el registro devuelve 404, porque no hay empresa a la que unirse. El alta queda en
+estado `Pendiente` / `activo=false` hasta que un administrador de ese tenant la aprueba. Regresión
+cubierta por `tests/Feature/RegistroTest.php` (`test_registro_asigna_el_tenant_del_dominio_no_el_primero`,
+`test_registro_sin_contexto_de_tenant_devuelve_404`).
+
 El panel Super Admin (CRUD de tenants + su dominio) es la única área de la app que opera **fuera**
 del scope de tenant (excepción explícita del Principio I de la constitución): consultas directas a
 `tenants`/`domains` en contexto central, con filtrado explícito por `tenant_id` cuando necesita
 mirar datos de un tenant concreto (p. ej. comprobar facturas emitidas antes de permitir el borrado).
+
+---
+
+## Decisión 5 — Envío de facturas por email: SMTP por tenant, envío síncrono (017-envio-facturas-email)
+
+**Elegido:** cada tenant configura su propia cuenta SMTP (`App\Support\EmailTenant`, tabla
+`configuraciones` grupo `email`); `App\Services\TenantMailer` arma un mailer `tenant_smtp` on-the-fly
+con `Config::set('mail.mailers.tenant_smtp', ...)`, sin tocar el mailer `default` ni el `.env`. El
+envío (email de prueba y envío de factura) ocurre **de forma síncrona dentro del request**: no hay
+cola ni `ShouldQueue`.
+
+**Deuda técnica asumida:** el hosting compartido (Decisión de infraestructura de más abajo) no
+garantiza un worker/supervisor para `queue:work`, así que la opción más simple que cumple el
+Principio V es enviar en el propio request — un email con un PDF adjunto completa muy por debajo del
+timeout típico (~30s). **Migrar a envío en cola (`ShouldQueue` en `FacturaMail`/`EmailPrueba` + driver
+`database` o similar) cuando:** (a) se mueva a VPS con supervisor de colas, o (b) el volumen de envíos
+por tenant empiece a acercarse al timeout del request o a degradar la respuesta percibida del botón
+"Enviar por email". Ver `specs/017-envio-facturas-email/research.md` (D5) para el detalle de
+alternativas descartadas.
+
+---
+
+## Decisión 6 — Gestor documental: disco privado por tenant (019-gestor-documental)
+
+**Elegido:** los documentos del gestor documental (`carpetas`/`archivos`) se guardan en un disco de
+Laravel nuevo, `documentos` (driver `local`, root `storage_path('app/tenants')`, `visibility`
+privado), distinto del disco `public` que ya usan logos/avatars. Los ficheros físicos viven en
+`tenants/{tenant_id}/documentos/{uuid}.{ext}` — nombre físico generado (UUID), nunca el nombre
+original — y **nunca se sirven por URL pública ni symlink**: toda descarga/preview pasa por
+`ArchivoController@descargar`/`@preview`, que resuelve el modelo manualmente bajo el `TenantScope`
+activo (nunca binding implícito, ver memoria `project_tenant_route_binding`) antes de devolver el
+binario.
+
+**Por qué un disco nuevo en vez de reusar `public`:** el disco `public` se sirve directo por el
+webserver vía symlink (`storage/app/public` → `public/storage`) — cualquiera con la URL (aunque el
+nombre sea un UUID "impredecible") accede al fichero sin pasar por la app, lo cual es aceptable para
+un logo pero no para un documento de negocio potencialmente sensible de un tenant. El disco
+`documentos` vive fuera de `public/`, así que solo la app puede leerlo.
+
+**Contrapartida asumida:** sin CDN/caching de borde para estos ficheros (cada descarga pasa por PHP);
+aceptable para el volumen esperado (documentos ligeros, ≤10 MB por defecto) en hosting compartido.
+
+---
+
+## Decisión 7 — Datatable server-side real para el log de actividad (021-logs-actividad-usuarios)
+
+**Elegido:** el listado de `logs_actividad` implementa el protocolo server-side de DataTables a
+mano en el controlador (`draw`/`start`/`length`/`search`/`order` → `recordsTotal`/`recordsFiltered`/
+`data`), sin añadir `yajra/laravel-datatables`. Es el primer listado del proyecto que pagina en el
+servidor: `usuarios`/`facturas` siguen cargando el catálogo completo del tenant de una vez y dejan
+que DataTables filtre/pagine en el navegador.
+
+**Por qué esta única tabla se desvía del patrón client-side:** `usuarios` y `facturas` están
+acotados por el tamaño real del negocio del tenant; `logs_actividad` crece con cada login/logout y
+cada alta/baja/modificación de 5 tipos de entidad y es append-only (sin purga), así que no tiene
+techo natural. Cargar el histórico completo en el navegador degradaría con el tiempo. Se implementó
+a mano en vez de añadir Yajra porque el protocolo es sencillo de replicar con Eloquent
+(`skip`/`take`/`orderBy`/`where...like`) y una dependencia nueva para un solo listado no se
+justifica (Principio V).
+
+**Regla para features futuras:** un listado nuevo solo debe elegir server-side si, como
+`logs_actividad`, no tiene cota natural de crecimiento por tenant. Si el listado es un catálogo de
+negocio acotado (clientes, artículos, etc.), seguir el patrón client-side ya establecido.
 
 ---
 

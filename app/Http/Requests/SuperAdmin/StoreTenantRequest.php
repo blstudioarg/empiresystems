@@ -39,6 +39,8 @@ class StoreTenantRequest extends FormRequest
             'regimen_impositivo' => ['required', Rule::enum(RegimenImpositivo::class)],
             'email' => ['required', 'email', 'max:255'],
             'activo' => ['boolean'],
+            'admin_email' => ['required', 'email', 'max:255'],
+            'admin_password' => ['required', 'string', 'min:8'],
         ];
     }
 
@@ -61,6 +63,10 @@ class StoreTenantRequest extends FormRequest
             'dominio.regex' => 'El dominio no tiene un formato de host válido.',
             'dominio.unique' => 'Ese dominio ya está en uso por otro tenant.',
             'nif.required' => 'El NIF es obligatorio.',
+            'admin_email.required' => 'El email del administrador es obligatorio.',
+            'admin_email.email' => 'El email del administrador no tiene un formato válido.',
+            'admin_password.required' => 'La contraseña del administrador es obligatoria.',
+            'admin_password.min' => 'La contraseña del administrador debe tener al menos 8 caracteres.',
         ];
     }
 }

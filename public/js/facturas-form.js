@@ -35,7 +35,7 @@
 		$row.find('.linea-cantidad').val(datos.cantidad !== undefined ? datos.cantidad : 1);
 		$row.find('.linea-precio').val(datos.precio_unitario !== undefined ? datos.precio_unitario : 0);
 		$row.find('.linea-descuento').val(datos.descuento_porcentaje !== undefined && datos.descuento_porcentaje !== null ? datos.descuento_porcentaje : 0);
-		$row.find('.linea-tipo').val(datos.tipo_impositivo !== undefined ? datos.tipo_impositivo : 21);
+		$row.find('.linea-tipo').val(datos.tipo_impositivo !== undefined ? datos.tipo_impositivo : state.regimen.tipoPorDefecto);
 
 		if (datos.articulo_id) {
 			$row.attr('data-articulo-id', datos.articulo_id);
@@ -95,10 +95,10 @@
 			baseTotal += base;
 			impuestoTotal += cuota;
 
-			var claveImpuesto = 'IVA/IGIC ' + tipo + '%';
+			var claveImpuesto = state.regimen.label + ' ' + tipo + '%';
 			desglose[claveImpuesto] = (desglose[claveImpuesto] || 0) + cuota;
 
-			if (aplicaRecargo) {
+			if (state.regimen.aplicaRecargo && aplicaRecargo) {
 				var tipoRecargo = { 21: 5.2, 10: 1.4, 4: 0.5 }[tipo] || 0;
 				if (tipoRecargo > 0) {
 					var cuotaRecargo = Math.round(base * tipoRecargo / 100 * 100) / 100;
@@ -152,6 +152,28 @@
 		return $('<div>').text(value === null || value === undefined ? '' : value).html();
 	}
 
+	function acentoPorTipo(tipo) {
+		return tipo === 'servicio' ? '#8a5cf6' : '#1d69d6';
+	}
+
+	function iconoPorTipo(tipo) {
+		return tipo === 'servicio' ? 'fa-briefcase' : 'fa-box';
+	}
+
+	function actualizarContadoresFiltro() {
+		var articulos = articulosCache || [];
+		var totales = { todos: articulos.length, producto: 0, servicio: 0 };
+
+		articulos.forEach(function (articulo) {
+			if (articulo.tipo === 'servicio') { totales.servicio += 1; }
+			else { totales.producto += 1; }
+		});
+
+		$.each(totales, function (tipo, total) {
+			$('[data-count-tipo="' + tipo + '"]').text(total);
+		});
+	}
+
 	function renderCatalogo() {
 		var $lista = $('#catalogo-lista');
 		var texto = ($('#catalogo-buscador').val() || '').toLowerCase().trim();
@@ -168,18 +190,23 @@
 
 		var html = '' +
 			'<div class="catalogo-item catalogo-item-libre" data-linea-libre="1">' +
-				'+ Línea libre (sin artículo)' +
+				'<i class="fas fa-plus"></i> Línea libre (sin artículo)' +
 			'</div>';
 
 		if (!articulos.length) {
 			html += '<div class="catalogo-vacio">Ningún artículo coincide con la búsqueda.</div>';
 		} else {
 			articulos.forEach(function (articulo) {
+				var acento = acentoPorTipo(articulo.tipo);
+
 				html += '' +
-					'<div class="catalogo-item" data-articulo-id="' + articulo.id + '">' +
-						'<div>' +
-							'<div class="nombre">' + escapeHtml(articulo.nombre) + '</div>' +
-							'<div class="meta">' + escapeHtml(articulo.tipo === 'servicio' ? 'Servicio' : 'Producto') + (articulo.sku ? ' · ' + escapeHtml(articulo.sku) : '') + '</div>' +
+					'<div class="catalogo-item" data-articulo-id="' + articulo.id + '" style="--factura-accent: ' + acento + ';">' +
+						'<div class="nombre-wrap">' +
+							'<i class="fas ' + iconoPorTipo(articulo.tipo) + ' tipo-icon"></i>' +
+							'<div>' +
+								'<div class="nombre">' + escapeHtml(articulo.nombre) + '</div>' +
+								'<div class="meta">' + escapeHtml(articulo.tipo === 'servicio' ? 'Servicio' : 'Producto') + (articulo.sku ? ' · ' + escapeHtml(articulo.sku) : '') + '</div>' +
+							'</div>' +
 						'</div>' +
 						'<div class="precio">' + formatoMoneda(parseFloat(articulo.precio) || 0) + '</div>' +
 					'</div>';
@@ -205,6 +232,7 @@
 		}
 
 		cargarArticulos().done(function () {
+			actualizarContadoresFiltro();
 			renderCatalogo();
 		});
 
@@ -216,15 +244,30 @@
 			renderCatalogo();
 		});
 
+		// Destello breve de confirmación: en el ítem del catálogo tocado y en la fila que
+		// acaba de aparecer en la tabla, para que quede claro qué se añadió sin interrumpir
+		// el flujo (mismo patrón introducido en pos-form.js).
+		function destellar($el) {
+			$el.removeClass('just-added');
+			void $el[0].offsetWidth;
+			$el.addClass('just-added');
+			setTimeout(function () { $el.removeClass('just-added'); }, 600);
+		}
+
 		$('#catalogo-lista').on('click', '.catalogo-item', function () {
-			if ($(this).data('linea-libre')) {
-				$lineasBody.append(crearFilaLinea());
+			var $item = $(this);
+			destellar($item);
+
+			if ($item.data('linea-libre')) {
+				var $filaLibre = crearFilaLinea();
+				$lineasBody.append($filaLibre);
+				destellar($filaLibre);
 				recalcularPreview();
 
 				return;
 			}
 
-			var articuloId = $(this).data('articulo-id');
+			var articuloId = $item.data('articulo-id');
 			var articulo = (articulosCache || []).find(function (item) {
 				return item.id === articuloId;
 			});
@@ -233,14 +276,16 @@
 				return;
 			}
 
-			$lineasBody.append(crearFilaLinea({
+			var $fila = crearFilaLinea({
 				articulo_id: articulo.id,
 				concepto: articulo.nombre,
 				unidad: articulo.unidad,
 				cantidad: 1,
 				precio_unitario: articulo.precio,
 				tipo_impositivo: articulo.tipo_impositivo,
-			}));
+			});
+			$lineasBody.append($fila);
+			destellar($fila);
 
 			recalcularPreview();
 		});
@@ -259,6 +304,22 @@
 
 		$('#factura-form').on('submit', function () {
 			var $form = $(this);
+
+			// Descartar filas vacías (sin concepto ni artículo asociado) antes de nombrarlas:
+			// el formulario arranca siempre con una fila en blanco y al elegir artículos del
+			// catálogo se añaden filas nuevas, dejando la inicial vacía. Si se enviara, su
+			// `concepto` vacío rompe la validación `lineas.*.concepto required`. Se conserva al
+			// menos una fila para que, si todo está vacío, la validación `lineas min:1` avise.
+			var $filas = $form.find('.linea-row');
+			$filas.each(function () {
+				var $row = $(this);
+				var concepto = $.trim($row.find('.linea-concepto').val() || '');
+				var articuloId = $row.attr('data-articulo-id') || '';
+
+				if (!concepto && !articuloId && $form.find('.linea-row').length > 1) {
+					$row.remove();
+				}
+			});
 
 			$form.find('.linea-row').each(function (index) {
 				var $row = $(this);

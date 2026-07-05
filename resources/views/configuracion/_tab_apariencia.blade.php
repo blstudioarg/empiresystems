@@ -118,7 +118,7 @@
 		</div>
 	</div>
 
-	<div class="d-flex gap-2">
+	<div class="d-flex gap-2 d-none">
 		<button type="submit" name="restablecer" value="1" class="btn btn-outline-danger">Restablecer</button>
 	</div>
 </form>

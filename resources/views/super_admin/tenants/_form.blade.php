@@ -76,4 +76,19 @@
 			<label class="form-check-label" for="activo">Activo</label>
 		</div>
 	</div>
+
+	<div class="admin-field col-12">
+		<hr>
+		<h6 class="mb-3">Administrador inicial</h6>
+	</div>
+	<div class="admin-field col-md-6">
+		<label for="admin_email" class="form-label">Email del administrador</label>
+		<input type="email" name="admin_email" id="admin_email" class="form-control">
+		<div class="invalid-feedback" data-error-for="admin_email"></div>
+	</div>
+	<div class="admin-field col-md-6">
+		<label for="admin_password" class="form-label">Contraseña del administrador</label>
+		<input type="password" name="admin_password" id="admin_password" class="form-control" autocomplete="new-password">
+		<div class="invalid-feedback" data-error-for="admin_password"></div>
+	</div>
 </div>

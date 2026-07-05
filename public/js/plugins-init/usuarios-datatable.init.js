@@ -93,16 +93,18 @@
 		}
 	}
 
-	function patchAccion(url, mensajeExito, mensajeError) {
-		$.ajax({
-			url: url,
-			method: 'POST',
-			data: {
-				_method: 'PATCH',
-				_token: (window.usuariosState && window.usuariosState.csrfToken) || $('meta[name="csrf-token"]').attr('content'),
-			},
-			dataType: 'json',
-			headers: { Accept: 'application/json' },
+	function patchAccion($btn, url, mensajeExito, mensajeError) {
+		window.withButtonLoading($btn, function () {
+			return $.ajax({
+				url: url,
+				method: 'POST',
+				data: {
+					_method: 'PATCH',
+					_token: (window.usuariosState && window.usuariosState.csrfToken) || $('meta[name="csrf-token"]').attr('content'),
+				},
+				dataType: 'json',
+				headers: { Accept: 'application/json' },
+			});
 		})
 			.done(function (response) {
 				window.showToast('success', (response && response.message) || mensajeExito);
@@ -174,11 +176,11 @@
 		window.initUsuariosDataTable();
 
 		$(document).on('click', '.btn-aprobar-usuario', function () {
-			patchAccion($(this).data('aprobar-url'), 'Usuario aprobado correctamente.', 'No se pudo aprobar el usuario. Inténtalo de nuevo.');
+			patchAccion($(this), $(this).data('aprobar-url'), 'Usuario aprobado correctamente.', 'No se pudo aprobar el usuario. Inténtalo de nuevo.');
 		});
 
 		$(document).on('click', '.btn-rechazar-usuario', function () {
-			patchAccion($(this).data('rechazar-url'), 'Usuario rechazado correctamente.', 'No se pudo rechazar el usuario. Inténtalo de nuevo.');
+			patchAccion($(this), $(this).data('rechazar-url'), 'Usuario rechazado correctamente.', 'No se pudo rechazar el usuario. Inténtalo de nuevo.');
 		});
 	});
 })(jQuery);

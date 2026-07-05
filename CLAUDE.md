@@ -10,6 +10,13 @@ Antes de crear o tocar cualquier vista/componente de front, leer `docs/04-front-
 (convenciones de UI recurrentes: layout de previews de imagen, notificaciones, etc.). Si durante
 el trabajo surge una decisión de UI que valga la pena repetir en el futuro, añadirla ahí.
 
+Además, para cualquier tarea de diseño de front (nueva vista, rediseño, decisión estética,
+layout, paleta, tipografía, componente visual), usar las skills de diseño instaladas a nivel de
+usuario en Windows: `frontend-design` (dirección estética e intencional), `ui-ux-pro-max`
+(estilos/paletas/componentes concretos) y `emil-design-eng` (pulido de UI, animaciones, detalles
+de interacción). Invocarlas vía la herramienta Skill antes de implementar, no solo cuando el
+usuario las pida explícitamente.
+
 Las reglas no negociables del proyecto (aislamiento multi-tenant, cumplimiento normativo,
 integridad financiera, test-first, simplicidad) están en `.specify/memory/constitution.md`.
 Léela antes de tocar código de negocio; toda spec/plan/PR debe respetarla.

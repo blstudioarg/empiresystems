@@ -26,13 +26,22 @@
 							</button>
 						</li>
 						<li class="nav-item" role="presentation">
-							<button class="nav-link disabled" type="button" role="tab" disabled>
-								Verifactu <span class="badge badge-sm badge-secondary light ms-1">Próximamente</span>
+							<button class="nav-link" id="tab-email-btn" data-bs-toggle="tab"
+								data-bs-target="#tab-email" type="button" role="tab"
+								aria-controls="tab-email" aria-selected="false">
+								Email
+							</button>
+						</li>
+						<li class="nav-item" role="presentation">
+							<button class="nav-link" id="tab-archivos-btn" data-bs-toggle="tab"
+								data-bs-target="#tab-archivos" type="button" role="tab"
+								aria-controls="tab-archivos" aria-selected="false">
+								Archivos
 							</button>
 						</li>
 						<li class="nav-item" role="presentation">
 							<button class="nav-link disabled" type="button" role="tab" disabled>
-								Email <span class="badge badge-sm badge-secondary light ms-1">Próximamente</span>
+								Verifactu <span class="badge badge-sm badge-secondary light ms-1">Próximamente</span>
 							</button>
 						</li>
 					</ul>
@@ -44,6 +53,14 @@
 						<div class="tab-pane fade" id="tab-facturacion" role="tabpanel"
 							aria-labelledby="tab-facturacion-btn">
 							@include('configuracion._tab_facturacion')
+						</div>
+						<div class="tab-pane fade" id="tab-email" role="tabpanel"
+							aria-labelledby="tab-email-btn">
+							@include('configuracion._tab_email')
+						</div>
+						<div class="tab-pane fade" id="tab-archivos" role="tabpanel"
+							aria-labelledby="tab-archivos-btn">
+							@include('configuracion._tab_archivos')
 						</div>
 					</div>
 				</div>

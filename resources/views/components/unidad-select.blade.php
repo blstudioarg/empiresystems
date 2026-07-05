@@ -24,7 +24,7 @@
 
 	@push('scripts')
 		<div class="modal fade" id="unidadModal" tabindex="-1" aria-hidden="true">
-			<div class="modal-dialog" role="document">
+			<div class="modal-dialog modal-dialog-centered" role="document">
 				<div class="modal-content">
 					<form id="unidad-form">
 						<div class="modal-header">

@@ -2,12 +2,6 @@
 
 namespace App\Providers;
 
-use App\Listeners\LogAuthenticationActivity;
-use Illuminate\Auth\Events\Failed;
-use Illuminate\Auth\Events\Lockout;
-use Illuminate\Auth\Events\Login;
-use Illuminate\Auth\Events\Logout;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -25,9 +19,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        Event::listen(Login::class, [LogAuthenticationActivity::class, 'handleLogin']);
-        Event::listen(Logout::class, [LogAuthenticationActivity::class, 'handleLogout']);
-        Event::listen(Failed::class, [LogAuthenticationActivity::class, 'handleFailed']);
-        Event::listen(Lockout::class, [LogAuthenticationActivity::class, 'handleLockout']);
+        // Illuminate\Auth\Events\{Login,Logout,Failed,Lockout} -> LogAuthenticationActivity ya
+        // quedan enganchados por el auto-discovery de eventos de Laravel (los métodos handle*
+        // están type-hinted con la clase del evento): registrarlos aquí también los disparaba
+        // dos veces por request (detectado al añadir el registro en logs_actividad — feature 021).
     }
 }

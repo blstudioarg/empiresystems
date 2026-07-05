@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\AccionLogActividad;
+use App\Enums\EntidadLogActividad;
 use App\Enums\EstadoUsuario;
 use App\Models\User;
+use App\Services\RegistradorActividad;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -11,6 +14,10 @@ use Illuminate\View\View;
 
 class UsuarioController extends Controller
 {
+    public function __construct(
+        private readonly RegistradorActividad $registradorActividad,
+    ) {}
+
     public function index(Request $request): View|JsonResponse
     {
         $usuarios = User::where('tenant_id', auth()->user()->tenant_id)
@@ -54,6 +61,14 @@ class UsuarioController extends Controller
 
         $usuario->aprobar(auth()->user());
 
+        $this->registradorActividad->registrar(
+            auth()->user(),
+            AccionLogActividad::Alta,
+            EntidadLogActividad::Usuario,
+            $usuario->id,
+            "Aprobó al usuario {$usuario->name}",
+        );
+
         if ($request->wantsJson()) {
             return response()->json(['message' => 'Usuario aprobado correctamente.']);
         }
@@ -68,6 +83,14 @@ class UsuarioController extends Controller
         abort_if($usuario->id === auth()->id(), 403, 'No podés rechazar tu propia cuenta.');
 
         $usuario->rechazar();
+
+        $this->registradorActividad->registrar(
+            auth()->user(),
+            AccionLogActividad::Baja,
+            EntidadLogActividad::Usuario,
+            $usuario->id,
+            "Rechazó al usuario {$usuario->name}",
+        );
 
         if ($request->wantsJson()) {
             return response()->json(['message' => 'Usuario rechazado correctamente.']);

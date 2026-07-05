@@ -36,8 +36,47 @@
 		var badge = estadoBadges[row.estado] || 'badge-secondary';
 		var label = estadoLabels[row.estado] || row.estado;
 
-		return '<span class="badge light ' + badge + '">' + escapeHtml(label) + '</span>';
+		var html = '<span class="badge light ' + badge + '">' + escapeHtml(label) + '</span>';
+
+		if (row.enviada) {
+			html += '<div class="mt-1"><span class="badge light badge-info">Enviada</span></div>';
+		}
+
+		return html;
 	}
+
+	var estadoCobroLabels = {
+		pendiente: 'Pendiente',
+		parcial: 'Parcial',
+		cobrada: 'Cobrada',
+	};
+
+	var estadoCobroBadges = {
+		pendiente: 'badge-secondary',
+		parcial: 'badge-warning',
+		cobrada: 'badge-success',
+	};
+
+	function renderCobro(data, type, row) {
+		if (!row.estado_cobro) {
+			return '';
+		}
+
+		var badge = estadoCobroBadges[row.estado_cobro] || 'badge-secondary';
+		var label = estadoCobroLabels[row.estado_cobro] || row.estado_cobro;
+
+		return (
+			'<span class="badge light ' + badge + '">' + escapeHtml(label) + '</span>' +
+			'<div class="small text-muted">Saldo: ' + escapeHtml(row.saldo_pendiente) + ' €</div>'
+		);
+	}
+
+	var metodoLabels = {
+		transferencia: 'Transferencia',
+		tarjeta: 'Tarjeta',
+		efectivo: 'Efectivo',
+		domiciliacion: 'Domiciliación',
+	};
 
 	function renderAcciones(data, type, row) {
 		var items = [
@@ -76,6 +115,28 @@
 			);
 		}
 
+		if (row.cobros_url) {
+			items.push(
+				'<li>' +
+					'<button type="button" class="dropdown-item btn-ver-cobros"' +
+						' data-cobros-url="' + row.cobros_url + '"' +
+						' data-pago-url="' + (row.pago_url || '') + '"' +
+					'>Cobros</button>' +
+				'</li>'
+			);
+		}
+
+		if (row.enviar_url) {
+			items.push(
+				'<li>' +
+					'<button type="button" class="dropdown-item btn-enviar-factura"' +
+						' data-enviar-url="' + row.enviar_url + '"' +
+						' data-cliente-email="' + escapeHtml(row.cliente_email || '') + '"' +
+					'>Enviar por email</button>' +
+				'</li>'
+			);
+		}
+
 		return (
 			'<div class="dropdown">' +
 				'<button type="button" class="btn btn-primary light btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">' +
@@ -104,6 +165,7 @@
 				url: window.location.href,
 				dataSrc: function (json) {
 					window.updateFacturasCards(json.totales);
+					window.facturasEmailConfigurado = json.email_configurado;
 					return json.data;
 				},
 			},
@@ -113,6 +175,7 @@
 				{ data: 'fecha_expedicion', render: escapeHtml },
 				{ data: 'total', render: escapeHtml },
 				{ data: null, orderable: false, render: renderEstado },
+				{ data: null, orderable: false, render: renderCobro },
 				{ data: null, orderable: false, render: renderAcciones },
 			],
 			language: {
@@ -151,18 +214,18 @@
 			window.confirmDelete(
 				'¿Emitir esta factura? Se asignará número fiscal y no podrá editarse ni borrarse después.',
 				function () {
-					$.ajax({
+					return $.ajax({
 						url: emitirUrl,
 						type: 'POST',
 						headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
-						success: function (response) {
+					})
+						.done(function (response) {
 							window.showToast('success', response.message);
 							table.ajax.reload();
-						},
-						error: function (xhr) {
+						})
+						.fail(function (xhr) {
 							window.showToast('error', xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'No se pudo emitir la factura.');
-						},
-					});
+						});
 				},
 				{ confirmLabel: 'Emitir', confirmClass: 'btn-primary', icon: 'invoice' }
 			);
@@ -174,26 +237,220 @@
 
 			$form.attr('action', rectificarUrl);
 			$form[0].reset();
+			window.setButtonLoading($form.find('button[type="submit"]'), false);
 
 			bootstrap.Modal.getOrCreateInstance(document.getElementById('rectificarFacturaModal')).show();
+		});
+
+		// Submit normal de página completa (sin AJAX): solo feedback visual + evita doble
+		// submit, no hace falta restaurar el botón porque la página navega a otra factura.
+		$('#rectificarFacturaForm').on('submit', function () {
+			window.setButtonLoading($(this).find('button[type="submit"]'), true);
+		});
+
+		var $cobrosModal = $('#cobrosModal');
+		var cobrosTable = null;
+		var csrfHeaders = function () {
+			return { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') };
+		};
+
+		function renderCobroEstado(data, type, row) {
+			return row.vigente
+				? '<span class="badge light badge-success">Vigente</span>'
+				: '<span class="badge light badge-dark">Anulado</span>';
+		}
+
+		function renderCobroAccion(data, type, row) {
+			return row.vigente
+				? '<button type="button" class="btn btn-link text-danger p-0 btn-anular-pago" data-anular-url="' + row.anular_url + '">Anular</button>'
+				: '';
+		}
+
+		function initCobrosTable() {
+			if (cobrosTable) {
+				return cobrosTable;
+			}
+
+			cobrosTable = $('#cobros-table').DataTable({
+				responsive: true,
+				data: [],
+				columns: [
+					{ data: 'fecha', render: escapeHtml },
+					{ data: 'metodo', render: function (data) { return escapeHtml(metodoLabels[data] || data); } },
+					{ data: 'referencia', render: function (data) { return escapeHtml(data || '-'); } },
+					{ data: 'importe', render: function (data) { return escapeHtml(data) + ' €'; }, className: 'text-end' },
+					{ data: null, orderable: false, render: renderCobroEstado },
+					{ data: null, orderable: false, render: renderCobroAccion },
+				],
+				language: {
+					search: 'Buscar:',
+					lengthMenu: 'Mostrar _MENU_ registros',
+					info: 'Mostrando _START_ a _END_ de _TOTAL_ registros',
+					infoEmpty: 'Mostrando 0 a 0 de 0 registros',
+					infoFiltered: '(filtrado de _MAX_ registros totales)',
+					zeroRecords: 'Sin cobros registrados',
+					emptyTable: 'Sin cobros registrados',
+					paginate: {
+						first: 'Primero',
+						last: 'Último',
+						next: 'Siguiente',
+						previous: 'Anterior',
+					},
+				},
+			});
+
+			return cobrosTable;
+		}
+
+		function cargarCobros(cobrosUrl) {
+			$cobrosModal.data('cobros-url', cobrosUrl);
+
+			$.getJSON(cobrosUrl, function (response) {
+				$('#cobroSaldoPendiente').text(response.saldo_pendiente);
+				$('#cobroPagarRestante').data('saldo-pendiente', response.saldo_pendiente);
+
+				var $tabla = initCobrosTable();
+				$tabla.clear().rows.add(response.data).draw();
+			});
+		}
+
+		$table.on('click', '.btn-ver-cobros', function () {
+			var cobrosUrl = $(this).data('cobros-url');
+			var pagoUrl = $(this).data('pago-url');
+			var $form = $('#registrarCobroForm');
+
+			$form.attr('action', pagoUrl || '');
+			$form[0].reset();
+			$('#cobroFecha').val(new Date().toISOString().slice(0, 10));
+			$form.toggle(!!pagoUrl);
+
+			cargarCobros(cobrosUrl);
+
+			bootstrap.Modal.getOrCreateInstance($cobrosModal[0]).show();
+		});
+
+		$cobrosModal.on('shown.bs.modal', function () {
+			if (cobrosTable) {
+				cobrosTable.responsive.recalc();
+			}
+		});
+
+		$('#cobroPagarRestante').on('click', function () {
+			$('#cobroImporte').val($(this).data('saldo-pendiente'));
+		});
+
+		$('#registrarCobroForm').on('submit', function (e) {
+			e.preventDefault();
+
+			var $form = $(this);
+			var $submit = $form.find('button[type="submit"]');
+
+			window.withButtonLoading($submit, function () {
+				return $.ajax({
+					url: $form.attr('action'),
+					type: 'POST',
+					dataType: 'json',
+					headers: $.extend({ Accept: 'application/json' }, csrfHeaders()),
+					data: $form.serialize(),
+				});
+			})
+				.done(function (response) {
+					window.showToast('success', response.message);
+					$form[0].reset();
+					$('#cobroFecha').val(new Date().toISOString().slice(0, 10));
+					cargarCobros($cobrosModal.data('cobros-url'));
+					table.ajax.reload(null, false);
+				})
+				.fail(function (xhr) {
+					window.showToast('error', xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'No se pudo registrar el cobro.');
+				});
+		});
+
+		$cobrosModal.on('click', '.btn-anular-pago', function () {
+			var anularUrl = $(this).data('anular-url');
+
+			window.confirmDelete('¿Anular este cobro? El saldo pendiente de la factura se recalculará.', function () {
+				return $.ajax({
+					url: anularUrl,
+					type: 'POST',
+					dataType: 'json',
+					headers: $.extend({ Accept: 'application/json' }, csrfHeaders()),
+				})
+					.done(function (response) {
+						window.showToast('success', response.message);
+						cargarCobros($cobrosModal.data('cobros-url'));
+						table.ajax.reload(null, false);
+					})
+					.fail(function (xhr) {
+						window.showToast('error', xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'No se pudo anular el cobro.');
+					});
+			}, { confirmLabel: 'Anular', confirmClass: 'btn-danger' });
+		});
+
+		$table.on('click', '.btn-enviar-factura', function () {
+			if (window.facturasEmailConfigurado === false) {
+				window.showToast('error', 'Configura primero tu correo en Configuración → Email.');
+				return;
+			}
+
+			var enviarUrl = $(this).data('enviar-url');
+			var clienteEmail = $(this).data('cliente-email');
+			var $form = $('#enviarFacturaForm');
+
+			$form.attr('action', enviarUrl);
+			$form[0].reset();
+			$('#enviarDestinatario').val(clienteEmail || '');
+			$form.find('[data-error-for]').text('');
+
+			bootstrap.Modal.getOrCreateInstance(document.getElementById('enviarFacturaModal')).show();
+		});
+
+		$('#enviarFacturaForm').on('submit', function (e) {
+			e.preventDefault();
+
+			var $form = $(this);
+			var $submit = $('#enviarFacturaSubmit');
+
+			window.withButtonLoading($submit, function () {
+				return $.ajax({
+					url: $form.attr('action'),
+					type: 'POST',
+					dataType: 'json',
+					headers: { Accept: 'application/json', 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+					data: $form.serialize(),
+				});
+			})
+				.done(function (response) {
+					window.showToast('success', response.message);
+					bootstrap.Modal.getInstance(document.getElementById('enviarFacturaModal')).hide();
+					table.ajax.reload(null, false);
+				})
+				.fail(function (xhr) {
+					if (xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.errors && xhr.responseJSON.errors.destinatario) {
+						$form.find('[data-error-for="destinatario"]').text(xhr.responseJSON.errors.destinatario[0]);
+						return;
+					}
+
+					window.showToast('error', xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'No se pudo enviar la factura.');
+				});
 		});
 
 		$table.on('click', '.btn-delete-factura', function () {
 			var deleteUrl = $(this).data('delete-url');
 
 			window.confirmDelete('¿Eliminar esta factura en borrador?', function () {
-				$.ajax({
+				return $.ajax({
 					url: deleteUrl,
 					type: 'DELETE',
 					headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
-					success: function (response) {
+				})
+					.done(function (response) {
 						window.showToast('success', response.message);
 						table.ajax.reload();
-					},
-					error: function (xhr) {
+					})
+					.fail(function (xhr) {
 						window.showToast('error', xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'No se pudo eliminar la factura.');
-					},
-				});
+					});
 			});
 		});
 

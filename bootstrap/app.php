@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\EnsureSuperAdmin;
 use App\Http\Middleware\SetTenantContext;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -12,6 +13,12 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
+    ->withSchedule(function (Schedule $schedule): void {
+        // Retención del registro de accesos (RGPD — minimización, docs/03-modelo-datos.md).
+        // En hosting compartido (Principio V) basta con un único cron de cPanel que llame a
+        // `php artisan schedule:run` cada minuto.
+        $schedule->command('logs:purgar')->daily();
+    })
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'tenant.context' => SetTenantContext::class,

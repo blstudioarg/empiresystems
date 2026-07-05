@@ -2,6 +2,63 @@
 
 @section('title', 'Iniciar sesión')
 
+@push('styles')
+	<style>
+		.login-form .form-control {
+			height: calc(2.1rem + 2px) !important;
+			padding: 0.35rem 0.75rem !important;
+			font-size: 0.8rem !important;
+		}
+
+		.login-form .btn-primary {
+			padding-top: 0.4rem !important;
+			padding-bottom: 0.4rem !important;
+			font-size: 0.85rem !important;
+		}
+
+		.login-eu-funding {
+			margin-top: 0.5rem;
+		}
+
+		.login-eu-badges {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			flex-wrap: nowrap;
+			gap: 1rem;
+		}
+
+		.login-eu-badges img {
+			height: 44px;
+			width: auto;
+			flex: 0 0 auto;
+		}
+
+		.login-eu-quote {
+			flex: 0 1 9rem;
+			margin: 0;
+			font-size: 0.72rem;
+			line-height: 1.25;
+			text-align: center;
+		}
+
+		@media (max-width: 575.98px) {
+			.login-eu-badges {
+				flex-wrap: wrap;
+			}
+		}
+
+		.login-eu-disclaimer {
+			margin: 1.25rem auto 0;
+			max-width: 34rem;
+			font-size: 0.75rem;
+			line-height: 1.4;
+			text-align: center;
+			color: #6c757d;
+		}
+	</style>
+@endpush
+
 @section('content')
 	<div class="authincation h-100">
 		<div class="container-fluid h-100">
@@ -9,11 +66,11 @@
 				<div class="col-lg-6 col-md-12 col-sm-12 mx-auto align-self-center">
 					<div class="login-form">
 						<div class="text-center">
-							<a href="{{ url('/') }}" class="brand-logo justify-content-center mb-3 d-flex align-items-center">
+							<a href="{{ url('/') }}" class="brand-logo justify-content-center mb-1 d-flex align-items-center">
 								@if (function_exists('tenant') && tenant() && tenant()->login_logo_path)
-									<img src="{{ asset('storage/'.tenant()->login_logo_path) }}" alt="Logo" style="max-width: 250px;">
+									<img src="{{ asset('storage/'.tenant()->login_logo_path) }}" alt="Logo" style="max-width: 360px;">
 								@else
-									<img src="{{ asset('images/logardo.png') }}" alt="Logo" style="max-width: 250px;">
+									<img src="{{ asset('images/logardo.png') }}" alt="Logo" style="max-width: 360px;">
 								@endif
 							</a>
 							<h3 class="title">Iniciar sesión</h3>
@@ -55,8 +112,24 @@
 								<button type="submit" class="btn btn-primary">Iniciar sesión</button>
 							</div>
 						</form>
-						<div class="text-center">
-							<p>¿No tenés cuenta? <a href="{{ route('register.create') }}">Crear cuenta</a></p>
+						<div class="text-center mb-4">
+							<p class="mb-0">¿No tenés cuenta? <a href="{{ route('register.create') }}">Crear cuenta</a></p>
+						</div>
+
+						<div class="login-eu-funding">
+							<div class="login-eu-badges">
+								<p class="login-eu-quote">«Financiado por la Unión Europea&nbsp;&ndash; NextGenerationEU.»</p>
+								<img src="{{ asset('images/login/1.png') }}"
+									alt="Plan de Recuperación, Transformación y Resiliencia">
+								<img src="{{ asset('images/login/2.png') }}"
+									alt="Financiado por la Unión Europea - NextGenerationEU">
+							</div>
+							<p class="login-eu-disclaimer">
+								«Financiado por la Unión Europea&nbsp;&ndash; NextGenerationEU. Sin embargo, los puntos de
+								vista y las opiniones expresadas son únicamente los del autor o autores y no reflejan
+								necesariamente los de la Unión Europea o la Comisión Europea. Ni la Unión Europea ni la
+								Comisión Europea pueden ser consideradas responsables de las mismas»
+							</p>
 						</div>
 					</div>
 				</div>

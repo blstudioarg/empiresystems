@@ -37,4 +37,12 @@ class SerieFactory extends Factory
             'tipo' => TipoFactura::Rectificativa,
         ]);
     }
+
+    public function simplificada(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'codigo' => 'S',
+            'tipo' => TipoFactura::Simplificada,
+        ]);
+    }
 }

@@ -149,6 +149,14 @@
 			flex-direction: column;
 		}
 
+		/* Buscador del catálogo con icono, mismo lenguaje visual introducido en POS (pos-form). */
+		.factura-catalogo-buscador-wrap { position: relative; }
+		.factura-catalogo-buscador-wrap .factura-catalogo-buscador-icon {
+			position: absolute; left: 0.65rem; top: 50%; transform: translateY(-50%);
+			color: #b3b0a8; font-size: 0.78rem; pointer-events: none;
+		}
+		.factura-catalogo-buscador-wrap .form-control { padding-left: 1.85rem; }
+
 		.factura-catalogo-filtros {
 			display: flex;
 			gap: 0.35rem;
@@ -157,6 +165,30 @@
 
 		.factura-catalogo-filtros .btn {
 			flex: 1;
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			gap: 0.3rem;
+			border-radius: 2rem;
+		}
+
+		.factura-catalogo-filtros .btn .filtro-count {
+			background: rgba(0, 0, 0, 0.08);
+			border-radius: 1rem;
+			padding: 0.02rem 0.4rem;
+			font-size: 0.68rem;
+		}
+
+		/* Activo en azul de marca (coherente con el resto de la app), no el gris/negro por
+		   defecto de outline-secondary.active de Bootstrap. */
+		.factura-catalogo-filtros .btn.active {
+			background: var(--primary, #1D69D6);
+			border-color: var(--primary, #1D69D6);
+			color: #fff;
+		}
+
+		.factura-catalogo-filtros .btn.active .filtro-count {
+			background: rgba(255, 255, 255, 0.25);
 		}
 
 		.factura-catalogo-lista {
@@ -167,18 +199,48 @@
 		}
 
 		.catalogo-item {
+			position: relative;
 			display: flex;
 			justify-content: space-between;
 			align-items: center;
 			gap: 0.5rem;
-			padding: 0.5rem 0.6rem;
+			padding: 0.5rem 0.6rem 0.5rem 0.75rem;
 			border-radius: var(--bs-border-radius-sm);
 			cursor: pointer;
+			border-left: 3px solid var(--factura-accent, transparent);
+			transition: background .12s ease, transform .08s ease;
 		}
 
 		.catalogo-item:hover {
 			background: #f6f5f2;
+			transform: translateX(1px);
 		}
+
+		.catalogo-item:active {
+			transform: scale(.98);
+		}
+
+		/* Destello breve al añadir la línea, para confirmar la acción sin interrumpir el flujo
+		   (mismo patrón que ".just-added" en pos-form.js). */
+		.catalogo-item.just-added {
+			animation: catalogo-flash .5s ease;
+		}
+
+		@keyframes catalogo-flash {
+			0% { background: rgba(29, 105, 214, .16); }
+			100% { background: transparent; }
+		}
+
+		.catalogo-item .tipo-icon {
+			flex: none;
+			width: 16px;
+			text-align: center;
+			color: var(--factura-accent, #8a8a8a);
+			font-size: 0.72rem;
+			opacity: .85;
+		}
+
+		.catalogo-item .nombre-wrap { display: flex; align-items: center; gap: 0.45rem; min-width: 0; }
 
 		.catalogo-item .nombre {
 			font-weight: 600;
@@ -200,23 +262,52 @@
 
 		.catalogo-item-libre {
 			border: 1px dashed #c9c5bd;
+			border-left: 1px dashed #c9c5bd;
 			color: #555;
 			margin-bottom: 0.35rem;
 			font-size: 0.8125rem;
 			font-weight: 600;
+			gap: 0.4rem;
 		}
 
 		.catalogo-item-libre:hover {
 			border-color: var(--primary, #1D69D6);
 			color: var(--primary, #1D69D6);
 			background: transparent;
+			transform: none;
 		}
+
+		.catalogo-item-libre i { font-size: 0.7rem; }
 
 		.catalogo-vacio {
 			font-size: 0.78rem;
 			color: #8a8a8a;
 			padding: 0.75rem 0.5rem;
 			text-align: center;
+		}
+
+		/* Línea recién añadida a la tabla: mismo destello, para que quede claro qué fila es
+		   nueva cuando el catálogo está a la izquierda y la tabla a la derecha. */
+		.linea-row.just-added td {
+			animation: catalogo-flash .6s ease;
+		}
+
+		/* Botón de quitar línea: discreto por defecto, visible al pasar por la fila (no compite
+		   visualmente con el documento salvo que el usuario lo necesite). */
+		.linea-row .btn-remove-linea {
+			opacity: 0.35;
+			transition: opacity .12s ease;
+			border: none;
+			background: transparent;
+			color: #c0392b;
+			font-size: 0.85rem;
+			padding: 0.2rem 0.4rem;
+		}
+
+		.linea-row:hover .btn-remove-linea,
+		.linea-row .btn-remove-linea:focus-visible {
+			opacity: 1;
+			background: transparent;
 		}
 	</style>
 @endpush
@@ -237,9 +328,9 @@
 
 						<div class="factura-membrete">
 							<div class="emisor">
-								@if (tenant()->logo_path)
-									<img src="{{ asset('storage/'.tenant()->logo_path) }}" alt="Logo">
-								@endif
+								{{-- Mismo logo que se imprime en el PDF de la factura (logo de facturación
+								     con fallback al logo por defecto), no el logo general de marca. --}}
+								<img src="{{ tenant()->logo_facturacion_path ? asset('storage/'.tenant()->logo_facturacion_path) : asset('images/logardo.png') }}" alt="Logo de facturación">
 								<div>
 									<strong>{{ tenant()->nombre_comercial }}</strong><br>
 									<small class="text-muted">{{ tenant()->nif }}</small>
@@ -300,6 +391,26 @@
 								<input type="number" step="0.01" min="0" max="100" name="irpf_porcentaje" id="irpf_porcentaje"
 									class="form-control" value="{{ old('irpf_porcentaje', $factura?->irpf_porcentaje) }}">
 								<div class="invalid-feedback" data-error-for="irpf_porcentaje"></div>
+							</div>
+						</div>
+
+						@php
+							$formaPagoActual = old('forma_pago', $factura?->forma_pago?->value);
+							$cuentaSeleccionada = old('cuenta_bancaria_id', $factura?->cuenta_bancaria_id);
+						@endphp
+						<div class="row gy-3 mb-4" id="cuenta-bancaria-wrapper" style="{{ $formaPagoActual === 'transferencia' ? '' : 'display:none;' }}">
+							<div class="col-md-6 factura-meta-campo">
+								<label for="cuenta_bancaria_id" class="form-label d-block">Cuenta bancaria de cobro</label>
+								<select name="cuenta_bancaria_id" id="cuenta_bancaria_id" class="form-control">
+									<option value="">Sin cuenta / indicar aparte</option>
+									@foreach ($cuentasBancarias as $cuenta)
+										<option value="{{ $cuenta->id }}" @selected((string) $cuentaSeleccionada === (string) $cuenta->id)>
+											{{ $cuenta->alias }} — {{ $cuenta->banco?->nombre }} ({{ $cuenta->iban }})
+										</option>
+									@endforeach
+								</select>
+								<div class="invalid-feedback" data-error-for="cuenta_bancaria_id"></div>
+								<small class="form-text text-muted">Solo se muestra en facturas con forma de pago «Transferencia». Se copia congelada al PDF.</small>
 							</div>
 						</div>
 
@@ -364,13 +475,22 @@
 							<div class="col-lg-3 mb-3 mb-lg-0">
 								<div class="factura-catalogo">
 									<label for="catalogo-buscador" class="form-label mb-1">Añadir artículo</label>
-									<input type="search" id="catalogo-buscador" class="form-control form-control-sm"
-										placeholder="Buscar por nombre o SKU…">
+									<div class="factura-catalogo-buscador-wrap">
+										<i class="fas fa-search factura-catalogo-buscador-icon"></i>
+										<input type="search" id="catalogo-buscador" class="form-control form-control-sm"
+											placeholder="Buscar por nombre o SKU…">
+									</div>
 
 									<div class="factura-catalogo-filtros" role="group">
-										<button type="button" class="btn btn-outline-secondary btn-sm active" data-filtro-tipo="todos">Todos</button>
-										<button type="button" class="btn btn-outline-secondary btn-sm" data-filtro-tipo="producto">Productos</button>
-										<button type="button" class="btn btn-outline-secondary btn-sm" data-filtro-tipo="servicio">Servicios</button>
+										<button type="button" class="btn btn-outline-secondary btn-sm active" data-filtro-tipo="todos">
+											Todos <span class="filtro-count" data-count-tipo="todos">0</span>
+										</button>
+										<button type="button" class="btn btn-outline-secondary btn-sm" data-filtro-tipo="producto">
+											Productos <span class="filtro-count" data-count-tipo="producto">0</span>
+										</button>
+										<button type="button" class="btn btn-outline-secondary btn-sm" data-filtro-tipo="servicio">
+											Servicios <span class="filtro-count" data-count-tipo="servicio">0</span>
+										</button>
 									</div>
 
 									<div id="catalogo-lista" class="factura-catalogo-lista"></div>
@@ -387,7 +507,7 @@
 												<th class="text-end">Cantidad</th>
 												<th class="text-end">Precio</th>
 												<th class="text-end">Dto. %</th>
-												<th class="text-end">IVA %</th>
+												<th class="text-end">{{ $regimen['label'] }} %</th>
 												<th class="text-end">Base</th>
 												<th></th>
 											</tr>
@@ -450,7 +570,15 @@
 				<input type="number" step="0.01" min="0" max="100" class="form-control text-end linea-descuento" name="" value="0">
 			</td>
 			<td>
-				<input type="number" step="0.01" min="0" max="100" class="form-control text-end linea-tipo" name="" value="21">
+				@if ($regimen['tiposValidos'] !== null)
+					<select class="form-control linea-tipo" name="">
+						@foreach ($regimen['tiposValidos'] as $tipoValido)
+							<option value="{{ $tipoValido }}" @selected($tipoValido == $regimen['tipoPorDefecto'])>{{ $tipoValido }}</option>
+						@endforeach
+					</select>
+				@else
+					<input type="number" step="0.01" min="0" max="100" class="form-control text-end linea-tipo" name="" value="{{ $regimen['tipoPorDefecto'] }}">
+				@endif
 			</td>
 			<td class="linea-base">0,00 €</td>
 			<td>
@@ -467,7 +595,25 @@
 			lineasIniciales: @json($lineasIniciales),
 			aplicaRecargoCliente: {{ $factura?->cliente?->aplica_recargo_equivalencia ? 'true' : 'false' }},
 			erroresValidacion: @json($errors->getMessages()),
+			regimen: @json($regimen),
 		};
 	</script>
 	<script src="{{ asset('js/facturas-form.js') }}"></script>
+	<script>
+		(function () {
+			const formaPago = document.getElementById('forma_pago');
+			const wrapper = document.getElementById('cuenta-bancaria-wrapper');
+			const select = document.getElementById('cuenta_bancaria_id');
+			if (!formaPago || !wrapper) return;
+
+			function toggle() {
+				const esTransferencia = formaPago.value === 'transferencia';
+				wrapper.style.display = esTransferencia ? '' : 'none';
+				if (!esTransferencia && select) select.value = '';
+			}
+
+			formaPago.addEventListener('change', toggle);
+			toggle();
+		})();
+	</script>
 @endpush

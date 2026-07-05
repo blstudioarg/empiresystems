@@ -58,6 +58,7 @@
 	<script src="{{ asset('js/theme-persist.js') }}"></script>
 	<script src="{{ asset('vendor/toastr/js/toastr.min.js') }}"></script>
 	<script src="{{ asset('js/toastr-config.js') }}"></script>
+	<script src="{{ asset('js/button-loading.js') }}"></script>
 	<script src="{{ asset('js/confirm-delete.js') }}"></script>
 
 	{{-- Player de Lordicon (cuenta propia): renderiza <lord-icon> a partir de los JSON

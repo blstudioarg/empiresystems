@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\AccionLogActividad;
+use App\Enums\EntidadLogActividad;
 use App\Enums\TipoCliente;
 use App\Http\Requests\StoreClienteRequest;
 use App\Http\Requests\UpdateClienteRequest;
 use App\Models\Cliente;
 use App\Models\Provincia;
+use App\Services\RegistradorActividad;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -14,6 +17,10 @@ use Illuminate\View\View;
 
 class ClienteController extends Controller
 {
+    public function __construct(
+        private readonly RegistradorActividad $registradorActividad,
+    ) {}
+
     public function index(Request $request): View|JsonResponse
     {
         if ($request->wantsJson()) {
@@ -54,7 +61,15 @@ class ClienteController extends Controller
 
     public function store(StoreClienteRequest $request): RedirectResponse|JsonResponse
     {
-        Cliente::create($request->validated());
+        $cliente = Cliente::create($request->validated());
+
+        $this->registradorActividad->registrar(
+            auth()->user(),
+            AccionLogActividad::Alta,
+            EntidadLogActividad::Cliente,
+            $cliente->id,
+            "Creó el cliente {$cliente->nombre}",
+        );
 
         if ($request->wantsJson()) {
             return response()->json(['message' => 'Cliente creado correctamente.'], 201);
@@ -73,6 +88,14 @@ class ClienteController extends Controller
 
         $cliente->update($request->validated());
 
+        $this->registradorActividad->registrar(
+            auth()->user(),
+            AccionLogActividad::Modificacion,
+            EntidadLogActividad::Cliente,
+            $cliente->id,
+            "Modificó el cliente {$cliente->nombre}",
+        );
+
         if ($request->wantsJson()) {
             return response()->json(['message' => 'Cliente actualizado correctamente.']);
         }
@@ -85,6 +108,14 @@ class ClienteController extends Controller
         $cliente = Cliente::findOrFail($cliente);
 
         $cliente->delete();
+
+        $this->registradorActividad->registrar(
+            auth()->user(),
+            AccionLogActividad::Baja,
+            EntidadLogActividad::Cliente,
+            $cliente->id,
+            "Eliminó el cliente {$cliente->nombre}",
+        );
 
         if ($request->wantsJson()) {
             return response()->json(['message' => 'Cliente eliminado correctamente.']);

@@ -3,16 +3,20 @@
 namespace App\Http\Controllers\SuperAdmin;
 
 use App\Enums\EstadoFactura;
+use App\Enums\EstadoUsuario;
+use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\SuperAdmin\StoreTenantRequest;
 use App\Http\Requests\SuperAdmin\UpdateTenantRequest;
 use App\Models\Factura;
 use App\Models\Provincia;
 use App\Models\Tenant;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\View\View;
 use Stancl\Tenancy\Database\Models\Domain;
 
@@ -78,6 +82,16 @@ class TenantController extends Controller
             Domain::create([
                 'domain' => $datos['dominio'],
                 'tenant_id' => $tenant->id,
+            ]);
+
+            User::create([
+                'name' => 'Administrador',
+                'email' => $datos['admin_email'],
+                'password' => Hash::make($datos['admin_password']),
+                'tenant_id' => $tenant->id,
+                'rol' => UserRole::Admin,
+                'estado' => EstadoUsuario::Aprobado,
+                'activo' => true,
             ]);
         });
 

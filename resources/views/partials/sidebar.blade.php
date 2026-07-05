@@ -27,6 +27,13 @@
 							</ul>
 						</li>
 					@else
+						<li><a href="{{ route('dashboard') }}">
+								<div class="menu-icon">
+									<x-lordicon icon="home" size="30" trigger="hover" />
+								</div>
+								<span class="nav-text ms-2">Inicio</span>
+							</a>
+						</li>
 						<li><a class="has-arrow " href="javascript:void(0);" aria-expanded="false">
 								<div class="menu-icon">
 									<x-lordicon icon="empresa" size="30" trigger="hover" />
@@ -41,10 +48,13 @@
 								<div class="menu-icon">
 									<x-lordicon icon="box" size="30" trigger="hover" />
 								</div>
-								<span class="nav-text ms-2">Productos/Servicios</span>
+								<span class="nav-text ms-2">Stock</span>
 							</a>
 							<ul aria-expanded="false">
 								<li><a href="{{ route('articulos.index') }}">Catálogo</a></li>
+								<li><a href="{{ route('stock.index') }}">Kardex</a></li>
+								<li><a href="{{ route('proveedores.index') }}">Proveedores</a></li>
+								<li><a href="{{ route('compras.index') }}">Compras</a></li>
 							</ul>
 						</li>
 						<li><a class="has-arrow " href="javascript:void(0);" aria-expanded="false">
@@ -55,6 +65,37 @@
 							</a>
 							<ul aria-expanded="false">
 								<li><a href="{{ route('facturas.index') }}">Facturas</a></li>
+									<li><a href="{{ route('facturas.create') }}">Crear factura</a></li>
+							</ul>
+						</li>
+						<li><a class="has-arrow " href="javascript:void(0);" aria-expanded="false">
+								<div class="menu-icon">
+									<x-lordicon icon="ticket" size="30" trigger="hover" />
+								</div>
+								<span class="nav-text ms-2">POS</span>
+							</a>
+							<ul aria-expanded="false">
+								<li><a href="{{ route('pos.index') }}">Facturas simplificadas</a></li>
+								<li><a href="{{ route('pos.create') }}">Crear ticket</a></li>
+							</ul>
+						</li>
+						<li><a href="{{ route('archivos.index') }}">
+								<div class="menu-icon">
+									<x-lordicon icon="system-regular-49-upload-file" size="30" trigger="hover" />
+								</div>
+								<span class="nav-text ms-2">Archivos</span>
+							</a>
+						</li>
+						<li><a class="has-arrow " href="javascript:void(0);" aria-expanded="false">
+								<div class="menu-icon">
+									<x-lordicon icon="system-regular-1-share" size="30" trigger="hover" />
+								</div>
+								<span class="nav-text ms-2">Marketing</span>
+							</a>
+							<ul aria-expanded="false">
+								<li><a href="{{ route('campanas.index') }}">Campañas</a></li>
+								<li><a href="{{ route('campanas.create') }}">Nueva campaña</a></li>
+								<li><a href="{{ route('plantillas-email.index') }}">Plantillas de email</a></li>
 							</ul>
 						</li>
 						<li><a class="has-arrow " href="javascript:void(0);" aria-expanded="false">

@@ -130,11 +130,40 @@
             for (var i = 1; i <= 9; i++) {
                 root.setProperty("--rgba-primary-" + i, hexARgba(valor, i / 10));
             }
+
+            actualizarLordIcons("primary", valor);
         } else if (campo === "color_secundario") {
             root.setProperty("--secondary", valor);
+            actualizarLordIcons("secondary", valor);
         } else if (campo === "color_topbar") {
             root.setProperty("--topbar-bg", valor);
         }
+    }
+
+    // El color de un <lord-icon> se fija vía atributo "colors" (resources/views/components/
+    // lordicon.blade.php), no vía variable CSS: cambiar --primary/--secondary no lo actualiza
+    // solo. Se reescribe el atributo de cada ícono visible en la página, preservando el otro
+    // color (primary/secondary) tal cual estaba.
+    function actualizarLordIcons(tipo, valor) {
+        document.querySelectorAll("lord-icon").forEach(function (icon) {
+            var partes = {};
+
+            (icon.getAttribute("colors") || "").split(",").forEach(function (par) {
+                var kv = par.split(":");
+                if (kv.length === 2) {
+                    partes[kv[0].trim()] = kv[1].trim();
+                }
+            });
+
+            partes[tipo] = valor;
+
+            icon.setAttribute(
+                "colors",
+                Object.keys(partes).map(function (clave) {
+                    return clave + ":" + partes[clave];
+                }).join(",")
+            );
+        });
     }
 
     function hexARgb(hex) {

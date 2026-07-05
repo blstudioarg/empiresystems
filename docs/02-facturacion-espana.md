@@ -42,8 +42,24 @@
 | Tipo | Cuándo | Particularidades |
 |------|--------|------------------|
 | **Completa / ordinaria** | Estándar entre empresas/profesionales, o cuando se supera el límite de simplificada | Requiere identificar al cliente (NIF, nombre, dirección) |
-| **Simplificada** (antiguo "ticket") | Importe total ≤ **400 €** (IVA incl.), o ≤ **3.000 €** en sectores específicos, para consumidor final | No requiere datos del cliente (salvo que este lo solicite para deducir) |
+| **Simplificada** (antiguo "ticket") | Importe total ≤ **400 €** (IVA incl.); o ≤ **3.000 €** (IVA incl.) en sectores específicos (venta al por menor, hostelería/restauración, transporte de personas, peluquerías, aparcamiento, etc. — ver 3.1); o cuando deba expedirse una **rectificativa** (esta última vía no exige tope de importe) | No requiere datos del cliente salvo que este exija factura completa ("**simplificada cualificada**", ver 3.1) |
 | **Rectificativa** | Corregir una factura ya emitida | **Serie propia** (prefijo "R"/"RE"), numeración correlativa sin huecos, debe indicar su condición, el **motivo**, y la **referencia** a la(s) factura(s) rectificada(s). Modalidad por sustitución o por diferencias |
+
+### 3.1 Factura simplificada — contenido y variante "cualificada"
+
+**Contenido mínimo** (RD 1619/2012, art. 7.1), más reducido que la completa:
+- Número y, en su caso, serie (correlativo, sin huecos).
+- Fecha de expedición y fecha de la operación si es distinta.
+- NIF e identificación del **emisor** (el receptor NO es obligatorio en la variante simple).
+- Identificación del bien entregado o servicio prestado.
+- Tipo impositivo (puede añadirse "IVA incluido"); si hay varios tipos en la misma factura, desglosar base imponible por cada uno.
+- Contraprestación total (importe final a pagar).
+- Mención "régimen especial del criterio de caja" si aplica (régimen fuera de alcance del modelo actual).
+- Si es una rectificativa en formato simplificado: referencia a la factura rectificada y detalle de lo modificado.
+
+**Simplificada "cualificada"**: cuando el destinatario es un empresario/profesional que quiere deducirse el impuesto, o un particular que exige factura para ejercer un derecho tributario, la simplificada debe incorporar además el **NIF y domicilio del destinatario** y la **cuota repercutida** (desglose del IVA, no solo "IVA incluido"). Es decir: sigue siendo tipo "simplificada" (no pasa a ordinaria), pero con más datos del receptor — en la práctica, los mismos campos de receptor que ya existen en el modelo para la ordinaria, simplemente opcionales/vacíos cuando no se piden.
+
+> **Implicación de diseño:** el modelo de `facturas` ya tiene `cliente_id` y el snapshot `cliente_*` como **nullable** (pensado desde el inicio para simplificada). No hace falta ninguna columna nueva para soportar la variante cualificada: si el usuario completa el receptor en una factura `tipo = simplificada`, es cualificada; si lo deja vacío, es la variante simple. La validación de importe (≤ 400 €/3.000 € según sector) y la lista de sectores con tope ampliado quedan como reglas de negocio a implementar en la feature correspondiente, no como columnas.
 
 ## 4. Campos obligatorios de la factura completa
 - Número y, en su caso, **serie** (correlativo, sin huecos).
@@ -94,6 +110,7 @@ El impuesto indirecto **no es siempre IVA** según dónde tribute el emisor:
 - Verifactu técnica (hash/QR/XML): [AEAT — FAQ huella/hash](https://sede.agenciatributaria.gob.es/Sede/iva/sistemas-informaticos-facturacion-verifactu/preguntas-frecuentes/huella-hash.html), [AEAT — FAQ sistemas Verifactu](https://sede.agenciatributaria.gob.es/Sede/iva/sistemas-informaticos-facturacion-verifactu/preguntas-frecuentes/sistemas-verifactu.html)
 - Factura electrónica B2B / RD 238/2026: [BOE-A-2026-7295](https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-7295), [AEAT — facturación electrónica obligatoria](https://sede.agenciatributaria.gob.es/Sede/todas-noticias/2026/marzo/31/facturacion-electronica-obligatoria.html), [BBVA](https://www.bbva.com/es/es/empresas/factura-electronica-b2b-y-ley-crea-y-crece-calendario-requisitos-y-retos/)
 - Tipos de factura / campos: [AEAT — contenido de las facturas](https://sede.agenciatributaria.gob.es/Sede/iva/facturacion-registro/facturacion-iva/contenido-facturas.html), [tukonta — factura simplificada](https://tukonta.com/asesoramiento/factura-simplificada/), [AEAT — facturas rectificativas](https://sede.agenciatributaria.gob.es/Sede/iva/facturacion-registro/facturacion-iva/facturas-rectificativas.html)
+- Factura simplificada (supuestos, contenido, cualificada): [AEAT — Manual actividades económicas 5.10.6 Facturas simplificadas](https://sede.agenciatributaria.gob.es/Sede/ayuda/manuales-videos-folletos/manuales-practicos/folleto-actividades-economicas/5-impuesto-sobre-valor-anadido/5_10-facturas/5_10_6-facturas-simplificadas.html)
 - IVA / recargo / IRPF: [AEAT — tipos impositivos IVA](https://sede.agenciatributaria.gob.es/Sede/iva/calculo-iva-repercutido-clientes/tipos-impositivos-iva.html)
 - IGIC Canarias 2026: [guiafiscal — IGIC 2026](https://guiafiscal.es/iva/igic-canarias-2026/), [KPMG — cambios tipos IGIC 2026](https://assets.kpmg.com/content/dam/kpmgsites/es/pdf/2026/01/tax-alert-cambios-tipos-igic-2026.pdf.coredownload.inline.pdf)
 - Numeración/series: [AEAT — recomendaciones numeración](https://sede.agenciatributaria.gob.es/Sede/iva/facturacion-registro/facturacion-iva.html)

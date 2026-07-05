@@ -84,7 +84,7 @@ class FacturaCrudTest extends TestCase
         $this->assertDatabaseCount('facturas', 0);
     }
 
-    public function test_store_falla_con_tipo_impositivo_fuera_de_regimen(): void
+    public function test_store_acepta_tipo_impositivo_fuera_de_la_lista_habitual_del_regimen(): void
     {
         $tenant = Tenant::factory()->create(['regimen_impositivo' => 'iva']);
         $user = User::factory()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
@@ -100,8 +100,8 @@ class FacturaCrudTest extends TestCase
             ],
         ]);
 
-        $response->assertSessionHasErrors('lineas.0.tipo_impositivo');
-        $this->assertDatabaseCount('facturas', 0);
+        $response->assertSessionDoesntHaveErrors('lineas.0.tipo_impositivo');
+        $this->assertDatabaseCount('facturas', 1);
     }
 
     public function test_update_recalcula_totales(): void

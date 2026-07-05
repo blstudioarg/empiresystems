@@ -7,7 +7,8 @@
 		body { font-family: DejaVu Sans, sans-serif; font-size: 12px; color: #222; }
 		.header { display: table; width: 100%; margin-bottom: 20px; }
 		.header .col { display: table-cell; vertical-align: top; width: 50%; }
-		.header .col.right { text-align: right; }
+		.header .col.right { text-align: left; }
+		.cliente-info { margin-top: 60px; }
 		h1 { font-size: 20px; margin: 0 0 5px; }
 		table { width: 100%; border-collapse: collapse; margin-top: 15px; }
 		th, td { padding: 6px 8px; border-bottom: 1px solid #ddd; text-align: left; }
@@ -50,37 +51,50 @@
 			</div>
 		</div>
 		<div class="col right">
-			<h1>{{ $factura->numero_completo ?? 'Factura (borrador)' }}</h1>
-			<span class="badge">{{ ucfirst($factura->estado->value) }}</span>
-				@if ($factura->es_rectificativa)
-					<span class="badge">Factura rectificativa</span>
-				@endif
-				<br><br>
-			Fecha de expedición: {{ $factura->fecha_expedicion->format('d/m/Y') }}<br>
-			@if ($factura->fecha_operacion && $factura->fecha_operacion->ne($factura->fecha_expedicion))
-				Fecha de operación: {{ $factura->fecha_operacion->format('d/m/Y') }}<br>
+			<div class="cliente-info">
+			<strong>Cliente</strong><br>
+			{{ $factura->cliente_razon_social ?: $factura->cliente_nombre }}<br>
+			@if ($factura->cliente_nif)
+				NIF: {{ $factura->cliente_nif }}<br>
 			@endif
-			@if ($factura->fecha_vencimiento)
-				Fecha de vencimiento: {{ $factura->fecha_vencimiento->format('d/m/Y') }}<br>
+			@if ($factura->cliente_direccion)
+				{{ $factura->cliente_direccion }}<br>
 			@endif
-			Forma de pago: {{ ucfirst($factura->forma_pago->value) }}
+			{{ trim($factura->cliente_cp.' '.$factura->cliente_ciudad) }}@if ($factura->cliente_provincia) ({{ $factura->cliente_provincia }})@endif<br>
+			@if ($factura->cliente_pais)
+				{{ $factura->cliente_pais }}
+			@endif
+			</div>
 		</div>
 	</div>
 
-	<div>
-		<strong>Cliente</strong><br>
-		{{ $factura->cliente_razon_social ?: $factura->cliente_nombre }}<br>
-		@if ($factura->cliente_nif)
-			NIF: {{ $factura->cliente_nif }}<br>
-		@endif
-		@if ($factura->cliente_direccion)
-			{{ $factura->cliente_direccion }}<br>
-		@endif
-		{{ trim($factura->cliente_cp.' '.$factura->cliente_ciudad) }}@if ($factura->cliente_provincia) ({{ $factura->cliente_provincia }})@endif<br>
-		@if ($factura->cliente_pais)
-			{{ $factura->cliente_pais }}
-		@endif
-	</div>
+	<table>
+		<thead>
+			<tr>
+				<th>Número</th>
+				<th>Fecha de expedición</th>
+				@if ($factura->fecha_operacion && $factura->fecha_operacion->ne($factura->fecha_expedicion))
+					<th>Fecha de operación</th>
+				@endif
+				<th>Fecha de vencimiento</th>
+				<th>Estado</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td>
+					{{ $factura->numero_completo ?? 'Borrador' }}
+					@if ($factura->es_rectificativa)<br><span class="badge">Rectificativa</span>@endif
+				</td>
+				<td>{{ $factura->fecha_expedicion->format('d/m/Y') }}</td>
+				@if ($factura->fecha_operacion && $factura->fecha_operacion->ne($factura->fecha_expedicion))
+					<td>{{ $factura->fecha_operacion->format('d/m/Y') }}</td>
+				@endif
+				<td>{{ $factura->fecha_vencimiento ? $factura->fecha_vencimiento->format('d/m/Y') : '-' }}</td>
+				<td>{{ ucfirst($factura->estado->value) }}</td>
+			</tr>
+		</tbody>
+	</table>
 
 	<table>
 		<thead>
@@ -97,10 +111,10 @@
 			@foreach ($factura->lineas as $linea)
 				<tr>
 					<td>{{ $linea->concepto }}</td>
-					<td>{{ rtrim(rtrim(number_format((float) $linea->cantidad, 4, ',', '.'), '0'), ',') }} {{ $linea->unidad }}</td>
-					<td>{{ number_format((float) $linea->precio_unitario, 2, ',', '.') }} €</td>
-					<td>{{ $linea->descuento_porcentaje ? $linea->descuento_porcentaje.'%' : '-' }}</td>
-					<td>{{ $linea->tipo_impositivo }}%</td>
+					<td>{{ \App\Support\Formato::cantidad($linea->cantidad) }} {{ $linea->unidad }}</td>
+					<td>{{ \App\Support\Formato::moneda($linea->precio_unitario) }} €</td>
+					<td>{{ $linea->descuento_porcentaje ? \App\Support\Formato::porcentaje($linea->descuento_porcentaje).'%' : '-' }}</td>
+					<td>{{ \App\Support\Formato::porcentaje($linea->tipo_impositivo) }}%</td>
 					<td class="text-right">{{ number_format((float) $linea->base, 2, ',', '.') }} €</td>
 				</tr>
 			@endforeach
@@ -124,6 +138,37 @@
 		</tr>
 	</table>
 
+	<div style="clear: both;"></div>
+	<p style="margin-top: 25px;"><strong>Forma de pago:</strong> {{ ucfirst($factura->forma_pago->value) }}</p>
+
+	@if ($factura->cuenta_bancaria_iban)
+		<table>
+			<thead>
+				<tr>
+					<th colspan="2">Datos de cobro</th>
+				</tr>
+			</thead>
+			<tbody>
+				@if ($factura->cuenta_bancaria_banco)
+					<tr>
+						<td style="width: 160px;">Banco</td>
+						<td>{{ $factura->cuenta_bancaria_banco }}</td>
+					</tr>
+				@endif
+				<tr>
+					<td style="width: 160px;">IBAN</td>
+					<td>{{ $factura->cuenta_bancaria_iban }}</td>
+				</tr>
+				@if ($factura->cuenta_bancaria_titular)
+					<tr>
+						<td style="width: 160px;">Titular</td>
+						<td>{{ $factura->cuenta_bancaria_titular }}</td>
+					</tr>
+				@endif
+			</tbody>
+		</table>
+	@endif
+
 	@if ($factura->es_rectificativa)
 		<div style="margin-top:20px">
 			<strong>Factura rectificativa</strong> ({{ $factura->tipo_rectificacion?->value === 'diferencias' ? 'por diferencias' : 'por sustitución' }})<br>
@@ -133,6 +178,35 @@
 	@elseif ($factura->rectificativa)
 		<div style="margin-top:20px">
 			<strong>Rectificada</strong> por la factura {{ $factura->rectificativa->numero_completo }}
+		</div>
+	@endif
+
+	@if ($factura->estado->value === 'emitida' && $factura->pagos->isNotEmpty())
+		<div style="margin-top:20px">
+			<strong>Historial de cobros</strong>
+			<table>
+				<thead>
+					<tr>
+						<th>Fecha</th>
+						<th>Método</th>
+						<th>Referencia</th>
+						<th>Estado</th>
+						<th class="text-right">Importe</th>
+					</tr>
+				</thead>
+				<tbody>
+					@foreach ($factura->pagos as $pago)
+						<tr>
+							<td>{{ $pago->fecha->format('d/m/Y') }}</td>
+							<td>{{ ucfirst($pago->metodo->value) }}</td>
+							<td>{{ $pago->referencia ?: '-' }}</td>
+							<td>{{ $pago->anulado_at ? 'Anulado' : 'Vigente' }}</td>
+							<td class="text-right">{{ number_format((float) $pago->importe, 2, ',', '.') }} €</td>
+						</tr>
+					@endforeach
+				</tbody>
+			</table>
+			<p>Saldo pendiente: {{ number_format($factura->saldoPendiente(), 2, ',', '.') }} €</p>
 		</div>
 	@endif
 

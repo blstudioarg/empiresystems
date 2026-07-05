@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Enums\FormaPago;
 use App\Http\Requests\Concerns\FacturaValidationMessages;
 use App\Models\Cliente;
+use App\Models\CuentaBancaria;
 use App\Rules\TipoImpositivoValido;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -37,6 +38,7 @@ class StoreFacturaRequest extends FormRequest
             'fecha_operacion' => ['nullable', 'date'],
             'fecha_vencimiento' => ['nullable', 'date', 'after_or_equal:fecha_expedicion'],
             'forma_pago' => ['required', Rule::enum(FormaPago::class)],
+            'cuenta_bancaria_id' => ['nullable', Rule::exists(CuentaBancaria::class, 'id')->where('tenant_id', tenant()->id)],
             'irpf_porcentaje' => ['nullable', 'numeric', 'between:0,100'],
             'notas' => ['nullable', 'string'],
             'lineas' => ['required', 'array', 'min:1'],

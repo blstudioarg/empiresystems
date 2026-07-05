@@ -3,6 +3,10 @@
 namespace App\Services;
 
 use App\Enums\EstadoFactura;
+use App\Enums\OrigenMovimientoStock;
+use App\Enums\TipoArticulo;
+use App\Enums\TipoFactura;
+use App\Enums\TipoMovimientoStock;
 use App\Exceptions\FacturaNoEmitibleException;
 use App\Models\Factura;
 use App\Models\FacturaEvento;
@@ -11,7 +15,10 @@ use Illuminate\Support\Facades\DB;
 
 class EmisorFacturas
 {
-    public function __construct(private readonly NumeradorFacturas $numerador) {}
+    public function __construct(
+        private readonly NumeradorFacturas $numerador,
+        private readonly RegistroMovimientoStock $registroMovimientoStock,
+    ) {}
 
     public function emitir(Factura $factura): Factura
     {
@@ -28,6 +35,8 @@ class EmisorFacturas
             $factura->fecha_vencimiento = VencimientoFactura::calcular($hoy->toDateString());
             $factura->estado = EstadoFactura::Emitida;
             $factura->save();
+
+            $this->moverStock($factura);
 
             FacturaEvento::create([
                 'tenant_id' => $factura->tenant_id,
@@ -61,6 +70,41 @@ class EmisorFacturas
         });
     }
 
+    /**
+     * Mueve stock en el mismo acto de emitir (FR-015/FR-016, D4/D5): las facturas ordinarias y
+     * simplificadas (POS, vía RegistroTicket) descuentan por línea de artículo producto con
+     * gestión de stock; las rectificativas (que copian las líneas de la factura original) generan
+     * el movimiento inverso — entrada por devolución — en vez de otra salida.
+     */
+    private function moverStock(Factura $factura): void
+    {
+        foreach ($factura->lineas as $linea) {
+            $articulo = $linea->articulo;
+
+            if (! $articulo || $articulo->tipo !== TipoArticulo::Producto || ! $articulo->gestion_stock) {
+                continue;
+            }
+
+            if ($factura->es_rectificativa) {
+                $this->registroMovimientoStock->registrar(
+                    articulo: $articulo,
+                    tipo: TipoMovimientoStock::Entrada,
+                    cantidad: (float) $linea->cantidad,
+                    origen: OrigenMovimientoStock::Devolucion,
+                    factura: $factura,
+                );
+            } else {
+                $this->registroMovimientoStock->registrar(
+                    articulo: $articulo,
+                    tipo: TipoMovimientoStock::Salida,
+                    cantidad: (float) $linea->cantidad,
+                    origen: OrigenMovimientoStock::Factura,
+                    factura: $factura,
+                );
+            }
+        }
+    }
+
     private function validar(Factura $factura): void
     {
         if ($factura->estado !== EstadoFactura::Borrador) {
@@ -69,6 +113,12 @@ class EmisorFacturas
 
         if (! $factura->es_rectificativa && (float) $factura->base_total <= 0) {
             throw new FacturaNoEmitibleException('La factura no tiene líneas con importe.');
+        }
+
+        // La factura simplificada no exige datos del receptor (variante simple). Si el usuario los
+        // informa (simplificada cualificada) se conservan, pero nunca son obligatorios para emitir.
+        if ($factura->tipo === TipoFactura::Simplificada) {
+            return;
         }
 
         if (! $factura->cliente_nif || ! ($factura->cliente_nombre || $factura->cliente_razon_social) || ! $factura->cliente_direccion) {

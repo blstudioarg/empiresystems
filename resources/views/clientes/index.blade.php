@@ -115,7 +115,7 @@
 		</div>
 
 		<div class="modal fade" id="clienteModal" tabindex="-1" aria-hidden="true">
-			<div class="modal-dialog modal-lg" role="document">
+			<div class="modal-dialog modal-dialog-centered modal-lg" role="document">
 				<div class="modal-content">
 					<form id="cliente-form" method="POST" action="{{ route('clientes.store') }}">
 						@csrf

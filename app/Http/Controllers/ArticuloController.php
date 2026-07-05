@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\AccionLogActividad;
+use App\Enums\EntidadLogActividad;
 use App\Enums\TipoArticulo;
 use App\Http\Requests\StoreArticuloRequest;
 use App\Http\Requests\UpdateArticuloRequest;
 use App\Models\Articulo;
+use App\Services\RegistradorActividad;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -13,6 +16,10 @@ use Illuminate\View\View;
 
 class ArticuloController extends Controller
 {
+    public function __construct(
+        private readonly RegistradorActividad $registradorActividad,
+    ) {}
+
     public function index(Request $request): View|JsonResponse
     {
         if ($request->wantsJson()) {
@@ -50,7 +57,15 @@ class ArticuloController extends Controller
 
     public function store(StoreArticuloRequest $request): RedirectResponse|JsonResponse
     {
-        Articulo::create($this->normalizarStock($request->validated()));
+        $articulo = Articulo::create($this->normalizarStock($request->validated()));
+
+        $this->registradorActividad->registrar(
+            auth()->user(),
+            AccionLogActividad::Alta,
+            EntidadLogActividad::Articulo,
+            $articulo->id,
+            "Creó el artículo {$articulo->nombre}",
+        );
 
         if ($request->wantsJson()) {
             return response()->json(['message' => 'Artículo creado correctamente.'], 201);
@@ -67,6 +82,14 @@ class ArticuloController extends Controller
 
         $articulo->update($this->normalizarStock($request->validated()));
 
+        $this->registradorActividad->registrar(
+            auth()->user(),
+            AccionLogActividad::Modificacion,
+            EntidadLogActividad::Articulo,
+            $articulo->id,
+            "Modificó el artículo {$articulo->nombre}",
+        );
+
         if ($request->wantsJson()) {
             return response()->json(['message' => 'Artículo actualizado correctamente.']);
         }
@@ -79,6 +102,14 @@ class ArticuloController extends Controller
         $articulo = Articulo::findOrFail($articulo);
 
         $articulo->delete();
+
+        $this->registradorActividad->registrar(
+            auth()->user(),
+            AccionLogActividad::Baja,
+            EntidadLogActividad::Articulo,
+            $articulo->id,
+            "Eliminó el artículo {$articulo->nombre}",
+        );
 
         if ($request->wantsJson()) {
             return response()->json(['message' => 'Artículo eliminado correctamente.']);

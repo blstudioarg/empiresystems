@@ -3,6 +3,8 @@
 namespace Tests\Feature\SuperAdmin;
 
 use App\Enums\EstadoFactura;
+use App\Enums\EstadoUsuario;
+use App\Enums\UserRole;
 use App\Models\Factura;
 use App\Models\Tenant;
 use App\Models\User;
@@ -74,6 +76,8 @@ class TenantCrudTest extends TestCase
             'nif' => 'B12345674',
             'regimen_impositivo' => 'iva',
             'email' => 'contacto@nuevo-tenant.test',
+            'admin_email' => 'admin@nuevo-tenant.test',
+            'admin_password' => 'password123',
         ]);
 
         $response->assertRedirect(route('super_admin.tenants.index'));
@@ -81,6 +85,189 @@ class TenantCrudTest extends TestCase
         $tenant = Tenant::where('nombre_comercial', 'Nuevo Tenant SL')->first();
         $this->assertNotNull($tenant);
         $this->assertEquals('nuevo-tenant.test', $tenant->dominio()?->domain);
+    }
+
+    public function test_alta_crea_usuario_administrador_activo_y_aprobado(): void
+    {
+        $this->actingAsSuperAdmin();
+
+        $this->post('http://localhost/super_admin/tenants', [
+            'dominio' => 'nuevo-tenant.test',
+            'nombre_comercial' => 'Nuevo Tenant SL',
+            'razon_social' => 'Nuevo Tenant Sociedad Limitada',
+            'nif' => 'B12345674',
+            'regimen_impositivo' => 'iva',
+            'email' => 'contacto@nuevo-tenant.test',
+            'admin_email' => 'admin@nuevo-tenant.test',
+            'admin_password' => 'password123',
+        ]);
+
+        $tenant = Tenant::where('nombre_comercial', 'Nuevo Tenant SL')->first();
+        $admin = User::where('tenant_id', $tenant->id)->where('email', 'admin@nuevo-tenant.test')->first();
+
+        $this->assertNotNull($admin);
+        $this->assertEquals(UserRole::Admin, $admin->rol);
+        $this->assertEquals(EstadoUsuario::Aprobado, $admin->estado);
+        $this->assertTrue($admin->activo);
+    }
+
+    public function test_administrador_creado_puede_iniciar_sesion_en_el_dominio_del_tenant(): void
+    {
+        $this->actingAsSuperAdmin();
+
+        $this->post('http://localhost/super_admin/tenants', [
+            'dominio' => 'nuevo-tenant.test',
+            'nombre_comercial' => 'Nuevo Tenant SL',
+            'razon_social' => 'Nuevo Tenant Sociedad Limitada',
+            'nif' => 'B12345674',
+            'regimen_impositivo' => 'iva',
+            'email' => 'contacto@nuevo-tenant.test',
+            'admin_email' => 'admin@nuevo-tenant.test',
+            'admin_password' => 'password123',
+        ]);
+
+        $this->post('http://localhost/logout');
+
+        $tenant = Tenant::where('nombre_comercial', 'Nuevo Tenant SL')->first();
+        $admin = User::where('tenant_id', $tenant->id)->where('email', 'admin@nuevo-tenant.test')->first();
+
+        $response = $this->post("http://{$this->domainFor($tenant)}/login", [
+            'email' => 'admin@nuevo-tenant.test',
+            'password' => 'password123',
+        ]);
+
+        $response->assertRedirect('/');
+        $this->assertAuthenticatedAs($admin);
+    }
+
+    public function test_administrador_de_un_tenant_no_es_visible_ni_autenticable_en_otro_tenant(): void
+    {
+        $this->actingAsSuperAdmin();
+
+        $this->post('http://localhost/super_admin/tenants', [
+            'dominio' => 'tenant-a.test',
+            'nombre_comercial' => 'Tenant A SL',
+            'razon_social' => 'Tenant A Sociedad Limitada',
+            'nif' => 'B12345674',
+            'regimen_impositivo' => 'iva',
+            'email' => 'contacto@tenant-a.test',
+            'admin_email' => 'admin@tenant-a.test',
+            'admin_password' => 'password123',
+        ]);
+
+        $this->post('http://localhost/super_admin/tenants', [
+            'dominio' => 'tenant-b.test',
+            'nombre_comercial' => 'Tenant B SL',
+            'razon_social' => 'Tenant B Sociedad Limitada',
+            'nif' => 'B87654323',
+            'regimen_impositivo' => 'iva',
+            'email' => 'contacto@tenant-b.test',
+            'admin_email' => 'admin@tenant-b.test',
+            'admin_password' => 'password123',
+        ]);
+
+        $tenantA = Tenant::where('nombre_comercial', 'Tenant A SL')->first();
+        $tenantB = Tenant::where('nombre_comercial', 'Tenant B SL')->first();
+
+        $this->assertNull(
+            User::where('tenant_id', $tenantB->id)->where('email', 'admin@tenant-a.test')->first()
+        );
+
+        $this->post('http://localhost/logout');
+
+        $response = $this->post("http://{$this->domainFor($tenantB)}/login", [
+            'email' => 'admin@tenant-a.test',
+            'password' => 'password123',
+        ]);
+
+        $response->assertSessionHasErrors('email');
+        $this->assertGuest();
+    }
+
+    public function test_fallo_al_crear_administrador_revierte_tenant_y_dominio(): void
+    {
+        $this->actingAsSuperAdmin();
+
+        User::creating(function () {
+            throw new \RuntimeException('Fallo simulado al crear el administrador.');
+        });
+
+        try {
+            $this->withoutExceptionHandling()->post('http://localhost/super_admin/tenants', [
+                'dominio' => 'falla-tenant.test',
+                'nombre_comercial' => 'Falla Tenant SL',
+                'razon_social' => 'Falla Tenant Sociedad Limitada',
+                'nif' => 'B12345674',
+                'regimen_impositivo' => 'iva',
+                'email' => 'contacto@falla-tenant.test',
+                'admin_email' => 'admin@falla-tenant.test',
+                'admin_password' => 'password123',
+            ]);
+
+            $this->fail('Se esperaba que la creación del administrador lanzara una excepción.');
+        } catch (\RuntimeException $e) {
+            $this->assertSame('Fallo simulado al crear el administrador.', $e->getMessage());
+        }
+
+        $this->assertDatabaseMissing('tenants', ['nombre_comercial' => 'Falla Tenant SL']);
+        $this->assertDatabaseMissing('domains', ['domain' => 'falla-tenant.test']);
+    }
+
+    public function test_alta_sin_credenciales_de_administrador_falla_y_no_crea_tenant(): void
+    {
+        $this->actingAsSuperAdmin();
+
+        $response = $this->post('http://localhost/super_admin/tenants', [
+            'dominio' => 'sin-admin.test',
+            'nombre_comercial' => 'Sin Admin SL',
+            'razon_social' => 'Sin Admin Sociedad Limitada',
+            'nif' => 'B12345674',
+            'regimen_impositivo' => 'iva',
+            'email' => 'contacto@sin-admin.test',
+            'admin_email' => '',
+            'admin_password' => '',
+        ]);
+
+        $response->assertSessionHasErrors(['admin_email', 'admin_password']);
+        $this->assertNull(Tenant::where('nombre_comercial', 'Sin Admin SL')->first());
+    }
+
+    public function test_alta_con_email_de_administrador_invalido_falla(): void
+    {
+        $this->actingAsSuperAdmin();
+
+        $response = $this->post('http://localhost/super_admin/tenants', [
+            'dominio' => 'email-invalido.test',
+            'nombre_comercial' => 'Email Invalido SL',
+            'razon_social' => 'Email Invalido Sociedad Limitada',
+            'nif' => 'B12345674',
+            'regimen_impositivo' => 'iva',
+            'email' => 'contacto@email-invalido.test',
+            'admin_email' => 'no-es-un-email',
+            'admin_password' => 'password123',
+        ]);
+
+        $response->assertSessionHasErrors('admin_email');
+        $this->assertNull(Tenant::where('nombre_comercial', 'Email Invalido SL')->first());
+    }
+
+    public function test_alta_con_contrasena_de_administrador_demasiado_corta_falla(): void
+    {
+        $this->actingAsSuperAdmin();
+
+        $response = $this->post('http://localhost/super_admin/tenants', [
+            'dominio' => 'password-corta.test',
+            'nombre_comercial' => 'Password Corta SL',
+            'razon_social' => 'Password Corta Sociedad Limitada',
+            'nif' => 'B12345674',
+            'regimen_impositivo' => 'iva',
+            'email' => 'contacto@password-corta.test',
+            'admin_email' => 'admin@password-corta.test',
+            'admin_password' => 'corta',
+        ]);
+
+        $response->assertSessionHasErrors('admin_password');
+        $this->assertNull(Tenant::where('nombre_comercial', 'Password Corta SL')->first());
     }
 
     public function test_alta_con_dominio_duplicado_falla(): void

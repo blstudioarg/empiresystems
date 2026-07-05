@@ -173,7 +173,7 @@
 		var id = this.nombreToId[nombre];
 
 		window.confirmDelete('¿Eliminar la unidad "' + nombre + '" del catálogo? Los artículos que ya la usen conservan su texto.', function () {
-			$.ajax({
+			return $.ajax({
 				url: buildUrl(config.destroyUrlTemplate, id),
 				method: 'POST',
 				data: { _method: 'DELETE', _token: config.csrf },
@@ -210,12 +210,14 @@
 			data._method = 'PUT';
 		}
 
-		$.ajax({
-			url: url,
-			method: 'POST',
-			data: data,
-			dataType: 'json',
-			headers: { Accept: 'application/json' },
+		window.withButtonLoading($form.find('button[type="submit"]'), function () {
+			return $.ajax({
+				url: url,
+				method: 'POST',
+				data: data,
+				dataType: 'json',
+				headers: { Accept: 'application/json' },
+			});
 		})
 			.done(function (response) {
 				modalObj.hide();

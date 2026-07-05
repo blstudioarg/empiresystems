@@ -6,11 +6,19 @@
 	 * (borrado y otras, p. ej. emitir factura). Por defecto se comporta como confirmación de
 	 * borrado (ícono papelera, botón rojo "Eliminar"); pasar `opciones` para adaptarlo a otra
 	 * acción sin duplicar el modal.
-	 * Uso: window.confirmDelete('¿Eliminar este cliente?', function () { ...ajax de borrado... });
+	 *
+	 * `onConfirm` DEBE devolver el jqXHR/Promise de la petición (p. ej. `return $.ajax({...})`)
+	 * — el modal usa `window.withButtonLoading` (ver button-loading.js) sobre el propio botón de
+	 * confirmación y permanece abierto con spinner hasta que la petición termina, recién ahí se
+	 * cierra. Si `onConfirm` no devuelve nada, el modal se cierra igual (sin loading visible).
+	 *
+	 * Uso: window.confirmDelete('¿Eliminar este cliente?', function () {
+	 *     return $.ajax({ ...ajax de borrado... });
+	 * });
 	 * Uso con opciones: window.confirmDelete('¿Emitir esta factura?', onConfirm, {
 	 *     confirmLabel: 'Emitir', confirmClass: 'btn-primary', icon: 'invoice',
 	 * });
-	 * Ver docs/04-front-guidelines.md ("Confirmación de eliminación").
+	 * Ver docs/04-front-guidelines.md ("Confirmación de eliminación" y "Estado de carga en botones").
 	 */
 	window.confirmDelete = function (message, onConfirm, opciones) {
 		var $modal = $('#confirmDeleteModal');
@@ -33,13 +41,18 @@
 			icono.setAttribute('src', icono.dataset.baseSrc + '/' + (opciones.icon || 'wired-outline-185-trash-bin-hover-empty') + '.json');
 		}
 
+		var modalInstance = bootstrap.Modal.getOrCreateInstance($modal[0]);
+
 		$boton
 			.off('click')
 			.on('click', function () {
-				bootstrap.Modal.getOrCreateInstance($modal[0]).hide();
-				onConfirm();
+				window.withButtonLoading($boton, function () {
+					return onConfirm();
+				}).always(function () {
+					modalInstance.hide();
+				});
 			});
 
-		bootstrap.Modal.getOrCreateInstance($modal[0]).show();
+		modalInstance.show();
 	};
 })(jQuery);

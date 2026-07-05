@@ -160,14 +160,15 @@
 			event.preventDefault();
 
 			var $submitBtn = $form.find('button[type="submit"]');
-			$submitBtn.prop('disabled', true);
 
-			$.ajax({
-				url: $form.attr('action'),
-				method: 'POST',
-				data: $form.serialize(),
-				dataType: 'json',
-				headers: { Accept: 'application/json' },
+			window.withButtonLoading($submitBtn, function () {
+				return $.ajax({
+					url: $form.attr('action'),
+					method: 'POST',
+					data: $form.serialize(),
+					dataType: 'json',
+					headers: { Accept: 'application/json' },
+				});
 			})
 				.done(function (response) {
 					modal.hide();
@@ -180,9 +181,6 @@
 					} else {
 						showAlert('danger', 'Ocurrió un error inesperado. Inténtalo de nuevo.');
 					}
-				})
-				.always(function () {
-					$submitBtn.prop('disabled', false);
 				});
 		});
 
@@ -190,7 +188,7 @@
 			var url = $(this).data('delete-url');
 
 			window.confirmDelete('¿Eliminar este artículo? Esta acción no se puede deshacer desde la pantalla.', function () {
-				$.ajax({
+				return $.ajax({
 					url: url,
 					method: 'POST',
 					data: { _method: 'DELETE', _token: $('meta[name="csrf-token"]').attr('content') || $form.find('input[name="_token"]').val() },

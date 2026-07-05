@@ -61,16 +61,49 @@ class Tenant extends BaseTenant
     protected static function booted(): void
     {
         static::created(function (self $tenant) {
-            Serie::firstOrCreate(
-                ['tenant_id' => $tenant->id, 'codigo' => 'F', 'ejercicio' => null],
-                [
-                    'tipo' => 'ordinaria',
-                    'proximo_numero' => 1,
-                    'formato' => '{serie}-{anio}-{numero:0000}',
-                    'activa' => true,
-                ]
-            );
+            // Series por defecto del tenant: una por cada tipo de factura soportado (ordinaria,
+            // rectificativa, simplificada). Antes solo se sembraba "F" aquí y "R"/"S" dependían de
+            // `SerieSeeder`, que solo corre una vez y solo para el tenant demo — cualquier tenant
+            // nuevo se quedaba sin serie rectificativa/simplificada y `Serie::activaPorTipo()`
+            // (firstOrFail) reventaba al primer intento de rectificar o emitir un ticket POS.
+            foreach (self::seriesPorDefecto() as $codigo => $atributos) {
+                Serie::firstOrCreate(
+                    ['tenant_id' => $tenant->id, 'codigo' => $codigo, 'ejercicio' => null],
+                    $atributos
+                );
+            }
         });
+    }
+
+    /**
+     * Catálogo de series que todo tenant nuevo debe tener desde el alta. Único punto de verdad
+     * para el sembrado automático (`booted()`) y para seeders/factories que necesiten los mismos
+     * valores por defecto.
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    public static function seriesPorDefecto(): array
+    {
+        return [
+            'F' => [
+                'tipo' => 'ordinaria',
+                'proximo_numero' => 1,
+                'formato' => '{serie}-{anio}-{numero:0000}',
+                'activa' => true,
+            ],
+            'R' => [
+                'tipo' => 'rectificativa',
+                'proximo_numero' => 1,
+                'formato' => '{serie}-{anio}-{numero:0000}',
+                'activa' => true,
+            ],
+            'S' => [
+                'tipo' => 'simplificada',
+                'proximo_numero' => 1,
+                'formato' => '{serie}-{anio}-{numero:0000}',
+                'activa' => true,
+            ],
+        ];
     }
 
     public static function getCustomColumns(): array

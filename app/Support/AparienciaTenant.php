@@ -23,7 +23,7 @@ class AparienciaTenant
 
     public const DEFAULT_SECUNDARIO = '#1F2025';
 
-    public const DEFAULT_TOPBAR = '#FFFFFF';
+    public const DEFAULT_TOPBAR = '#000000';
 
     public const DEFAULT_FACEBOOK = '';
 

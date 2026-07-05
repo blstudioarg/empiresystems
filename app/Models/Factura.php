@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\EstadoCobro;
 use App\Enums\EstadoFactura;
 use App\Enums\FormaPago;
 use App\Enums\RegimenImpositivo;
@@ -45,6 +46,10 @@ class Factura extends Model
         'fecha_operacion',
         'fecha_vencimiento',
         'forma_pago',
+        'cuenta_bancaria_id',
+        'cuenta_bancaria_banco',
+        'cuenta_bancaria_iban',
+        'cuenta_bancaria_titular',
         'moneda',
         'regimen_impositivo',
         'aplica_recargo',
@@ -96,6 +101,11 @@ class Factura extends Model
         return $this->belongsTo(Cliente::class);
     }
 
+    public function cuentaBancaria(): BelongsTo
+    {
+        return $this->belongsTo(CuentaBancaria::class);
+    }
+
     public function lineas(): HasMany
     {
         return $this->hasMany(FacturaLinea::class)->orderBy('orden');
@@ -119,5 +129,48 @@ class Factura extends Model
     public function rectificativa(): HasOne
     {
         return $this->hasOne(Factura::class, 'factura_rectificada_id');
+    }
+
+    public function pagos(): HasMany
+    {
+        return $this->hasMany(Pago::class);
+    }
+
+    public function pagosVigentes(): HasMany
+    {
+        return $this->pagos()->whereNull('anulado_at');
+    }
+
+    public function montoCobrado(): float
+    {
+        return round((float) $this->pagosVigentes()->sum('importe'), 2);
+    }
+
+    public function saldoPendiente(): float
+    {
+        return round((float) $this->total - $this->montoCobrado(), 2);
+    }
+
+    public function fueEnviada(): bool
+    {
+        return $this->eventos
+            ->where('tipo_evento', 'envio_email')
+            ->contains(fn (FacturaEvento $evento) => ($evento->detalle['resultado'] ?? null) === 'ok');
+    }
+
+    public function estadoCobro(): EstadoCobro
+    {
+        $totalCentimos = (int) round((float) $this->total * 100);
+        $cobradoCentimos = (int) round($this->montoCobrado() * 100);
+
+        if ($cobradoCentimos <= 0) {
+            return EstadoCobro::Pendiente;
+        }
+
+        if ($cobradoCentimos >= $totalCentimos) {
+            return EstadoCobro::Cobrada;
+        }
+
+        return EstadoCobro::Parcial;
     }
 }

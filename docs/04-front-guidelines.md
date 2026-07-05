@@ -67,6 +67,22 @@ el tamaño "sm" sin tener que añadir la clase `-sm` a mano en cada vista nueva.
   tiene otra regla puntual pisando el override — buscarla y sumar la contra-regla ahí mismo, no
   sacar el `!important` general.
 
+## Modales: siempre centrados verticalmente
+
+Todo modal se abre **centrado en la pantalla**: el `<div class="modal-dialog ...">` lleva
+**siempre** `modal-dialog-centered`, sin excepción. Las clases de tamaño (`modal-lg`, `modal-xl`) o
+`modal-dialog-scrollable` se suman después, pero `modal-dialog-centered` no se omite nunca:
+
+```html
+<div class="modal-dialog modal-dialog-centered">          {{-- estándar --}}
+<div class="modal-dialog modal-dialog-centered modal-lg"> {{-- ancho grande --}}
+<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+```
+
+Aplica a modales de vistas, de componentes reutilizables (`<x-unidad-select>`, `<x-banco-select>`)
+y al modal genérico de confirmación. Al crear un modal nuevo, poner `modal-dialog-centered` de una;
+si se ve un modal pegado arriba, es que le falta la clase.
+
 ## Padding y gutter de los modales
 
 Mismo problema que arriba: `style.css` redefine `.modal-header`/`.modal-body`/`.modal-footer`
@@ -149,13 +165,17 @@ por:
 
 ```js
 window.confirmDelete('¿Eliminar...?', function () {
-	// ...ajax de borrado...
+	return $.ajax({ /* ...ajax de borrado... */ });
 });
 ```
 
 `confirmDelete(mensaje, onConfirm, opciones?)` reescribe el texto del modal y el handler del botón
 en cada llamada (soporta múltiples filas de una misma tabla sin acumular handlers), así que no hace
-falta instanciar nada por vista.
+falta instanciar nada por vista. **`onConfirm` debe hacer `return` del `$.ajax(...)`** (no solo
+dispararlo): el modal usa el estado de carga genérico (ver sección siguiente) sobre su propio botón
+de confirmación y permanece abierto con spinner hasta que la petición termina, recién ahí se cierra
+— si `onConfirm` no devuelve la promesa, el modal se cierra al instante como antes, sin loading
+visible durante la espera.
 
 **No reutilizar el modal "tal cual" para una acción que no sea borrado** (el icono de papelera y el
 botón "Eliminar" en rojo confunden al usuario, p. ej. "Emitir factura" mostrando "Eliminar"). Pasar
@@ -172,10 +192,93 @@ window.confirmDelete('¿Emitir esta factura?', onConfirm, {
 Referencia de uso: `clientes-modal.init.js`, `articulos-modal.init.js` (borrado, sin opciones),
 `facturas-datatable.init.js` (borrado sin opciones + emitir con opciones).
 
+## Estado de carga en botones (AJAX/fetch)
+
+**Todo botón que dispare una petición que puede tardar (`$.ajax`, `fetch`, submit de un form vía
+AJAX) DEBE mostrar feedback de carga mientras espera la respuesta**: deshabilitado + spinner, para
+que el usuario nunca se quede sin saber si el clic "agarró" o no. Nunca dejar un botón clickeable
+(o sin ningún indicio visual) mientras una petición está en vuelo.
+
+Esto ya está resuelto de forma genérica en `public/js/button-loading.js` (cargado siempre desde
+`layouts/app.blade.php`, antes que `confirm-delete.js` porque este último depende de él). Dos
+funciones:
+
+- **`window.withButtonLoading(button, requestFn)`** — el caso normal. `requestFn` debe devolver el
+  jqXHR/Promise/fetch de la petición. Activa el loading, ejecuta `requestFn()`, y restaura el botón
+  cuando termina (éxito o error). Devuelve la misma promesa, así que se encadena `.done()/.fail()`
+  (o `.then()/.catch()`) exactamente igual que si hubieras llamado `$.ajax(...)` directo:
+
+  ```js
+  window.withButtonLoading($submitBtn, function () {
+  	return $.ajax({ url: ..., method: 'POST', data: $form.serialize(), ... });
+  })
+  	.done(function (response) { ... })
+  	.fail(function (xhr) { ... });
+  ```
+
+  Esto **reemplaza** el patrón manual `$submitBtn.prop('disabled', true)` / `.always(function () {
+  $submitBtn.prop('disabled', false); })` que se repetía en cada `*-modal.init.js` — no volver a
+  escribirlo a mano en un botón nuevo.
+
+- **`window.setButtonLoading(button, true|false)`** — toggle de bajo nivel, para los pocos casos
+  que no encajan en el wrapper de arriba: un submit de **form plano** que navega a otra página (sin
+  AJAX, p. ej. `rectificarFacturaForm` en `facturas/index.blade.php`), donde alcanza con activar el
+  loading al `submit` y no hace falta restaurarlo (la página navega o recarga). En ese caso, activar
+  manualmente y no llamar a `setButtonLoading(..., false)`:
+
+  ```js
+  $('#miFormPlano').on('submit', function () {
+  	window.setButtonLoading($(this).find('button[type="submit"]'), true);
+  });
+  ```
+
+**Texto de carga opcional**: si el botón debe cambiar de texto mientras carga (p. ej. "Enviar" →
+"Enviando..."), agregar `data-loading-text="Enviando..."` al `<button>` en el Blade — no hace falta
+tocar el JS, `withButtonLoading`/`setButtonLoading` lo detectan solos y restauran el texto original
+al terminar.
+
+**`confirmDelete` ya usa este mecanismo internamente** sobre su propio botón de confirmación (ver
+sección anterior) — un botón de fila que dispara `window.confirmDelete(...)` no necesita loading
+propio, alcanza con que su `onConfirm` haga `return $.ajax(...)`.
+
+**No aplica** a: selects que cargan opciones dependientes (usar el patrón inline ya existente,
+`$select.prop('disabled', true).html('<option>Cargando...</option>')`, ver `loadLocalidades` en
+`clientes-modal.init.js`/`proveedores-modal.init.js`/`super-admin-tenants-modal.init.js`); guardado
+automático on-change sin botón explícito (`configuracion-apariencia.init.js`); la barra de progreso
+propia de DataTables (`processing: true`, ya maneja su propio feedback).
+
 ## Notificaciones
 
 Siempre toastr (`window.showToast(type, message)` / flash de sesión), nunca alerts Bootstrap
 ad-hoc. Detalle completo en `CLAUDE.md`.
+
+## Listados: SIEMPRE DataTable, nunca una `<table>` plana
+
+Cualquier listado de registros (cuentas, clientes, artículos, facturas, y cualquier `index` nuevo)
+se renderiza **siempre** con nuestra DataTable ya configurada — nunca una `<table>` HTML plana
+poblada con un `@foreach` en Blade. Esto vale también para los listados que viven **dentro de una
+tab de configuración** (p. ej. "Cuentas bancarias" en la tab Facturación): estar embebido en una
+tab no es excusa para saltarse el patrón.
+
+El patrón estándar (referencia: `clientes/index.blade.php`, `configuracion/_tab_facturacion.blade.php`):
+
+- **Markup**: `<table id="<algo>-table" class="display responsive nowrap w-100">` con solo `<thead>`
+  y un `<tbody></tbody>` vacío; las filas las pinta DataTables por AJAX, no Blade.
+- **Datos por AJAX**: el `index` del controller responde `response()->json(['data' => ...])` cuando
+  `$request->wantsJson()`; el init pide esa URL con `headers: { Accept: 'application/json' }` y
+  `dataSrc: 'data'`. Si el listado está en otra ruta que la página actual (caso tab de
+  configuración), pasar la URL explícita en el `window.<algo>State` (no asumir
+  `window.location.href`).
+- **Assets**: cargar en `@push('styles')`/`@push('scripts')` el CSS/JS de
+  `vendor/datatables/...` + el override de paginación "Anterior/Siguiente" (ver sección más abajo)
+  + los init `js/plugins-init/<algo>-datatable.init.js` y `<algo>-modal.init.js`.
+- **Acciones**: columna única con dropdown "Acciones" (ver "Columna Acciones"); alta/edición en un
+  único modal reutilizado + submit AJAX (ver sección siguiente).
+
+**No** poblar tablas con `@foreach` + `@forelse` en el Blade "porque es un listado chico" o "porque
+está dentro de una tab": pierde buscador, paginación, orden, estado persistido y el estilo "sm"
+global, y queda inconsistente con el resto de la app. Si aparece una `<table>` con `@foreach` en una
+vista nueva, es un bug de front a corregir migrándola a DataTable.
 
 ## CRUD simple: alta/edición en modal + AJAX (patrón por defecto)
 
@@ -216,6 +319,50 @@ formularios con varias secciones o líneas dinámicas donde un modal quedaría a
 demasiado scroll interno — el caso ya documentado es `facturas` (emisor + cliente + fechas +
 líneas + totales). Si un CRUD nuevo empieza simple pero crece hasta ese punto, migrar a full-page
 en vez de forzar el modal.
+
+## Select dinámico con CRUD inline (catálogos: unidades, bancos…)
+
+Cuando un campo de un formulario es un **select sobre un catálogo del tenant** que el usuario debe
+poder gestionar sin salir de la pantalla (crear/renombrar/eliminar entradas del catálogo al vuelo),
+el patrón es un **componente Blade reutilizable** que envuelve un `<select>` potenciado con Select2
++ tres botones inline (➕ nuevo / ✏️ renombrar / 🗑️ eliminar) + un modal compartido de alta/edición.
+Referencias: `<x-unidad-select>` (catálogo `unidades`, valor = nombre) y `<x-banco-select>`
+(catálogo `bancos`, valor = id). **Para crear uno nuevo, clonar uno de esos dos de punta a punta**;
+las piezas son:
+
+- **Componente Blade** (`resources/views/components/<algo>-select.blade.php`): `@props([name, id])`,
+  un `<div class="input-group <algo>-control">` con el `<select class="<algo>-select">` + los tres
+  botones, y un `<div class="invalid-feedback d-block" data-error-for="{{ $name }}">`. Los assets
+  (CSS de select2 + CSS propio del componente + modal `#<algo>Modal` + config JS + JS del
+  componente) van dentro de un **`@once`** para emitirse una sola vez aunque haya varias instancias
+  en la página. La config JS (`window.<algo>SelectConfig`) inyecta `indexUrl`, `storeUrl`,
+  `updateUrlTemplate` (con `'__ID__'`), `destroyUrlTemplate` y `csrf`.
+- **JS del componente** (`public/js/components/<algo>-select.js`): inicializa cada `.<algo>-select`
+  como Select2 (`dropdownParent` = modal padre si el select está dentro de un modal, si no
+  `document.body`), cablea los tres botones, y mantiene **todas las instancias sincronizadas** con
+  el catálogo tras cada alta/baja/edición (`reloadAll`). Expone `window.<Algo>Select.get(idOrEl)`
+  con `setValue(valor)/clear()/reload()`. Recuerda restaurar `modal-open` en el `hidden.bs.modal`
+  del modal del catálogo cuando hay modales apilados (el modal del catálogo se abre **encima** del
+  modal del formulario que contiene el select).
+- **Controller** (`<Algo>Controller`): `index` (JSON tenant-scoped), `store`, `update` (resolución
+  **manual** del modelo, sin binding implícito, para garantizar el `TenantScope` — ver
+  `project_tenant_route_binding`), `destroy`. Validación de unicidad **por tenant** con
+  `Rule::unique(tabla, campo)->where('tenant_id', tenant()->id)->ignore($id?)`. Rutas:
+  `Route::resource('<algo>', ...)->only(['index','store','update','destroy'])`.
+- **Borrado con FK `RESTRICT`**: si otras filas referencian la entrada del catálogo por FK (caso
+  `cuentas_bancarias.banco_id`), el `destroy` debe **comprobar el uso antes** (`->withTrashed()`
+  incluidas las bajas lógicas, que conservan la fila) y responder `422` con mensaje claro en vez de
+  dejar reventar la FK. El JS muestra `xhr.responseJSON.message` en un toast.
+
+**Gotcha de CSS (el que más cuesta ver): el CSS del componente está scoped a SU clase wrapper.**
+Cada componente necesita su propio archivo CSS (`public/css/<algo>-select.css`) con las reglas de
+Select2 **scoped a `.<algo>-control`** (igualar la caja de `.form-control`: `flex: 1 1 auto;
+width: 1% !important` en `.select2-container`, y `height/padding/font-size` en
+`.select2-selection--single`). Si al crear `<x-banco-select>` reutilizás el CSS de otro componente
+(`css/unidad-select.css`, cuyas reglas están limitadas a `.unidad-control`), el `.select2-container`
+del nuevo componente **no recibe `flex:1`** y los tres botones se rompen a la línea de abajo en vez
+de quedar en línea con el select — sin ningún error en consola. Copiá también el CSS y renombrá el
+scope, no solo el Blade/JS.
 
 ## Vista full-page de creación con preview en vivo (facturas)
 
@@ -277,8 +424,10 @@ id de la tabla), no hay una regla global en `style.css` que lo cubra:
 }
 ```
 
-Ya aplicado en `clientes/index.blade.php`, `articulos/index.blade.php` y
-`facturas/index.blade.php`. Replicarlo en cualquier listado nuevo con DataTable.
+Ya aplicado en `clientes/index.blade.php`, `articulos/index.blade.php`, `facturas/index.blade.php`
+y `logs/index.blade.php` (entre otros). Replicarlo en cualquier listado nuevo con DataTable —
+incluida la excepción del feature 021 (`logs-datatable.init.js`), que además de client-side vs
+server-side no cambia nada de este bug: el override es de CSS puro, independiente de `serverSide`.
 
 ## Columna "Acciones" de los listados (DataTable)
 
@@ -304,3 +453,24 @@ UI). Ya resuelto globalmente en `app-overrides.css` con selectores dedicados
 input`) que replican los mismos valores de tamaño que `.form-control`/`.form-select`. Al ser una
 regla global, no hace falta repetirla por vista — cualquier tabla nueva (`<table
 class="display responsive">` + `.DataTable(...)`) hereda el estilo "sm" automáticamente.
+
+## Nunca imprimir directo un campo `decimal:N` de Eloquent en Blade
+
+Los casts `decimal:4`/`decimal:2` de Eloquent devuelven un **string de punto fijo** ("100.0000",
+"4.2000"), no un número. Escribir `{{ $linea->cantidad }}` en una vista Blade muestra literalmente
+esos ceros de relleno al usuario — el bug recurrente a evitar (ya pasó en `facturas/pdf.blade.php`,
+`ticket-80mm.blade.php` y `compras/show.blade.php`).
+
+**Usar siempre `App\Support\Formato`** en vez de escribir el `number_format`/`rtrim` a mano:
+
+- `Formato::cantidad($valor)` — cantidades/stock: hasta 4 decimales, recorta ceros sobrantes
+  (`100.0000` → `100`, `4.5000` → `4,5`).
+- `Formato::moneda($valor)` — importes: siempre 2 decimales, nunca se recortan (`121` → `121,00`).
+  No incluye el símbolo `€`; agregarlo aparte en la vista.
+- `Formato::porcentaje($valor)` — tipo impositivo/recargo: 2 decimales, recorta ceros sobrantes
+  (`21.00` → `21`, `9.50` → `9,5`).
+
+Esto **no aplica** cuando el número sale de un endpoint JSON hacia JS/DataTables: ahí el
+controller ya castea a `(float)` antes de `response()->json(...)`, así que JS recibe un número
+limpio (sin ceros de relleno) y no hace falta `Formato` del lado del cliente — el problema es
+exclusivamente de Blade renderizando directo un atributo del modelo.

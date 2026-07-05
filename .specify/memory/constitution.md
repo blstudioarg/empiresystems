@@ -1,27 +1,33 @@
 <!--
 Sync Impact Report
-- Version change: 1.0.0 → 1.1.0
+- Version change: 1.1.1 → 1.2.0
 - Modified principles:
-  - II. Cumplimiento Normativo España-First — generalizado de "IVA" a impuesto indirecto
-    agnóstico al régimen territorial (IVA/IGIC/IPSI), reflejando la nueva sección de
-    docs/02-facturacion-espana.md sobre regímenes territoriales.
-- Added sections: n/a (no se añadieron secciones de primer nivel)
-- Added guidance within Additional Constraints:
-  - Catálogo y stock (articulos, movimientos_stock append-only)
-  - Compras (Fase 2) — documentado pero no implementado hasta que el MVP lo incorpore
-  - Billing del propio SaaS — confirmado fuera de alcance (plans/subscriptions retirados del
-    modelo de datos)
+  - II. Cumplimiento Normativo España-First — AMPLIADO (no redefinido): se agrega un párrafo
+    que extiende el principio de "normativa España-First" a RGPD (Reglamento UE 2016/679) y
+    LOPDGDD (LO 3/2018) sobre datos personales, con reglas concretas de minimización, retención/
+    purga configurable, y registro de accesos (autorizado/denegado, IP, user-agent, intentos
+    fallidos). El párrafo de facturación/Verifactu existente queda intacto.
+- Added sections:
+  - Additional Constraints: nuevo bullet "Datos personales y retención (RGPD/LOPDGDD)" que fija
+    `logs_actividad`/`RetencionLogsTenant`/`logs:purgar` (feature 021) como el patrón a reutilizar.
+  - Development Workflow: nuevo ítem (5) en la lista de verificación de revisiones, sobre plazo
+    de retención/purga cuando una feature toca datos personales.
 - Removed sections: none
-- Rationale for MINOR bump: expansión material de guía existente sobre un principio (nuevos
-  regímenes fiscales) y nuevas restricciones documentadas; no hay redefinición incompatible ni
-  eliminación de principios.
+- Rationale for MINOR bump: se amplía materialmente el alcance de un principio existente
+  (Principio II) con una nueva categoría de obligación legal no negociable (RGPD/LOPDGDD); no es
+  una redefinición incompatible de lo ya existente (facturación/Verifactu sigue igual) ni una
+  aclaración cosmética, así que no corresponde ni MAJOR ni PATCH.
+- Origen: feature 021-logs-actividad-usuarios implementó registro de accesos + retención/purga
+  tras investigar que el "registro de eventos" formal de Verifactu (hash/firma) no aplica a este
+  log (solo es obligatorio en sistemas NO-VERI*FACTU); en su lugar se identificó la obligación de
+  RGPD/LOPDGDD como la que sí aplica, y se decidió formalizarla aquí para que futuras tablas con
+  datos personales sigan el mismo patrón sin tener que redescubrirlo.
 - Templates requiring updates:
-  - ✅ .specify/templates/plan-template.md (Constitution Check section es genérica, compatible tal cual)
-  - ✅ .specify/templates/spec-template.md (sin referencias en conflicto)
-  - ✅ .specify/templates/tasks-template.md (sin referencias en conflicto)
-  - ✅ .claude/skills/speckit-*/SKILL.md (referencias genéricas, sin renombres agent-specific necesarios)
-- Follow-up TODOs: ninguno. Si se implementa Fase 2 (compras) o billing del SaaS, revisar
-  Principio V y esta sección de Additional Constraints en ese momento.
+  - ✅ .specify/templates/plan-template.md (Constitution Check es genérico, sin referencias a
+    principios específicos por nombre; no requiere cambios)
+  - ✅ .specify/templates/spec-template.md (sin cambios necesarios)
+  - ✅ .specify/templates/tasks-template.md (sin cambios necesarios)
+- Follow-up TODOs: ninguno.
 -->
 
 # Empire Systems CRM Constitution
@@ -52,10 +58,30 @@ equivalencia solo aplica bajo régimen IVA. Una factura en estado `emitida` es I
 se edita ni se borra; toda corrección posterior se hace mediante una factura rectificativa.
 Solo el estado `borrador` es editable. Cambios normativos (fechas, tipos, umbrales, nuevos
 regímenes) DEBEN reflejarse primero en `docs/02-facturacion-espana.md` antes que en el código.
+
+El cumplimiento normativo España-First no se limita a facturación: cualquier dato personal que
+el sistema trate (usuarios, clientes, direcciones IP, agentes de usuario, o cualquier otro dato
+identificable) DEBE cumplir RGPD (Reglamento UE 2016/679) y la LOPDGDD (LO 3/2018). En concreto:
+(a) principio de minimización — ninguna tabla que almacene datos personales puede conservarlos
+indefinidamente sin justificación; DEBE existir un plazo de retención configurable y un mecanismo
+de purga periódica, siguiendo el patrón ya establecido por `App\Support\RetencionLogsTenant` +
+el comando `logs:purgar` (feature 021) en vez de inventar uno nuevo por feature; (b) registro de
+accesos — cuando el dato personal incluye actividad de usuario (altas, bajas, modificaciones,
+inicio/cierre de sesión), el registro DEBE distinguir acceso autorizado de denegado y capturar IP
+de origen y agente de usuario, igual que `logs_actividad`; (c) los intentos de acceso fallidos
+(credenciales inválidas) también son un evento a registrar, no solo los exitosos, para poder
+detectar accesos no autorizados. Cambios en el alcance de qué datos se consideran personales o en
+los plazos de retención DEBEN reflejarse primero en `docs/03-modelo-datos.md` antes que en el
+código, igual que los cambios normativos de facturación en `docs/02-facturacion-espana.md`.
+
 Rationale: el corazón del producto es facturar cumpliendo la ley española; un incumplimiento
 aquí implica sanciones de hasta 50.000€ por ejercicio y bloquea el uso legal del software. Al
 tener tenants en distintos territorios fiscales, asumir IVA en código de forma implícita
-sería un bug de cumplimiento, no solo de diseño.
+sería un bug de cumplimiento, no solo de diseño. El mismo razonamiento aplica a RGPD/LOPDGDD:
+es una obligación legal externa y no negociable para cualquier SaaS que trate datos personales
+de ciudadanos españoles/UE, con sanciones propias (hasta 20M€ o 4% de facturación global bajo
+RGPD) independientes de las de Verifactu; tratarla como un principio de "normativa España-First"
+evita que quede como una ocurrencia tardía feature por feature.
 
 ### III. Integridad Financiera Server-Side
 Los totales de una factura (bases, cuotas de IVA, recargo, IRPF, total) SIEMPRE se calculan
@@ -106,12 +132,18 @@ coste de mantenimiento sin necesidad actual.
   hacen con un movimiento inverso. `stock_actual` en `articulos` es una caché de lectura;
   `movimientos_stock` es la fuente de verdad. Aplica Principio I (tenant_id) y Principio IV
   (test-first) igual que al resto de tablas de negocio.
-- **Compras (Fase 2):** `proveedores`/`compras`/`compra_lineas` quedan documentados en el
-  modelo de datos pero NO se implementan hasta que el alcance del MVP (`docs/00-vision.md`)
-  los incorpore explícitamente (Principio V, YAGNI).
+- **Compras:** `proveedores`/`compras`/`compra_lineas` están implementadas (feature
+  `014-control-stock`): confirmar una compra genera entradas de stock por línea con artículo
+  producto+`gestion_stock`; anular genera el reverso. Igual que facturas/movimientos_stock,
+  aplica Principio I (tenant_id) y Principio IV (test-first).
 - **Billing del propio SaaS:** por decisión explícita, `plans`/`subscriptions` NO se modelan
   por ahora; ningún tenant referencia un plan o suscripción en el modelo de datos hasta que se
   defina la pasarela de cobro (ya reflejado como fuera de alcance en `docs/00-vision.md`).
+- **Datos personales y retención (RGPD/LOPDGDD):** referencia de implementación en
+  `logs_actividad`/`App\Support\RetencionLogsTenant`/comando `logs:purgar` (feature 021). Toda
+  tabla nueva con datos personales reutiliza ese patrón (clave de configuración por tenant +
+  comando de purga programado vía `bootstrap/app.php` → `withSchedule`) en vez de definir su
+  propio mecanismo de retención ad-hoc.
 
 ## Development Workflow
 
@@ -120,7 +152,8 @@ coste de mantenimiento sin necesidad actual.
   implementar.
 - Las revisiones (propias o de PR) DEBEN verificar: (1) scope de tenant aplicado, (2) tests de
   aislamiento y de cálculo presentes, (3) inmutabilidad de facturas emitidas respetada, (4) no
-  se introdujo complejidad no justificada por el alcance del MVP.
+  se introdujo complejidad no justificada por el alcance del MVP, (5) si la feature introduce o
+  amplía una tabla con datos personales, que defina plazo de retención y purga (Principio II).
 - Cualquier desviación de un principio debe justificarse por escrito en el plan (sección
   "Complexity Tracking" o equivalente) antes de mergear.
 
@@ -137,4 +170,4 @@ este archivo con el Sync Impact Report correspondiente, (3) revisar plantillas d
 Toda spec, plan y PR debe poder justificar su cumplimiento de estos principios; el
 incumplimiento sin justificación documentada es motivo de bloqueo en revisión.
 
-**Version**: 1.1.0 | **Ratified**: 2026-07-02 | **Last Amended**: 2026-07-02
+**Version**: 1.2.0 | **Ratified**: 2026-07-02 | **Last Amended**: 2026-07-05

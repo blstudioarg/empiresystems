@@ -12,9 +12,10 @@ class ArticuloCrudTest extends TestCase
 {
     use RefreshDatabase;
 
-    // --- Régimen fiscal (FR-008/FR-009, Principio II) ---
+    // --- Régimen fiscal (FR-008/FR-009, Principio II): el tipo impositivo es un campo numérico
+    // libre (0-100) en los tres regímenes; no se valida contra una lista cerrada. ---
 
-    public function test_tenant_iva_rechaza_tipo_impositivo_de_igic(): void
+    public function test_tenant_iva_acepta_tipo_impositivo_de_igic(): void
     {
         $tenant = Tenant::factory()->create(['regimen_impositivo' => 'iva']);
         $user = User::factory()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
@@ -27,8 +28,8 @@ class ArticuloCrudTest extends TestCase
             'tipo_impositivo' => 7,
         ]);
 
-        $response->assertSessionHasErrors('tipo_impositivo');
-        $this->assertDatabaseCount('articulos', 0);
+        $response->assertRedirect(route('articulos.index'));
+        $this->assertDatabaseHas('articulos', ['nombre' => 'Artículo IVA', 'tipo_impositivo' => 7]);
     }
 
     public function test_tenant_iva_acepta_tipo_impositivo_21(): void
@@ -48,7 +49,7 @@ class ArticuloCrudTest extends TestCase
         $this->assertDatabaseHas('articulos', ['nombre' => 'Artículo IVA', 'tipo_impositivo' => 21]);
     }
 
-    public function test_tenant_igic_rechaza_tipo_impositivo_21(): void
+    public function test_tenant_igic_acepta_tipo_impositivo_21(): void
     {
         $tenant = Tenant::factory()->create(['regimen_impositivo' => 'igic']);
         $user = User::factory()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
@@ -61,8 +62,8 @@ class ArticuloCrudTest extends TestCase
             'tipo_impositivo' => 21,
         ]);
 
-        $response->assertSessionHasErrors('tipo_impositivo');
-        $this->assertDatabaseCount('articulos', 0);
+        $response->assertRedirect(route('articulos.index'));
+        $this->assertDatabaseHas('articulos', ['nombre' => 'Artículo IGIC', 'tipo_impositivo' => 21]);
     }
 
     public function test_tenant_igic_acepta_tipo_impositivo_7(): void

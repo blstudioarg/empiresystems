@@ -12,4 +12,13 @@ enum UserRole: string
     {
         return self::Usuario;
     }
+
+    public function label(): string
+    {
+        return match ($this) {
+            self::SuperAdmin => 'Super Admin',
+            self::Admin => 'Administrador',
+            self::Usuario => 'Usuario',
+        };
+    }
 }
