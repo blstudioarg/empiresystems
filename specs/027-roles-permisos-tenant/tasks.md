@@ -13,7 +13,7 @@ implementación y deben fallar primero. La UI (datatable/modal) sigue flujo flex
 
 - [ ] T001 Crear rama `027-roles-permisos-tenant` desde el estado actual (cerrar/commitear antes el trabajo pendiente de la 026 con el usuario)
 - [ ] T002 Instalar `spatie/laravel-permission:^6` vía composer y publicar `config/permission.php` + migración `create_permission_tables`
-- [ ] T003 Configurar `config/permission.php`: `'teams' => true`, `'team_foreign_key' => 'tenant_id'`; ajustar la migración publicada en `database/migrations/` para que la columna team sea `tenant_id` BIGINT con FK a `tenants.id` `cascadeOnDelete` (research.md D1, data-model.md)
+- [ ] T003 Configurar `config/permission.php`: `'teams' => true`, `'team_foreign_key' => 'tenant_id'`; ajustar la migración publicada en `database/migrations/` para que la columna team sea `tenant_id` BIGINT con FK a `tenants.id` `cascadeOnDelete`, y añadir columna `es_defecto` BOOLEAN default false a `roles` (research.md D1, D10, data-model.md)
 - [ ] T004 Correr `php artisan migrate` y verificar tablas `permissions`, `roles`, `model_has_roles`, `role_has_permissions` con `tenant_id` donde corresponde
 
 ## Phase 2: Foundational (bloquea todas las user stories)
@@ -25,7 +25,7 @@ implementación y deben fallar primero. La UI (datatable/modal) sigue flujo flex
 - [ ] T009 Añadir trait `HasRoles` a `app/Models/User.php`
 - [ ] T010 Modificar `app/Http/Middleware/SetTenantContext.php`: `setPermissionsTeamId($tenant->getTenantKey())` tras `tenancy()->initialize()`; `setPermissionsTeamId(null)` en la rama de contexto central (research.md D2)
 - [ ] T011 Modificar `app/Providers/AppServiceProvider.php`: añadir `Gate::before` con bypass para `isSuperAdmin()` (research.md D4); mantener por ahora `gestiona-fichajes` (se elimina en T031)
-- [ ] T012 Crear `app/Support/ProvisionadorRoles.php`: `provisionarAdministrador(Tenant $t, ?User $admin)` — crea rol "Administrador" del tenant con todos los permisos y lo asigna; maneja el seteo/restauración temporal de `setPermissionsTeamId` para contexto central (research.md D6.1); y `provisionarUsuarioBase(Tenant $t)` para el rol "Usuario"
+- [ ] T012 Crear `app/Support/ProvisionadorRoles.php`: `provisionarAdministrador(Tenant $t, ?User $admin)` — crea rol "Administrador" del tenant con todos los permisos y lo asigna; maneja el seteo/restauración temporal de `setPermissionsTeamId` para contexto central (research.md D6.1); y `provisionarUsuarioBase(Tenant $t)` para el rol "Usuario" (permisos según RN-07: catálogo menos ver-jornada/ver-roles/ver-usuarios/ver-configuracion/ver-logs, marcado `es_defecto`)
 
 **Checkpoint**: base spatie operativa — las user stories pueden arrancar.
 
@@ -44,8 +44,9 @@ implementación y deben fallar primero. La UI (datatable/modal) sigue flujo flex
 
 ### Implementation
 
-- [ ] T017 [US1] Refactor `routes/web.php`: envolver cada sección en `->middleware('can:<permiso>')` según la tabla del catálogo (contracts/http.md — dashboard, clientes+localidades, articulos+unidades, stock, proveedores, compras, facturas+pagos+facturae, pos, configuracion, archivos+carpetas, campanas, plantillas-email, usuarios, logs, bancos+cuentas); renombrar el grupo `can:gestiona-fichajes` → `can:ver-jornada`; fichajes/mi-jornada/perfil/logout quedan solo con `auth`
+- [ ] T017 [US1] Refactor `routes/web.php`: envolver cada sección en `->middleware('can:<permiso>')` según la tabla del catálogo (contracts/http.md — clientes+localidades, articulos+unidades, stock, proveedores, compras, facturas+pagos+facturae, pos, configuracion, archivos+carpetas, campanas, plantillas-email, usuarios, logs, bancos+cuentas); renombrar el grupo `can:gestiona-fichajes` → `can:ver-jornada`; fichajes/mi-jornada/perfil/logout quedan solo con `auth`
 - [ ] T018 [US1] Refactor `resources/views/partials/sidebar.blade.php`: reemplazar `@if(auth()->user()->rol === UserRole::Admin)` y el `@if/@else` de super admin por `@can('<permiso>')` por entrada; grupos envueltos en `@canany([...])`; badge `sidebar-user-role` muestra nombre del rol spatie o label del enum para super admin (research.md D7); el badge de alertas queda dentro de `@can('ver-jornada')`
+- [ ] T019a [US1] Landing sin `ver-dashboard` (D11, RN-07): la ruta `/` NO lleva `can:`; en `app/Http/Controllers/DashboardController.php@index` redirigir a `mi-jornada.index` si el usuario no tiene `ver-dashboard`; añadir caso a `tests/Feature/RutasPermisosTest.php` (redirect 302, no 403)
 - [ ] T019 [US1] Manejo de 403 JSON: verificar/ajustar en `bootstrap/app.php` (`withExceptions`) que `AuthorizationException` responda `{"message": ...}` con status 403 cuando `wantsJson` (contracts/http.md)
 - [ ] T020 [US1] Correr los tests T013–T016 hasta verde + suite completa (`php artisan test`) para confirmar que nada existente se rompe
 
@@ -62,7 +63,7 @@ implementación y deben fallar primero. La UI (datatable/modal) sigue flujo flex
 ### Tests (test-first)
 
 - [ ] T021 [P] [US4] Ampliar `tests/Feature/SuperAdmin/TenantCrudTest.php`: alta de tenant crea rol "Administrador" con TODOS los permisos del catálogo asignado al admin inicial (FR-007); si falla un paso (p. ej. dominio duplicado) no queda tenant/usuario/rol parcial (atomicidad RN-03)
-- [ ] T022 [P] [US4] Test de migración de datos en `tests/Feature/MigracionRolesTenantsExistentesTest.php`: con 2 tenants pre-spatie (users con enum `admin`/`usuario`), tras la migración cada tenant tiene rol Administrador (todos los permisos → sus admin) y rol Usuario (→ sus usuario); equivalencia de accesos SC-005
+- [ ] T022 [P] [US4] Test de migración de datos en `tests/Feature/MigracionRolesTenantsExistentesTest.php`: con 2 tenants pre-spatie (users con enum `admin`/`usuario`), tras la migración cada tenant tiene rol Administrador (todos los permisos → sus admin) y rol Usuario (permisos RN-07, marcado `es_defecto` → sus usuario); equivalencia de accesos SC-005
 
 ### Implementation
 
@@ -80,16 +81,18 @@ implementación y deben fallar primero. La UI (datatable/modal) sigue flujo flex
 
 ### Tests (test-first para reglas de negocio)
 
-- [ ] T026 [P] [US2] Test CRUD en `tests/Feature/RolesTest.php`: index JSON solo roles del tenant activo con `catalogo` agrupado y `totales`; store valida nombre requerido/único-por-tenant (mismo nombre en otro tenant OK — RN-05) y permisos existentes en catálogo (≥1); update de rol de otro tenant → 404 (resolución manual, no implicit binding); destroy con usuarios asignados → 409 (RN-01); destroy/update del rol Administrador que viole RN-02 (perder `ver-roles`/`ver-usuarios`, renombrar, eliminar) → 422/409; toda ruta `/roles` exige `can:ver-roles`
+- [ ] T026 [P] [US2] Test CRUD en `tests/Feature/RolesTest.php`: index JSON solo roles del tenant activo con `catalogo` agrupado, `totales` y `es_defecto`; store valida nombre requerido/único-por-tenant (mismo nombre en otro tenant OK — RN-05) y permisos existentes en catálogo (≥1); update de rol de otro tenant → 404 (resolución manual, no implicit binding); editar rol → los permisos efectivos del usuario reflejan el cambio en el siguiente request (cache D8); destroy con usuarios asignados → 409 (RN-01); destroy/update del rol Administrador que viole RN-02 (perder `ver-roles`/`ver-usuarios`, renombrar, eliminar) → 422/409; marcar rol por defecto desmarca el anterior y destroy del rol por defecto → 409 (RN-06); toda ruta `/roles` exige `can:ver-roles`
+- [ ] T026b [P] [US2] Test de registro público en `tests/Feature/RegistroRolDefectoTest.php`: usuario registrado vía `POST /registro` recibe el rol por defecto del tenant; sin rol por defecto → usuario sin rol y registro exitoso (RN-06); con 2 tenants, cada registro recibe el rol por defecto de SU tenant
 
 ### Implementation
 
 - [ ] T027 [US2] Crear `app/Http/Requests/StoreRolRequest.php` y `UpdateRolRequest.php`: validación de nombre (único por tenant vía `Rule::unique` con `tenant_id`) y `permisos[]` contra `CatalogoPermisos::claves()`, mensajes en español
-- [ ] T028 [US2] Crear `app/Http/Controllers/RolController.php` (index/store/update/destroy, patrón `wantsJson()` de `SuperAdminTenantController`): resolución manual por tenant, reglas RN-01/RN-02, `forgetCachedPermissions()` tras cada cambio, payloads según contracts/http.md
-- [ ] T029 [US2] Registrar rutas `/roles` en `routes/web.php` bajo `middleware('can:ver-roles')` (contracts/http.md)
+- [ ] T028 [US2] Crear `app/Http/Controllers/RolController.php` (index/store/update/destroy + `actualizarDefecto`, patrón `wantsJson()` de `SuperAdminTenantController`): resolución manual por tenant, reglas RN-01/RN-02/RN-06 (transacción que desmarca el defecto anterior), `forgetCachedPermissions()` tras cada cambio, payloads según contracts/http.md
+- [ ] T029 [US2] Registrar rutas `/roles` (incl. `PATCH /roles/{rol}/defecto`) en `routes/web.php` bajo `middleware('can:ver-roles')` (contracts/http.md)
+- [ ] T029b [US2] Modificar `app/Http/Controllers/Auth/RegisterController.php@store`: asignar el rol por defecto del tenant al usuario recién registrado (`syncRoles`); tolerante a ausencia de rol por defecto (RN-06); correr T026b hasta verde
 - [ ] T030 [US2] Correr T026 hasta verde
 - [ ] T031 [US2] Eliminar `Gate::define('gestiona-fichajes')` de `app/Providers/AppServiceProvider.php` y actualizar `tests/Unit/ServicioCumplimientoTest.php` u otros tests que lo referencien (research.md D5); suite completa en verde
-- [ ] T032 [US2] **Invocar skills de diseño (`frontend-design`, `ui-ux-pro-max`) según CLAUDE.md** y crear `resources/views/roles/index.blade.php` + `resources/views/roles/_modales.blade.php`: cards informativas (total roles, usuarios con rol, permisos del catálogo), datatable con checkboxes de selección, botón "Agregar" → modal con nombre + checkboxes de permisos agrupados por módulo con "marcar módulo"; editar reutiliza el modal; patrón visual de `super_admin/tenants/index` y override de paginación de docs/04-front-guidelines.md
+- [ ] T032 [US2] **Invocar skills de diseño (`frontend-design`, `ui-ux-pro-max`) según CLAUDE.md** y crear `resources/views/roles/index.blade.php` + `resources/views/roles/_modales.blade.php`: cards informativas (total roles, usuarios con rol, permisos del catálogo), datatable con checkboxes de selección, botón "Agregar" → modal con nombre + checkboxes de permisos agrupados por módulo con "marcar módulo"; editar reutiliza el modal; badge/toggle "Rol por defecto" por fila (FR-014); patrón visual de `super_admin/tenants/index` y override de paginación de docs/04-front-guidelines.md
 - [ ] T033 [US2] Crear `public/js/plugins-init/roles.init.js`: datatable AJAX contra `roles.index` JSON, alta/edición/borrado vía fetch con `window.showToast`, render de grupos de permisos desde `catalogo`; registrar `@push` de estilos/scripts en la vista
 - [ ] T034 [US2] Añadir entrada "Roles" al sidebar (`resources/views/partials/sidebar.blade.php`) bajo el módulo Usuarios, envuelta en `@can('ver-roles')`
 - [ ] T035 [US2] Validación visual en navegador (pedir confirmación al usuario para usar herramienta de navegador según CLAUDE.md): flujo quickstart §2.2 completo, light y dark mode

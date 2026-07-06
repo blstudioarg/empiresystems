@@ -45,9 +45,23 @@
 - 200 `{ "message": "Rol actualizado correctamente." }`.
 
 ### DELETE /roles/{rol} — `roles.destroy`
-- 409 si tiene usuarios asignados (RN-01) o si es el rol Administrador (RN-02), con
-  `{ "message": "<motivo>" }`.
+- 409 si tiene usuarios asignados (RN-01), si es el rol Administrador (RN-02) o si es el
+  rol por defecto (RN-06), con `{ "message": "<motivo>" }`.
 - 200 `{ "message": "Rol eliminado correctamente." }`.
+
+### PATCH /roles/{rol}/defecto — `roles.defecto.update`
+- Marca el rol como rol por defecto del tenant; desmarca el anterior en la misma
+  transacción (RN-06). Rol de otro tenant → 404.
+- 200 `{ "message": "Rol por defecto actualizado." }`.
+- El payload de `roles.index` incluye `es_defecto: bool` por rol.
+
+## Registro público (FR-014)
+- `POST /registro` (existente): tras crear el usuario, se le asigna el rol por defecto del
+  tenant (`syncRoles`). Sin rol por defecto existente → usuario sin rol (nunca 500).
+
+## Landing sin permiso de dashboard (RN-07)
+- `GET /` con usuario autenticado sin `ver-dashboard` → redirect 302 a `mi-jornada.index`
+  (no 403). El resto de rutas protegidas sí responden 403.
 
 ## Asignación de rol a usuario (en gestión de usuarios existente)
 

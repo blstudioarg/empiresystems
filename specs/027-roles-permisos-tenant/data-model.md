@@ -27,6 +27,7 @@ estándar de spatie).
 | tenant_id | BIGINT NULL, indexado | team FK; UNIQUE(tenant_id, name, guard_name) — cumple FR-012 |
 | name | VARCHAR | ej. `Administrador`, `Ventas` |
 | guard_name | VARCHAR | `web` |
+| es_defecto | BOOLEAN default false | columna propia añadida a la tabla de spatie; rol asignado a usuarios recién registrados (FR-014). Unicidad "solo uno por tenant" garantizada server-side (transacción que desmarca el anterior), no por índice (MySQL no soporta unique parcial). |
 | timestamps | | |
 
 - El UNIQUE compuesto de spatie teams da unicidad de nombre **dentro** del tenant y permite
@@ -76,13 +77,23 @@ migración estándar de spatie.
   y sincroniza el rol Administrador de cada tenant con el catálogo completo.
 - **RN-05 (FR-012)**: nombre de rol único por tenant (UNIQUE de BD + validación de request
   con mensaje claro).
+- **RN-06 (FR-014)**: exactamente un rol por defecto por tenant; marcarlo desmarca el
+  anterior en la misma transacción. El rol por defecto no puede eliminarse sin designar otro
+  antes (además de RN-01). El registro público asigna ese rol al usuario recién creado; si
+  por inconsistencia no existiera, el usuario queda sin rol (solo secciones personales),
+  nunca error de servidor.
+- **RN-07 (equivalencia SC-005 / landing)**: el rol "Usuario" migrado contiene todo el
+  catálogo excepto `ver-jornada`, `ver-roles`, `ver-usuarios`, `ver-configuracion` y
+  `ver-logs`. Usuarios sin `ver-dashboard` que aterrizan en `/` son redirigidos a
+  `mi-jornada.index` (nunca 403 de bienvenida).
 
 ## Migración de datos (tenants existentes — FR-008)
 Migración Laravel (una sola vez, tras las tablas de spatie):
 1. Sembrar catálogo de permisos (llama al seeder).
-2. Por cada tenant: crear rol `Administrador` (todos los permisos) y rol `Usuario` (sin
-   permisos de gestión); asignar según `users.rol` actual (`admin` → Administrador,
-   `usuario` → Usuario). Usuarios centrales (super admin, `tenant_id` NULL) se omiten.
+2. Por cada tenant: crear rol `Administrador` (todos los permisos) y rol `Usuario`
+   (permisos según RN-07, marcado `es_defecto`); asignar según `users.rol` actual
+   (`admin` → Administrador, `usuario` → Usuario). Usuarios centrales (super admin,
+   `tenant_id` NULL) se omiten.
 3. Limpiar cache de spatie.
 
 ## Datos personales / retención (Principio II RGPD)

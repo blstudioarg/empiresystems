@@ -42,7 +42,9 @@ Como administrador de un tenant, quiero una pantalla donde ver mis roles con sus
 3. **Given** un rol existente, **When** el administrador edita sus permisos o su nombre, **Then** los usuarios con ese rol ven el efecto en su siguiente carga de página.
 4. **Given** un rol con usuarios asignados, **When** el administrador intenta eliminarlo, **Then** el sistema lo impide (o exige reasignación previa) y explica el motivo.
 5. **Given** dos tenants A y B, **When** el administrador de A abre su pantalla de roles, **Then** solo ve los roles de A; los de B no existen para él (ni en listados ni al asignar).
-6. **Given** el rol "Administrador" del tenant, **When** un administrador intenta editarlo o eliminarlo de forma que ningún usuario del tenant conserve la gestión de roles/usuarios, **Then** el sistema lo impide para evitar que el tenant quede sin administración.
+6. **Given** la datatable de roles, **When** el administrador marca un rol como "rol por defecto", **Then** los usuarios que se registren a partir de entonces por el formulario público reciben ese rol automáticamente; el rol por defecto anterior deja de serlo (solo hay uno).
+7. **Given** el rol marcado como "por defecto", **When** el administrador intenta eliminarlo, **Then** el sistema lo impide hasta designar otro rol por defecto.
+8. **Given** el rol "Administrador" del tenant, **When** un administrador intenta editarlo o eliminarlo de forma que ningún usuario del tenant conserve la gestión de roles/usuarios, **Then** el sistema lo impide para evitar que el tenant quede sin administración.
 
 ---
 
@@ -78,7 +80,8 @@ Como super admin de la plataforma, quiero que al dar de alta un tenant se cree a
 
 ### Edge Cases
 
-- Usuario autenticado cuyo rol es eliminado mientras navega: debe degradar a "sin permisos de gestión", nunca a error de servidor.
+- Usuario autenticado cuyo rol pierde permisos (edición del rol o reasignación) mientras navega: la siguiente carga de página refleja el nuevo conjunto, nunca un error de servidor. (Eliminar un rol con usuarios está prohibido, así que ese caso no existe.)
+- Usuario sin permiso de Dashboard tras iniciar sesión: la página de aterrizaje lo redirige a su sección personal (mi jornada), nunca a un 403 de bienvenida.
 - Se añade una vista nueva al menú (permiso nuevo en el catálogo): los roles existentes NO la reciben automáticamente (opt-in por tenant), salvo el rol "Administrador" de cada tenant, que debe recibirla para no degradarse silenciosamente. La decisión debe quedar documentada.
 - Nombre de rol duplicado dentro del mismo tenant: rechazado con mensaje claro; el mismo nombre en tenants distintos es válido.
 - El super admin no aparece en ninguna gestión de usuarios/roles de tenant y ningún administrador de tenant puede crearle o quitarle nada.
@@ -102,6 +105,7 @@ Como super admin de la plataforma, quiero que al dar de alta un tenant se cree a
 - **FR-011**: La asignación de rol a usuario DEBE integrarse en la gestión de usuarios existente del tenant (un rol por usuario como modelo operativo; ver Assumptions).
 - **FR-012**: El nombre de rol DEBE ser único dentro del tenant; se permite el mismo nombre en tenants distintos.
 - **FR-013**: Tras implementar, la documentación del proyecto DEBE recoger el procedimiento obligatorio: cada elemento nuevo del menú requiere crear su permiso en el catálogo (seeder) y proteger su ruta, incluyendo qué roles lo reciben por defecto (solo "Administrador" de cada tenant).
+- **FR-014**: Cada tenant DEBE poder marcar exactamente un rol como "rol por defecto"; los usuarios que se registran por el formulario público del tenant reciben automáticamente ese rol al ser creados. El rol por defecto no puede eliminarse (además de RN-01) sin designar otro antes. Tras la migración inicial, el rol "Usuario" de cada tenant queda como rol por defecto.
 
 ### Key Entities
 
@@ -123,7 +127,7 @@ Como super admin de la plataforma, quiero que al dar de alta un tenant se cree a
 
 - **Un rol por usuario** como modelo operativo (aunque la tecnología subyacente soporte varios): simplifica la UI de usuarios y cubre el caso de negocio actual. Ampliable en el futuro sin migración destructiva.
 - **Granularidad = vista del menú**, no acción (no se distingue "ver facturas" de "crear facturas" en esta fase). Las acciones internas de cada vista quedan fuera de alcance.
-- Los usuarios existentes con rol `usuario` (enum actual) se migran a un rol base por tenant con los permisos de las secciones que hoy ven los no-admin (fichar, mi jornada, y las secciones generales visibles para todos), manteniendo SC-005.
+- Los usuarios existentes con rol `usuario` (enum actual) se migran a un rol "Usuario" por tenant con **exactamente las secciones que hoy ve un no-admin**: todo el catálogo excepto el bloque de gestión de fichajes (jornada/calendario/miembros/horarios/alertas), la gestión de roles, la gestión de usuarios, la configuración y los logs — manteniendo SC-005. Ese rol "Usuario" queda como rol por defecto inicial del tenant (FR-014).
 - El enum de rol actual se conserva solo para distinguir super admin central vs usuario de tenant; deja de ser la fuente de verdad de acceso a vistas de tenant.
 - Las secciones personales (perfil propio, fichar, mi jornada) no requieren permiso del catálogo: son accesibles para todo usuario autenticado del tenant.
 - La pantalla de gestión de roles es en sí misma una vista del catálogo (permiso `ver-roles`), incluida por defecto solo en el rol "Administrador".

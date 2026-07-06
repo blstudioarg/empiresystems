@@ -138,6 +138,29 @@ seeder y tras todo CRUD de roles.
 compatible con hosting compartido (Principio V, sin Redis). Los cambios de rol se reflejan
 "en la siguiente carga de página" (spec US1-3) porque el pivote usuario-rol se lee fresh.
 
+## D10 — Rol por defecto para usuarios registrados (FR-014)
+
+**Decision**: columna propia `es_defecto` (boolean) en la tabla `roles` de spatie; uno por
+tenant garantizado server-side (transacción que desmarca el anterior). `RegisterController`
+asigna ese rol al usuario recién creado. El rol "Usuario" de la migración queda marcado
+como defecto inicial. Toggle desde la datatable de roles (`PATCH /roles/{rol}/defecto`).
+
+**Rationale**: la alternativa (guardar `rol_defecto_id` en la configuración del tenant)
+separa el dato de su entidad y complica el borrado (FK huérfana); una columna en `roles`
+cae en cascada con el rol y se lista sin joins. spatie permite columnas extra en sus tablas
+sin fricción (usa `Role::create` estándar).
+
+**Alternatives considered**: `configuraciones.rol_defecto_id` — descartado por lo anterior;
+convención por nombre ("Usuario" hardcodeado) — frágil si el tenant renombra o quiere otro.
+
+## D11 — Landing sin permiso de dashboard (edge case spec)
+
+**Decision**: la ruta `/` no usa middleware `can:`; `DashboardController@index` (o un
+middleware ligero) redirige a `mi-jornada.index` si el usuario no tiene `ver-dashboard`.
+
+**Rationale**: un 403 como primera pantalla tras login es un dead-end de UX; mi-jornada es
+la sección personal garantizada para todo usuario de tenant.
+
 ## D9 — UI de gestión de roles
 
 **Decision**: vista `resources/views/roles/index.blade.php` siguiendo el patrón NexaDash ya
