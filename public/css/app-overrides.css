@@ -321,3 +321,183 @@
 	color: #fff;
 	font-size: 1rem;
 }
+
+/* ============================================================================
+   Calendario de fichajes (feature 026). Mapa de clases `cal-veredicto-*` emitido
+   por el backend (VeredictoCumplimiento::clase(), D6): tinte de fondo por día +
+   etiqueta de texto accesible (nunca solo color). Variables por veredicto para
+   poder ajustar light/dark en un solo lugar.
+   ========================================================================== */
+
+:root {
+	--cal-ausencia: 220, 53, 69;    /* danger */
+	--cal-retraso: 255, 159, 0;     /* warning ámbar */
+	--cal-parcial: 253, 126, 20;    /* naranja, distinto de retraso */
+	--cal-cumplido: 34, 172, 147;   /* success del template */
+	--cal-exceso: 33, 150, 243;     /* info */
+	--cal-libre: 137, 150, 163;     /* secondary */
+	--cal-incidencia: 55, 60, 70;   /* dark */
+	--cal-tinte: 0.16;
+	--cal-texto: #1f2937;
+}
+
+[data-theme-version="dark"] {
+	--cal-tinte: 0.28;
+	--cal-texto: #e5e7eb;
+}
+
+/* Fondo del día en la vista mensual (eventos display:background). */
+.fc .fc-bg-event.cal-veredicto-ausencia { background: rgba(var(--cal-ausencia), var(--cal-tinte)); opacity: 1; }
+.fc .fc-bg-event.cal-veredicto-retraso { background: rgba(var(--cal-retraso), var(--cal-tinte)); opacity: 1; }
+.fc .fc-bg-event.cal-veredicto-parcial { background: rgba(var(--cal-parcial), var(--cal-tinte)); opacity: 1; }
+.fc .fc-bg-event.cal-veredicto-cumplido { background: rgba(var(--cal-cumplido), var(--cal-tinte)); opacity: 1; }
+.fc .fc-bg-event.cal-veredicto-exceso { background: rgba(var(--cal-exceso), var(--cal-tinte)); opacity: 1; }
+.fc .fc-bg-event.cal-veredicto-libre { background: rgba(var(--cal-libre), calc(var(--cal-tinte) * 0.6)); opacity: 1; }
+
+/* Etiqueta de veredicto inyectada dentro del evento de fondo (eventDidMount). */
+.fc .fc-bg-event .cal-etiqueta {
+	position: absolute;
+	left: 0.25rem;
+	bottom: 0.25rem;
+	font-size: 0.6875rem;
+	font-weight: 600;
+	line-height: 1.2;
+	color: var(--cal-texto);
+	pointer-events: none;
+}
+
+/* Leyenda y badges de veredicto (leyenda de la card, modal de día, modal de equipo). */
+.cal-leyenda {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.375rem;
+}
+
+.cal-leyenda-item {
+	display: inline-block;
+	padding: 0.125rem 0.5rem;
+	border-radius: 1rem;
+	font-size: 0.75rem;
+	font-weight: 600;
+	color: var(--cal-texto);
+	background: rgba(var(--cal-libre), 0.15);
+	border-left: 3px solid rgb(var(--cal-libre));
+}
+
+.cal-leyenda-item.cal-veredicto-ausencia { background: rgba(var(--cal-ausencia), var(--cal-tinte)); border-left-color: rgb(var(--cal-ausencia)); }
+.cal-leyenda-item.cal-veredicto-retraso { background: rgba(var(--cal-retraso), var(--cal-tinte)); border-left-color: rgb(var(--cal-retraso)); }
+.cal-leyenda-item.cal-veredicto-parcial { background: rgba(var(--cal-parcial), var(--cal-tinte)); border-left-color: rgb(var(--cal-parcial)); }
+.cal-leyenda-item.cal-veredicto-cumplido { background: rgba(var(--cal-cumplido), var(--cal-tinte)); border-left-color: rgb(var(--cal-cumplido)); }
+.cal-leyenda-item.cal-veredicto-exceso { background: rgba(var(--cal-exceso), var(--cal-tinte)); border-left-color: rgb(var(--cal-exceso)); }
+.cal-leyenda-item.cal-veredicto-libre { background: rgba(var(--cal-libre), var(--cal-tinte)); border-left-color: rgb(var(--cal-libre)); }
+.cal-leyenda-item.cal-veredicto-incidencia { background: rgba(var(--cal-incidencia), var(--cal-tinte)); border-left-color: rgb(var(--cal-incidencia)); }
+.cal-leyenda-item.cal-previsto { background: rgba(var(--cal-libre), 0.12); border-left: 3px dashed rgb(var(--cal-exceso)); }
+.cal-leyenda-item.cal-real { background: rgba(var(--cal-exceso), 0.9); border-left-color: rgb(var(--cal-exceso)); color: #fff; }
+
+/* Vistas semana/día (US2): tramo previsto como bloque de fondo punteado, intervalo real
+   como bloque sólido superpuesto — distinguibles sin depender solo del color. */
+.fc .fc-bg-event.cal-previsto {
+	background: rgba(var(--cal-libre), 0.12);
+	border: 1px dashed rgba(var(--cal-exceso), 0.7);
+	opacity: 1;
+}
+
+.fc .cal-previsto-etiqueta {
+	position: absolute;
+	top: 0.125rem;
+	right: 0.25rem;
+	font-size: 0.625rem;
+	font-weight: 600;
+	color: var(--cal-texto);
+	opacity: 0.7;
+	pointer-events: none;
+}
+
+.fc .fc-event.cal-real {
+	background: rgba(var(--cal-exceso), 0.85);
+	border: 1px solid rgb(var(--cal-exceso));
+}
+
+.fc .cal-real-contenido {
+	font-size: 0.6875rem;
+	font-weight: 600;
+	color: #fff;
+	padding: 0 0.25rem;
+}
+
+/* Vista de equipo (US3): recuentos por día. */
+.cal-resumen {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.25rem;
+	padding: 0.125rem;
+}
+
+.cal-resumen-badge {
+	display: inline-block;
+	padding: 0.0625rem 0.375rem;
+	border-radius: 1rem;
+	font-size: 0.6875rem;
+	font-weight: 600;
+	color: var(--cal-texto);
+}
+
+.cal-resumen-badge.cal-veredicto-ausencia { background: rgba(var(--cal-ausencia), 0.35); }
+.cal-resumen-badge.cal-veredicto-retraso { background: rgba(var(--cal-retraso), 0.35); }
+.cal-resumen-badge.cal-veredicto-incidencia { background: rgba(var(--cal-incidencia), 0.3); }
+
+/* El evento contenedor del resumen de equipo no debe verse como "pastilla" azul default. */
+.fc .fc-event.cal-resumen-equipo {
+	background: transparent;
+	border: 0;
+}
+
+/* Panel de métricas del calendario (feature 026): KPI cards + gráficos Chart.js sobre el
+   calendario. Reutiliza la paleta de veredictos (`--cal-*`) para coherencia con el semáforo. */
+.cal-kpi .card-body {
+	position: relative;
+}
+
+.cal-kpi h3 {
+	font-weight: 700;
+	letter-spacing: -0.01em;
+}
+
+.cal-kpi-icono {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 42px;
+	height: 42px;
+	border-radius: 12px;
+	font-size: 1.05rem;
+	color: rgb(var(--cal-libre));
+	background: rgba(var(--cal-libre), 0.14);
+	flex-shrink: 0;
+}
+
+.cal-kpi-cumplimiento .cal-kpi-icono {
+	color: rgb(var(--cal-cumplido));
+	background: rgba(var(--cal-cumplido), 0.16);
+}
+
+/* Sparkline embebido en la card de cumplimiento: bajo perfil, sin ejes. */
+.cal-sparkline-wrap {
+	margin-top: 0.5rem;
+	height: 34px;
+}
+
+.cal-sparkline-wrap canvas {
+	width: 100% !important;
+}
+
+/* Caja de los dos gráficos grandes: altura fija para que el layout no salte al recargar. */
+.cal-chart-box {
+	position: relative;
+	height: 300px;
+}
+
+/* Cuando no hay datos, el mensaje ocupa el sitio y el canvas se oculta vía JS. */
+.cal-chart-vacio {
+	padding: 2rem 0;
+}

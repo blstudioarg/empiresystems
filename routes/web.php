@@ -7,6 +7,7 @@ use App\Http\Controllers\ArchivoController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\BancoController;
+use App\Http\Controllers\CalendarioController;
 use App\Http\Controllers\CarpetaController;
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\CompraController;
@@ -178,6 +179,10 @@ Route::middleware(['tenant.context', 'auth'])->group(function () {
         Route::delete('/asignaciones-horario/{asignacion}', [AsignacionHorarioController::class, 'destroy'])->name('asignaciones-horario.destroy');
 
         Route::post('/fichajes/{fichaje}/corregir', [CorreccionFichajeController::class, 'store'])->name('fichajes.corregir');
+
+        Route::get('/calendario', [CalendarioController::class, 'index'])->name('calendario.index');
+        Route::get('/calendario/eventos', [CalendarioController::class, 'eventos'])->name('calendario.eventos');
+        Route::get('/calendario/resumen', [CalendarioController::class, 'resumen'])->name('calendario.resumen');
 
         Route::get('/alertas', [AlertaController::class, 'index'])->name('alertas.index');
         Route::patch('/alertas/{alerta}', [AlertaController::class, 'update'])->name('alertas.update');

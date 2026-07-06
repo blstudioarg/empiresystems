@@ -78,6 +78,17 @@ alcance: festivos, vacaciones/ausencias justificadas y gestión formal de horas 
 > Ver `docs/03-modelo-datos.md` (secciones `horarios`, `horario_tramos`, `asignaciones_horario`)
 > para el modelo de datos de esta capa.
 
+### Calendario de fichajes y horarios
+Administración dispone además de un **calendario** (`/calendario`, mismo permiso que el informe
+de jornada) que proyecta esos mismos datos sin tablas ni escrituras nuevas: vista mensual con el
+veredicto de cumplimiento de cada día pasado (color + etiqueta, idéntico al informe; hoy y futuro
+solo muestran la previsión), vistas semana/día con los tramos previstos superpuestos a los
+intervalos realmente trabajados, filtro por miembro y una vista agregada de equipo con recuentos
+de incumplimientos por día y drill-down al calendario individual. Desde el detalle de un día se
+puede corregir un fichaje o asignar un horario reutilizando los flujos existentes (el ledger y
+sus validaciones no cambian); todo el cálculo ocurre en backend por rango visible, siempre al
+vuelo.
+
 ## Fuera de alcance por ahora
 - Diseño del frontend (template externo).
 - Pasarela de cobro de las suscripciones del SaaS (se define más adelante).

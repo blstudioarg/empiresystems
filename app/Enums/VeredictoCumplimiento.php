@@ -22,4 +22,14 @@ enum VeredictoCumplimiento: string
             self::Exceso => 'Exceso de jornada',
         };
     }
+
+    /**
+     * Clase CSS del calendario de fichajes (feature 026, D6). Mapa único en backend para que
+     * los eventos del feed y la leyenda de la vista no diverjan; los estilos viven en
+     * `public/css/app-overrides.css`.
+     */
+    public function clase(): string
+    {
+        return 'cal-veredicto-'.$this->value;
+    }
 }

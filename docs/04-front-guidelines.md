@@ -488,6 +488,27 @@ controller ya castea a `(float)` antes de `response()->json(...)`, así que JS r
 limpio (sin ceros de relleno) y no hace falta `Formato` del lado del cliente — el problema es
 exclusivamente de Blade renderizando directo un atributo del modelo.
 
+## Calendario (FullCalendar vendorizado)
+
+FullCalendar 5.11.0 está vendorizado en `public/vendor/fullcalendar/` (`main.min.js`,
+`main.min.css`, `locales/es.js` — build UMD global, `FullCalendar.Calendar`). Referencia de uso:
+`resources/views/calendario/index.blade.php` + `public/js/plugins-init/calendario.init.js`.
+Reglas al reutilizarlo:
+
+- **CSS del plugin en `@push('styles')`** (antes de `style.css`, como todo plugin del banco):
+  `style.css` ya trae theming para `.app-fullcalendar` — el contenedor debe llevar esa clase.
+- **Init directo** (sin el `setTimeout(...,1000)` de la demo del template) con `locale: 'es'` y
+  `firstDay: 1`.
+- **Eventos por feed JSON con `events: function`** (FullCalendar manda `start`/`end` exclusivo
+  por rango visible); el backend calcula todo, el JS solo pinta. Tras una acción que cambie los
+  datos: `calendar.refetchEvents()`, nunca recargar la página.
+- **Eventos de fondo (`display: 'background'`) no pintan texto**: si el color codifica algo (los
+  veredictos del calendario de fichajes), inyectar una etiqueta accesible en `eventDidMount`
+  (patrón `.cal-etiqueta` en `app-overrides.css`) — nunca color solo.
+- Las clases de veredicto (`cal-veredicto-*`) las emite el backend
+  (`VeredictoCumplimiento::clase()`); leyenda y eventos comparten ese único mapa. Estilos y
+  variables light/dark en `app-overrides.css` (bloque "Calendario de fichajes").
+
 ## Vistas "self-service" mobile-first (fichar, y cualquier pantalla pensada para el móvil del empleado)
 
 Para pantallas que un empleado usa sobre todo desde su móvil (el caso ya resuelto:

@@ -55,6 +55,7 @@
 								<li><a href="{{ route('mi-jornada.index') }}">Mi jornada</a></li>
 								@if (auth()->user()->rol === \App\Enums\UserRole::Admin)
 									<li><a href="{{ route('jornada.index') }}">Jornada</a></li>
+									<li><a href="{{ route('calendario.index') }}">Calendario</a></li>
 									<li><a href="{{ route('miembros-equipo.index') }}">Miembros</a></li>
 									<li><a href="{{ route('horarios.index') }}">Horarios</a></li>
 									<li><a href="{{ route('alertas.index') }}">

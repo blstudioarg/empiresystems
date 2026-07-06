@@ -93,6 +93,22 @@ class ServicioCumplimiento
     }
 
     /**
+     * Intervalos realmente trabajados de un día (Entrada/FinPausa → InicioPausa/Salida), con
+     * correcciones aplicadas, como pares [inicio, fin] de Carbon. Expuesto para la proyección
+     * de calendario (feature 026, D5): misma semántica que `intervalosTrabajo()`, pero por día
+     * y con instantes completos en vez de timestamps. Una Entrada sin Salida no genera
+     * intervalo (incidencia).
+     *
+     * @return array<int, array{0: Carbon, 1: Carbon}>
+     */
+    public function intervalosDia(MiembroEquipo $miembro, Carbon $dia): array
+    {
+        $eventos = $this->informeJornada->eventosEfectivos($miembro, $dia->copy()->startOfDay(), $dia->copy()->endOfDay());
+
+        return $this->segmentosTrabajo($eventos);
+    }
+
+    /**
      * Empareja cada tramo previsto (en orden) con la Entrada del mismo índice (aproximación de
      * "cercanía a la ventana" para turnos partidos, R6): si falta una Entrada para un tramo, se
      * cuenta como retraso equivalente a la duración completa del tramo.
@@ -173,7 +189,18 @@ class ServicioCumplimiento
      */
     private function intervalosTrabajo(Collection $eventos): array
     {
-        $intervalos = [];
+        return array_map(
+            fn (array $segmento) => [$segmento[0]->getTimestamp(), $segmento[1]->getTimestamp()],
+            $this->segmentosTrabajo($eventos),
+        );
+    }
+
+    /**
+     * @return array<int, array{0: Carbon, 1: Carbon}>
+     */
+    private function segmentosTrabajo(Collection $eventos): array
+    {
+        $segmentos = [];
         $inicioSegmento = null;
 
         foreach ($eventos as $evento) {
@@ -181,12 +208,12 @@ class ServicioCumplimiento
                 $inicioSegmento = $evento->ocurrido_at;
             } elseif ($inicioSegmento !== null
                 && ($evento->tipo === TipoEventoFichaje::InicioPausa || $evento->tipo === TipoEventoFichaje::Salida)) {
-                $intervalos[] = [$inicioSegmento->getTimestamp(), $evento->ocurrido_at->getTimestamp()];
+                $segmentos[] = [$inicioSegmento, $evento->ocurrido_at];
                 $inicioSegmento = null;
             }
         }
 
-        return $intervalos;
+        return $segmentos;
     }
 
     /**

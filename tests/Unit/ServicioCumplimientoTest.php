@@ -179,4 +179,74 @@ class ServicioCumplimientoTest extends TestCase
         $this->assertSame(7.0, $resultado->horasDentroHorario);
         $this->assertSame(1.0, $resultado->horasFueraHorario);
     }
+
+    public function test_intervalos_dia_devuelve_segmentos_entrada_salida(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $dia = Carbon::parse('2026-08-05');
+        $miembro = $this->crearMiembroConHorario($tenant, 3, '09:00:00', '17:00:00');
+
+        Fichaje::factory()->for($tenant)->create(['miembro_equipo_id' => $miembro->id, 'tipo' => TipoEventoFichaje::Entrada, 'ocurrido_at' => $dia->copy()->setTime(9, 0)]);
+        Fichaje::factory()->for($tenant)->create(['miembro_equipo_id' => $miembro->id, 'tipo' => TipoEventoFichaje::Salida, 'ocurrido_at' => $dia->copy()->setTime(17, 0)]);
+
+        $intervalos = app(ServicioCumplimiento::class)->intervalosDia($miembro, $dia);
+
+        $this->assertCount(1, $intervalos);
+        $this->assertSame($dia->copy()->setTime(9, 0)->getTimestamp(), $intervalos[0][0]->getTimestamp());
+        $this->assertSame($dia->copy()->setTime(17, 0)->getTimestamp(), $intervalos[0][1]->getTimestamp());
+    }
+
+    public function test_intervalos_dia_la_pausa_parte_el_intervalo_en_dos(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $dia = Carbon::parse('2026-08-05');
+        $miembro = $this->crearMiembroConHorario($tenant, 3, '09:00:00', '17:00:00');
+
+        Fichaje::factory()->for($tenant)->create(['miembro_equipo_id' => $miembro->id, 'tipo' => TipoEventoFichaje::Entrada, 'ocurrido_at' => $dia->copy()->setTime(9, 0)]);
+        Fichaje::factory()->for($tenant)->create(['miembro_equipo_id' => $miembro->id, 'tipo' => TipoEventoFichaje::InicioPausa, 'ocurrido_at' => $dia->copy()->setTime(13, 0)]);
+        Fichaje::factory()->for($tenant)->create(['miembro_equipo_id' => $miembro->id, 'tipo' => TipoEventoFichaje::FinPausa, 'ocurrido_at' => $dia->copy()->setTime(14, 0)]);
+        Fichaje::factory()->for($tenant)->create(['miembro_equipo_id' => $miembro->id, 'tipo' => TipoEventoFichaje::Salida, 'ocurrido_at' => $dia->copy()->setTime(17, 0)]);
+
+        $intervalos = app(ServicioCumplimiento::class)->intervalosDia($miembro, $dia);
+
+        $this->assertCount(2, $intervalos);
+        $this->assertSame($dia->copy()->setTime(9, 0)->getTimestamp(), $intervalos[0][0]->getTimestamp());
+        $this->assertSame($dia->copy()->setTime(13, 0)->getTimestamp(), $intervalos[0][1]->getTimestamp());
+        $this->assertSame($dia->copy()->setTime(14, 0)->getTimestamp(), $intervalos[1][0]->getTimestamp());
+        $this->assertSame($dia->copy()->setTime(17, 0)->getTimestamp(), $intervalos[1][1]->getTimestamp());
+    }
+
+    public function test_intervalos_dia_entrada_sin_salida_no_genera_intervalo(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $dia = Carbon::parse('2026-08-05');
+        $miembro = $this->crearMiembroConHorario($tenant, 3, '09:00:00', '17:00:00');
+
+        Fichaje::factory()->for($tenant)->create(['miembro_equipo_id' => $miembro->id, 'tipo' => TipoEventoFichaje::Entrada, 'ocurrido_at' => $dia->copy()->setTime(9, 0)]);
+
+        $this->assertSame([], app(ServicioCumplimiento::class)->intervalosDia($miembro, $dia));
+    }
+
+    public function test_intervalos_dia_aplica_correcciones_sobre_el_evento_original(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $dia = Carbon::parse('2026-08-05');
+        $miembro = $this->crearMiembroConHorario($tenant, 3, '09:00:00', '17:00:00');
+
+        $original = Fichaje::factory()->for($tenant)->create(['miembro_equipo_id' => $miembro->id, 'tipo' => TipoEventoFichaje::Entrada, 'ocurrido_at' => $dia->copy()->setTime(9, 30)]);
+        Fichaje::factory()->for($tenant)->create(['miembro_equipo_id' => $miembro->id, 'tipo' => TipoEventoFichaje::Salida, 'ocurrido_at' => $dia->copy()->setTime(17, 0)]);
+        // Corrección: la entrada real fue a las 09:00, no a las 09:30.
+        Fichaje::factory()->for($tenant)->create([
+            'miembro_equipo_id' => $miembro->id,
+            'tipo' => TipoEventoFichaje::Entrada,
+            'ocurrido_at' => $dia->copy()->setTime(9, 0),
+            'corrige_fichaje_id' => $original->id,
+            'motivo' => 'Olvidó fichar al llegar',
+        ]);
+
+        $intervalos = app(ServicioCumplimiento::class)->intervalosDia($miembro, $dia);
+
+        $this->assertCount(1, $intervalos);
+        $this->assertSame($dia->copy()->setTime(9, 0)->getTimestamp(), $intervalos[0][0]->getTimestamp());
+    }
 }
