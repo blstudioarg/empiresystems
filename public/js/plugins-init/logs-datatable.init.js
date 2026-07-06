@@ -14,23 +14,19 @@
 	};
 
 	function renderAccion(data, type, row) {
-		if (row.resultado === 'fallo') {
-			return '<span class="badge badge-danger">' + escapeHtml(row.accion_label) + ' (denegado)</span>';
-		}
-
 		var clase = ACCION_BADGES[data] || 'badge-secondary';
 
 		return '<span class="badge ' + clase + '">' + escapeHtml(row.accion_label) + '</span>';
 	}
 
-	function renderDescripcion(data, type, row) {
-		var html = escapeHtml(data);
+	function renderResultado(data, type, row) {
+		var clase = data === 'fallo' ? 'badge-danger' : 'badge-success';
 
-		if (row.ip_origen) {
-			html += '<br><small class="text-muted">IP: ' + escapeHtml(row.ip_origen) + '</small>';
-		}
+		return '<span class="badge ' + clase + '">' + escapeHtml(row.resultado_label) + '</span>';
+	}
 
-		return html;
+	function renderOGuion(data) {
+		return data ? escapeHtml(data) : '<span class="text-muted">—</span>';
 	}
 
 	window.initLogsDataTable = function () {
@@ -53,7 +49,11 @@
 				{ data: 'fecha' },
 				{ data: 'usuario_nombre', render: escapeHtml },
 				{ data: 'accion', render: renderAccion },
-				{ data: 'descripcion', orderable: false, render: renderDescripcion },
+				{ data: 'resultado', render: renderResultado },
+				{ data: 'descripcion', orderable: false, render: escapeHtml },
+				{ data: 'ip_origen', orderable: false, render: renderOGuion },
+				{ data: 'navegador', orderable: false, render: renderOGuion },
+				{ data: 'ubicacion', orderable: false, render: renderOGuion },
 			],
 			language: {
 				search: 'Buscar:',

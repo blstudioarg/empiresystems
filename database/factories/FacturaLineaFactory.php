@@ -31,6 +31,9 @@ class FacturaLineaFactory extends Factory
             'cuota_impuesto' => 21,
             'tipo_recargo' => null,
             'cuota_recargo' => 0,
+            'calificacion_operacion' => 'S1',
+            'causa_exencion' => null,
+            'mencion_legal' => null,
             'orden' => 0,
         ];
     }

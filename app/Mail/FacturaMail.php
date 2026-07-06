@@ -14,14 +14,21 @@ class FacturaMail extends Mailable
     public function __construct(
         public readonly Factura $factura,
         private readonly string $pdf,
+        private readonly ?string $facturaeXml = null,
     ) {}
 
     public function build(): self
     {
-        $nombreArchivo = ($this->factura->numero_completo ?? 'factura-'.$this->factura->id).'.pdf';
+        $nombreBase = $this->factura->numero_completo ?? 'factura-'.$this->factura->id;
 
-        return $this->subject('Factura '.($this->factura->numero_completo ?? '').' de '.$this->factura->tenant->nombre_comercial)
+        $mailable = $this->subject('Factura '.($this->factura->numero_completo ?? '').' de '.$this->factura->tenant->nombre_comercial)
             ->view('emails.factura', ['factura' => $this->factura])
-            ->attachData($this->pdf, $nombreArchivo, ['mime' => 'application/pdf']);
+            ->attachData($this->pdf, $nombreBase.'.pdf', ['mime' => 'application/pdf']);
+
+        if ($this->facturaeXml !== null) {
+            $mailable->attachData($this->facturaeXml, $nombreBase.'.xsig', ['mime' => 'application/xml']);
+        }
+
+        return $mailable;
     }
 }

@@ -25,3 +25,5 @@ Thumbs.db
 
 # Template de referencia (zips pesados, no es código fuente del proyecto)
 /template/
+.playwright-mcp/
+tutoriales-video/node_modules/

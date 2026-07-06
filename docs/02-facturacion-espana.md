@@ -37,6 +37,30 @@
 
 > **Implicación de diseño:** las facturas necesitan un **estado de ciclo B2B** (aceptada/rechazada/pagada) con su fecha, además del estado interno.
 
+### Formato Facturae (factura en formato estructurado)
+La factura electrónica B2B debe ir en un **formato estructurado** (XML), no un PDF. El RD 238/2026
+exige ajustarse al **modelo semántico europeo EN 16931** y admite estos formatos: **Facturae**,
+**UBL**, **XML CEFACT/ONU (CII)** y **EDIFACT**.
+
+Para este producto el formato de referencia es **Facturae**, porque:
+- Es el formato **exigido por el Kit Digital** ("al menos Facturae").
+- Es el mismo que ya se usa para la administración pública (FACe), así que cubre B2G y B2B.
+
+Datos técnicos de Facturae:
+- Versión vigente: **3.2.2**.
+- **XML** firmado con **firma electrónica XAdES-EPES** (la firma es parte del formato; sin firma no es
+  Facturae válido). **No** admite PDF ni, dentro de Facturae, otras sintaxis como UBL/CII.
+- Es un formato **distinto e independiente** del XML del registro de Verifactu (Orden HAC/1177/2024):
+  - **Verifactu** = registro con huella/encadenamiento que se conserva/remite a la **AEAT** (control anti-fraude).
+  - **Facturae** = el documento estructurado que se **intercambia con el cliente/proveedor** (B2B/B2G).
+  Una misma factura genera **ambos**: su registro Verifactu y su documento Facturae.
+
+> **Implicación de diseño:** hace falta un **servicio de generación/exportación de Facturae 3.2.2**
+> (mapear la factura + líneas + desglose de impuestos al XML) y la **firma XAdES-EPES** (requiere
+> certificado del emisor). Del lado de **recepción**, un **importador de Facturae** que lea el XML del
+> proveedor y lo vuelque a una `compra` (ver `03-modelo-datos.md`, tabla `compras`). Guardar el XML
+> firmado como archivo asociado a la factura.
+
 ## 3. Tipos de factura
 
 | Tipo | Cuándo | Particularidades |
@@ -72,6 +96,21 @@
 - **Total**.
 - Menciones especiales cuando apliquen (inversión del sujeto pasivo, exención, régimen especial, etc.).
 
+### Validación de identificación fiscal (NIF/CIF/NIE)
+El **NIF del emisor y del receptor** son obligatorios en la factura completa y deben validarse en
+**formato y dígito de control** antes de emitir, para no generar facturas inválidas ni registros
+Verifactu rechazados:
+- **NIF persona física:** 8 dígitos + letra de control (algoritmo módulo 23).
+- **NIE (extranjeros):** `X`/`Y`/`Z` + 7 dígitos + letra de control.
+- **NIF de entidad (antiguo CIF):** letra inicial de tipo + 7 dígitos + carácter de control (dígito o letra según el tipo de entidad).
+- **Operaciones intracomunitarias (E5, art. 25):** el NIF-IVA del cliente debería verificarse contra
+  **VIES** (censo europeo) para justificar la exención; sin NIF-IVA válido la entrega no es exenta.
+
+> **Implicación de diseño:** una **regla de validación** de NIF/CIF/NIE (con dígito de control) aplicada
+> en el alta/edición de `clientes`, en los datos fiscales del `tenant` (emisor) y como requisito previo
+> a **emitir**. La verificación VIES es una llamada externa opcional, solo relevante para
+> intracomunitarias.
+
 ## 5. Impuestos y retenciones
 
 ### IVA (tipos vigentes 2026)
@@ -98,7 +137,50 @@ El impuesto indirecto **no es siempre IVA** según dónde tribute el emisor:
 
 > **Implicación de diseño:** el desglose de impuestos debe ser **por tipo impositivo** y **agnóstico al régimen**. Una factura mezcla varios tipos, pero todos del mismo régimen (IVA *o* IGIC *o* IPSI). Se guarda un `regimen_impositivo` a nivel de tenant (por defecto) y de factura (congelado al emitir). El IRPF y el recargo se tratan aparte, a nivel de factura.
 
-## 6. Series y numeración
+## 6. Calificación de la operación y menciones especiales
+
+No toda operación lleva IVA repercutido. La factura DEBE reflejar la naturaleza fiscal de la
+operación, y **Verifactu la exige codificada** en su registro (campo *Calificación de la operación*
+y, si es exenta, *Causa de exención*). Esto es lo que faltaba desarrollar del punto genérico
+"menciones especiales" de la §4.
+
+### Calificación de la operación (códigos Verifactu / SII)
+- **S1** — Sujeta y **no** exenta, **sin** inversión del sujeto pasivo (caso normal, con IVA).
+- **S2** — Sujeta y no exenta, **con inversión del sujeto pasivo (ISP)** — **art. 84.Uno.2º LIVA**.
+  La factura **no** lleva cuota de IVA (la autoliquida el destinatario), pero la operación **está
+  sujeta** (no es lo mismo que exenta). Mención obligatoria: "inversión del sujeto pasivo".
+- **N1** — **No sujeta** por su naturaleza (p. ej. art. 7 LIVA).
+- **N2** — **No sujeta** por reglas de localización (operación localizada fuera del territorio de
+  aplicación del impuesto).
+
+### Causas de exención (código Verifactu → artículo LIVA)
+> Clasificación **oficial** de la AEAT (el orden correcto: E3 = art. 22, E5 = art. 25).
+
+- **E1** — Exenta por **art. 20 LIVA** — exenciones interiores: sanidad, educación, alquiler de
+  vivienda, y **operaciones financieras y de seguros**.
+- **E2** — Exenta por **art. 21 LIVA** — **exportaciones** de bienes fuera de la UE.
+- **E3** — Exenta por **art. 22 LIVA** — operaciones asimiladas a exportaciones.
+- **E4** — Exenta por **arts. 23 y 24 LIVA** — zonas francas, depósitos y regímenes aduaneros/fiscales.
+- **E5** — Exenta por **art. 25 LIVA** — **entregas intracomunitarias** de bienes a otro Estado
+  miembro con NIF-IVA válido.
+- **E6** — Exenta por **otra causa** no incluida en las anteriores.
+
+### Mención en la factura (art. 6 RD 1619/2012)
+Cuando la operación es exenta, con ISP o no sujeta, la factura DEBE incluir la mención con su
+referencia legal, p. ej.:
+- "Operación exenta conforme al **art. 20 LIVA**".
+- "**Inversión del sujeto pasivo** (art. 84.Uno.2º LIVA)".
+- "Entrega intracomunitaria exenta (**art. 25 LIVA**)".
+- "Exportación exenta (**art. 21 LIVA**)".
+
+> **Implicación de diseño:** cada línea (que alimenta el desglose de `factura_impuestos`) necesita una
+> **calificación de operación** (S1/S2/N1/N2) y, si es exenta, una **causa de exención** (E1–E6), más
+> el **texto de la mención legal** para el PDF. Verifactu reporta esto **por desglose**, por lo que el
+> modelo debe permitir que una factura mezcle operaciones sujetas y exentas. Con **ISP la cuota es 0
+> pero la operación está sujeta (S2)** — distinto de una exenta. Ver campos en `03-modelo-datos.md`
+> (`factura_lineas`).
+
+## 7. Series y numeración
 - Numeración **correlativa dentro de cada serie**, **sin huecos**.
 - Se pueden usar varias series (p. ej. por año, por tipo, por punto de venta).
 - Las **rectificativas** llevan **serie separada** obligatoriamente.
@@ -114,3 +196,5 @@ El impuesto indirecto **no es siempre IVA** según dónde tribute el emisor:
 - IVA / recargo / IRPF: [AEAT — tipos impositivos IVA](https://sede.agenciatributaria.gob.es/Sede/iva/calculo-iva-repercutido-clientes/tipos-impositivos-iva.html)
 - IGIC Canarias 2026: [guiafiscal — IGIC 2026](https://guiafiscal.es/iva/igic-canarias-2026/), [KPMG — cambios tipos IGIC 2026](https://assets.kpmg.com/content/dam/kpmgsites/es/pdf/2026/01/tax-alert-cambios-tipos-igic-2026.pdf.coredownload.inline.pdf)
 - Numeración/series: [AEAT — recomendaciones numeración](https://sede.agenciatributaria.gob.es/Sede/iva/facturacion-registro/facturacion-iva.html)
+- Calificación operación / causas de exención (SII/Verifactu): [AEAT — FAQ libro registro facturas expedidas](https://sede.agenciatributaria.gob.es/Sede/iva/facturacion-registro/preguntas-frecuentes/libro-registro-facturas-expedidas-iva-irpf.html), [Wolters Kluwer — claves de facturas IVA (SII)](https://a3responde.wolterskluwer.com/es/s/article/sii-relacion-de-claves-de-las-facturas-iva-tributacion-estatal)
+- Facturae / formatos B2B (EN 16931): [Facturae 3.2.2 + XAdES-EPES](https://apolohq.com/facturae/), [formatos obligatorios B2B (Facturae/UBL/CII/EDIFACT)](https://peppolvalidator.com/factura-electronica-espana)

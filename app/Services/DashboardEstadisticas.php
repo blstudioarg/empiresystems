@@ -2,12 +2,17 @@
 
 namespace App\Services;
 
+use App\Enums\EstadoCompra;
 use App\Enums\EstadoFactura;
+use App\Enums\TipoRectificacion;
 use App\Models\Articulo;
+use App\Models\Compra;
 use App\Models\Factura;
 use App\Models\Pago;
+use App\Support\RangoFechas;
 use App\Support\VariacionPorcentual;
 use Carbon\Carbon;
+use Illuminate\Support\Collection;
 
 class DashboardEstadisticas
 {
@@ -21,72 +26,170 @@ class DashboardEstadisticas
         EstadoFactura::Rectificada,
     ];
 
-    public function resumen(?Carbon $ahora = null): array
+    public function resumen(RangoFechas $rango): array
     {
-        $ahora = $ahora ?? now();
-
         return [
-            'kpis' => $this->kpis($ahora),
-            'serie_facturacion_12_meses' => $this->serieFacturacion(12, $ahora),
-            'comparativo_6_meses' => $this->comparativo(6, $ahora),
-            'distribucion_estados' => $this->distribucionEstados(),
-            'top_clientes' => $this->topClientes(),
+            'rango' => [
+                'preset' => $rango->preset->value,
+                'desde' => $rango->desde->toDateString(),
+                'hasta' => $rango->hasta->toDateString(),
+                'etiqueta' => $rango->etiqueta(),
+            ],
+            'kpis' => $this->kpis($rango),
+            'impuestos' => $this->impuestos($rango),
+            'serie_facturacion' => $this->serieFacturacion($rango),
+            'comparativo' => $this->comparativo($rango),
+            'distribucion_estados' => $this->distribucionEstados($rango),
+            'top_clientes' => $this->topClientes($rango),
             'alertas_stock' => $this->alertasStock(),
-            'facturas_recientes' => $this->facturasRecientes(),
+            'facturas_recientes' => $this->facturasRecientes($rango),
         ];
     }
 
-    private function facturasQuery()
+    /**
+     * Acota una columna de fecha (sin hora) a `[inicio, fin]` inclusive. Usa `< fin + 1 día` en
+     * vez de `<= fin` porque `fecha_expedicion`/`fecha` se guardan como datetime a medianoche
+     * (`Y-m-d 00:00:00`, incluso siendo columnas `date`): un `whereBetween` con el string
+     * `Y-m-d` de `fin` como límite superior excluye por comparación de string cualquier registro
+     * fechado exactamente ese día.
+     */
+    private function acotarFecha($query, string $columna, Carbon $inicio, Carbon $fin)
     {
-        return Factura::query()
-            ->where('tipo', '!=', 'simplificada')
-            ->whereIn('estado', array_map(fn (EstadoFactura $e) => $e->value, self::ESTADOS_FACTURADOS));
+        return $query
+            ->where($columna, '>=', $inicio->toDateString())
+            ->where($columna, '<', $fin->copy()->addDay()->toDateString());
     }
 
-    private function kpis(Carbon $ahora): array
+    /**
+     * Facturas facturables (no simplificadas, no rectificativas, en estado de facturación) con
+     * `fecha_expedicion` en `[inicio, fin]`, con eager load de `rectificativa` para poder
+     * calcular `totalCobrable()` sin N+1.
+     */
+    private function facturasFacturablesEnRango(Carbon $inicio, Carbon $fin): Collection
     {
-        $inicioMesActual = $ahora->copy()->startOfMonth();
-        $finMesActual = $ahora->copy()->endOfMonth();
-        $inicioMesAnterior = $ahora->copy()->subMonthNoOverflow()->startOfMonth();
-        $finMesAnterior = $ahora->copy()->subMonthNoOverflow()->endOfMonth();
+        return $this->acotarFecha(
+            Factura::query()
+                ->where('tipo', '!=', 'simplificada')
+                ->where('es_rectificativa', false)
+                ->whereIn('estado', array_map(fn (EstadoFactura $e) => $e->value, self::ESTADOS_FACTURADOS)),
+            'fecha_expedicion',
+            $inicio,
+            $fin,
+        )
+            ->with('rectificativa')
+            ->get();
+    }
 
-        $actual = $this->resumenMensual($inicioMesActual, $finMesActual);
-        $anterior = $this->resumenMensual($inicioMesAnterior, $finMesAnterior);
+    private function kpis(RangoFechas $rango): array
+    {
+        $rangoAnterior = $rango->anterior();
+
+        $actual = $this->resumenMensual($rango->desde, $rango->hasta);
+        $anterior = $this->resumenMensual($rangoAnterior->desde, $rangoAnterior->hasta);
+        $gastos = $this->gastosEnRango($rango->desde, $rango->hasta);
 
         return [
-            'facturado_mes' => [
+            'facturado' => [
                 'valor' => $actual['total_facturado'],
                 'variacion_pct' => VariacionPorcentual::calcular($actual['total_facturado'], $anterior['total_facturado']),
             ],
-            'cobrado_mes' => [
+            'cobrado' => [
                 'valor' => $actual['total_cobrado'],
                 'variacion_pct' => VariacionPorcentual::calcular($actual['total_cobrado'], $anterior['total_cobrado']),
             ],
             'pendiente_cobro' => [
                 'valor' => $this->pendienteCobro(),
             ],
-            'num_facturas_mes' => [
+            'num_facturas' => [
                 'valor' => $actual['num_facturas'],
                 'variacion_pct' => VariacionPorcentual::calcular($actual['num_facturas'], $anterior['num_facturas']),
             ],
+            'gastos' => [
+                'valor' => $gastos,
+            ],
+            'resultado' => [
+                'valor' => round($actual['total_facturado'] - $gastos, 2),
+            ],
+            'ventas_pos' => [
+                'valor' => $this->ventasPosEnRango($rango->desde, $rango->hasta),
+            ],
+        ];
+    }
+
+    private function comprasConfirmadasQuery(Carbon $inicio, Carbon $fin)
+    {
+        return $this->acotarFecha(
+            Compra::query()->where('estado', EstadoCompra::Confirmada->value),
+            'fecha',
+            $inicio,
+            $fin,
+        );
+    }
+
+    private function gastosEnRango(Carbon $inicio, Carbon $fin): float
+    {
+        return round((float) $this->comprasConfirmadasQuery($inicio, $fin)->sum('total'), 2);
+    }
+
+    private function ivaSoportadoEnRango(Carbon $inicio, Carbon $fin): float
+    {
+        return round((float) $this->comprasConfirmadasQuery($inicio, $fin)->sum('cuota_impuesto_total'), 2);
+    }
+
+    private function ventasPosEnRango(Carbon $inicio, Carbon $fin): float
+    {
+        return round((float) $this->acotarFecha(
+            Factura::query()->where('tipo', 'simplificada'),
+            'fecha_expedicion',
+            $inicio,
+            $fin,
+        )->sum('total'), 2);
+    }
+
+    /**
+     * IVA repercutido neto de una factura facturable, con el mismo neteo de rectificativas que
+     * `Factura::totalCobrable()` pero sobre `cuota_impuesto_total` en vez de `total`.
+     */
+    private function cuotaImpuestoNeta(Factura $factura): float
+    {
+        $rectificativa = ($factura->estado === EstadoFactura::Rectificada) ? $factura->rectificativaEmitida() : null;
+
+        if ($rectificativa === null) {
+            return round((float) $factura->cuota_impuesto_total, 2);
+        }
+
+        if ($rectificativa->tipo_rectificacion === TipoRectificacion::Sustitucion) {
+            return round((float) $rectificativa->cuota_impuesto_total, 2);
+        }
+
+        return round((float) $factura->cuota_impuesto_total + (float) $rectificativa->cuota_impuesto_total, 2);
+    }
+
+    private function impuestos(RangoFechas $rango): array
+    {
+        $facturas = $this->facturasFacturablesEnRango($rango->desde, $rango->hasta);
+
+        return [
+            'repercutido' => round((float) $facturas->sum(fn (Factura $f) => $this->cuotaImpuestoNeta($f)), 2),
+            'soportado' => $this->ivaSoportadoEnRango($rango->desde, $rango->hasta),
+            'etiqueta' => tenant()->regimen_impositivo->label(),
         ];
     }
 
     private function resumenMensual(Carbon $inicio, Carbon $fin): array
     {
-        $facturado = $this->facturasQuery()
-            ->whereBetween('fecha_expedicion', [$inicio->toDateString(), $fin->toDateString()])
-            ->selectRaw('COALESCE(SUM(total), 0) as total, COUNT(*) as cantidad')
-            ->first();
+        $facturas = $this->facturasFacturablesEnRango($inicio, $fin);
 
-        $cobrado = Pago::query()
-            ->whereNull('anulado_at')
-            ->whereBetween('fecha', [$inicio->toDateString(), $fin->toDateString()])
-            ->sum('importe');
+        $cobrado = $this->acotarFecha(
+            Pago::query()->whereNull('anulado_at'),
+            'fecha',
+            $inicio,
+            $fin,
+        )->sum('importe');
 
         return [
-            'total_facturado' => round((float) $facturado->total, 2),
-            'num_facturas' => (int) $facturado->cantidad,
+            'total_facturado' => round((float) $facturas->sum(fn (Factura $f) => $f->totalCobrable()), 2),
+            'num_facturas' => $facturas->count(),
             'total_cobrado' => round((float) $cobrado, 2),
         ];
     }
@@ -110,45 +213,101 @@ class DashboardEstadisticas
         return round($pendiente, 2);
     }
 
-    private function serieFacturacion(int $meses, Carbon $ahora): array
+    private function facturasQuery()
     {
-        $serie = [];
-
-        for ($i = $meses - 1; $i >= 0; $i--) {
-            $mes = $ahora->copy()->subMonthsNoOverflow($i);
-            $resumen = $this->resumenMensual($mes->copy()->startOfMonth(), $mes->copy()->endOfMonth());
-
-            $serie[] = [
-                'etiqueta' => $mes->translatedFormat('M Y'),
-                'facturado' => $resumen['total_facturado'],
-            ];
-        }
-
-        return $serie;
-    }
-
-    private function comparativo(int $meses, Carbon $ahora): array
-    {
-        $serie = [];
-
-        for ($i = $meses - 1; $i >= 0; $i--) {
-            $mes = $ahora->copy()->subMonthsNoOverflow($i);
-            $resumen = $this->resumenMensual($mes->copy()->startOfMonth(), $mes->copy()->endOfMonth());
-
-            $serie[] = [
-                'etiqueta' => $mes->translatedFormat('M Y'),
-                'facturado' => $resumen['total_facturado'],
-                'cobrado' => $resumen['total_cobrado'],
-            ];
-        }
-
-        return $serie;
-    }
-
-    private function distribucionEstados(): array
-    {
-        $conteos = Factura::query()
+        return Factura::query()
             ->where('tipo', '!=', 'simplificada')
+            ->whereIn('estado', array_map(fn (EstadoFactura $e) => $e->value, self::ESTADOS_FACTURADOS));
+    }
+
+    /**
+     * Divide el rango en sub-periodos para series/comparativos: un bucket por día si el rango es
+     * corto (`RangoFechas::granularidad() === 'dia'`), o un bucket por mes (recortado a los
+     * límites del rango) si es largo. Evita cientos de puntos diarios en un rango de un año.
+     *
+     * @return list<array{inicio: Carbon, fin: Carbon, etiqueta: string}>
+     */
+    private function bucketsDelRango(RangoFechas $rango): array
+    {
+        return $rango->granularidad() === 'dia'
+            ? $this->bucketsDiarios($rango)
+            : $this->bucketsMensuales($rango);
+    }
+
+    private function bucketsDiarios(RangoFechas $rango): array
+    {
+        $buckets = [];
+        $cursor = $rango->desde->copy();
+
+        while ($cursor->lte($rango->hasta)) {
+            $buckets[] = [
+                'inicio' => $cursor->copy(),
+                'fin' => $cursor->copy(),
+                'etiqueta' => $cursor->translatedFormat('d M'),
+            ];
+            $cursor->addDay();
+        }
+
+        return $buckets;
+    }
+
+    private function bucketsMensuales(RangoFechas $rango): array
+    {
+        $buckets = [];
+        $cursor = $rango->desde->copy()->startOfMonth();
+
+        while ($cursor->lte($rango->hasta)) {
+            $inicio = $cursor->copy()->max($rango->desde);
+            $fin = $cursor->copy()->endOfMonth()->min($rango->hasta);
+
+            $buckets[] = [
+                'inicio' => $inicio,
+                'fin' => $fin,
+                'etiqueta' => $cursor->translatedFormat('M Y'),
+            ];
+            $cursor->addMonthNoOverflow();
+        }
+
+        return $buckets;
+    }
+
+    private function serieFacturacion(RangoFechas $rango): array
+    {
+        return collect($this->bucketsDelRango($rango))
+            ->map(function (array $bucket) {
+                $resumen = $this->resumenMensual($bucket['inicio'], $bucket['fin']);
+
+                return [
+                    'etiqueta' => $bucket['etiqueta'],
+                    'facturado' => $resumen['total_facturado'],
+                ];
+            })
+            ->all();
+    }
+
+    private function comparativo(RangoFechas $rango): array
+    {
+        return collect($this->bucketsDelRango($rango))
+            ->map(function (array $bucket) {
+                $resumen = $this->resumenMensual($bucket['inicio'], $bucket['fin']);
+
+                return [
+                    'etiqueta' => $bucket['etiqueta'],
+                    'facturado' => $resumen['total_facturado'],
+                    'cobrado' => $resumen['total_cobrado'],
+                ];
+            })
+            ->all();
+    }
+
+    private function distribucionEstados(RangoFechas $rango): array
+    {
+        $conteos = $this->acotarFecha(
+            Factura::query()->where('tipo', '!=', 'simplificada'),
+            'fecha_expedicion',
+            $rango->desde,
+            $rango->hasta,
+        )
             ->selectRaw('estado, COUNT(*) as cantidad')
             ->groupBy('estado')
             ->pluck('cantidad', 'estado');
@@ -161,19 +320,24 @@ class DashboardEstadisticas
             ->all();
     }
 
-    private function topClientes(): array
+    private function topClientes(RangoFechas $rango): array
     {
-        return $this->facturasQuery()
-            ->selectRaw('cliente_id, cliente_razon_social, cliente_nombre, SUM(total) as total_facturado')
-            ->groupBy('cliente_id', 'cliente_razon_social', 'cliente_nombre')
-            ->orderByDesc('total_facturado')
-            ->limit(5)
-            ->get()
-            ->map(fn ($fila) => [
-                'cliente_id' => $fila->cliente_id,
-                'nombre' => $fila->cliente_razon_social ?: ($fila->cliente_nombre ?: 'Sin nombre'),
-                'total_facturado' => round((float) $fila->total_facturado, 2),
-            ])
+        $facturas = $this->facturasFacturablesEnRango($rango->desde, $rango->hasta);
+
+        return $facturas
+            ->groupBy('cliente_id')
+            ->map(function (Collection $facturasCliente) {
+                $primera = $facturasCliente->first();
+
+                return [
+                    'cliente_id' => $primera->cliente_id,
+                    'nombre' => $primera->cliente_razon_social ?: ($primera->cliente_nombre ?: 'Sin nombre'),
+                    'total_facturado' => round((float) $facturasCliente->sum(fn (Factura $f) => $f->totalCobrable()), 2),
+                ];
+            })
+            ->sortByDesc('total_facturado')
+            ->take(5)
+            ->values()
             ->all();
     }
 
@@ -202,10 +366,14 @@ class DashboardEstadisticas
         ];
     }
 
-    private function facturasRecientes(): array
+    private function facturasRecientes(RangoFechas $rango): array
     {
-        return Factura::query()
-            ->where('tipo', '!=', 'simplificada')
+        return $this->acotarFecha(
+            Factura::query()->where('tipo', '!=', 'simplificada'),
+            'fecha_expedicion',
+            $rango->desde,
+            $rango->hasta,
+        )
             ->orderByDesc('fecha_expedicion')
             ->limit(8)
             ->get(['id', 'numero_completo', 'estado', 'cliente_nombre', 'cliente_razon_social', 'total', 'fecha_expedicion'])

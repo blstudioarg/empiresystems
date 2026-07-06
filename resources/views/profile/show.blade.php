@@ -48,7 +48,7 @@
 							</li>
 							<li class="me-3 d-inline-flex align-items-center">
 								<i class="las la-calendar me-1 fs-18"></i>Miembro desde
-								{{ $user->created_at?->translatedFormat('d/m/Y') ?? '—' }}
+								{{ $user->created_at?->enZonaTenant()?->translatedFormat('d/m/Y') ?? '—' }}
 							</li>
 						</ul>
 

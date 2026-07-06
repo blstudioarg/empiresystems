@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\AccionLogActividad;
 use App\Enums\EntidadLogActividad;
+use App\Exceptions\CertificadoInvalidoException;
 use App\Exceptions\EmailNoConfiguradoException;
 use App\Http\Requests\UpdateAparienciaRequest;
 use App\Http\Requests\UpdateEmailRequest;
@@ -13,8 +14,14 @@ use App\Services\RegistradorActividad;
 use App\Services\TenantMailer;
 use App\Support\AparienciaTenant;
 use App\Support\ArchivosTenant;
+use App\Support\CertificadoTenant;
+use App\Support\ConfigFichajes;
+use App\Support\ConfigTenant;
 use App\Support\EmailTenant;
+use App\Support\RetencionGeoTenant;
+use App\Support\RetencionMiembroTenant;
 use App\Support\TopeSimplificada;
+use App\Support\VerificadorVies;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -49,7 +56,68 @@ class ConfiguracionController extends Controller
             'email' => $email,
             'emailTienePassword' => EmailTenant::tienePasswordGuardada($tenantId),
             'archivosLimiteMb' => ArchivosTenant::limiteMb($tenantId),
+            'certificado' => CertificadoTenant::metadatos($tenantId),
+            'fichajesConfig' => [
+                'retencion_geo_dias' => RetencionGeoTenant::dias($tenantId),
+                'retencion_casa_dias' => RetencionMiembroTenant::dias($tenantId),
+                'geofencing_bloqueante' => ConfigFichajes::geofencingBloqueante($tenantId),
+                'registrar_pausas' => ConfigFichajes::registrarPausas($tenantId),
+                'tolerancia_retraso_min' => ConfigFichajes::toleranciaRetrasoMin($tenantId),
+                'tolerancia_exceso_min' => ConfigFichajes::toleranciaExcesoMin($tenantId),
+            ],
+            'generalConfig' => [
+                'zona_horaria' => ConfigTenant::zonaHoraria($tenantId),
+            ],
+            'zonasHorariasDisponibles' => ConfigTenant::ZONAS_HORARIAS_DISPONIBLES,
         ]);
+    }
+
+    public function verificarVies(Request $request): JsonResponse
+    {
+        $datos = $request->validate([
+            'nif_iva' => ['required', 'string'],
+            'pais' => ['required', 'string', 'size:2'],
+        ]);
+
+        $resultado = VerificadorVies::verificar($datos['nif_iva'], $datos['pais']);
+
+        return response()->json($resultado);
+    }
+
+    public function updateCertificado(Request $request): RedirectResponse|JsonResponse
+    {
+        $tenantId = tenant()->getTenantKey();
+
+        $datos = $request->validate([
+            'certificado' => ['required', 'file'],
+            'password' => ['required', 'string'],
+        ]);
+
+        try {
+            CertificadoTenant::guardar($datos['certificado'], $datos['password'], $tenantId);
+        } catch (CertificadoInvalidoException $e) {
+            if ($request->wantsJson()) {
+                return response()->json(['message' => $e->getMessage()], 422);
+            }
+
+            return redirect()->route('configuracion.show')->with('error', $e->getMessage());
+        }
+
+        $this->registradorActividad->registrar(
+            auth()->user(),
+            AccionLogActividad::Modificacion,
+            EntidadLogActividad::Configuracion,
+            null,
+            'Actualizó el certificado de firma Facturae',
+        );
+
+        $mensaje = 'Certificado guardado correctamente.';
+
+        if ($request->wantsJson()) {
+            return response()->json(['message' => $mensaje]);
+        }
+
+        return redirect()->route('configuracion.show')->with('success', $mensaje);
     }
 
     public function updateEmail(UpdateEmailRequest $request): RedirectResponse|JsonResponse
@@ -163,6 +231,90 @@ class ConfiguracionController extends Controller
         }
 
         return redirect()->route('configuracion.show')->with('success', 'Configuración de facturación guardada correctamente.');
+    }
+
+    public function updateFichajes(Request $request): RedirectResponse|JsonResponse
+    {
+        $tenantId = tenant()->getTenantKey();
+
+        $datos = $request->validate([
+            'retencion_geo_dias' => ['required', 'integer', 'min:1'],
+            'retencion_casa_dias' => ['required', 'integer', 'min:1'],
+            'tolerancia_retraso_min' => ['required', 'integer', 'min:0'],
+            'tolerancia_exceso_min' => ['required', 'integer', 'min:0'],
+        ]);
+
+        Configuracion::query()->updateOrCreate(
+            ['tenant_id' => $tenantId, 'clave' => RetencionGeoTenant::CLAVE],
+            ['valor' => (string) $datos['retencion_geo_dias'], 'tipo' => 'integer', 'grupo' => 'fichajes']
+        );
+
+        Configuracion::query()->updateOrCreate(
+            ['tenant_id' => $tenantId, 'clave' => RetencionMiembroTenant::CLAVE],
+            ['valor' => (string) $datos['retencion_casa_dias'], 'tipo' => 'integer', 'grupo' => 'fichajes']
+        );
+
+        Configuracion::query()->updateOrCreate(
+            ['tenant_id' => $tenantId, 'clave' => ConfigFichajes::CLAVE_GEOFENCING_BLOQUEANTE],
+            ['valor' => $request->boolean('geofencing_bloqueante') ? '1' : '0', 'tipo' => 'boolean', 'grupo' => 'fichajes']
+        );
+
+        Configuracion::query()->updateOrCreate(
+            ['tenant_id' => $tenantId, 'clave' => ConfigFichajes::CLAVE_REGISTRAR_PAUSAS],
+            ['valor' => $request->boolean('registrar_pausas') ? '1' : '0', 'tipo' => 'boolean', 'grupo' => 'fichajes']
+        );
+
+        Configuracion::query()->updateOrCreate(
+            ['tenant_id' => $tenantId, 'clave' => ConfigFichajes::CLAVE_TOLERANCIA_RETRASO_MIN],
+            ['valor' => (string) $datos['tolerancia_retraso_min'], 'tipo' => 'integer', 'grupo' => 'fichajes']
+        );
+
+        Configuracion::query()->updateOrCreate(
+            ['tenant_id' => $tenantId, 'clave' => ConfigFichajes::CLAVE_TOLERANCIA_EXCESO_MIN],
+            ['valor' => (string) $datos['tolerancia_exceso_min'], 'tipo' => 'integer', 'grupo' => 'fichajes']
+        );
+
+        $this->registradorActividad->registrar(
+            auth()->user(),
+            AccionLogActividad::Modificacion,
+            EntidadLogActividad::Configuracion,
+            null,
+            'Actualizó la configuración de fichajes',
+        );
+
+        if ($request->wantsJson()) {
+            return response()->json(['message' => 'Configuración de fichajes guardada correctamente.']);
+        }
+
+        return redirect()->route('configuracion.show')->with('success', 'Configuración de fichajes guardada correctamente.');
+    }
+
+    public function updateGeneral(Request $request): RedirectResponse|JsonResponse
+    {
+        $tenantId = tenant()->getTenantKey();
+
+        $datos = $request->validate([
+            'zona_horaria' => ['required', 'string', 'in:'.implode(',', array_keys(ConfigTenant::ZONAS_HORARIAS_DISPONIBLES))],
+        ]);
+
+        Configuracion::query()->updateOrCreate(
+            ['tenant_id' => $tenantId, 'clave' => ConfigTenant::CLAVE_ZONA_HORARIA],
+            ['valor' => $datos['zona_horaria'], 'tipo' => 'string', 'grupo' => 'general']
+        );
+
+        $this->registradorActividad->registrar(
+            auth()->user(),
+            AccionLogActividad::Modificacion,
+            EntidadLogActividad::Configuracion,
+            null,
+            'Actualizó la configuración general',
+        );
+
+        if ($request->wantsJson()) {
+            return response()->json(['message' => 'Configuración general guardada correctamente.']);
+        }
+
+        return redirect()->route('configuracion.show')->with('success', 'Configuración general guardada correctamente.');
     }
 
     public function update(UpdateAparienciaRequest $request): RedirectResponse|JsonResponse

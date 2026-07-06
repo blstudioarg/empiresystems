@@ -49,7 +49,7 @@ class FacturaController extends Controller
     {
         if ($request->wantsJson()) {
             // Excluye las simplificadas: viven en su propio módulo POS (pos.index).
-            $facturas = Factura::with(['cliente', 'eventos'])
+            $facturas = Factura::with(['cliente', 'eventos', 'rectificativa'])
                 ->where('tipo', '!=', TipoFactura::Simplificada->value)
                 ->orderByDesc('fecha_expedicion')
                 ->get();
@@ -61,9 +61,23 @@ class FacturaController extends Controller
 
                     $esRectificable = $factura->estado === EstadoFactura::Emitida && ! $factura->es_rectificativa && ! $factura->rectificativa()->exists();
 
+                    // Una original ya rectificada muestra su importe efectivo (neto por diferencias,
+                    // total de la sustituta por sustitución) además de su total nominal.
+                    $esRectificada = $factura->estado === EstadoFactura::Rectificada && $factura->rectificativaEmitida() !== null;
+                    $totalEfectivo = $factura->totalCobrable();
+
                     $saldoPendiente = $factura->saldoPendiente();
                     $esEmitida = $factura->estado === EstadoFactura::Emitida;
-                    $esCobrable = $esEmitida && $saldoPendiente > 0;
+                    // Emitida/sustitución cobran sobre sí mismas; la original rectificada por
+                    // diferencias cobra el neto; la rectificativa por diferencias no cobra (va en la original).
+                    $admiteCobros = $factura->admiteCobros();
+                    $esCobrable = $admiteCobros && $saldoPendiente > 0;
+
+                    // Modalidad de rectificación a mostrar: la propia si es rectificativa; si es
+                    // la original ya rectificada, la de su rectificativa.
+                    $modalidadRectificacion = $factura->es_rectificativa
+                        ? $factura->tipo_rectificacion?->value
+                        : ($factura->estado === EstadoFactura::Rectificada ? $factura->rectificativa?->tipo_rectificacion?->value : null);
 
                     return [
                         'id' => $factura->id,
@@ -71,15 +85,19 @@ class FacturaController extends Controller
                         'estado' => $factura->estado->value,
                         'es_borrador' => $esBorrador,
                         'es_rectificativa' => $factura->es_rectificativa,
+                        'modalidad_rectificacion' => $modalidadRectificacion,
+                        'admite_cobros' => $admiteCobros,
                         'cliente' => $factura->cliente->razon_social ?: $factura->cliente->nombre,
                         'cliente_email' => $factura->cliente->email,
                         'fecha_expedicion' => $factura->fecha_expedicion->toDateString(),
                         'total' => number_format((float) $factura->total, 2, '.', ''),
+                        'es_rectificada' => $esRectificada,
+                        'total_efectivo' => number_format($totalEfectivo, 2, '.', ''),
                         'estado_cobro' => $factura->estadoCobro()->value,
                         'saldo_pendiente' => number_format($saldoPendiente, 2, '.', ''),
                         'monto_cobrado' => number_format($factura->montoCobrado(), 2, '.', ''),
                         'pago_url' => $esCobrable ? route('facturas.pagos.store', $factura) : null,
-                        'cobros_url' => $esEmitida ? route('facturas.pagos.index', $factura) : null,
+                        'cobros_url' => $admiteCobros ? route('facturas.pagos.index', $factura) : null,
                         'emitir_url' => $esBorrador ? route('facturas.emitir', $factura) : null,
                         'edit_url' => $esBorrador ? route('facturas.edit', $factura) : null,
                         'delete_url' => $esBorrador ? route('facturas.destroy', $factura) : null,
@@ -87,11 +105,28 @@ class FacturaController extends Controller
                         'pdf_url' => route('facturas.pdf', $factura),
                         'enviar_url' => (! $esBorrador && ! $esAnulada) ? route('facturas.enviar', $factura) : null,
                         'enviada' => $factura->fueEnviada(),
+                        'facturae_descargar_url' => $esEmitida ? route('facturas.facturae.descargar', $factura) : null,
+                        'facturae_generar_enviar_url' => $esEmitida ? route('facturas.facturae.generar-enviar', $factura) : null,
                     ];
                 })->values(),
                 'totales' => [
                     'total' => $facturas->count(),
-                    'importe_total' => number_format((float) $facturas->sum('total'), 2, '.', ''),
+                    // Importe realmente facturado: solo estados de facturación (excluye borrador/
+                    // anulada) y sobre el documento de cobro de cada operación (no las rectificativas,
+                    // cuyo neto ya está reflejado en el importe efectivo de su original). Evita el
+                    // doble conteo de la sustitución (original + sustituta) y suma el neto en diferencias.
+                    'importe_total' => number_format(
+                        $facturas
+                            ->reject(fn (Factura $f) => $f->es_rectificativa)
+                            ->filter(fn (Factura $f) => in_array($f->estado, [
+                                EstadoFactura::Emitida,
+                                EstadoFactura::Pagada,
+                                EstadoFactura::Vencida,
+                                EstadoFactura::Rectificada,
+                            ], true))
+                            ->sum(fn (Factura $f) => $f->totalCobrable()),
+                        2, '.', ''
+                    ),
                 ],
                 'email_configurado' => EmailTenant::estaConfigurado(tenant()->getTenantKey()),
             ]);
@@ -433,10 +468,10 @@ class FacturaController extends Controller
                 $irpfCuota = round($irpfCuota - (float) $original->irpf_cuota, 2);
                 $total = round($total - (float) $original->total, 2);
 
-                $impuestosOriginal = $original->impuestos->keyBy(fn ($i) => $i->tipo_impuesto->value.'|'.$i->porcentaje);
+                $impuestosOriginal = $original->impuestos->keyBy(fn ($i) => $i->tipo_impuesto->value.'|'.round((float) $i->porcentaje, 2));
 
                 $impuestos = collect($impuestos)->map(function (array $impuesto) use ($impuestosOriginal) {
-                    $clave = $impuesto['tipoImpuesto'].'|'.$impuesto['porcentaje'];
+                    $clave = $impuesto['tipoImpuesto'].'|'.round((float) $impuesto['porcentaje'], 2);
                     $original = $impuestosOriginal->get($clave);
 
                     return [

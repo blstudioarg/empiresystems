@@ -138,6 +138,40 @@ negocio acotado (clientes, artículos, etc.), seguir el patrón client-side ya e
 
 ---
 
+## Decisión 8 — Leaflet vendorizado como única dependencia de mapas (024-control-horario-fichajes)
+
+**Elegido:** el mapa interactivo de la pantalla de fichaje y del formulario de miembros usa
+**Leaflet** (JS/CSS vendorizados en `public/vendor/leaflet/`, sin CDN) con tiles de OpenStreetMap.
+Es la primera dependencia de mapas del proyecto. La captura de posición la hace la **Geolocation
+API** del navegador (`navigator.geolocation`), no el mapa — el mapa es solo visualización y
+selector de coordenadas (click/arrastre de marcador); el geofencing (Haversine) se calcula siempre
+en backend (Principio III), nunca en el cliente.
+
+**Por qué Leaflet y no Google Maps/Mapbox:** ambos exigen API key + cuenta de facturación externa,
+fricción y coste innecesarios para un radio fijo por miembro (Principio V — hosting compartido,
+simplicidad). Leaflet + OSM es gratis, sin cuenta ni límite de uso, y vendorizarlo evita depender
+de un CDN externo en tiempo de ejecución.
+
+**Contrapartida asumida:** los tiles de mapa (imágenes) sí se sirven desde `*.tile.openstreetmap.org`
+(no se vendorizan, sería un volumen de almacenamiento desproporcionado). El proyecto no tiene CSP
+implementada todavía; si se añade en el futuro, debe permitir `img-src` para ese host (ver
+`specs/024-control-horario-fichajes/research.md` D3).
+
+**Geocoding de direcciones (autocompletado del formulario de miembros):** el formulario de miembros
+de equipo autocompleta las direcciones de trabajo y de casa con **Nominatim**
+(`nominatim.openstreetmap.org`), el geocoder del mismo ecosistema OSM — gratis, sin API key (mismo
+criterio que descartó Google/Mapbox para los tiles). Implementado en
+`public/js/plugins-init/miembro-mapa.init.js`: autocompletado con debounce de 500 ms / mínimo 4
+caracteres / aborto de la petición previa (política de uso de Nominatim: máx. 1 req/s), más *reverse
+geocoding* al fijar un punto por clic/arrastre en el mapa. **Es una segunda llamada a host externo de
+esta feature** (además de los tiles) y, a diferencia de los tiles, **envía datos personales**: la
+`casa_direccion` del miembro (dato ya marcado como purgable por RGPD en `docs/03-modelo-datos.md`) se
+transmite a Nominatim al teclear. Asumido por coherencia con la decisión de tiles; si se añade CSP,
+debe permitir `connect-src` para ese host. El geocoding es solo una ayuda de entrada: las
+coordenadas y el geofencing (Haversine) se siguen calculando/validando en backend (Principio III).
+
+---
+
 ## Infraestructura (estado actual)
 - **Hosting:** compartido (cPanel/Hostinger) como punto de partida.
 - **Camino de escalado:** VPS (Hostinger/DigitalOcean/Hetzner) + Laravel Forge/Ploi cuando el tráfico lo exija.

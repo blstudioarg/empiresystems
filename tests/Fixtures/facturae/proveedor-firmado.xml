@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fe:Facturae xmlns:ds="http://www.w3.org/2000/09/xmldsig#" xmlns:fe="http://www.facturae.gob.es/formato/Versiones/Facturaev3_2_2.xml"><FileHeader><SchemaVersion>3.2.2</SchemaVersion><Modality>I</Modality><InvoiceIssuerType>EM</InvoiceIssuerType><Batch><BatchIdentifier>B123456740042PROV-2026-</BatchIdentifier><InvoicesCount>1</InvoicesCount><TotalInvoicesAmount><TotalAmount>450.00</TotalAmount></TotalInvoicesAmount><TotalOutstandingAmount><TotalAmount>450.00</TotalAmount></TotalOutstandingAmount><TotalExecutableAmount><TotalAmount>450.00</TotalAmount></TotalExecutableAmount><InvoiceCurrencyCode>EUR</InvoiceCurrencyCode></Batch></FileHeader><Parties><SellerParty><TaxIdentification><PersonTypeCode>J</PersonTypeCode><ResidenceTypeCode>R</ResidenceTypeCode><TaxIdentificationNumber>B12345674</TaxIdentificationNumber></TaxIdentification><LegalEntity><CorporateName>Proveedor Ejemplo SL</CorporateName><AddressInSpain><Address>Calle Mayor 1</Address><PostCode>28001</PostCode><Town>Madrid</Town><Province>Madrid</Province><CountryCode>ESP</CountryCode></AddressInSpain></LegalEntity></SellerParty><BuyerParty><TaxIdentification><PersonTypeCode>J</PersonTypeCode><ResidenceTypeCode>R</ResidenceTypeCode><TaxIdentificationNumber>A58818501</TaxIdentificationNumber></TaxIdentification><LegalEntity><CorporateName>Empresa Demo Test SL</CorporateName><AddressInSpain><Address>Avenida del Sol 20</Address><PostCode>28010</PostCode><Town>Madrid</Town><Province>Madrid</Province><CountryCode>ESP</CountryCode></AddressInSpain></LegalEntity></BuyerParty></Parties><Invoices><Invoice><InvoiceHeader><InvoiceNumber>0042</InvoiceNumber><InvoiceSeriesCode>PROV-2026-</InvoiceSeriesCode><InvoiceDocumentType>FC</InvoiceDocumentType><InvoiceClass>OO</InvoiceClass></InvoiceHeader><InvoiceIssueData><IssueDate>2026-06-15</IssueDate><InvoiceCurrencyCode>EUR</InvoiceCurrencyCode><TaxCurrencyCode>EUR</TaxCurrencyCode><LanguageName>es</LanguageName></InvoiceIssueData><TaxesOutputs><Tax><TaxTypeCode>01</TaxTypeCode><TaxRate>21.00</TaxRate><TaxableBase><TotalAmount>371.90</TotalAmount></TaxableBase><TaxAmount><TotalAmount>78.10</TotalAmount></TaxAmount></Tax></TaxesOutputs><InvoiceTotals><TotalGrossAmount>371.90</TotalGrossAmount><TotalGeneralDiscounts>0.00</TotalGeneralDiscounts><TotalGeneralSurcharges>0.00</TotalGeneralSurcharges><TotalGrossAmountBeforeTaxes>371.90</TotalGrossAmountBeforeTaxes><TotalTaxOutputs>78.10</TotalTaxOutputs><TotalTaxesWithheld>0.00</TotalTaxesWithheld><InvoiceTotal>450.00</InvoiceTotal><TotalOutstandingAmount>450.00</TotalOutstandingAmount><TotalExecutableAmount>450.00</TotalExecutableAmount></InvoiceTotals><Items><InvoiceLine><ItemDescription>Servicio de consultoría</ItemDescription><Quantity>2</Quantity><UnitOfMeasure>01</UnitOfMeasure><UnitPriceWithoutTax>165.2892562</UnitPriceWithoutTax><TotalCost>330.58</TotalCost><GrossAmount>330.58</GrossAmount><TaxesOutputs><Tax><TaxTypeCode>01</TaxTypeCode><TaxRate>21.00</TaxRate><TaxableBase><TotalAmount>330.58</TotalAmount></TaxableBase><TaxAmount><TotalAmount>69.42</TotalAmount></TaxAmount></Tax></TaxesOutputs></InvoiceLine><InvoiceLine><ItemDescription>Material de oficina</ItemDescription><Quantity>1</Quantity><UnitOfMeasure>01</UnitOfMeasure><UnitPriceWithoutTax>41.32231405</UnitPriceWithoutTax><TotalCost>41.32</TotalCost><GrossAmount>41.32</GrossAmount><TaxesOutputs><Tax><TaxTypeCode>01</TaxTypeCode><TaxRate>21.00</TaxRate><TaxableBase><TotalAmount>41.32</TotalAmount></TaxableBase><TaxAmount><TotalAmount>8.68</TotalAmount></TaxAmount></Tax></TaxesOutputs></InvoiceLine></Items></Invoice></Invoices><ds:Signature xmlns:xades="http://uri.etsi.org/01903/v1.3.2#" Id="Signature931210138">
+<ds:SignedInfo Id="Signature-SignedInfo356175005">
+<ds:CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"></ds:CanonicalizationMethod>
+<ds:SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha512"></ds:SignatureMethod>
+<ds:Reference Id="SignedPropertiesID1335242714" Type="http://uri.etsi.org/01903#SignedProperties" URI="#Signature931210138-SignedProperties1412302191">
+<ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha512"></ds:DigestMethod>
+<ds:DigestValue>WBzYZP1JOziM/3bP6O9NzNOajzEcrwBurgvQWsoFUFt6A0SRFYc65zBaLmIbDhPHqfBMw+HuAOcRdOQJJZpIDQ==</ds:DigestValue>
+</ds:Reference>
+<ds:Reference URI="#Certificate420699524">
+<ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha512"></ds:DigestMethod>
+<ds:DigestValue>ZpF4FjclkJhpJkFMM3039N0TrAwLW5PjOx0rd/uglOfRT7XCFt9bchwa7DZvOuWufbklpi60NQBPFOAepGKEug==</ds:DigestValue>
+</ds:Reference>
+<ds:Reference Id="Reference-ID-1640151816" Type="http://www.w3.org/2000/09/xmldsig#Object" URI="">
+<ds:Transforms>
+<ds:Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"></ds:Transform>
+</ds:Transforms>
+<ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha512"></ds:DigestMethod>
+<ds:DigestValue>bJa+I8y0KsxcgYWthhPIQDcveyJCfMzBCJ+jzoMRrCLQDE7UaxA0bMAV1UuxXWuiuhxvF0w7p8sREg5n1nmTNA==</ds:DigestValue>
+</ds:Reference>
+</ds:SignedInfo>
+<ds:SignatureValue Id="SignatureValue554001598">
+Nkfhw8Z7T/2+lQtDJ0phdUHd8GbKLVLsD4RDg/7uholMup28Deu7D3dOk7QVraMKBdlWWqxoZXZm
+PwDnWY5Y+yMokY+PlFv1pD2drInQrWtdpG3Py3EChT+hX2ZpKP19xu48t6mkJNwRDU8ZmivP9p6w
+4atKOs46fJdDDZ0BWUvnw/TmR8ViLedpGzO3rO25lfsyh8Qvs2Kva0o5YtZGDHG6V+Aluluddyn5
+LEDQiAB5qcrSYV9YPA/L16CBUVgwK1CXa+wKPWogDwesxeJ3dagxigWCLs0cZQKrKkuZlMwzqbXq
+F4c9a4eAptQWNDtXTcZnwGjvPEfESMZtawRo1Q==
+</ds:SignatureValue>
+<ds:KeyInfo Id="Certificate420699524">
+<ds:X509Data>
+<ds:X509Certificate>
+MIID8DCCAtigAwIBAgIBADANBgkqhkiG9w0BAQsFADCBkDELMAkGA1UEBhMCRVMxDzANBgNVBAgM
+Bk1hZHJpZDEPMA0GA1UEBwwGTWFkcmlkMR0wGwYDVQQKDBRFbXByZXNhIERlbW8gVGVzdCBTTDEd
+MBsGA1UEAwwURW1wcmVzYSBEZW1vIFRlc3QgU0wxITAfBgkqhkiG9w0BCQEWEmZpcm1hQGVtcHJl
+c2EudGVzdDAeFw0yNjA3MDUwNTUzMjBaFw0zNjA3MDIwNTUzMjBaMIGQMQswCQYDVQQGEwJFUzEP
+MA0GA1UECAwGTWFkcmlkMQ8wDQYDVQQHDAZNYWRyaWQxHTAbBgNVBAoMFEVtcHJlc2EgRGVtbyBU
+ZXN0IFNMMR0wGwYDVQQDDBRFbXByZXNhIERlbW8gVGVzdCBTTDEhMB8GCSqGSIb3DQEJARYSZmly
+bWFAZW1wcmVzYS50ZXN0MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAlWT7IbdK+1uK
+Lnp6U+wsk1peZjmV61Pzo55H69eDq8FYDP18bungFFgvz6NcNJgrDgFoSOGEIe0rZj3BRkzxkSka
+s/aXLeMg79YFfs/FBUqt5VLQgWGY0gZGoMLHKdXdEAn32oAlOUXuJNXUhF1WABZmE812Z/pJZ0Z2
+0eqSY4pxMcJkP8QEHnz7DIB4Qiy5FW0Yxv7+eRqmdtjHd0Qr+a58Fvlw/Pb/chkqmsSzOS2UX7+l
+1T6wqN2TFCdNxa81inuvAlbdmktqkw8IGOV8ZZCaYXRd22vgaPvOChaf4RCXNKKnGjiHFUyUKMb0
+h6QdHVJOfRR1zqEqV+49t8o2jQIDAQABo1MwUTAdBgNVHQ4EFgQUxElHwglG2yiE9i40eeUlLlfE
+LhswHwYDVR0jBBgwFoAUxElHwglG2yiE9i40eeUlLlfELhswDwYDVR0TAQH/BAUwAwEB/zANBgkq
+hkiG9w0BAQsFAAOCAQEAI8VmfTZ7qORPQxGMA1MuYFIzggkytXzYaVgec/QqVECxDcJjboPshSAL
+455OCNyrTgk9gC3jFSi/OuiLvUBZOD+SeAEM5CXLP5PfTELQ2Vk1WFM4m6P6yBlGo4N+whljv9l0
+ZkCvbB7gxqrT61dmSscZ6V4JJk+JvrlfDL9e/Nq5fzW+fnnxFbGo+nh78xc1Cn8bTBVCZLYPPFON
+AcZnioIRrpUcqV7mttW0Tcxi4BZr/4ga55c2MK7Cp7t4xJWE91w2sFLBOjllSee5oro+VJtvN4Jl
+Of39GIU5+N49H1NpH7XKNn3LSPDv6lvA7RNtLS4VllaxSJzu+XH5W222nA==
+</ds:X509Certificate>
+</ds:X509Data>
+<ds:KeyValue>
+<ds:RSAKeyValue>
+<ds:Modulus>
+lWT7IbdK+1uKLnp6U+wsk1peZjmV61Pzo55H69eDq8FYDP18bungFFgvz6NcNJgrDgFoSOGEIe0r
+Zj3BRkzxkSkas/aXLeMg79YFfs/FBUqt5VLQgWGY0gZGoMLHKdXdEAn32oAlOUXuJNXUhF1WABZm
+E812Z/pJZ0Z20eqSY4pxMcJkP8QEHnz7DIB4Qiy5FW0Yxv7+eRqmdtjHd0Qr+a58Fvlw/Pb/chkq
+msSzOS2UX7+l1T6wqN2TFCdNxa81inuvAlbdmktqkw8IGOV8ZZCaYXRd22vgaPvOChaf4RCXNKKn
+GjiHFUyUKMb0h6QdHVJOfRR1zqEqV+49t8o2jQ==
+</ds:Modulus>
+<ds:Exponent>AQAB</ds:Exponent>
+</ds:RSAKeyValue>
+</ds:KeyValue>
+</ds:KeyInfo>
+<ds:Object Id="Signature931210138-Object1355821578"><xades:QualifyingProperties Target="#Signature931210138"><xades:SignedProperties Id="Signature931210138-SignedProperties1412302191"><xades:SignedSignatureProperties><xades:SigningTime>2026-07-05T07:53:21+02:00</xades:SigningTime><xades:SigningCertificate><xades:Cert><xades:CertDigest><ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha512"></ds:DigestMethod><ds:DigestValue>KU+3XnSkFDwC0eJT0cb9IiZaOqWauvp7hmyVnD+gz7uKOgpK/MgdbFKrnBPvMQKgcG0QebZ+fMDwbsIB2CUGtg==</ds:DigestValue></xades:CertDigest><xades:IssuerSerial><ds:X509IssuerName>CN=Empresa Demo Test SL, O=Empresa Demo Test SL, L=Madrid, ST=Madrid, C=ES</ds:X509IssuerName><ds:X509SerialNumber>0</ds:X509SerialNumber></xades:IssuerSerial></xades:Cert></xades:SigningCertificate><xades:SignaturePolicyIdentifier><xades:SignaturePolicyId><xades:SigPolicyId><xades:Identifier>http://www.facturae.es/politica_de_firma_formato_facturae/politica_de_firma_formato_facturae_v3_1.pdf</xades:Identifier><xades:Description>Política de Firma FacturaE v3.1</xades:Description></xades:SigPolicyId><xades:SigPolicyHash><ds:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"></ds:DigestMethod><ds:DigestValue>Ohixl6upD6av8N7pEvDABhEL6hM=</ds:DigestValue></xades:SigPolicyHash></xades:SignaturePolicyId></xades:SignaturePolicyIdentifier><xades:SignerRole><xades:ClaimedRoles><xades:ClaimedRole>emisor</xades:ClaimedRole></xades:ClaimedRoles></xades:SignerRole></xades:SignedSignatureProperties><xades:SignedDataObjectProperties><xades:DataObjectFormat ObjectReference="#Reference-ID-1640151816"><xades:Description>Factura electrónica</xades:Description><xades:ObjectIdentifier><xades:Identifier Qualifier="OIDAsURN">urn:oid:1.2.840.10003.5.109.10</xades:Identifier></xades:ObjectIdentifier><xades:MimeType>text/xml</xades:MimeType></xades:DataObjectFormat></xades:SignedDataObjectProperties></xades:SignedProperties></xades:QualifyingProperties></ds:Object></ds:Signature></fe:Facturae>

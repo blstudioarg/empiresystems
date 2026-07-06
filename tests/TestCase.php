@@ -5,9 +5,21 @@ namespace Tests;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Support\Facades\Http;
 
 abstract class TestCase extends BaseTestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Ningún test debe depender de una llamada de red real (p. ej. GeolocalizadorIp contra
+        // ip-api.com): sin esto, un test que renderiza logs.index con IPs de factory al azar
+        // termina pegándole a la API real (lento y flaky en CI). Cada test que sí necesite una
+        // respuesta debe declararla explícitamente con Http::fake([...]).
+        Http::preventStrayRequests();
+    }
+
     /**
      * Host fijado para las peticiones de este test (007-super-admin-tenants: la resolución de
      * tenant se hace por Host HTTP). Se antepone a toda URI relativa en prepareUrlForRequest();

@@ -146,9 +146,63 @@ class Factura extends Model
         return round((float) $this->pagosVigentes()->sum('importe'), 2);
     }
 
+    /**
+     * Rectificativa ya emitida que rectifica esta factura, si existe (cualquier modalidad).
+     * La original rectificada es SIEMPRE el documento de cobro, para que el usuario gestione
+     * los cobros desde un único sitio sin tener que deducir la modalidad ni buscar la
+     * rectificativa. El importe cobrable se ajusta según la modalidad (ver totalCobrable()).
+     */
+    public function rectificativaEmitida(): ?Factura
+    {
+        $rectificativa = $this->rectificativa;
+
+        if ($rectificativa && $rectificativa->estado === EstadoFactura::Emitida) {
+            return $rectificativa;
+        }
+
+        return null;
+    }
+
+    /**
+     * Importe efectivo a cobrar sobre esta factura:
+     * - Rectificada por SUSTITUCIÓN: el total de la rectificativa (reemplaza al original).
+     * - Rectificada por DIFERENCIAS: el neto (total original + delta de la rectificativa).
+     * - Resto: su propio total.
+     */
+    public function totalCobrable(): float
+    {
+        $rectificativa = ($this->estado === EstadoFactura::Rectificada) ? $this->rectificativaEmitida() : null;
+
+        if ($rectificativa === null) {
+            return round((float) $this->total, 2);
+        }
+
+        if ($rectificativa->tipo_rectificacion === TipoRectificacion::Sustitucion) {
+            return round((float) $rectificativa->total, 2);
+        }
+
+        return round((float) $this->total + (float) $rectificativa->total, 2);
+    }
+
+    /**
+     * ¿Sobre esta factura se gestionan cobros? La factura emitida normal, o la original ya
+     * rectificada (por sustitución o por diferencias) — que cobra su importe efectivo. Una
+     * rectificativa NUNCA admite cobros por sí misma: el cobro se gestiona siempre desde la
+     * original, sea cual sea la modalidad.
+     */
+    public function admiteCobros(): bool
+    {
+        if ($this->es_rectificativa) {
+            return false;
+        }
+
+        return $this->estado === EstadoFactura::Emitida
+            || ($this->estado === EstadoFactura::Rectificada && $this->rectificativaEmitida() !== null);
+    }
+
     public function saldoPendiente(): float
     {
-        return round((float) $this->total - $this->montoCobrado(), 2);
+        return round($this->totalCobrable() - $this->montoCobrado(), 2);
     }
 
     public function fueEnviada(): bool
@@ -160,7 +214,7 @@ class Factura extends Model
 
     public function estadoCobro(): EstadoCobro
     {
-        $totalCentimos = (int) round((float) $this->total * 100);
+        $totalCentimos = (int) round($this->totalCobrable() * 100);
         $cobradoCentimos = (int) round($this->montoCobrado() * 100);
 
         if ($cobradoCentimos <= 0) {

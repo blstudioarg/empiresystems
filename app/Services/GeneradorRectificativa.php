@@ -14,7 +14,7 @@ class GeneradorRectificativa
 {
     public function generar(Factura $original, TipoRectificacion $modalidad, string $motivo): Factura
     {
-        $this->validar($original);
+        $this->validar($original, $modalidad);
 
         return DB::transaction(function () use ($original, $modalidad, $motivo) {
             $serieRectificativa = Serie::activaPorTipo(TipoFactura::Rectificativa);
@@ -82,7 +82,7 @@ class GeneradorRectificativa
         });
     }
 
-    private function validar(Factura $original): void
+    private function validar(Factura $original, TipoRectificacion $modalidad): void
     {
         if ($original->estado === EstadoFactura::Rectificada) {
             throw new FacturaNoRectificableException('Esta factura ya fue rectificada.');
@@ -90,6 +90,14 @@ class GeneradorRectificativa
 
         if ($original->estado !== EstadoFactura::Emitida) {
             throw new FacturaNoRectificableException('Solo se pueden rectificar facturas emitidas.');
+        }
+
+        // Por sustitución la deuda pasa a la rectificativa y la original se cierra al cobro; los
+        // cobros ya registrados quedarían atrapados en la original. Se exige anularlos primero para
+        // no descuadrar el saldo. Por diferencias no aplica: la original sigue siendo el documento
+        // de cobro y conserva sus pagos.
+        if ($modalidad === TipoRectificacion::Sustitucion && $original->montoCobrado() > 0) {
+            throw new FacturaNoRectificableException('La factura tiene cobros registrados. Anúlalos antes de rectificar por sustitución.');
         }
     }
 }

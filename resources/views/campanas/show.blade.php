@@ -31,7 +31,7 @@
 								<span class="badge {{ $estadoBadge[$campana->estado->value] ?? 'badge-light' }}">
 									{{ ucfirst(str_replace('_', ' ', $campana->estado->value)) }}
 								</span>
-								<span class="text-muted small ms-2">Creada el {{ $campana->created_at?->format('d/m/Y H:i') }}</span>
+								<span class="text-muted small ms-2">Creada el {{ $campana->created_at?->enZonaTenant()?->format('d/m/Y H:i') }}</span>
 							</div>
 							<div class="d-flex gap-2 align-items-center">
 								<a href="{{ route('campanas.index') }}" class="btn btn-danger light btn-sm">Volver</a>
@@ -83,7 +83,7 @@
 												</td>
 												<td class="small">
 													@if ($destinatario->estado === \App\Enums\EstadoDestinatario::Enviado)
-														{{ $destinatario->enviado_at?->format('d/m/Y H:i') }}
+														{{ $destinatario->enviado_at?->enZonaTenant()?->format('d/m/Y H:i') }}
 													@elseif ($destinatario->error)
 														<span class="text-danger">{{ $destinatario->error }}</span>
 													@else

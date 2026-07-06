@@ -66,9 +66,29 @@ Cuando una feature terminó de implementarse (`/speckit-implement` completo y va
 
 ## Notas
 
-- **Chrome DevTools (MCP)**: pedir confirmación al usuario antes de usar cualquier herramienta
-  `mcp__chrome-devtools__*` (navegar, hacer clic, screenshots, evaluar JS, etc.), aunque sea solo
-  para verificar visualmente un cambio. No lanzarlas de forma autónoma.
+- **Herramientas de navegador (MCP): confirmación + elección deliberada.** Hay tres disponibles:
+  Playwright (`mcp__playwright__*`), Chrome DevTools (`mcp__chrome-devtools__*`) y Oculo
+  (`mcp__oculo__*`). Reglas:
+  1. **Nunca lanzarlas de forma autónoma.** Pedir confirmación al usuario antes de usar cualquiera
+     de ellas (navegar, hacer clic, screenshots, evaluar JS, etc.), aunque sea solo para verificar
+     visualmente un cambio.
+  2. **Una vez el usuario habilita usar "el navegador", NO ir directo a una cualquiera:** primero
+     evaluar cuál de las tres conviene según la tarea y sus ventajas, y decir cuál se elige y por qué:
+     - **Oculo** — controla el navegador *vivo* que el usuario está viendo, y describe páginas en
+       ~30 tokens (árbol a11y con refs, `page`/`act`/`fill`/`run`). Preferida para flujos
+       multi-paso guiados, cuando importa ver lo mismo que el usuario, o para ahorrar tokens en
+       navegación/extracción. No graba video a archivo (su único MP4 es generación IA con Veo);
+       sí toma screenshots (`C:\Users\fede_\Pictures\Oculo\`). Requiere la app Electron corriendo
+       (`env -u ELECTRON_RUN_AS_NODE npm run dev` en `C:\Users\fede_\oculo`; el harness setea
+       `ELECTRON_RUN_AS_NODE=1` y hay que desactivarlo o crashea).
+     - **Playwright** — abre un Chromium *separado* (no el del usuario). Mejor para pruebas E2E
+       reproducibles, ejecución headless en CI, y **grabación de video real** (webm nativo) de un
+       flujo.
+     - **Chrome DevTools** — inspección profunda de una página: performance traces, análisis de
+       red, Lighthouse, heap snapshots, console. Mejor cuando el objetivo es *diagnosticar* (no
+       automatizar un flujo).
+  3. Oculo pide explícitamente no usar Playwright/puppeteer en paralelo mientras está activo
+     (abrirían otro navegador); no mezclar dos motores en la misma verificación.
 - Multi-tenant con `tenant_id`: cualquier query o modelo de negocio nuevo debe pasar por el
   global scope de tenant (Principio I de la constitución). No hay excepciones sin justificar.
 - Los cálculos de importes/impuestos/Verifactu siempre en backend (Principio III).

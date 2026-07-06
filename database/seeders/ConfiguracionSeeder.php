@@ -6,6 +6,7 @@ use App\Models\Configuracion;
 use App\Models\Tenant;
 use App\Support\AparienciaTenant;
 use App\Support\ArchivosTenant;
+use App\Support\ConfigFichajes;
 use App\Support\EmailTenant;
 use App\Support\TopeSimplificada;
 use Illuminate\Database\Seeder;
@@ -136,6 +137,20 @@ class ConfiguracionSeeder extends Seeder
                 'tipo' => 'integer',
                 'grupo' => 'archivos',
                 'descripcion' => 'Tamaño máximo por archivo subido (MB).',
+            ],
+            [
+                'clave' => ConfigFichajes::CLAVE_TOLERANCIA_RETRASO_MIN,
+                'valor' => (string) ConfigFichajes::DEFAULT_TOLERANCIA_RETRASO_MIN,
+                'tipo' => 'integer',
+                'grupo' => 'fichajes',
+                'descripcion' => 'Minutos de gracia antes de marcar retraso en el informe de cumplimiento.',
+            ],
+            [
+                'clave' => ConfigFichajes::CLAVE_TOLERANCIA_EXCESO_MIN,
+                'valor' => (string) ConfigFichajes::DEFAULT_TOLERANCIA_EXCESO_MIN,
+                'tipo' => 'integer',
+                'grupo' => 'fichajes',
+                'descripcion' => 'Minutos por encima de lo previsto antes de marcar exceso de jornada.',
             ],
         ];
 

@@ -83,5 +83,23 @@
 				return ejecutarAccion(window.compraEstadoState.anularUrl);
 			});
 		});
+
+		$(document).on('change', '#compra-estado-b2b', function () {
+			var $select = $(this);
+
+			$.ajax({
+				url: window.compraEstadoState.estadoB2bUrl,
+				method: 'PATCH',
+				dataType: 'json',
+				headers: { Accept: 'application/json', 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+				data: { estado_b2b: $select.val() },
+			})
+				.done(function (response) {
+					window.showToast('success', response.message);
+				})
+				.fail(function (xhr) {
+					window.showToast('error', (xhr.responseJSON && xhr.responseJSON.message) || 'No se pudo actualizar el estado.');
+				});
+		});
 	});
 })(jQuery);

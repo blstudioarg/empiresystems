@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Enums\EstadoB2b;
 use App\Enums\EstadoCompra;
+use App\Enums\OrigenCompra;
 use Database\Factories\CompraFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -26,6 +28,11 @@ class Compra extends Model
         'cuota_impuesto_total',
         'total',
         'notas',
+        'origen',
+        'formato_recepcion',
+        'archivo_recibido_path',
+        'estado_b2b',
+        'estado_b2b_fecha',
         'confirmada_at',
         'anulada_at',
     ];
@@ -34,6 +41,9 @@ class Compra extends Model
     {
         return [
             'estado' => EstadoCompra::class,
+            'origen' => OrigenCompra::class,
+            'estado_b2b' => EstadoB2b::class,
+            'estado_b2b_fecha' => 'datetime',
             'fecha' => 'date',
             'base_total' => 'decimal:2',
             'cuota_impuesto_total' => 'decimal:2',

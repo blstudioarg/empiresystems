@@ -25,7 +25,7 @@ class PlantillaEmailController extends Controller
                     'cuerpo' => $plantilla->cuerpo,
                     'activa' => $plantilla->activa,
                     'activa_label' => $plantilla->activa ? 'Activa' : 'Inactiva',
-                    'modificado' => $plantilla->updated_at?->format('d/m/Y H:i'),
+                    'modificado' => $plantilla->updated_at?->enZonaTenant()?->format('d/m/Y H:i'),
                     'update_url' => route('plantillas-email.update', $plantilla),
                     'delete_url' => route('plantillas-email.destroy', $plantilla),
                 ])->values(),

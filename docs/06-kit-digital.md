@@ -39,7 +39,7 @@
 1. **Facturae** (XML estructurado) — formato **distinto** del registro XML de Verifactu; hay que
    generarlo/exportarlo. **Nuevo requisito, sin implementar.**
 2. **Verifactu real** — deja de ser "para 2027" y pasa a ser **requisito de homologación ya**.
-3. **Recepción de facturas** — hoy la app solo **emite** (el **envío** por email ya está, spec 017); la categoría exige enviar **y recibir**. La recepción es el gap.
+3. **Recepción de facturas** — hoy la app solo **emite** (el **envío** por email ya está, spec 017); la categoría exige enviar **y recibir**. La recepción es el gap, pero **se apoya en el módulo de compras ya existente** (spec 014: `proveedores`/`compras`/`compra_lineas`), que es la base correcta y no hay que rehacer. Solo suma, encima de lo existente: (a) un **canal de importación de Facturae** (leer el XML del proveedor y volcarlo a una `compra`) y (b) un par de campos en `compras`: **referencia al archivo recibido** y **estado de ciclo B2B** (recibida/aceptada/rechazada/pagada) con fecha, para reportarlo en los 4 días hábiles que exige la ley B2B. Una factura recibida es, conceptualmente, una factura de compra.
 4. **Backups diarios** — capacidad a documentar (aunque sea a nivel de infraestructura/hosting).
 
 ---

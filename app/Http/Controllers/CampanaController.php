@@ -40,7 +40,7 @@ class CampanaController extends Controller
                     'total' => $campana->total_destinatarios,
                     'enviados' => $campana->enviados,
                     'fallidos' => $campana->fallidos,
-                    'fecha' => $campana->created_at?->format('d/m/Y H:i'),
+                    'fecha' => $campana->created_at?->enZonaTenant()?->format('d/m/Y H:i'),
                     'show_url' => route('campanas.show', $campana),
                 ])->values(),
                 'totales' => [

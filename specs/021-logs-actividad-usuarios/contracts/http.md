@@ -18,7 +18,7 @@ paginada en servidor (D1).
 | `start` | int | Offset (equivalente a `skip`). |
 | `length` | int | Tamaño de página (equivalente a `take`); `-1` no se soporta (sin "ver todos"). |
 | `search[value]` | string, opcional | Coincidencia parcial (case-insensitive) contra `usuario_nombre`, `descripcion` y el label de `accion`. |
-| `order[0][column]` + `columns[i][data]` | int/string | Columnas ordenables: `ocurrido_at` (default, desc), `usuario_nombre`, `accion`. `descripcion` no es ordenable (igual criterio que la columna "Acciones" en `facturas-datatable.init.js`). |
+| `order[0][column]` + `columns[i][data]` | int/string | Columnas ordenables: `ocurrido_at` (default, desc), `usuario_nombre`, `accion`, `resultado`. `descripcion`/`ip_origen` no son ordenables (igual criterio que la columna "Acciones" en `facturas-datatable.init.js`). |
 
 **Respuesta 200 (JSON)**:
 
@@ -36,6 +36,8 @@ paginada en servidor (D1).
       "resultado": "exito",
       "resultado_label": "Éxito",
       "ip_origen": "203.0.113.10",
+      "navegador": "Chrome en Windows",
+      "ubicacion": "Madrid, Spain",
       "entidad_tipo": "cliente",
       "entidad_label": "Cliente",
       "descripcion": "Modificó el cliente Acme S.L."
@@ -48,6 +50,14 @@ paginada en servidor (D1).
 registro de accesos RGPD/LOPDGDD. `ip_origen` es la IP capturada en el servidor al registrar el
 evento (nunca la envía el cliente). Un intento de login fallido aparece con `accion: "login"`,
 `resultado: "fallo"` y `usuario_nombre` = email intentado (sin usuario asociado).
+
+`navegador` (`App\Support\AgenteUsuario`) parsea el `user_agent` guardado a una etiqueta legible
+("Chrome en Windows"); puede ser `null` si no hay user-agent. `ubicacion`
+(`App\Support\GeolocalizadorIp`) resuelve `ip_origen` contra una API pública (ip-api.com) **solo
+al construir esta respuesta**, nunca al escribir el evento — así ningún login/alta/modificación
+del CRM paga la latencia de la llamada externa. El resultado se cachea 30 días por IP; IPs
+privadas/reservadas (loopback, rangos internos) devuelven `null` sin llamar a la API. Un fallo o
+timeout de la API también devuelve `null` sin romper la respuesta.
 
 - `recordsTotal`: total de filas del tenant sin filtrar (`logs_actividad` acotado por
   `tenant_id` del usuario autenticado, nunca de otro tenant — Principio I / US2).

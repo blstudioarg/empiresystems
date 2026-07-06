@@ -283,8 +283,17 @@ Detalle de conceptos.
 | cuota_impuesto | decimal(12,2) | |
 | tipo_recargo | decimal(5,2) | recargo de equivalencia, solo IVA (5.2 / 1.4 / 0.5 / 0) |
 | cuota_recargo | decimal(12,2) | |
+| calificacion_operacion | enum | `S1` (sujeta, sin ISP · default), `S2` (sujeta con inversión del sujeto pasivo), `N1`/`N2` (no sujeta). Ver `02` §6. Requerido por Verifactu por desglose |
+| causa_exencion | enum, nullable | `E1`–`E6` (art. LIVA de la exención); solo cuando la línea es exenta. Ver `02` §6 |
+| mencion_legal | varchar(255), nullable | texto de la mención para el PDF (p. ej. "Inversión del sujeto pasivo, art. 84.Uno.2º LIVA"). Autogenerable desde `calificacion_operacion`/`causa_exencion` |
 | orden | smallint | ordenación en el PDF |
 | timestamps | | |
+
+> **Menciones especiales / tipo de operación (`02` §6):** con **ISP** (`S2`) la `cuota_impuesto` es 0
+> pero la operación **está sujeta** (no exenta). Con **exención** (`causa_exencion` E1–E6) la cuota
+> también es 0 pero la calificación es de exención. Estos tres campos alimentan tanto el **desglose**
+> (`factura_impuestos`) como el **XML de Verifactu** y la **mención legal del PDF**. Una factura puede
+> mezclar líneas sujetas y exentas.
 
 ### `factura_impuestos`
 **Desglose por tipo impositivo** (obligatorio: base imponible por cada tipo). Una fila por combinación de impuesto+tipo dentro de la factura.
@@ -319,6 +328,16 @@ El **estado de cobro** (`pendiente` / `parcial` / `cobrada`) y el **saldo pendie
 **derivados**, no columnas: se calculan en `Factura::estadoCobro()` / `saldoPendiente()` a partir de
 la suma de `pagos` vigentes (`anulado_at IS NULL`), comparando en céntimos para evitar residuos de
 redondeo. La columna `Factura::estado` (fiscal) no cambia al cobrarse.
+
+**Rectificativas y cobro** (`Factura::totalCobrable()`): el importe cobrable depende de la
+modalidad de rectificación. Por **sustitución**, la deuda vive en la rectificativa (que lleva el
+importe completo corregido) y la original rectificada deja de ser cobrable. Por **diferencias**,
+la original rectificada **sigue siendo el documento de cobro**: su importe cobrable pasa a ser el
+neto (`total` de la original + `total` de la rectificativa emitida, que es el delta, típicamente
+negativo). La rectificativa por diferencias nunca se cobra por sí misma — es un documento de
+ajuste; su historial de cobros es consultable pero no admite registrar pagos (saldo ≤ 0). Si los
+cobros previos superan el nuevo neto, el saldo queda negativo indicando devolución pendiente al
+cliente (la devolución en sí no se modela aún).
 
 ### `factura_eventos`
 **Registro de eventos** exigido por Verifactu (log inalterable de operaciones del SIF).
@@ -424,9 +443,21 @@ Registra la factura recibida del proveedor. Al confirmarla, genera **entradas** 
 | cuota_impuesto_total | decimal(12,2) | IVA/IGIC/IPSI soportado según régimen |
 | total | decimal(12,2) | |
 | notas | text | |
+| **Recepción electrónica (factura electrónica B2B — `02` §2):** | | |
+| origen | enum | `manual` (default) / `facturae` (importada de un XML recibido) / `otro` |
+| formato_recepcion | varchar(20), nullable | `facturae`, `ubl`, `cii`… cuando `origen != manual` |
+| archivo_recibido_path | varchar, nullable | ruta del XML/documento electrónico recibido del proveedor (se conserva) |
+| estado_b2b | enum, nullable | ciclo comercial del lado receptor: `recibida`, `aceptada`, `rechazada`, `pagada` |
+| estado_b2b_fecha | datetime, nullable | fecha del último cambio de `estado_b2b` (reportable en 4 días hábiles) |
 | softDeletes, timestamps | | |
 
-Índices: `(tenant_id, proveedor_id)`, `(tenant_id, fecha)`.
+Índices: `(tenant_id, proveedor_id)`, `(tenant_id, fecha)`, `(tenant_id, estado_b2b)`.
+
+> **Recepción de facturas (Kit Digital + ley B2B):** cuando llega un **Facturae** de un proveedor, un
+> **importador** lee el XML y crea la `compra` con `origen=facturae`, volcando cabecera y líneas y
+> guardando el archivo en `archivo_recibido_path`. El `estado_b2b` permite **reportar** al emisor si
+> la factura fue aceptada/rechazada/pagada dentro del plazo legal. La carga **manual** existente sigue
+> igual (`origen=manual`); la recepción electrónica es un canal adicional, no la reemplaza.
 
 ### `compra_lineas` — (implementado)
 Detalle de la compra. Igual que las líneas de factura, con `articulo_id` opcional.
@@ -536,6 +567,18 @@ Almacén clave-valor por tenant para parámetros ajustables sin tocar código (t
 | `apariencia.instagram_url` | apariencia | `` (vacío, default en `AparienciaTenant::DEFAULT_INSTAGRAM`) |
 | `apariencia.titulo_login` | apariencia | `Iniciar sesión` (default en `AparienciaTenant::DEFAULT_TITULO_LOGIN`) |
 | `archivos.limite_mb` | archivos | `10` (default en `App\Support\ArchivosTenant::DEFAULT_LIMITE_MB`) — tamaño máximo por archivo subido en el gestor documental |
+| `general.zona_horaria` | general | `Europe/Madrid` (default en `App\Support\ConfigTenant::DEFAULT_ZONA_HORARIA`) — zona horaria **global del tenant**; catálogo fijo de 3 zonas (Madrid / Canarias / Argentina) en `ConfigTenant::ZONAS_HORARIAS_DISPONIBLES`. Se edita en la tab **General** de configuración |
+
+> **Zona horaria (convención transversal).** Todos los timestamps se **guardan y calculan en UTC**
+> (`config('app.timezone')`, Principio III: hora de servidor). `general.zona_horaria` **no** cambia
+> esa fuente de verdad: solo controla en qué hora local se **muestran** los datetimes a las personas,
+> y aplica a **toda** la aplicación de ese tenant (fichajes, logs de actividad, campañas, stock…),
+> no solo a fichajes. Para convertir en la capa de presentación usar la macro Carbon
+> `->enZonaTenant()` (registrada en `AppServiceProvider`, resuelve el tenant activo) o
+> `ConfigTenant::paraMostrar($fecha, $tenantId)` fuera de contexto de tenant. **Solo aplicar a
+> datetimes reales**: los campos `date` puros (p. ej. `fecha_expedicion` de una factura) no llevan
+> hora y convertirlos desplazaría el día. Cuando el usuario **edita** una hora local (corrección de
+> fichaje), el input se interpreta en la zona del tenant y se reconvierte a UTC antes de guardar.
 
 > Alternativa/complemento: parámetros de facturación muy usados (IVA/IRPF por defecto, recargo) también viven como columnas en `tenants` para acceso directo; `configuraciones` cubre el resto de ajustes flexibles y los globales del SaaS.
 
@@ -672,6 +715,160 @@ vida útil; la eliminación por política de retención es cumplimiento, no mani
 > **RGPD — tratamiento:** el propio registro (usuario + IP + actividad) es dato personal. Debe figurar
 > en el **Registro de Actividades de Tratamiento (RAT)** del responsable, con acceso restringido y su
 > plazo de conservación documentado.
+
+**Navegador y ubicación (solo display, no se persisten):** el listado (`GET /logs`) enriquece cada
+fila con dos campos derivados que **no son columnas de la tabla**:
+- `navegador` — `App\Support\AgenteUsuario::label()` parsea `user_agent` a "Chrome en Windows".
+- `ubicacion` — `App\Support\GeolocalizadorIp::ubicacion()` resuelve `ip_origen` → "Ciudad, País"
+  vía una API pública (ip-api.com), cacheada 30 días por IP. Se calcula **al leer**, nunca al
+  escribir el evento — así el login/alta/modificación que originó la fila no paga la latencia de
+  la llamada externa. IPs privadas/reservadas y fallos de red devuelven `null` sin romper la vista.
+
+---
+
+### `miembros_equipo` — perfil de empleado, 1:1 con un `User` con login (feature 024)
+Quien ficha. No es ledger (editable por Admin). Guarda la ubicación de trabajo (perímetro
+individual del miembro) y la dirección de casa (solo para calcular la distancia casa-trabajo).
+
+| Campo | Tipo | Notas |
+|-------|------|-------|
+| id | bigint PK | |
+| tenant_id | unsignedBigInteger, indexado | `BelongsToTenant` |
+| user_id | fk `users`, único, `cascadeOnDelete` | 1:1 con la cuenta de login que ficha |
+| puesto | varchar(120), nullable | cargo/rol laboral |
+| trabajo_direccion | varchar(255), nullable | dirección legible del centro |
+| trabajo_latitud / trabajo_longitud | decimal(10,7), nullable | centro de trabajo (perímetro de este miembro); nullable — sin ubicación configurada el fichaje se marca `SinUbicacion`, sin alerta |
+| distancia_max_metros | unsignedInteger | tolerancia para fichar; más lejos = `Fuera` + alerta |
+| casa_direccion | varchar(255), nullable | **dato personal**, purgable tras baja |
+| casa_latitud / casa_longitud | decimal(10,7), nullable | **dato personal**, purgable tras baja |
+| distancia_casa_trabajo_metros | unsignedInteger, nullable | métrica derivada (Haversine); se conserva tras la purga de casa |
+| activo | boolean, default true | inactivo no ficha |
+| dado_baja_at | datetime, nullable | marca de baja → dispara la purga de datos de casa |
+| timestamps, softDeletes | | conserva histórico ligado a sus fichajes |
+
+Índice `(tenant_id, activo)`.
+
+### `fichajes` — ledger append-only de jornada (feature 024)
+Evento inmutable. Único punto de escritura: `App\Services\RegistroFichajes`. Sin rutas de edición/
+borrado, sin softDeletes. Única mutación admitida: nulificación de columnas de geo por el comando
+de purga (`fichajes:purgar-geo`) — nunca desde la UI.
+
+| Campo | Tipo | Notas |
+|-------|------|-------|
+| id | bigint PK | |
+| tenant_id | unsignedBigInteger, indexado | `BelongsToTenant` |
+| miembro_equipo_id | fk `miembros_equipo`, `restrictOnDelete` | quién ficha |
+| tipo | varchar(15) | enum `TipoEventoFichaje`: entrada, salida, inicio_pausa, fin_pausa |
+| ocurrido_at | datetime | **hora de servidor**, nunca del cliente; en correcciones, la hora corregida |
+| resultado_ubicacion | varchar(15), nullable | enum `ResultadoUbicacionFichaje`: dentro, fuera, sin_ubicacion (`null` tras purga geo) |
+| distancia_metros | unsignedInteger, nullable | distancia al trabajo del miembro (`null` tras purga geo) |
+| precision_metros | unsignedInteger, nullable | precisión reportada por el navegador (`null` tras purga geo) |
+| corrige_fichaje_id | fk `fichajes`, nullable, `nullOnDelete` | si es corrección, apunta al original |
+| motivo | varchar(255), nullable | obligatorio solo en correcciones |
+| registrado_por | fk `users`, nullable, `nullOnDelete` | corrector (Admin); `null` en fichaje propio |
+| ip_origen | varchar(45), nullable | registro de acceso |
+| user_agent | varchar(255), nullable | registro de acceso |
+| timestamps | | |
+
+Índices: `(tenant_id, miembro_equipo_id, ocurrido_at)`, `(tenant_id, ocurrido_at)`,
+`corrige_fichaje_id`. **No** se guardan coordenadas crudas del fichaje (minimización RGPD): solo
+veredicto + distancia + precisión.
+
+### `alertas` — fichaje fuera de rango + incumplimiento de jornada (feature 024, extendida en 025)
+Creada por `RegistroFichajes` (fichaje `Fuera`) o por el comando diario
+`jornada:evaluar-cumplimiento` (ausencia/retraso, feature 025). Estado gestionable por Admin; no
+se borra.
+
+| Campo | Tipo | Notas |
+|-------|------|-------|
+| id | bigint PK | |
+| tenant_id | unsignedBigInteger, indexado | `BelongsToTenant` |
+| miembro_equipo_id | fk `miembros_equipo`, `restrictOnDelete` | a quién |
+| fichaje_id | fk `fichajes`, nullable, `restrictOnDelete` | fichaje que la disparó; `null` en alertas de jornada (025) |
+| tipo | varchar(30) | enum `TipoAlerta`: `fichaje_fuera_de_rango` (024), `ausencia_jornada`/`retraso_jornada` (025) |
+| distancia_metros | unsignedInteger, nullable | distancia del fichaje que superó la tolerancia; `null` en alertas de jornada |
+| referencia_fecha | date, nullable | **(025)** día evaluado que originó una alerta de jornada; `null` en las de fichaje fuera de rango. Dedup de idempotencia: `(tenant_id, miembro_equipo_id, tipo, referencia_fecha)` |
+| estado | varchar(15), default `nueva` | enum `EstadoAlerta`: nueva, vista, resuelta |
+| resuelta_por | fk `users`, nullable, `nullOnDelete` | Admin que la resolvió |
+| resuelta_at | datetime, nullable | |
+| timestamps | | |
+
+Índice `(tenant_id, estado)`.
+
+**Retención (RGPD — minimización, feature 024):** dos plazos configurables por tenant
+(`configuraciones`), independientes del plazo legal de 4 años de la fila de jornada:
+- `fichajes.retencion_geo_dias` (default 30) — comando `fichajes:purgar-geo` nulifica
+  `resultado_ubicacion`/`distancia_metros`/`precision_metros` de `fichajes` más antiguos que el
+  plazo; la fila permanece.
+- `fichajes.retencion_casa_dias` (default 30) — comando `miembros:purgar-casa` nulifica
+  `casa_direccion`/`casa_latitud`/`casa_longitud` de miembros con `dado_baja_at` anterior al
+  plazo; el miembro, su `distancia_casa_trabajo_metros` y sus fichajes se conservan.
+
+Flags adicionales en `configuraciones` (grupo `fichajes`): `fichajes.geofencing_bloqueante` (bool,
+default false), `fichajes.registrar_pausas` (bool, default false),
+`fichajes.tolerancia_retraso_min` (integer, default 5) y `fichajes.tolerancia_exceso_min`
+(integer, default 15) — estos dos últimos de la feature 025, usados por el informe de
+cumplimiento.
+
+---
+
+### `horarios` — plantilla de cuadrante reutilizable por tenant (feature 025)
+Catálogo del tenant (como `bancos`/`unidades`), independiente de los miembros: editar sus tramos
+afecta a todos los miembros que la tengan asignada. Horas previstas (día/semana) son **derivadas**
+de sus tramos, no una columna (`Horario::horasPrevistasDia()`/`horasPrevistasSemana()`).
+
+| Campo | Tipo | Notas |
+|-------|------|-------|
+| id | bigint PK | |
+| tenant_id | unsignedBigInteger, indexado | `BelongsToTenant` |
+| nombre | varchar(120) | único por `(tenant_id, nombre)` |
+| activo | boolean, default true | inactivo no se ofrece para asignar |
+| timestamps, softDeletes | | borrado bloqueado si tiene asignaciones (`asignaciones_horario`) |
+
+Índice `(tenant_id, activo)`.
+
+### `horario_tramos` — tramo de trabajo de un horario (feature 025)
+Varios tramos el mismo `(horario_id, dia_semana)` = turno partido; ningún tramo ese día = día
+libre (0 horas previstas). No cruza medianoche (fuera de alcance v1).
+
+| Campo | Tipo | Notas |
+|-------|------|-------|
+| id | bigint PK | |
+| tenant_id | unsignedBigInteger, indexado | `BelongsToTenant` |
+| horario_id | fk `horarios`, `cascadeOnDelete` | |
+| dia_semana | unsignedTinyInteger | 1=lunes…7=domingo (ISO-8601, `Carbon::dayOfWeekIso`) |
+| hora_inicio / hora_fin | time | `hora_fin > hora_inicio`; sin solape con otro tramo del mismo día (validado en `HorarioRequest`, no en BD) |
+| timestamps | | |
+
+Índice `(tenant_id, horario_id, dia_semana)`.
+
+### `asignaciones_horario` — horario aplicable a un miembro con vigencia (feature 025)
+Vínculo miembro↔horario tipo "slowly changing dimension": conserva histórico completo. El
+horario aplicable de un miembro en una fecha F es la fila con
+`vigente_desde <= F AND (vigente_hasta IS NULL OR vigente_hasta >= F)`
+(`App\Support\ResolutorHorario`). Al asignar un horario nuevo, `App\Support\AsignadorHorario`
+cierra automáticamente la asignación abierta anterior (`vigente_hasta = nueva.vigente_desde − 1
+día`) en la misma transacción; rechaza solapes contra rangos ya cerrados.
+
+| Campo | Tipo | Notas |
+|-------|------|-------|
+| id | bigint PK | |
+| tenant_id | unsignedBigInteger, indexado | `BelongsToTenant` |
+| miembro_equipo_id | fk `miembros_equipo`, `cascadeOnDelete` | quién |
+| horario_id | fk `horarios`, `restrictOnDelete` | qué horario (impide borrar horario asignado) |
+| vigente_desde | date | inicio de vigencia (inclusive) |
+| vigente_hasta | date, nullable | fin de vigencia (inclusive); `null` = abierta/vigente |
+| timestamps | | |
+
+Índices: `(tenant_id, miembro_equipo_id, vigente_desde)`, `(tenant_id, horario_id)`.
+
+**Cumplimiento (feature 025, derivado, no persistido):** `App\Support\Cumplimiento\ServicioCumplimiento`
+cruza el horario vigente de cada día con los `fichajes` reales (vía `InformeJornada::eventosEfectivos`,
+que ya aplica las correcciones del ledger) y produce un `ResultadoDia` por día: horas previstas,
+horas trabajadas, incidencia (fichaje incompleto, FR-015a) y veredicto (`VeredictoCumplimiento`:
+libre, ausencia, retraso, parcial, cumplido, exceso). El informe (`GET /jornada`) lo calcula **al
+vuelo**; el comando diario `jornada:evaluar-cumplimiento` evalúa el día anterior de cada miembro y
+persiste únicamente las **alertas** de ausencia/retraso (no una tabla de resultados).
 
 ---
 

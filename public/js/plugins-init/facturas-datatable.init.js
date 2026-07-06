@@ -32,11 +32,42 @@
 		$('[data-metric="importe_total"]').text(totales.importe_total);
 	};
 
+	var modalidadRectificacionLabels = {
+		diferencias: 'Por diferencias',
+		sustitucion: 'Por sustitución',
+	};
+
+	function renderTotal(data, type, row) {
+		// Para ordenar/buscar usamos el importe efectivo (el que realmente se cobra).
+		if (type !== 'display') {
+			return row.es_rectificada ? row.total_efectivo : row.total;
+		}
+
+		if (!row.es_rectificada) {
+			return escapeHtml(row.total) + ' €';
+		}
+
+		var modalidad = modalidadRectificacionLabels[row.modalidad_rectificacion] || 'Rectificada';
+
+		// Total nominal tachado + importe efectivo (neto) destacado, para cobrar desde la
+		// original sin tener que buscar la rectificativa ni deducir la modalidad.
+		return (
+			'<div><del class="text-muted">' + escapeHtml(row.total) + ' €</del></div>' +
+			'<div class="fw-bold">' + escapeHtml(row.total_efectivo) + ' €</div>' +
+			'<div class="small text-muted">' + escapeHtml(modalidad) + '</div>'
+		);
+	}
+
 	function renderEstado(data, type, row) {
 		var badge = estadoBadges[row.estado] || 'badge-secondary';
 		var label = estadoLabels[row.estado] || row.estado;
 
 		var html = '<span class="badge light ' + badge + '">' + escapeHtml(label) + '</span>';
+
+		if (row.modalidad_rectificacion) {
+			var modalidad = modalidadRectificacionLabels[row.modalidad_rectificacion] || row.modalidad_rectificacion;
+			html += '<div class="small text-muted">' + escapeHtml(modalidad) + '</div>';
+		}
 
 		if (row.enviada) {
 			html += '<div class="mt-1"><span class="badge light badge-info">Enviada</span></div>';
@@ -58,7 +89,10 @@
 	};
 
 	function renderCobro(data, type, row) {
-		if (!row.estado_cobro) {
+		// Las facturas que no admiten cobros (borradores, anuladas, originales rectificadas por
+		// sustitución, notas de crédito por diferencias) no muestran estado ni saldo: el cobro
+		// no aplica sobre ellas.
+		if (!row.admite_cobros || !row.estado_cobro) {
 			return '';
 		}
 
@@ -77,6 +111,14 @@
 		efectivo: 'Efectivo',
 		domiciliacion: 'Domiciliación',
 	};
+
+	function renderGrupoFiltro(data, type, row) {
+		if (row.es_borrador) {
+			return 'borrador';
+		}
+
+		return row.es_rectificativa ? 'rectificativa' : 'emitida';
+	}
 
 	function renderAcciones(data, type, row) {
 		var items = [
@@ -121,6 +163,10 @@
 					'<button type="button" class="dropdown-item btn-ver-cobros"' +
 						' data-cobros-url="' + row.cobros_url + '"' +
 						' data-pago-url="' + (row.pago_url || '') + '"' +
+						' data-es-rectificada="' + (row.es_rectificada ? '1' : '') + '"' +
+						' data-modalidad="' + escapeHtml(row.modalidad_rectificacion || '') + '"' +
+						' data-total-nominal="' + escapeHtml(row.total || '') + '"' +
+						' data-total-efectivo="' + escapeHtml(row.total_efectivo || '') + '"' +
 					'>Cobros</button>' +
 				'</li>'
 			);
@@ -133,6 +179,26 @@
 						' data-enviar-url="' + row.enviar_url + '"' +
 						' data-cliente-email="' + escapeHtml(row.cliente_email || '') + '"' +
 					'>Enviar por email</button>' +
+				'</li>'
+			);
+		}
+
+		if (row.facturae_descargar_url) {
+			items.push('<li><hr class="dropdown-divider"></li>');
+			items.push(
+				'<li>' +
+					'<a class="dropdown-item" href="' + row.facturae_descargar_url + '">Descargar Facturae</a>' +
+				'</li>'
+			);
+		}
+
+		if (row.facturae_generar_enviar_url) {
+			items.push(
+				'<li>' +
+					'<button type="button" class="dropdown-item btn-generar-enviar-facturae"' +
+						' data-generar-enviar-url="' + row.facturae_generar_enviar_url + '"' +
+						' data-cliente-email="' + escapeHtml(row.cliente_email || '') + '"' +
+					'>Generar y enviar Facturae</button>' +
 				'</li>'
 			);
 		}
@@ -173,10 +239,11 @@
 				{ data: 'identificador', render: escapeHtml },
 				{ data: 'cliente', render: escapeHtml },
 				{ data: 'fecha_expedicion', render: escapeHtml },
-				{ data: 'total', render: escapeHtml },
+				{ data: null, render: renderTotal },
 				{ data: null, orderable: false, render: renderEstado },
 				{ data: null, orderable: false, render: renderCobro },
 				{ data: null, orderable: false, render: renderAcciones },
+				{ data: null, visible: false, searchable: true, orderable: false, render: renderGrupoFiltro },
 			],
 			language: {
 				search: 'Buscar:',
@@ -194,6 +261,28 @@
 					previous: 'Anterior',
 				},
 			},
+		});
+
+		// stateSave persiste la búsqueda de la columna oculta entre recargas; sincronizamos
+		// el botón activo con lo restaurado para no mostrar "Todas" resaltado con un filtro
+		// distinto ya aplicado.
+		(function sincronizarFiltroActivo() {
+			var grupoRestaurado = table.column(7).search().replace(/^\^|\$$/g, '');
+			var $restaurado = $('.btn-filtro-factura[data-filtro-factura="' + grupoRestaurado + '"]');
+
+			if ($restaurado.length) {
+				$('.btn-filtro-factura').removeClass('active');
+				$restaurado.addClass('active');
+			}
+		})();
+
+		$('.btn-filtro-factura').on('click', function () {
+			var grupo = $(this).data('filtro-factura');
+
+			$('.btn-filtro-factura').removeClass('active');
+			$(this).addClass('active');
+
+			table.column(7).search(grupo ? '^' + grupo + '$' : '', true, false).draw();
 		});
 
 		$table.on('click', '.btn-ver-factura', function () {
@@ -315,14 +404,31 @@
 		}
 
 		$table.on('click', '.btn-ver-cobros', function () {
-			var cobrosUrl = $(this).data('cobros-url');
-			var pagoUrl = $(this).data('pago-url');
+			var $btn = $(this);
+			var cobrosUrl = $btn.data('cobros-url');
+			var pagoUrl = $btn.data('pago-url');
 			var $form = $('#registrarCobroForm');
 
 			$form.attr('action', pagoUrl || '');
 			$form[0].reset();
 			$('#cobroFecha').val(new Date().toISOString().slice(0, 10));
 			$form.toggle(!!pagoUrl);
+
+			var $contexto = $('#cobroContextoRectificada');
+
+			if ($btn.data('es-rectificada')) {
+				var modalidad = modalidadRectificacionLabels[$btn.data('modalidad')] || 'rectificada';
+				$contexto
+					.html(
+						'Factura <strong>' + modalidad.toLowerCase() + '</strong>. El importe a cobrar es el ' +
+						'efectivo (<strong>' + escapeHtml($btn.data('total-efectivo')) + ' €</strong>), no el ' +
+						'total original (' + escapeHtml($btn.data('total-nominal')) + ' €). Los cobros se ' +
+						'gestionan siempre desde esta factura original.'
+					)
+					.removeClass('d-none');
+			} else {
+				$contexto.addClass('d-none').empty();
+			}
 
 			cargarCobros(cobrosUrl);
 
@@ -432,6 +538,55 @@
 					}
 
 					window.showToast('error', xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'No se pudo enviar la factura.');
+				});
+		});
+
+		$table.on('click', '.btn-generar-enviar-facturae', function () {
+			if (window.facturasEmailConfigurado === false) {
+				window.showToast('error', 'Configura primero tu correo en Configuración → Email.');
+				return;
+			}
+
+			var generarEnviarUrl = $(this).data('generar-enviar-url');
+			var clienteEmail = $(this).data('cliente-email');
+			var $form = $('#generarEnviarFacturaeForm');
+
+			$form.attr('action', generarEnviarUrl);
+			$form[0].reset();
+			$('#generarEnviarFacturaeDestinatario').val(clienteEmail || '');
+			$form.find('[data-error-for]').text('');
+
+			bootstrap.Modal.getOrCreateInstance(document.getElementById('generarEnviarFacturaeModal')).show();
+		});
+
+		$('#generarEnviarFacturaeForm').on('submit', function (e) {
+			e.preventDefault();
+
+			var $form = $(this);
+			var $submit = $('#generarEnviarFacturaeSubmit');
+			$form.find('[data-error-for]').text('');
+
+			window.withButtonLoading($submit, function () {
+				return $.ajax({
+					url: $form.attr('action'),
+					type: 'POST',
+					dataType: 'json',
+					headers: $.extend({ Accept: 'application/json' }, csrfHeaders()),
+					data: $form.serialize(),
+				});
+			})
+				.done(function (response) {
+					window.showToast(response.tipo || 'success', response.message);
+					bootstrap.Modal.getInstance(document.getElementById('generarEnviarFacturaeModal')).hide();
+					table.ajax.reload(null, false);
+				})
+				.fail(function (xhr) {
+					if (xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.errors && xhr.responseJSON.errors.destinatario) {
+						$form.find('[data-error-for="destinatario"]').text(xhr.responseJSON.errors.destinatario[0]);
+						return;
+					}
+
+					window.showToast('error', xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'No se pudo generar el Facturae.');
 				});
 		});
 

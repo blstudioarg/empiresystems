@@ -23,7 +23,10 @@ class CompraController extends Controller
     public function index(Request $request): View|JsonResponse
     {
         if ($request->wantsJson()) {
-            $compras = Compra::with('proveedor')->orderByDesc('fecha')->get();
+            $compras = Compra::with('proveedor')
+                ->when($request->filled('estado_b2b'), fn ($query) => $query->where('estado_b2b', $request->string('estado_b2b')->toString()))
+                ->orderByDesc('fecha')
+                ->get();
 
             return response()->json([
                 'data' => $compras->map(fn (Compra $compra) => [
@@ -32,6 +35,8 @@ class CompraController extends Controller
                     'numero_documento' => $compra->numero_documento,
                     'fecha' => $compra->fecha->toDateString(),
                     'estado' => $compra->estado->value,
+                    'origen' => $compra->origen->value,
+                    'estado_b2b' => $compra->estado_b2b?->value,
                     'total' => number_format((float) $compra->total, 2, '.', ''),
                     'show_url' => route('compras.show', $compra),
                 ])->values(),

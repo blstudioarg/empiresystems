@@ -46,6 +46,38 @@ pública (ver Decisión 6 de `docs/01-arquitectura.md`).
 > Ver `docs/03-modelo-datos.md` (secciones `carpetas`, `archivos`) para el modelo de datos de esta
 > fase.
 
+## Alcance ampliado — Control horario y fichajes (incorporado al MVP)
+El producto incorpora el **registro de jornada** exigido por el art. 34.9 ET: cada persona
+trabajadora (perfil **miembro de equipo**, 1:1 con su cuenta de login) ficha entrada/salida —y
+pausas si el tenant las activa— desde una pantalla con mapa que valida su posición contra el
+perímetro de su propio centro de trabajo (Haversine, sin coordenadas crudas). El fichaje es un
+**ledger append-only** (`fichajes`): la hora la fija siempre el servidor, y las correcciones son
+eventos nuevos enlazados, nunca ediciones. Un fichaje fuera del perímetro genera una **alerta**
+para administración. Administración consulta/exporta el informe de jornada de la plantilla;
+cada persona trabajadora tiene su propio portal ("Mi jornada"). Datos de geolocalización y la
+dirección de casa del miembro (usada solo para calcular la distancia casa-trabajo) se minimizan
+con retención corta configurable y purga periódica, separada del plazo legal de 4 años del
+registro de jornada. Sin biometría, sin rastreo continuo de posición, sin envío automático a la
+Inspección de Trabajo (pendiente de que se publique la especificación técnica del RD de registro
+digital, ver `docs/07-control-horario-espana.md`).
+
+> Ver `docs/03-modelo-datos.md` (secciones `miembros_equipo`, `fichajes`, `alertas`) para el
+> modelo de datos de esta fase, y `docs/07-control-horario-espana.md` para la normativa aplicable.
+
+### Horario planificado y cumplimiento de jornada
+Sobre el registro real (`fichajes`) se añade una capa de horario **planificado**: administración
+define plantillas de cuadrante reutilizables por tenant (`horarios` + `horario_tramos`, con
+turnos partidos y jornada variable por día) y las asigna a cada miembro con vigencia temporal
+(`asignaciones_horario`), conservando el histórico. Cada persona ve su turno esperado en "Mi
+jornada"; el informe de administración cruza previsto vs. real y clasifica cada día (retraso,
+ausencia, cumplimiento parcial, exceso), calculado siempre al vuelo. Un comando diario evalúa el
+día anterior y genera alertas de ausencia/retraso sobre la misma bandeja de `alertas`. No
+sustituye ni reescribe el ledger de fichajes; solo lo contrasta contra lo planificado. Fuera de
+alcance: festivos, vacaciones/ausencias justificadas y gestión formal de horas extra.
+
+> Ver `docs/03-modelo-datos.md` (secciones `horarios`, `horario_tramos`, `asignaciones_horario`)
+> para el modelo de datos de esta capa.
+
 ## Fuera de alcance por ahora
 - Diseño del frontend (template externo).
 - Pasarela de cobro de las suscripciones del SaaS (se define más adelante).

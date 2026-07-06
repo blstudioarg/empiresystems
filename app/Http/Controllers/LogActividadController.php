@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Enums\AccionLogActividad;
 use App\Enums\ResultadoLogActividad;
 use App\Models\LogActividad;
+use App\Support\AgenteUsuario;
+use App\Support\GeolocalizadorIp;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -16,6 +18,7 @@ class LogActividadController extends Controller
         'fecha' => 'ocurrido_at',
         'usuario_nombre' => 'usuario_nombre',
         'accion' => 'accion',
+        'resultado' => 'resultado',
     ];
 
     public function index(Request $request): View|JsonResponse
@@ -81,13 +84,15 @@ class LogActividadController extends Controller
             'recordsTotal' => $recordsTotal,
             'recordsFiltered' => $recordsFiltered,
             'data' => $logs->map(fn (LogActividad $log) => [
-                'fecha' => $log->ocurrido_at->format('d/m/Y H:i'),
+                'fecha' => $log->ocurrido_at->enZonaTenant()->format('d/m/Y H:i'),
                 'usuario_nombre' => $log->usuario_nombre,
                 'accion' => $log->accion->value,
                 'accion_label' => $log->accion->label(),
                 'resultado' => $log->resultado->value,
                 'resultado_label' => $log->resultado->label(),
                 'ip_origen' => $log->ip_origen,
+                'navegador' => AgenteUsuario::label($log->user_agent),
+                'ubicacion' => GeolocalizadorIp::ubicacion($log->ip_origen),
                 'entidad_tipo' => $log->entidad_tipo?->value,
                 'entidad_label' => $log->entidad_tipo?->label(),
                 'descripcion' => $log->descripcion,

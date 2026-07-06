@@ -135,6 +135,17 @@
 	display: none;
 }
 
+/* En mobile el sidebar siempre se ve como off-canvas (nunca "expandido" de verdad), así que
+   la regla exclusiva de arriba dejaría los dos logos ocultos si #main-wrapper no tiene
+   .menu-toggle. Por debajo del breakpoint donde style.css ya oculta .brand-title
+   (@media max-width: 47.9375rem), forzamos el mini logo visible en los dos estados. */
+@media (max-width: 47.9375rem) {
+	#main-wrapper.menu-toggle .nav-header .brand-logo img.logo-abbr,
+	#main-wrapper:not(.menu-toggle) .nav-header .brand-logo img.logo-abbr {
+		display: inline-block;
+	}
+}
+
 /* .nav-header .brand-logo trae justify-content: flex-start (con padding lateral) para el
    combo icono+texto por defecto, pensado para que el texto arranque pegado al icono. Con un
    único logo (imagen) ocupando todo el ancho del nav-header, ese layout lo deja pegado a la

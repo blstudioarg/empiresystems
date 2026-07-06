@@ -12,6 +12,9 @@
 							<h4 class="card-title mb-0">
 								Compra {{ $compra->numero_documento ?? '#'.$compra->id }}
 								<span class="badge bg-secondary" id="compra-estado-badge">{{ ucfirst($compra->estado->value) }}</span>
+								@if ($compra->origen->value === 'facturae')
+									<span class="badge bg-info">Facturae</span>
+								@endif
 							</h4>
 							<div class="d-flex gap-2" id="compra-acciones">
 								@if ($compra->estado->value === 'borrador')
@@ -26,6 +29,23 @@
 						<div class="card-body">
 							<p><strong>Proveedor:</strong> {{ $compra->proveedor->razon_social ?: $compra->proveedor->nombre }}</p>
 							<p><strong>Fecha:</strong> {{ $compra->fecha->toDateString() }}</p>
+
+							@if ($compra->origen->value === 'facturae')
+								<div class="d-flex align-items-center gap-3 mb-3 flex-wrap">
+									<a href="{{ route('compras.facturae.descargar', $compra) }}" class="btn btn-outline-secondary btn-sm">
+										Descargar XML original
+									</a>
+
+									<div class="d-flex align-items-center gap-2">
+										<label for="compra-estado-b2b" class="form-label mb-0">Estado B2B:</label>
+										<select id="compra-estado-b2b" class="form-control form-control-sm" style="width: auto;">
+											@foreach (\App\Enums\EstadoB2b::cases() as $estado)
+												<option value="{{ $estado->value }}" @selected($compra->estado_b2b === $estado)>{{ $estado->label() }}</option>
+											@endforeach
+										</select>
+									</div>
+								</div>
+							@endif
 
 							<table class="table table-sm">
 								<thead>
@@ -78,6 +98,7 @@
 			confirmarUrl: @json(route('compras.confirmar', $compra)),
 			anularUrl: @json(route('compras.anular', $compra)),
 			editUrl: @json(route('compras.edit', $compra)),
+			estadoB2bUrl: @json(route('compras.estado-b2b.update', $compra)),
 		};
 	</script>
 	<script src="{{ asset('js/plugins-init/compras-show.init.js') }}"></script>

@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\AlertaController;
 use App\Http\Controllers\ArticuloController;
+use App\Http\Controllers\AsignacionHorarioController;
 use App\Http\Controllers\ArchivoController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
@@ -8,13 +10,21 @@ use App\Http\Controllers\BancoController;
 use App\Http\Controllers\CarpetaController;
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\CompraController;
+use App\Http\Controllers\CompraFacturaeController;
 use App\Http\Controllers\ConfiguracionController;
+use App\Http\Controllers\CorreccionFichajeController;
 use App\Http\Controllers\CampanaController;
 use App\Http\Controllers\CuentaBancariaController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FacturaController;
+use App\Http\Controllers\FacturaeController;
+use App\Http\Controllers\FichajeController;
+use App\Http\Controllers\HorarioController;
+use App\Http\Controllers\InformeJornadaController;
 use App\Http\Controllers\LocalidadController;
 use App\Http\Controllers\LogActividadController;
+use App\Http\Controllers\MiembroEquipoController;
+use App\Http\Controllers\MiJornadaController;
 use App\Http\Controllers\MovimientoStockController;
 use App\Http\Controllers\PagoController;
 use App\Http\Controllers\PlantillaEmailController;
@@ -56,6 +66,9 @@ Route::middleware(['tenant.context', 'auth'])->group(function () {
     Route::post('/facturas/{factura}/rectificar', [FacturaController::class, 'rectificar'])->name('facturas.rectificar');
     Route::get('/facturas/{factura}/pdf', [FacturaController::class, 'pdf'])->name('facturas.pdf');
     Route::post('/facturas/{factura}/enviar', [FacturaController::class, 'enviar'])->name('facturas.enviar');
+    Route::get('/facturas/{factura}/facturae', [FacturaeController::class, 'descargar'])->name('facturas.facturae.descargar');
+    Route::post('/facturas/{factura}/facturae', [FacturaeController::class, 'generarYEnviar'])->name('facturas.facturae.generar-enviar');
+    Route::post('/facturas/{factura}/facturae/reenviar', [FacturaeController::class, 'reenviar'])->name('facturas.facturae.reenviar');
     Route::get('/facturas/{factura}/pagos', [PagoController::class, 'index'])->name('facturas.pagos.index');
     Route::post('/facturas/{factura}/pagos', [PagoController::class, 'store'])->name('facturas.pagos.store');
     Route::post('/pagos/{pago}/anular', [PagoController::class, 'anular'])->name('pagos.anular');
@@ -85,6 +98,14 @@ Route::middleware(['tenant.context', 'auth'])->group(function () {
         ->name('configuracion.email.prueba');
     Route::match(['put', 'patch'], '/configuracion/archivos', [ConfiguracionController::class, 'updateArchivos'])
         ->name('configuracion.archivos.update');
+    Route::match(['put', 'patch'], '/configuracion/certificado', [ConfiguracionController::class, 'updateCertificado'])
+        ->name('configuracion.certificado.update');
+    Route::post('/configuracion/certificado/verificar-vies', [ConfiguracionController::class, 'verificarVies'])
+        ->name('configuracion.certificado.verificar-vies');
+    Route::match(['put', 'patch'], '/configuracion/fichajes', [ConfiguracionController::class, 'updateFichajes'])
+        ->name('configuracion.fichajes.update');
+    Route::match(['put', 'patch'], '/configuracion/general', [ConfiguracionController::class, 'updateGeneral'])
+        ->name('configuracion.general.update');
 
     Route::get('/stock', [MovimientoStockController::class, 'index'])->name('stock.index');
     Route::get('/stock/{articulo}', [MovimientoStockController::class, 'show'])->name('stock.show');
@@ -103,6 +124,9 @@ Route::middleware(['tenant.context', 'auth'])->group(function () {
     Route::post('/compras/{compra}/confirmar', [CompraController::class, 'confirmar'])->name('compras.confirmar');
     Route::post('/compras/{compra}/anular', [CompraController::class, 'anular'])->name('compras.anular');
     Route::delete('/compras/{compra}', [CompraController::class, 'destroy'])->name('compras.destroy');
+    Route::post('/compras/importar-facturae', [CompraFacturaeController::class, 'importar'])->name('compras.facturae.importar');
+    Route::get('/compras/{compra}/facturae', [CompraFacturaeController::class, 'descargar'])->name('compras.facturae.descargar');
+    Route::patch('/compras/{compra}/estado-b2b', [CompraFacturaeController::class, 'cambiarEstadoB2b'])->name('compras.estado-b2b.update');
 
     // Email marketing — plantillas y campañas
     Route::resource('plantillas-email', PlantillaEmailController::class)
@@ -131,6 +155,33 @@ Route::middleware(['tenant.context', 'auth'])->group(function () {
     Route::patch('/usuarios/{usuario}/rechazar', [UsuarioController::class, 'rechazar'])->name('usuarios.rechazar');
 
     Route::get('/logs', [LogActividadController::class, 'index'])->name('logs.index');
+
+    Route::get('/fichajes', [FichajeController::class, 'index'])->name('fichajes.index');
+    Route::post('/fichajes', [FichajeController::class, 'store'])->name('fichajes.store');
+
+    Route::get('/mi-jornada', [MiJornadaController::class, 'index'])->name('mi-jornada.index');
+    Route::get('/mi-jornada/exportar', [MiJornadaController::class, 'exportar'])->name('mi-jornada.exportar');
+
+    Route::middleware('can:gestiona-fichajes')->group(function () {
+        Route::get('/jornada', [InformeJornadaController::class, 'index'])->name('jornada.index');
+        Route::get('/jornada/exportar', [InformeJornadaController::class, 'exportar'])->name('jornada.exportar');
+
+        Route::get('/miembros-equipo', [MiembroEquipoController::class, 'index'])->name('miembros-equipo.index');
+        Route::post('/miembros-equipo', [MiembroEquipoController::class, 'store'])->name('miembros-equipo.store');
+        Route::match(['put', 'patch'], '/miembros-equipo/{miembro}', [MiembroEquipoController::class, 'update'])->name('miembros-equipo.update');
+        Route::delete('/miembros-equipo/{miembro}', [MiembroEquipoController::class, 'destroy'])->name('miembros-equipo.destroy');
+
+        Route::resource('horarios', HorarioController::class)->only(['index', 'store', 'update', 'destroy']);
+
+        Route::get('/miembros-equipo/{miembro}/horarios', [AsignacionHorarioController::class, 'index'])->name('asignaciones-horario.index');
+        Route::post('/miembros-equipo/{miembro}/horarios', [AsignacionHorarioController::class, 'store'])->name('asignaciones-horario.store');
+        Route::delete('/asignaciones-horario/{asignacion}', [AsignacionHorarioController::class, 'destroy'])->name('asignaciones-horario.destroy');
+
+        Route::post('/fichajes/{fichaje}/corregir', [CorreccionFichajeController::class, 'store'])->name('fichajes.corregir');
+
+        Route::get('/alertas', [AlertaController::class, 'index'])->name('alertas.index');
+        Route::patch('/alertas/{alerta}', [AlertaController::class, 'update'])->name('alertas.update');
+    });
 });
 
 Route::middleware(['tenant.context', 'auth', 'super_admin'])->prefix('super_admin')->name('super_admin.')->group(function () {

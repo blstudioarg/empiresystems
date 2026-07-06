@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Enums\CalificacionOperacion;
+use App\Enums\CausaExencion;
 use Database\Factories\FacturaLineaFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -27,6 +29,9 @@ class FacturaLinea extends Model
         'cuota_impuesto',
         'tipo_recargo',
         'cuota_recargo',
+        'calificacion_operacion',
+        'causa_exencion',
+        'mencion_legal',
         'orden',
     ];
 
@@ -41,6 +46,8 @@ class FacturaLinea extends Model
             'cuota_impuesto' => 'decimal:2',
             'tipo_recargo' => 'decimal:2',
             'cuota_recargo' => 'decimal:2',
+            'calificacion_operacion' => CalificacionOperacion::class,
+            'causa_exencion' => CausaExencion::class,
             'orden' => 'integer',
         ];
     }

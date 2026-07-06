@@ -94,7 +94,7 @@ class MovimientoStockController extends Controller
                 'stock_resultante' => (float) $m->stock_resultante,
                 'origen' => $m->origen->value,
                 'motivo' => $m->motivo,
-                'ocurrido_at' => $m->ocurrido_at->toDateTimeString(),
+                'ocurrido_at' => $m->ocurrido_at->enZonaTenant()->toDateTimeString(),
             ])->values(),
             'alertas' => Articulo::bajoMinimo()->orderBy('nombre')->get()->map(fn (Articulo $a) => [
                 'nombre' => $a->nombre,

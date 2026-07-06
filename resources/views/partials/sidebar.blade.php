@@ -36,6 +36,38 @@
 						</li>
 						<li><a class="has-arrow " href="javascript:void(0);" aria-expanded="false">
 								<div class="menu-icon">
+									<x-lordicon icon="wired-outline-1846-employee-working-hover-working" size="30" trigger="hover" />
+								</div>
+								<span class="nav-text ms-2">Control de fichaje</span>
+								@php
+									$__alertasNuevas = auth()->user()->rol === \App\Enums\UserRole::Admin
+										? \App\Models\Alerta::where('tenant_id', tenant()->getTenantKey())
+											->where('estado', \App\Enums\EstadoAlerta::Nueva)
+											->count()
+										: 0;
+								@endphp
+								@if ($__alertasNuevas > 0)
+									<span class="badge badge-danger ms-2">{{ $__alertasNuevas }}</span>
+								@endif
+							</a>
+							<ul aria-expanded="false">
+								<li><a href="{{ route('fichajes.index') }}">Fichar</a></li>
+								<li><a href="{{ route('mi-jornada.index') }}">Mi jornada</a></li>
+								@if (auth()->user()->rol === \App\Enums\UserRole::Admin)
+									<li><a href="{{ route('jornada.index') }}">Jornada</a></li>
+									<li><a href="{{ route('miembros-equipo.index') }}">Miembros</a></li>
+									<li><a href="{{ route('horarios.index') }}">Horarios</a></li>
+									<li><a href="{{ route('alertas.index') }}">
+										Alertas
+										@if ($__alertasNuevas > 0)
+											<span class="badge badge-danger ms-1">{{ $__alertasNuevas }}</span>
+										@endif
+									</a></li>
+								@endif
+							</ul>
+						</li>
+						<li><a class="has-arrow " href="javascript:void(0);" aria-expanded="false">
+								<div class="menu-icon">
 									<x-lordicon icon="empresa" size="30" trigger="hover" />
 								</div>
 								<span class="nav-text ms-2">Clientes</span>

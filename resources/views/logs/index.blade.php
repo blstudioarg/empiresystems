@@ -36,7 +36,11 @@
 											<th>Fecha</th>
 											<th>Usuario</th>
 											<th>Acción</th>
+											<th>Resultado</th>
 											<th>Detalle</th>
+											<th>IP</th>
+											<th>Navegador</th>
+											<th>Ubicación</th>
 										</tr>
 									</thead>
 									<tbody></tbody>

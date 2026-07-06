@@ -62,9 +62,17 @@
 					<div class="card">
 						<div class="card-header border-0 flex-wrap">
 							<h4 class="card-title mb-0">Facturas</h4>
-							<a href="{{ route('facturas.create') }}" class="btn btn-primary">
-								+ Nueva factura
-							</a>
+							<div class="d-flex align-items-center gap-2">
+								<div class="btn-group" role="group" aria-label="Filtrar por tipo">
+									<button type="button" class="btn btn-outline-secondary btn-filtro-factura active" data-filtro-factura="">Todas</button>
+									<button type="button" class="btn btn-outline-secondary btn-filtro-factura" data-filtro-factura="borrador">Borradores</button>
+									<button type="button" class="btn btn-outline-secondary btn-filtro-factura" data-filtro-factura="emitida">Emitidas</button>
+									<button type="button" class="btn btn-outline-secondary btn-filtro-factura" data-filtro-factura="rectificativa">Rectificativas</button>
+								</div>
+								<a href="{{ route('facturas.create') }}" class="btn btn-primary">
+									+ Nueva factura
+								</a>
+							</div>
 						</div>
 						<div class="card-body pt-0">
 							<div class="table-responsive">
@@ -112,6 +120,7 @@
 					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
 				</div>
 				<div class="modal-body">
+					<div id="cobroContextoRectificada" class="alert alert-warning py-2 px-3 mb-3 d-none" role="alert"></div>
 					<p class="mb-2">Saldo pendiente: <strong id="cobroSaldoPendiente">0,00</strong> €</p>
 
 					<div class="table-responsive mb-3">
@@ -185,6 +194,36 @@
 				<div class="modal-footer">
 					<button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
 					<button type="submit" class="btn btn-primary" id="enviarFacturaSubmit" data-loading-text="Enviando...">Enviar</button>
+				</div>
+			</form>
+		</div>
+	</div>
+
+	<div class="modal fade" id="generarEnviarFacturaeModal" tabindex="-1" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered">
+			<form id="generarEnviarFacturaeForm" method="POST" class="modal-content">
+				@csrf
+				<div class="modal-header">
+					<h5 class="modal-title">Generar y enviar Facturae</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+				</div>
+				<div class="modal-body">
+					<p class="text-muted small">
+						Se generará (o reutilizará si ya existe) el XML Facturae firmado y se enviará por
+						email junto al PDF.
+					</p>
+					<div class="mb-3">
+						<label for="generarEnviarFacturaeDestinatario" class="form-label">Destinatario</label>
+						<input type="email" id="generarEnviarFacturaeDestinatario" name="destinatario" class="form-control">
+						<small class="form-text text-muted">Déjalo en blanco para usar el email del cliente.</small>
+						<div class="invalid-feedback d-block" data-error-for="destinatario"></div>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+					<button type="submit" class="btn btn-primary" id="generarEnviarFacturaeSubmit" data-loading-text="Generando y enviando...">
+						Generar y enviar
+					</button>
 				</div>
 			</form>
 		</div>

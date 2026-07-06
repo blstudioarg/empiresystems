@@ -6,6 +6,7 @@ use App\Models\Cliente;
 use App\Models\Factura;
 use App\Models\FacturaImpuesto;
 use App\Models\FacturaLinea;
+use App\Models\Pago;
 use App\Models\Serie;
 use App\Models\Tenant;
 use App\Models\User;
@@ -84,6 +85,74 @@ class RectificativaCreacionTest extends TestCase
         $response->assertRedirect();
         $response->assertSessionHas('error', 'Solo se pueden rectificar facturas emitidas.');
         $this->assertDatabaseCount('facturas', 1);
+    }
+
+    public function test_no_se_puede_rectificar_por_sustitucion_una_factura_con_cobros(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $user = User::factory()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
+        $cliente = Cliente::factory()->create(['tenant_id' => $tenant->id]);
+        Serie::factory()->rectificativa()->for($tenant, 'tenant')->create();
+
+        $original = $this->crearOriginalEmitida($tenant, $cliente);
+        Pago::factory()->for($original)->create(['tenant_id' => $tenant->id, 'importe' => 50.00]);
+
+        $this->loginAs($user);
+
+        $response = $this->post("/facturas/{$original->id}/rectificar", [
+            'tipo_rectificacion' => 'sustitucion',
+            'motivo_rectificacion' => 'Motivo cualquiera.',
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('error', 'La factura tiene cobros registrados. Anúlalos antes de rectificar por sustitución.');
+        $this->assertDatabaseCount('facturas', 1);
+    }
+
+    public function test_un_cobro_anulado_no_bloquea_la_rectificacion_por_sustitucion(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $user = User::factory()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
+        $cliente = Cliente::factory()->create(['tenant_id' => $tenant->id]);
+        Serie::factory()->rectificativa()->for($tenant, 'tenant')->create();
+
+        $original = $this->crearOriginalEmitida($tenant, $cliente);
+        Pago::factory()->anulado()->for($original)->create(['tenant_id' => $tenant->id, 'importe' => 50.00]);
+
+        $this->loginAs($user);
+
+        $response = $this->post("/facturas/{$original->id}/rectificar", [
+            'tipo_rectificacion' => 'sustitucion',
+            'motivo_rectificacion' => 'Error en el tipo impositivo aplicado.',
+        ]);
+
+        $rectificativa = Factura::where('factura_rectificada_id', $original->id)->first();
+
+        $this->assertNotNull($rectificativa);
+        $response->assertRedirect(route('facturas.edit', $rectificativa));
+    }
+
+    public function test_si_se_puede_rectificar_por_diferencias_una_factura_con_cobros(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $user = User::factory()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
+        $cliente = Cliente::factory()->create(['tenant_id' => $tenant->id]);
+        Serie::factory()->rectificativa()->for($tenant, 'tenant')->create();
+
+        $original = $this->crearOriginalEmitida($tenant, $cliente);
+        Pago::factory()->for($original)->create(['tenant_id' => $tenant->id, 'importe' => 50.00]);
+
+        $this->loginAs($user);
+
+        $response = $this->post("/facturas/{$original->id}/rectificar", [
+            'tipo_rectificacion' => 'diferencias',
+            'motivo_rectificacion' => 'Ajuste parcial del importe.',
+        ]);
+
+        $rectificativa = Factura::where('factura_rectificada_id', $original->id)->first();
+
+        $this->assertNotNull($rectificativa);
+        $response->assertRedirect(route('facturas.edit', $rectificativa));
     }
 
     public function test_no_se_puede_rectificar_una_factura_ya_rectificada(): void

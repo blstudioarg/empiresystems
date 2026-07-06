@@ -20,6 +20,19 @@ input, dentro de la misma columna** — no en una columna separada al lado. Refe
 </div>
 ```
 
+## Logo del tenant en el nav-header: en mobile siempre el mini, nunca el full
+
+El tenant sube dos logos en `configuracion` (`logo_path` para el sidebar expandido,
+`logo_mini_path` para el colapsado — `resources/views/partials/nav-header.blade.php`). En
+desktop, `public/css/app-overrides.css` hace la exclusión entre los dos según
+`#main-wrapper.menu-toggle` (colapsado → solo mini) o no (expandido → solo full). En **mobile**
+el sidebar es siempre off-canvas (nunca "expandido" de verdad), así que esa exclusión por sí sola
+dejaría los dos logos ocultos cuando `#main-wrapper` no tiene `.menu-toggle`. Por eso hay una
+media query aparte en `app-overrides.css` (mismo breakpoint que usa NexaDash para ocultar
+`.brand-title`, `max-width: 47.9375rem`) que fuerza el `img.logo-abbr` (mini) visible en los dos
+estados. Si se toca el logo del nav-header, no romper esta regla — el mini es el único que debe
+verse en mobile.
+
 ## Overrides de color de NexaDash necesitan doblar la clase para ganar especificidad
 
 `style.css` define el color de topbar/nav-header vía selectores de atributo como
@@ -474,3 +487,71 @@ Esto **no aplica** cuando el número sale de un endpoint JSON hacia JS/DataTable
 controller ya castea a `(float)` antes de `response()->json(...)`, así que JS recibe un número
 limpio (sin ceros de relleno) y no hace falta `Formato` del lado del cliente — el problema es
 exclusivamente de Blade renderizando directo un atributo del modelo.
+
+## Vistas "self-service" mobile-first (fichar, y cualquier pantalla pensada para el móvil del empleado)
+
+Para pantallas que un empleado usa sobre todo desde su móvil (el caso ya resuelto:
+`fichajes/index.blade.php`), no alcanza con que la grid sea responsive — hace falta una jerarquía
+mobile-first real y una navegación que se sienta de app, no de panel de escritorio encogido.
+Patrón de referencia:
+
+- **Hero con una sola idea protagonista**: un elemento grande y en vivo (en fichar, el reloj +
+  badge de estado + botón de acción) va arriba, centrado, antes que cualquier dato secundario
+  (mapa, precisión GPS). El resto de tarjetas (resumen del día, ubicación) van debajo, en orden de
+  relevancia real para el empleado, no en el orden que sea más fácil de maquetar.
+- **Botones contextuales, nunca todos a la vez — pero el mecanismo depende de dónde viven**: si una
+  acción tiene una máquina de estados (aquí, `cerrada`/`abierta`/`en_pausa` con reglas de transición
+  en `RegistroFichajes::validarSecuencia`), nunca hay que dejar todos los botones visibles siempre
+  confiando en que el usuario adivine cuál aplica. Dos variantes válidas según el contenedor:
+  - **Stack de botones dentro de una card** (el caso desktop de fichar): mostrar/ocultar con
+    `d-none` alternado por JS — el contenedor puede crecer o encogerse sin problema.
+  - **Barra fija de acciones** (bottom nav mobile, ver punto siguiente): los slots son de posición
+    fija, así que en vez de ocultar un botón (lo que "saltaría" el layout) se **deshabilita**
+    (`disabled` nativo de `<button>` + una regla `:disabled` que baja opacidad/color) manteniendo
+    siempre la misma cantidad de ítems en el mismo lugar.
+- **Bottom nav fijo tipo app, solo en mobile** (`d-md-none`, mismo breakpoint 767.98px que ya usa
+  el propio template para su sidebar): en fichar dejó de ser navegación (Inicio/Fichar/Mi jornada)
+  para convertirse en la **barra de acciones** de la pantalla — 3 slots fijos (entrada / pausa /
+  salida), porque en una pantalla "self-service" la acción principal importa más que la navegación
+  genérica (que sigue disponible por el menú/hamburger propio del template). El slot central va
+  elevado en un círculo (`margin-top` negativo sobre la barra) a modo de FAB, y en fichar ese
+  círculo además **cambia de color e ícono según el estado** (azul `--primary` de base, verde
+  success cuando la acción pasa a "Reanudar" tras una pausa, gris cuando está deshabilitado) — el
+  FAB no es solo decorativo, comunica en qué estado está la acción. El `content-body` necesita
+  `padding-bottom` de compensación en ese mismo breakpoint para que el nav no tape el final del
+  contenido, y la barra debe sumar `env(safe-area-inset-bottom)` al padding inferior (notch/home
+  indicator de iOS). Esta barra es específica de la vista (vive en su propio
+  `@push('styles')`/markup), no un componente compartido todavía — si se repite en una tercera
+  pantalla "self-service", ahí sí vale la pena extraerla a un partial en vez de copiarla a mano.
+- **Ícono por acción, no un solo ícono de marca repetido**: cuando la barra representa acciones
+  distintas (entrada/pausa/salida), cada una lleva su propio lordicon semántico (p. ej.
+  `wired-outline-983-smart-lock-card-hover-pinch` para entrada, `wired-outline-2185-logout-hover-pinch`
+  para salida, el par `wired-outline-3097-pause-circle-hover-pinch` /
+  `wired-outline-29-play-pause-circle-hover-pinch` para pausa/reanudar) — no fuerces el ícono "de
+  marca" de la sección (el que usa el sidebar, `wired-outline-1846-employee-working-hover-working`)
+  en cada botón solo por consistencia; ahí sí sigue siendo el más adecuado para un ítem de
+  **navegación** hacia esta sección (ver icono disponibles en `public/icons/lordicon/`).
+- **Ícono que cambia según el estado: dos `<lord-icon>` fijos + `d-none`, nunca mutar `colors`/`src`
+  en caliente**: para el botón de pausa/reanudar, ambos íconos (pausa y reanudar) están **siempre
+  en el DOM**, cada uno ya renderizado con sus `colors` finales, y el JS solo alterna `d-none` entre
+  los dos — no se reasigna `src`/`colors` de una única instancia de `<lord-icon>` en runtime (el
+  player de Lordicon no está pensado para eso y puede no re-renderizar). Mismo patrón para el
+  label de texto del botón (`.text('Pausa' | 'Reanudar')`, no dos botones separados).
+- **Excepción de color: ícono sobre fondo sólido sí lleva blanco fijo**: todo lordicon que quede
+  **dentro de un botón/elemento con fondo sólido de color** (el FAB del bottom nav, o el propio
+  botón `.btn-primary`/`.btn-danger` de la acción principal) lleva `colors="primary:#ffffff,
+  secondary:#ffffff"` explícito en vez de la paleta del tenant — si no, el ícono queda del mismo
+  tono que el fondo (azul sobre azul) y pierde contraste, igual que el texto blanco del propio
+  botón. Es la excepción puntual que ya prevé la sección "Colores de los lordicon" de esta
+  misma guía; anotarla en la vista igual que aquí.
+- **Centrado de un ícono dentro de un círculo flex**: si el contenedor (`.fab { display:flex;
+  align-items:center; justify-content:center }`) envuelve el `<lord-icon>` en un `<span>`
+  intermedio (para poder togglear `d-none` entre dos íconos, ver punto anterior), ese `<span>`
+  también necesita `display:flex` + `line-height:0` — si queda como `inline` por defecto, el
+  espacio de línea propio del texto lo corre un par de píxeles hacia abajo y el ícono se ve
+  descentrado dentro del círculo aunque el padre ya sea flex.
+- **Reloj/contadores en vivo son solo `textContent`, nunca reflow del DOM**: el tick de segundo a
+  segundo (reloj de pared, horas trabajadas hoy) actualiza únicamente el texto de un nodo ya
+  existente vía `setInterval`, sin reconstruir markup — el server sigue siendo la única fuente de
+  verdad de lo que se persiste; el contador en el cliente es solo percepción de vida en la
+  pantalla.

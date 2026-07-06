@@ -124,13 +124,16 @@ más recientes primero.
   en `routes/web.php`, dentro del grupo `['tenant.context', 'auth']` ya existente.
 - [X] T019 [US1] Crear vista `resources/views/logs/index.blade.php` (layout NexaDash, mismo patrón
   que `resources/views/usuarios/index.blade.php`/`facturas/index.blade.php`): tabla `#logs-table`
-  con columnas Fecha, Usuario, Acción, Detalle.
+  con columnas Fecha, Usuario, Acción, **Resultado**, Detalle, **IP** (las dos en negrita son de
+  la enmienda RGPD/LOPDGDD, Phase 7 — quedaron como columnas explícitas, no embebidas dentro de
+  Acción/Detalle, para que sean visibles de un vistazo).
 - [X] T020 [US1] Crear `public/js/plugins-init/logs-datatable.init.js`: inicializa `#logs-table`
   con `serverSide: true`, `ajax.url = window.location.href`, columnas mapeadas a
-  `fecha`/`usuario_nombre`/`accion` (badge con label)/`descripcion` (no orderable), mensajes en
-  español igual que `usuarios-datatable.init.js`/`facturas-datatable.init.js`. Incluir el script
-  en `resources/views/logs/index.blade.php` (stack `@push('scripts')` si aplica, como en las
-  vistas existentes).
+  `fecha`/`usuario_nombre`/`accion` (badge con label)/`resultado` (badge verde/rojo)/`descripcion`
+  (no orderable)/`ip_origen` (no orderable), mensajes en español igual que
+  `usuarios-datatable.init.js`/`facturas-datatable.init.js`. Incluir el script en
+  `resources/views/logs/index.blade.php` (stack `@push('scripts')` si aplica, como en las vistas
+  existentes).
 - [X] T021 [US1] En `resources/views/partials/header.blade.php`, añadir un ítem "Logs" en el
   dropdown de usuario (junto a Profile/Configuración/Cerrar sesión, línea ~258-291), enlazando a
   `route('logs.index')`, visible para cualquier rol autenticado (sin `@if` de permisos).
@@ -233,8 +236,9 @@ de origen, agente de usuario, registro de intentos fallidos, y una política de 
   login/logout exitosos).
 - [X] T035 `LogActividadController@index`: expone `resultado`/`resultado_label`/`ip_origen` en el
   JSON; búsqueda también matchea `ip_origen` y el label de `resultado`.
-- [X] T036 `logs-datatable.init.js`: badge rojo "(denegado)" cuando `resultado=fallo`; IP visible
-  como subtexto bajo la descripción.
+- [X] T036 `resources/views/logs/index.blade.php` + `logs-datatable.init.js`: columnas explícitas
+  Resultado (badge verde/rojo) e IP — revertido de un primer intento que las embebía dentro de
+  Acción/Detalle (invisibles con la tabla vacía y poco notorias con datos; feedback del usuario).
 - [X] T037 `App\Support\RetencionLogsTenant` (clave `logs.retencion_dias`, default 730 días) +
   comando `logs:purgar` (borrado por lotes de 500, por tenant) + `bootstrap/app.php` →
   `withSchedule` diario.
@@ -243,6 +247,29 @@ de origen, agente de usuario, registro de intentos fallidos, y una política de 
   retención configurada por tenant, aislamiento entre tenants, purga por lotes >500 filas).
 - [X] T039 Actualizar `data-model.md`/`contracts/http.md` de este spec y `docs/03-modelo-datos.md`
   (ya actualizado por el usuario, origen de esta enmienda) con los campos nuevos.
+
+## Phase 8: Enmienda — Navegador y ubicación en el listado (a pedido del usuario)
+
+**Contexto**: tras revisar la Phase 7, el usuario pidió mostrar también el navegador (ya se
+guardaba como `user_agent` crudo, sin parsear) y la ubicación geográfica de la IP (dato nuevo, no
+almacenado hasta ahora).
+
+- [X] T040 [P] `App\Support\AgenteUsuario::label()`: parseo best-effort por substrings del
+  `user_agent` a "Navegador en SO" (Chrome/Firefox/Safari/Edge/Opera × Windows/macOS/Linux/
+  Android/iOS); sin dependencia nueva (no se usa un parser de UA de terceros).
+- [X] T041 [P] `App\Support\GeolocalizadorIp::ubicacion()`: resuelve `ip_origen` → "Ciudad, País"
+  vía ip-api.com (gratis, sin API key). Se llama **solo al construir la respuesta del listado**,
+  nunca al escribir el evento (evita latencia de red en cada login/alta/modificación). Cachea 30
+  días por IP; IPs privadas/reservadas devuelven `null` sin llamar a la API; timeout de 2s y
+  cualquier fallo de red devuelven `null` sin romper la vista.
+- [X] T042 `LogActividadController@index` expone `navegador`/`ubicacion`; vista + JS agregan
+  columnas Navegador/Ubicación (no orderable, son derivadas).
+- [X] T043 `tests/TestCase.php` (base): `Http::preventStrayRequests()` en `setUp()` — sin esto,
+  cualquier test que renderice `logs.index` con `LogActividad::factory()` (IPs aleatorias de
+  faker) termina pegándole a la API real de geolocalización (lento y flaky en CI). Cada test que
+  necesite una respuesta la declara con `Http::fake([...])`.
+- [X] T044 Tests: `AgenteUsuarioTest` (7 casos, unit puro) + `GeolocalizadorIpTest` (IP privada no
+  llama a la API, IP pública resuelve, cache por IP, fallo HTTP/timeout devuelven `null`).
 
 **Pendiente de decisión (no bloquea esta enmienda)**: si el registro de eventos formal SIF
 (hash encadenado + firma electrónica) llega a ser necesario en el futuro (p. ej. si el proyecto

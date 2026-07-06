@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Enums\EstadoFactura;
 use App\Exceptions\PagoInvalidoException;
 use App\Models\Factura;
 use App\Models\Pago;
@@ -15,14 +14,14 @@ class RegistroPagos
      */
     public function registrar(Factura $factura, array $datos): Pago
     {
-        if ($factura->estado !== EstadoFactura::Emitida) {
+        if (! $factura->admiteCobros()) {
             throw new PagoInvalidoException('Solo se pueden registrar pagos de facturas emitidas.');
         }
 
         return DB::transaction(function () use ($factura, $datos) {
             $importeCentimos = (int) round(((float) $datos['importe']) * 100);
             $cobradoCentimos = (int) round($factura->montoCobrado() * 100);
-            $totalCentimos = (int) round((float) $factura->total * 100);
+            $totalCentimos = (int) round($factura->totalCobrable() * 100);
 
             if ($cobradoCentimos + $importeCentimos > $totalCentimos) {
                 throw new PagoInvalidoException('El pago excede el saldo pendiente de la factura.');

@@ -18,6 +18,17 @@ return Application::configure(basePath: dirname(__DIR__))
         // En hosting compartido (Principio V) basta con un único cron de cPanel que llame a
         // `php artisan schedule:run` cada minuto.
         $schedule->command('logs:purgar')->daily();
+
+        // Retención de los XML Facturae emitidos/recibidos (RGPD — minimización, feature 022).
+        $schedule->command('facturae:purgar')->daily();
+
+        // Retención del dato de geo de fichajes y de los datos de casa de miembros dados de baja
+        // (RGPD — minimización, feature 024).
+        $schedule->command('fichajes:purgar-geo')->daily();
+        $schedule->command('miembros:purgar-casa')->daily();
+
+        // Alertas de incumplimiento de jornada (ausencia/retraso) del día anterior (feature 025).
+        $schedule->command('jornada:evaluar-cumplimiento')->daily();
     })
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
