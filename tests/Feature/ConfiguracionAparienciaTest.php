@@ -17,7 +17,7 @@ class ConfiguracionAparienciaTest extends TestCase
     public function test_guardar_colores_persiste_las_claves_del_tenant_activo(): void
     {
         $tenant = Tenant::factory()->create();
-        $user = User::factory()->create([
+        $user = User::factory()->admin()->create([
             'tenant_id' => $tenant->id,
             'password' => bcrypt('secret123'),
         ]);
@@ -52,7 +52,7 @@ class ConfiguracionAparienciaTest extends TestCase
     public function test_un_color_con_formato_invalido_devuelve_error_de_validacion_y_no_persiste(): void
     {
         $tenant = Tenant::factory()->create();
-        $user = User::factory()->create([
+        $user = User::factory()->admin()->create([
             'tenant_id' => $tenant->id,
             'password' => bcrypt('secret123'),
         ]);
@@ -81,7 +81,7 @@ class ConfiguracionAparienciaTest extends TestCase
     public function test_restablecer_borra_las_claves_de_color_del_tenant(): void
     {
         $tenant = Tenant::factory()->create();
-        $user = User::factory()->create([
+        $user = User::factory()->admin()->create([
             'tenant_id' => $tenant->id,
             'password' => bcrypt('secret123'),
         ]);
@@ -110,7 +110,7 @@ class ConfiguracionAparienciaTest extends TestCase
         Storage::fake('public');
 
         $tenant = Tenant::factory()->create();
-        $user = User::factory()->create([
+        $user = User::factory()->admin()->create([
             'tenant_id' => $tenant->id,
             'password' => bcrypt('secret123'),
         ]);
@@ -135,7 +135,7 @@ class ConfiguracionAparienciaTest extends TestCase
         Storage::fake('public');
 
         $tenant = Tenant::factory()->create(['logo_path' => null]);
-        $user = User::factory()->create([
+        $user = User::factory()->admin()->create([
             'tenant_id' => $tenant->id,
             'password' => bcrypt('secret123'),
         ]);
@@ -159,7 +159,7 @@ class ConfiguracionAparienciaTest extends TestCase
         Storage::fake('public');
 
         $tenant = Tenant::factory()->create();
-        $user = User::factory()->create([
+        $user = User::factory()->admin()->create([
             'tenant_id' => $tenant->id,
             'password' => bcrypt('secret123'),
         ]);
@@ -184,7 +184,7 @@ class ConfiguracionAparienciaTest extends TestCase
         Storage::fake('public');
 
         $tenant = Tenant::factory()->create();
-        $user = User::factory()->create([
+        $user = User::factory()->admin()->create([
             'tenant_id' => $tenant->id,
             'password' => bcrypt('secret123'),
         ]);
@@ -209,7 +209,7 @@ class ConfiguracionAparienciaTest extends TestCase
         Storage::fake('public');
 
         $tenant = Tenant::factory()->create();
-        $user = User::factory()->create([
+        $user = User::factory()->admin()->create([
             'tenant_id' => $tenant->id,
             'password' => bcrypt('secret123'),
         ]);
@@ -244,7 +244,7 @@ class ConfiguracionAparienciaTest extends TestCase
         Storage::disk('public')->put($tenant->login_logo_path, 'contenido');
         Storage::disk('public')->put($tenant->login_imagen_path, 'contenido');
 
-        $user = User::factory()->create([
+        $user = User::factory()->admin()->create([
             'tenant_id' => $tenant->id,
             'password' => bcrypt('secret123'),
         ]);
@@ -267,7 +267,7 @@ class ConfiguracionAparienciaTest extends TestCase
     public function test_get_configuracion_autenticado_muestra_navegacion_de_tabs(): void
     {
         $tenant = Tenant::factory()->create();
-        $user = User::factory()->create([
+        $user = User::factory()->admin()->create([
             'tenant_id' => $tenant->id,
             'password' => bcrypt('secret123'),
         ]);

@@ -13,6 +13,18 @@ SaaS de **facturación para España**, reconstrucción desde cero del CRM actual
 - Un **Super Admin** da de alta nuevos clientes del SaaS desde el propio software.
 - **Arquitectura de datos elegida:** base de datos **compartida** con columna `tenant_id` (ver `01-arquitectura.md` para la justificación).
 
+## Roles y permisos por tenant
+Cada tenant gestiona sus propios **roles** (autoservicio, sin intervención del Super Admin):
+un catálogo global de ~17 permisos (uno por sección funcional del menú, ver
+`docs/03-modelo-datos.md`) se agrupa en roles con nombre libre por tenant (ej. "Administrador",
+"Ventas"). El acceso se controla en dos capas: el menú lateral solo muestra las secciones
+permitidas, y cada ruta exige su permiso en el servidor (403 si falta, nunca solo ocultar en el
+menú). El alta de un tenant nuevo aprovisiona automáticamente su rol "Administrador" con el
+catálogo completo; un rol "Usuario" acotado queda marcado como **rol por defecto** para quienes
+se registran públicamente. Las secciones personales (fichar, mi jornada, perfil) no requieren
+ningún permiso — las tiene cualquier usuario autenticado del tenant. El Super Admin central
+queda fuera de este sistema (bypass total, sigue con su propio middleware de acceso).
+
 ## Alcance funcional inicial (MVP)
 El corazón del producto es **facturar cumpliendo la normativa española vigente**:
 - Gestión de clientes.

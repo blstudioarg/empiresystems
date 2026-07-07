@@ -72,6 +72,44 @@ class UserFactory extends Factory
     }
 
     /**
+     * La autorización de vistas pasó del enum `rol` a los permisos spatie (feature 027). Para que
+     * los tests existentes conserven el acceso equivalente (SC-005), cada usuario de tenant recibe
+     * al crearse el rol spatie correspondiente: "Administrador" (catálogo completo) para admins,
+     * "Usuario" base (catálogo menos gestión, RN-07) para el resto. El super admin (sin tenant)
+     * queda sin rol. Los tests que necesiten un usuario de tenant sin rol pueden limpiarlo con
+     * `$user->syncRoles([])`.
+     */
+    public function configure(): static
+    {
+        return $this->afterCreating(function (User $user) {
+            if (! $user->tenant_id || $user->isSuperAdmin()) {
+                return;
+            }
+
+            foreach (\App\Support\CatalogoPermisos::claves() as $clave) {
+                \Spatie\Permission\Models\Permission::firstOrCreate(['name' => $clave, 'guard_name' => 'web']);
+            }
+
+            $provisionador = app(\App\Support\ProvisionadorRoles::class);
+            $tenant = $user->tenant()->first();
+
+            if ($user->rol === UserRole::Admin) {
+                $provisionador->provisionarAdministrador($tenant, $user);
+
+                return;
+            }
+
+            $rol = $provisionador->provisionarUsuarioBase($tenant);
+
+            $registrar = app(\Spatie\Permission\PermissionRegistrar::class);
+            $anterior = $registrar->getPermissionsTeamId();
+            $registrar->setPermissionsTeamId($tenant->getTenantKey());
+            $user->assignRole($rol);
+            $registrar->setPermissionsTeamId($anterior);
+        });
+    }
+
+    /**
      * Usuario inactivo (no puede autenticarse).
      */
     public function inactive(): static

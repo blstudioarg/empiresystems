@@ -33,7 +33,7 @@ class CampanaEnvioTandaTest extends TestCase
     public function test_crear_campana_materializa_destinatarios_y_marca_sin_email_como_fallido(): void
     {
         $tenant = Tenant::factory()->create();
-        $user = User::factory()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
+        $user = User::factory()->admin()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
         $conEmail = Cliente::factory()->create(['tenant_id' => $tenant->id, 'email' => 'uno@destino.test']);
         $sinEmail = Cliente::factory()->create(['tenant_id' => $tenant->id, 'email' => null]);
 
@@ -67,7 +67,7 @@ class CampanaEnvioTandaTest extends TestCase
         Mail::fake();
 
         $tenant = Tenant::factory()->create();
-        $user = User::factory()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
+        $user = User::factory()->admin()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
         $cliente = Cliente::factory()->create(['tenant_id' => $tenant->id, 'email' => 'uno@destino.test']);
 
         $this->loginAs($user);
@@ -100,7 +100,7 @@ class CampanaEnvioTandaTest extends TestCase
     public function test_un_fallo_de_envio_no_aborta_el_resto_de_la_tanda(): void
     {
         $tenant = Tenant::factory()->create();
-        $user = User::factory()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
+        $user = User::factory()->admin()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
         $ok = Cliente::factory()->create(['tenant_id' => $tenant->id, 'email' => 'ok@destino.test']);
         $ko = Cliente::factory()->create(['tenant_id' => $tenant->id, 'email' => 'ko@destino.test']);
 
@@ -143,7 +143,7 @@ class CampanaEnvioTandaTest extends TestCase
     public function test_sin_smtp_configurado_enviar_tanda_devuelve_422(): void
     {
         $tenant = Tenant::factory()->create();
-        $user = User::factory()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
+        $user = User::factory()->admin()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
         $cliente = Cliente::factory()->create(['tenant_id' => $tenant->id, 'email' => 'uno@destino.test']);
 
         $campana = Campana::factory()->create(['tenant_id' => $tenant->id]);

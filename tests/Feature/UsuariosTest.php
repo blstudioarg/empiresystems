@@ -15,7 +15,7 @@ class UsuariosTest extends TestCase
     public function test_aprobar_pendiente_lo_habilita_para_iniciar_sesion(): void
     {
         $tenant = Tenant::factory()->create();
-        $aprobador = User::factory()->create([
+        $aprobador = User::factory()->admin()->create([
             'tenant_id' => $tenant->id,
             'password' => bcrypt('secret123'),
         ]);
@@ -46,7 +46,7 @@ class UsuariosTest extends TestCase
     public function test_aprobar_dos_veces_es_idempotente(): void
     {
         $tenant = Tenant::factory()->create();
-        $aprobador = User::factory()->create([
+        $aprobador = User::factory()->admin()->create([
             'tenant_id' => $tenant->id,
             'password' => bcrypt('secret123'),
         ]);
@@ -64,7 +64,7 @@ class UsuariosTest extends TestCase
     public function test_rechazar_bloquea_login(): void
     {
         $tenant = Tenant::factory()->create();
-        $aprobador = User::factory()->create([
+        $aprobador = User::factory()->admin()->create([
             'tenant_id' => $tenant->id,
             'password' => bcrypt('secret123'),
         ]);
@@ -93,7 +93,7 @@ class UsuariosTest extends TestCase
     public function test_usuario_no_puede_aprobarse_ni_rechazarse_a_si_mismo(): void
     {
         $tenant = Tenant::factory()->create();
-        $user = User::factory()->create([
+        $user = User::factory()->admin()->create([
             'tenant_id' => $tenant->id,
             'password' => bcrypt('secret123'),
         ]);
@@ -109,7 +109,7 @@ class UsuariosTest extends TestCase
         $tenantA = Tenant::factory()->create();
         $tenantB = Tenant::factory()->create();
 
-        $userA = User::factory()->create([
+        $userA = User::factory()->admin()->create([
             'tenant_id' => $tenantA->id,
             'password' => bcrypt('secret123'),
         ]);
@@ -130,7 +130,7 @@ class UsuariosTest extends TestCase
         $tenantA = Tenant::factory()->create();
         $tenantB = Tenant::factory()->create();
 
-        $userA = User::factory()->create([
+        $userA = User::factory()->admin()->create([
             'tenant_id' => $tenantA->id,
             'password' => bcrypt('secret123'),
         ]);
@@ -147,7 +147,7 @@ class UsuariosTest extends TestCase
         $tenantA = Tenant::factory()->create();
         $tenantB = Tenant::factory()->create();
 
-        $userA = User::factory()->create([
+        $userA = User::factory()->admin()->create([
             'tenant_id' => $tenantA->id,
             'password' => bcrypt('secret123'),
         ]);

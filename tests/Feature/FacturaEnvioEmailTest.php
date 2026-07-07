@@ -35,7 +35,7 @@ class FacturaEnvioEmailTest extends TestCase
         Mail::fake();
 
         $tenant = Tenant::factory()->create();
-        $user = User::factory()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
+        $user = User::factory()->admin()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
         $cliente = Cliente::factory()->create(['tenant_id' => $tenant->id, 'email' => 'cliente@destino.test']);
         $factura = Factura::factory()->emitida()->create(['tenant_id' => $tenant->id, 'cliente_id' => $cliente->id]);
 
@@ -68,7 +68,7 @@ class FacturaEnvioEmailTest extends TestCase
         Mail::fake();
 
         $tenant = Tenant::factory()->create();
-        $user = User::factory()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
+        $user = User::factory()->admin()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
         $cliente = Cliente::factory()->create(['tenant_id' => $tenant->id, 'email' => 'cliente@destino.test']);
         $factura = Factura::factory()->emitida()->create(['tenant_id' => $tenant->id, 'cliente_id' => $cliente->id]);
 
@@ -86,7 +86,7 @@ class FacturaEnvioEmailTest extends TestCase
         Mail::fake();
 
         $tenant = Tenant::factory()->create();
-        $user = User::factory()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
+        $user = User::factory()->admin()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
         $cliente = Cliente::factory()->create(['tenant_id' => $tenant->id, 'email' => 'cliente@destino.test']);
         $factura = Factura::factory()->create(['tenant_id' => $tenant->id, 'cliente_id' => $cliente->id, 'estado' => 'borrador']);
 
@@ -104,7 +104,7 @@ class FacturaEnvioEmailTest extends TestCase
         Mail::fake();
 
         $tenant = Tenant::factory()->create();
-        $user = User::factory()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
+        $user = User::factory()->admin()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
         $cliente = Cliente::factory()->create(['tenant_id' => $tenant->id, 'email' => null]);
         $factura = Factura::factory()->emitida()->create(['tenant_id' => $tenant->id, 'cliente_id' => $cliente->id]);
 
@@ -120,7 +120,7 @@ class FacturaEnvioEmailTest extends TestCase
     public function test_fallo_de_transporte_registra_evento_error_y_no_marca_enviada(): void
     {
         $tenant = Tenant::factory()->create();
-        $user = User::factory()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
+        $user = User::factory()->admin()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
         $cliente = Cliente::factory()->create(['tenant_id' => $tenant->id, 'email' => 'cliente@destino.test']);
         $factura = Factura::factory()->emitida()->create(['tenant_id' => $tenant->id, 'cliente_id' => $cliente->id]);
 
@@ -149,7 +149,7 @@ class FacturaEnvioEmailTest extends TestCase
     {
         $tenantA = Tenant::factory()->create();
         $tenantB = Tenant::factory()->create();
-        $userA = User::factory()->create(['tenant_id' => $tenantA->id, 'password' => bcrypt('secret123')]);
+        $userA = User::factory()->admin()->create(['tenant_id' => $tenantA->id, 'password' => bcrypt('secret123')]);
         $clienteB = Cliente::factory()->create(['tenant_id' => $tenantB->id, 'email' => 'cliente@destino.test']);
         $facturaB = Factura::factory()->emitida()->create(['tenant_id' => $tenantB->id, 'cliente_id' => $clienteB->id]);
 
@@ -166,7 +166,7 @@ class FacturaEnvioEmailTest extends TestCase
         Mail::fake();
 
         $tenant = Tenant::factory()->create();
-        $user = User::factory()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
+        $user = User::factory()->admin()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
         $cliente = Cliente::factory()->create(['tenant_id' => $tenant->id, 'email' => 'cliente@destino.test']);
         $factura = Factura::factory()->emitida()->create(['tenant_id' => $tenant->id, 'cliente_id' => $cliente->id]);
 

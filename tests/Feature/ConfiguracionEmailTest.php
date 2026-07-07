@@ -33,7 +33,7 @@ class ConfiguracionEmailTest extends TestCase
     public function test_guardar_config_valida_persiste_las_8_claves_con_grupo_email(): void
     {
         $tenant = Tenant::factory()->create();
-        $user = User::factory()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
+        $user = User::factory()->admin()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
         $this->loginAs($user);
 
         $response = $this->put('/configuracion/email', $this->datosValidos());
@@ -49,7 +49,7 @@ class ConfiguracionEmailTest extends TestCase
     public function test_password_queda_cifrada_en_bd_no_en_claro(): void
     {
         $tenant = Tenant::factory()->create();
-        $user = User::factory()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
+        $user = User::factory()->admin()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
         $this->loginAs($user);
 
         $this->put('/configuracion/email', $this->datosValidos(['smtp_password' => 'secreto-smtp']));
@@ -67,7 +67,7 @@ class ConfiguracionEmailTest extends TestCase
     public function test_guardar_sin_password_conserva_la_anterior(): void
     {
         $tenant = Tenant::factory()->create();
-        $user = User::factory()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
+        $user = User::factory()->admin()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
         $this->loginAs($user);
 
         $this->put('/configuracion/email', $this->datosValidos(['smtp_password' => 'password-original']));
@@ -81,7 +81,7 @@ class ConfiguracionEmailTest extends TestCase
     public function test_validacion_rechaza_remitente_no_email(): void
     {
         $tenant = Tenant::factory()->create();
-        $user = User::factory()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
+        $user = User::factory()->admin()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
         $this->loginAs($user);
 
         $response = $this->put('/configuracion/email', $this->datosValidos(['remitente' => 'no-es-un-email']));
@@ -92,7 +92,7 @@ class ConfiguracionEmailTest extends TestCase
     public function test_validacion_rechaza_puerto_fuera_de_rango(): void
     {
         $tenant = Tenant::factory()->create();
-        $user = User::factory()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
+        $user = User::factory()->admin()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
         $this->loginAs($user);
 
         $response = $this->put('/configuracion/email', $this->datosValidos(['smtp_port' => 99999]));
@@ -105,7 +105,7 @@ class ConfiguracionEmailTest extends TestCase
         Mail::fake();
 
         $tenant = Tenant::factory()->create();
-        $user = User::factory()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
+        $user = User::factory()->admin()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
         $this->loginAs($user);
 
         $this->put('/configuracion/email', $this->datosValidos());
@@ -125,7 +125,7 @@ class ConfiguracionEmailTest extends TestCase
         Mail::fake();
 
         $tenant = Tenant::factory()->create();
-        $user = User::factory()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
+        $user = User::factory()->admin()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
         $this->loginAs($user);
 
         $response = $this->post('/configuracion/email/prueba');
@@ -140,8 +140,8 @@ class ConfiguracionEmailTest extends TestCase
     {
         $tenantA = Tenant::factory()->create();
         $tenantB = Tenant::factory()->create();
-        $userA = User::factory()->create(['tenant_id' => $tenantA->id, 'password' => bcrypt('secret123')]);
-        $userB = User::factory()->create(['tenant_id' => $tenantB->id, 'password' => bcrypt('secret123')]);
+        $userA = User::factory()->admin()->create(['tenant_id' => $tenantA->id, 'password' => bcrypt('secret123')]);
+        $userB = User::factory()->admin()->create(['tenant_id' => $tenantB->id, 'password' => bcrypt('secret123')]);
 
         $this->loginAs($userA);
         $this->put('/configuracion/email', $this->datosValidos(['smtp_host' => 'smtp.tenant-a.test']));

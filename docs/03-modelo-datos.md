@@ -70,7 +70,9 @@ Datos fiscales del emisor + config de facturación.
 ### `users` (Laravel) — usuarios que operan un tenant
 Se añade `tenant_id` (fk, nullable solo para `super_admin`) + `rol` (`super_admin`, `admin`,
 `usuario`) + `activo` (boolean; en `false` bloquea el login). El `super_admin` gestiona todos los
-tenants y no pertenece a ninguno (`tenant_id` null).
+tenants y no pertenece a ninguno (`tenant_id` null). Desde la feature 027, `rol` deja de ser la
+fuente de verdad del acceso a vistas de un tenant (eso lo dan los roles dinámicos de spatie, ver
+más abajo); se conserva solo para distinguir el `super_admin` central del resto.
 
 Registro y aprobación: `estado` (enum `pendiente`/`aprobado`/`rechazado`, default `pendiente`) +
 `aprobado_por` (fk nullable a `users`) + `aprobado_en` (timestamp nullable). El auto-registro
@@ -101,6 +103,23 @@ se resuelve contra esta tabla para fijar el tenant activo (`docs/01-arquitectura
 Relación `Tenant hasMany Domain`, restringida a nivel de aplicación a **un** dominio por tenant
 (helper `Tenant::dominio()`). El panel `super_admin` (`app/Http/Controllers/SuperAdmin/TenantController.php`)
 gestiona `tenants` + su `domains` como una unidad (alta/edición transaccional).
+
+### Roles y permisos (`spatie/laravel-permission`, feature 027)
+Tablas publicadas por el paquete con la feature **teams** activada (`team_foreign_key =
+tenant_id`), sin tablas propias. Detalle completo en `specs/027-roles-permisos-tenant/data-model.md`.
+
+| Tabla | Alcance | Notas |
+|-------|---------|-------|
+| `permissions` | global (SIN `tenant_id`) | catálogo de ~17 claves (`ver-facturas`, `ver-clientes`…), una por sección del menú; etiqueta/módulo se resuelven en código (`App\Support\CatalogoPermisos`), no en BD |
+| `roles` | por tenant (`tenant_id` FK, `cascadeOnDelete`) | nombre único **dentro** del tenant, repetible entre tenants; columna propia `es_defecto` (boolean) = rol asignado a altas públicas, uno por tenant |
+| `model_has_roles` | por tenant | pivote usuario↔rol; un usuario tiene como máximo un rol (convención de la app, el esquema soporta varios) |
+| `role_has_permissions` | — | pivote rol↔permiso |
+| `model_has_permissions` | — | sin uso en esta feature (no hay permisos directos a usuario) |
+
+El tenant activo (`SetTenantContext`) fija el team de spatie (`setPermissionsTeamId`); el
+`super_admin` central pasa cualquier check vía `Gate::before` y no tiene roles. Cada alta de
+tenant aprovisiona automáticamente el rol "Administrador" (catálogo completo) y "Usuario" (rol
+por defecto, catálogo acotado) — `App\Support\ProvisionadorRoles`.
 
 ### `bancos` — catálogo de entidades bancarias (por tenant)
 Catálogo **tenant-dependiente**: cada tenant gestiona su propia lista de bancos (mismo patrón que

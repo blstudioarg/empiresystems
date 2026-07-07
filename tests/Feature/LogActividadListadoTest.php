@@ -44,7 +44,7 @@ class LogActividadListadoTest extends TestCase
     public function test_listado_json_devuelve_eventos_ordenados_por_fecha_descendente_por_defecto(): void
     {
         $tenant = Tenant::factory()->create();
-        $user = User::factory()->create(['tenant_id' => $tenant->id]);
+        $user = User::factory()->admin()->create(['tenant_id' => $tenant->id]);
 
         $antiguo = LogActividad::factory()->for($tenant)->create(['ocurrido_at' => now()->subDays(3)]);
         $reciente = LogActividad::factory()->for($tenant)->create(['ocurrido_at' => now()->subDay()]);
@@ -65,7 +65,7 @@ class LogActividadListadoTest extends TestCase
     public function test_listado_respeta_paginacion(): void
     {
         $tenant = Tenant::factory()->create();
-        $user = User::factory()->create(['tenant_id' => $tenant->id]);
+        $user = User::factory()->admin()->create(['tenant_id' => $tenant->id]);
 
         LogActividad::factory()->for($tenant)->count(15)->create();
 
@@ -81,7 +81,7 @@ class LogActividadListadoTest extends TestCase
     public function test_tenant_sin_eventos_devuelve_lista_vacia_sin_error(): void
     {
         $tenant = Tenant::factory()->create();
-        $user = User::factory()->create(['tenant_id' => $tenant->id]);
+        $user = User::factory()->admin()->create(['tenant_id' => $tenant->id]);
 
         $this->autenticarSinGenerarLog($user);
 
@@ -94,7 +94,7 @@ class LogActividadListadoTest extends TestCase
     public function test_busqueda_filtra_por_usuario_nombre_accion_o_descripcion(): void
     {
         $tenant = Tenant::factory()->create();
-        $user = User::factory()->create(['tenant_id' => $tenant->id]);
+        $user = User::factory()->admin()->create(['tenant_id' => $tenant->id]);
 
         LogActividad::factory()->for($tenant)->create(['usuario_nombre' => 'Ana Pérez', 'descripcion' => 'Inició sesión', 'accion' => AccionLogActividad::Login]);
         LogActividad::factory()->for($tenant)->create(['usuario_nombre' => 'Luis Gómez', 'descripcion' => 'Creó el cliente Acme', 'accion' => AccionLogActividad::Alta]);
@@ -111,7 +111,7 @@ class LogActividadListadoTest extends TestCase
     public function test_orden_por_usuario_nombre_asc(): void
     {
         $tenant = Tenant::factory()->create();
-        $user = User::factory()->create(['tenant_id' => $tenant->id]);
+        $user = User::factory()->admin()->create(['tenant_id' => $tenant->id]);
 
         LogActividad::factory()->for($tenant)->create(['usuario_nombre' => 'Zulema']);
         LogActividad::factory()->for($tenant)->create(['usuario_nombre' => 'Ana']);
@@ -130,7 +130,7 @@ class LogActividadListadoTest extends TestCase
     public function test_orden_mantiene_la_busqueda_aplicada(): void
     {
         $tenant = Tenant::factory()->create();
-        $user = User::factory()->create(['tenant_id' => $tenant->id]);
+        $user = User::factory()->admin()->create(['tenant_id' => $tenant->id]);
 
         LogActividad::factory()->for($tenant)->create(['usuario_nombre' => 'Zulema Coincide', 'descripcion' => 'Modificó algo']);
         LogActividad::factory()->for($tenant)->create(['usuario_nombre' => 'Ana Coincide', 'descripcion' => 'Creó algo']);

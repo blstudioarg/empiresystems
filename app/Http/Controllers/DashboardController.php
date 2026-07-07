@@ -12,6 +12,13 @@ class DashboardController extends Controller
 
     public function index(DashboardFiltroRequest $request, DashboardEstadisticas $dashboardEstadisticas)
     {
+        // Landing sin permiso de dashboard (feature 027, D11/RN-07): la ruta `/` no lleva `can:`
+        // para no dar un 403 de bienvenida; los usuarios sin `ver-dashboard` aterrizan en su
+        // sección personal garantizada.
+        if (! $request->user()->can('ver-dashboard')) {
+            return redirect()->route('mi-jornada.index');
+        }
+
         $rangoInvalido = $request->huboRangoInvalido();
         $rango = $rangoInvalido ? RangoFechas::mesEnCurso() : RangoFechas::desdePeticion($request->validated());
         $datos = $dashboardEstadisticas->resumen($rango);

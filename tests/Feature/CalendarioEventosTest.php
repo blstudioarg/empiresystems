@@ -507,7 +507,7 @@ class CalendarioEventosTest extends TestCase
 
     // ------------------------------------------------------------------ Panel de métricas (resumen)
 
-    public function test_resumen_modo_miembro_agrega_kpis_distribucion_y_semanas(): void
+    public function test_resumen_modo_miembro_agrega_kpis(): void
     {
         $tenant = Tenant::factory()->create();
         $admin = $this->crearAdmin($tenant);
@@ -534,14 +534,6 @@ class CalendarioEventosTest extends TestCase
         $this->assertSame(1, $data['kpis']['dias_retraso']);
         $this->assertSame(1, $data['kpis']['ausencias']);
         $this->assertSame(24.0, (float) $data['kpis']['horas_previstas']);
-
-        $distribucion = collect($data['distribucion'])->keyBy('veredicto');
-        $this->assertSame(1, $distribucion['cumplido']['cantidad']);
-        $this->assertSame(1, $distribucion['retraso']['cantidad']);
-        $this->assertSame(1, $distribucion['ausencia']['cantidad']);
-        // 03-05 caen en la misma semana ISO: una sola barra.
-        $this->assertCount(1, $data['semanas']);
-        $this->assertSame(24.0, (float) $data['semanas'][0]['previstas']);
     }
 
     public function test_resumen_solo_considera_dias_pasados(): void

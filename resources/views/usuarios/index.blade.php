@@ -95,6 +95,7 @@
 											<th>Email</th>
 											<th>Rol</th>
 											<th>Estado</th>
+											<th>Rol asignado</th>
 											<th>Acciones</th>
 										</tr>
 									</thead>

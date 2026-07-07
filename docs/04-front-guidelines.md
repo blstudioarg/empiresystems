@@ -488,6 +488,32 @@ controller ya castea a `(float)` antes de `response()->json(...)`, así que JS r
 limpio (sin ceros de relleno) y no hace falta `Formato` del lado del cliente — el problema es
 exclusivamente de Blade renderizando directo un atributo del modelo.
 
+## Nueva entrada de menú ⇒ nuevo permiso (obligatorio)
+
+Toda sección nueva del sidebar (feature 027) necesita un **permiso propio en el catálogo global**,
+nunca reutilizar uno existente "porque ya alcanza" ni dejar la sección sin permiso (salvo que sea
+genuinamente personal, como fichar/mi-jornada/perfil). Pasos, en este orden:
+
+1. **Permiso en el catálogo**: añadir la entrada (`clave`, `etiqueta`, `modulo`) en
+   `App\Support\CatalogoPermisos::PERMISOS`. La clave sigue el patrón `ver-{seccion}` kebab-case.
+2. **Re-correr el seeder**: `php artisan db:seed --class=PermisosSeeder` en cada entorno (deploy) —
+   siembra la clave nueva y sincroniza el rol "Administrador" de **cada tenant** con el catálogo
+   completo. Es el único punto donde un permiso nuevo se auto-asigna a un rol existente.
+3. **Entrada del sidebar** (`resources/views/partials/sidebar.blade.php`): envolver el `<li>` en
+   `@can('ver-{seccion}')`; si la entrada es la única del grupo, envolver también el `<li>` padre
+   (o el grupo entero en `@canany([...])` si el grupo mezcla varios permisos, ver el bloque
+   "Stock"/"Marketing"/"Usuarios" como referencia).
+4. **Rutas** (`routes/web.php`): el grupo de rutas de esa sección lleva
+   `->middleware('can:ver-{seccion}')`. Nunca dejar una ruta de gestión sin `can:` confiando en que
+   el sidebar ya la esconde — el enforcement real es el middleware, ocultar en el menú es solo UX
+   (Principio III).
+5. **Difusión a roles**: **solo** el rol "Administrador" recibe el permiso nuevo automáticamente
+   (paso 2); el resto de roles de cada tenant lo reciben opt-in, editándolos desde `/roles`. Es un
+   comportamiento esperado, no un bug — evita que una sección nueva aparezca sin aviso en roles que
+   el tenant configuró a propósito con acceso acotado.
+
+Referencia de implementación completa: `specs/027-roles-permisos-tenant/`.
+
 ## Calendario (FullCalendar vendorizado)
 
 FullCalendar 5.11.0 está vendorizado en `public/vendor/fullcalendar/` (`main.min.js`,

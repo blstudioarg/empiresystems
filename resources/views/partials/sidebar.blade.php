@@ -12,7 +12,7 @@
 						</div>
 					</form>
 					<div class="sidebar-user-name">{{ auth()->user()->name }}</div>
-					<div class="sidebar-user-role">{{ auth()->user()->rol->value }}</div>
+					<div class="sidebar-user-role">{{ auth()->user()->isSuperAdmin() ? auth()->user()->rol->value : (auth()->user()->getRoleNames()->first() ?? 'Sin rol') }}</div>
 				</div>
 				<ul class="metismenu" id="menu">
 					@if (auth()->user()->isSuperAdmin())
@@ -27,25 +27,28 @@
 							</ul>
 						</li>
 					@else
-						<li><a href="{{ route('dashboard') }}">
+						{{-- Inicio: solo si el rol tiene acceso al dashboard; el resto aterriza en Mi jornada (D11). --}}
+						<li><a href="{{ auth()->user()->can('ver-dashboard') ? route('dashboard') : route('mi-jornada.index') }}">
 								<div class="menu-icon">
 									<x-lordicon icon="home" size="30" trigger="hover" />
 								</div>
 								<span class="nav-text ms-2">Inicio</span>
 							</a>
 						</li>
+						{{-- Control de fichaje: Fichar/Mi jornada son personales (siempre visibles); el bloque
+						     de gestión va bajo can:ver-jornada. --}}
+						@php
+							$__alertasNuevas = auth()->user()->can('ver-jornada')
+								? \App\Models\Alerta::where('tenant_id', tenant()->getTenantKey())
+									->where('estado', \App\Enums\EstadoAlerta::Nueva)
+									->count()
+								: 0;
+						@endphp
 						<li><a class="has-arrow " href="javascript:void(0);" aria-expanded="false">
 								<div class="menu-icon">
 									<x-lordicon icon="wired-outline-1846-employee-working-hover-working" size="30" trigger="hover" />
 								</div>
 								<span class="nav-text ms-2">Control de fichaje</span>
-								@php
-									$__alertasNuevas = auth()->user()->rol === \App\Enums\UserRole::Admin
-										? \App\Models\Alerta::where('tenant_id', tenant()->getTenantKey())
-											->where('estado', \App\Enums\EstadoAlerta::Nueva)
-											->count()
-										: 0;
-								@endphp
 								@if ($__alertasNuevas > 0)
 									<span class="badge badge-danger ms-2">{{ $__alertasNuevas }}</span>
 								@endif
@@ -53,7 +56,7 @@
 							<ul aria-expanded="false">
 								<li><a href="{{ route('fichajes.index') }}">Fichar</a></li>
 								<li><a href="{{ route('mi-jornada.index') }}">Mi jornada</a></li>
-								@if (auth()->user()->rol === \App\Enums\UserRole::Admin)
+								@can('ver-jornada')
 									<li><a href="{{ route('jornada.index') }}">Jornada</a></li>
 									<li><a href="{{ route('calendario.index') }}">Calendario</a></li>
 									<li><a href="{{ route('miembros-equipo.index') }}">Miembros</a></li>
@@ -64,9 +67,10 @@
 											<span class="badge badge-danger ms-1">{{ $__alertasNuevas }}</span>
 										@endif
 									</a></li>
-								@endif
+								@endcan
 							</ul>
 						</li>
+						@can('ver-clientes')
 						<li><a class="has-arrow " href="javascript:void(0);" aria-expanded="false">
 								<div class="menu-icon">
 									<x-lordicon icon="empresa" size="30" trigger="hover" />
@@ -77,6 +81,8 @@
 								<li><a href="{{ route('clientes.index') }}">Cartera de clientes</a></li>
 							</ul>
 						</li>
+						@endcan
+						@canany(['ver-articulos', 'ver-stock', 'ver-proveedores', 'ver-compras'])
 						<li><a class="has-arrow " href="javascript:void(0);" aria-expanded="false">
 								<div class="menu-icon">
 									<x-lordicon icon="box" size="30" trigger="hover" />
@@ -84,12 +90,14 @@
 								<span class="nav-text ms-2">Stock</span>
 							</a>
 							<ul aria-expanded="false">
-								<li><a href="{{ route('articulos.index') }}">Catálogo</a></li>
-								<li><a href="{{ route('stock.index') }}">Kardex</a></li>
-								<li><a href="{{ route('proveedores.index') }}">Proveedores</a></li>
-								<li><a href="{{ route('compras.index') }}">Compras</a></li>
+								@can('ver-articulos')<li><a href="{{ route('articulos.index') }}">Catálogo</a></li>@endcan
+								@can('ver-stock')<li><a href="{{ route('stock.index') }}">Kardex</a></li>@endcan
+								@can('ver-proveedores')<li><a href="{{ route('proveedores.index') }}">Proveedores</a></li>@endcan
+								@can('ver-compras')<li><a href="{{ route('compras.index') }}">Compras</a></li>@endcan
 							</ul>
 						</li>
+						@endcanany
+						@can('ver-facturas')
 						<li><a class="has-arrow " href="javascript:void(0);" aria-expanded="false">
 								<div class="menu-icon">
 									<x-lordicon icon="invoice" size="30" trigger="hover" />
@@ -101,6 +109,8 @@
 									<li><a href="{{ route('facturas.create') }}">Crear factura</a></li>
 							</ul>
 						</li>
+						@endcan
+						@can('ver-pos')
 						<li><a class="has-arrow " href="javascript:void(0);" aria-expanded="false">
 								<div class="menu-icon">
 									<x-lordicon icon="ticket" size="30" trigger="hover" />
@@ -112,6 +122,8 @@
 								<li><a href="{{ route('pos.create') }}">Crear ticket</a></li>
 							</ul>
 						</li>
+						@endcan
+						@can('ver-archivos')
 						<li><a href="{{ route('archivos.index') }}">
 								<div class="menu-icon">
 									<x-lordicon icon="system-regular-49-upload-file" size="30" trigger="hover" />
@@ -119,6 +131,8 @@
 								<span class="nav-text ms-2">Archivos</span>
 							</a>
 						</li>
+						@endcan
+						@canany(['ver-campanas', 'ver-plantillas-email'])
 						<li><a class="has-arrow " href="javascript:void(0);" aria-expanded="false">
 								<div class="menu-icon">
 									<x-lordicon icon="system-regular-1-share" size="30" trigger="hover" />
@@ -126,11 +140,15 @@
 								<span class="nav-text ms-2">Marketing</span>
 							</a>
 							<ul aria-expanded="false">
-								<li><a href="{{ route('campanas.index') }}">Campañas</a></li>
-								<li><a href="{{ route('campanas.create') }}">Nueva campaña</a></li>
-								<li><a href="{{ route('plantillas-email.index') }}">Plantillas de email</a></li>
+								@can('ver-campanas')
+									<li><a href="{{ route('campanas.index') }}">Campañas</a></li>
+									<li><a href="{{ route('campanas.create') }}">Nueva campaña</a></li>
+								@endcan
+								@can('ver-plantillas-email')<li><a href="{{ route('plantillas-email.index') }}">Plantillas de email</a></li>@endcan
 							</ul>
 						</li>
+						@endcanany
+						@canany(['ver-usuarios', 'ver-roles'])
 						<li><a class="has-arrow " href="javascript:void(0);" aria-expanded="false">
 								<div class="menu-icon">
 									<x-lordicon icon="person" size="30" trigger="hover" />
@@ -138,9 +156,11 @@
 								<span class="nav-text ms-2">Usuarios</span>
 							</a>
 							<ul aria-expanded="false">
-								<li><a href="{{ route('usuarios.index') }}">Usuarios</a></li>
+								@can('ver-usuarios')<li><a href="{{ route('usuarios.index') }}">Usuarios</a></li>@endcan
+								@can('ver-roles')@if (\Illuminate\Support\Facades\Route::has('roles.index'))<li><a href="{{ route('roles.index') }}">Roles</a></li>@endif @endcan
 							</ul>
 						</li>
+						@endcanany
 					@endif
 				</ul>
 				<div class="help-desk">

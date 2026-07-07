@@ -2,7 +2,6 @@
 
 namespace App\Providers;
 
-use App\Enums\UserRole;
 use App\Models\User;
 use App\Support\ConfigTenant;
 use Illuminate\Support\Carbon;
@@ -29,8 +28,10 @@ class AppServiceProvider extends ServiceProvider
         // están type-hinted con la clase del evento): registrarlos aquí también los disparaba
         // dos veces por request (detectado al añadir el registro en logs_actividad — feature 021).
 
-        // Gestión de miembros/alertas/correcciones/informe global de fichajes (024): solo Admin.
-        Gate::define('gestiona-fichajes', fn (User $user) => $user->rol === UserRole::Admin);
+        // El super admin central (sin tenant, sin roles spatie) pasa cualquier check de permisos
+        // (feature 027, research.md D4). Devuelve null para no cortocircuitar el resto de checks
+        // del resto de usuarios; las rutas super_admin.* mantienen además EnsureSuperAdmin.
+        Gate::before(fn (User $user) => $user->isSuperAdmin() ? true : null);
 
         // Convierte un datetime (guardado en UTC) a la zona horaria del tenant activo, solo para
         // mostrarlo. Azúcar para vistas/JSON dentro de contexto de tenant: `$fecha->enZonaTenant()`.

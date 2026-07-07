@@ -32,6 +32,7 @@ use App\Http\Controllers\PlantillaEmailController;
 use App\Http\Controllers\PosController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProveedorController;
+use App\Http\Controllers\RolController;
 use App\Http\Controllers\SuperAdmin\TenantController as SuperAdminTenantController;
 use App\Http\Controllers\UnidadController;
 use App\Http\Controllers\UsuarioController;
@@ -52,11 +53,17 @@ Route::middleware(['tenant.context', 'auth'])->group(function () {
 
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
 
-    Route::resource('clientes', ClienteController::class)->only(['index', 'store', 'update', 'destroy']);
-    Route::get('/localidades', [LocalidadController::class, 'index'])->name('localidades.index');
-    Route::resource('articulos', ArticuloController::class)->only(['index', 'store', 'update', 'destroy']);
-    Route::resource('unidades', UnidadController::class)->only(['index', 'store', 'update', 'destroy']);
+    Route::middleware('can:ver-clientes')->group(function () {
+        Route::resource('clientes', ClienteController::class)->only(['index', 'store', 'update', 'destroy']);
+        Route::get('/localidades', [LocalidadController::class, 'index'])->name('localidades.index');
+    });
 
+    Route::middleware('can:ver-articulos')->group(function () {
+        Route::resource('articulos', ArticuloController::class)->only(['index', 'store', 'update', 'destroy']);
+        Route::resource('unidades', UnidadController::class)->only(['index', 'store', 'update', 'destroy']);
+    });
+
+    Route::middleware('can:ver-facturas')->group(function () {
     Route::get('/facturas', [FacturaController::class, 'index'])->name('facturas.index');
     Route::get('/facturas/crear', [FacturaController::class, 'create'])->name('facturas.create');
     Route::post('/facturas', [FacturaController::class, 'store'])->name('facturas.store');
@@ -73,21 +80,28 @@ Route::middleware(['tenant.context', 'auth'])->group(function () {
     Route::get('/facturas/{factura}/pagos', [PagoController::class, 'index'])->name('facturas.pagos.index');
     Route::post('/facturas/{factura}/pagos', [PagoController::class, 'store'])->name('facturas.pagos.store');
     Route::post('/pagos/{pago}/anular', [PagoController::class, 'anular'])->name('pagos.anular');
+    });
 
     // POS — facturas simplificadas (tickets)
-    Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
-    Route::get('/pos/crear', [PosController::class, 'create'])->name('pos.create');
-    Route::post('/pos', [PosController::class, 'store'])->name('pos.store');
-    Route::get('/pos/{factura}/pdf', [PosController::class, 'pdf'])->name('pos.pdf');
+    Route::middleware('can:ver-pos')->group(function () {
+        Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
+        Route::get('/pos/crear', [PosController::class, 'create'])->name('pos.create');
+        Route::post('/pos', [PosController::class, 'store'])->name('pos.store');
+        Route::get('/pos/{factura}/pdf', [PosController::class, 'pdf'])->name('pos.pdf');
+    });
 
+    // Perfil: sección personal, sin permiso (todo usuario autenticado del tenant).
     Route::get('/perfil', [ProfileController::class, 'show'])->name('profile.show');
     Route::post('/perfil/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.avatar.update');
 
-    Route::resource('bancos', BancoController::class)->only(['index', 'store', 'update', 'destroy']);
+    Route::middleware('can:ver-bancos')->group(function () {
+        Route::resource('bancos', BancoController::class)->only(['index', 'store', 'update', 'destroy']);
 
-    Route::resource('cuentas-bancarias', CuentaBancariaController::class)->only(['index', 'store', 'update', 'destroy']);
-    Route::post('/cuentas-bancarias/{id}/restaurar', [CuentaBancariaController::class, 'restore'])->name('cuentas-bancarias.restore');
+        Route::resource('cuentas-bancarias', CuentaBancariaController::class)->only(['index', 'store', 'update', 'destroy']);
+        Route::post('/cuentas-bancarias/{id}/restaurar', [CuentaBancariaController::class, 'restore'])->name('cuentas-bancarias.restore');
+    });
 
+    Route::middleware('can:ver-configuracion')->group(function () {
     Route::get('/configuracion', [ConfiguracionController::class, 'show'])->name('configuracion.show');
     Route::match(['put', 'patch'], '/configuracion/apariencia', [ConfiguracionController::class, 'update'])
         ->name('configuracion.apariencia.update');
@@ -107,15 +121,21 @@ Route::middleware(['tenant.context', 'auth'])->group(function () {
         ->name('configuracion.fichajes.update');
     Route::match(['put', 'patch'], '/configuracion/general', [ConfiguracionController::class, 'updateGeneral'])
         ->name('configuracion.general.update');
+    });
 
-    Route::get('/stock', [MovimientoStockController::class, 'index'])->name('stock.index');
-    Route::get('/stock/{articulo}', [MovimientoStockController::class, 'show'])->name('stock.show');
-    Route::post('/stock/ajuste', [MovimientoStockController::class, 'ajuste'])->name('stock.ajuste');
+    Route::middleware('can:ver-stock')->group(function () {
+        Route::get('/stock', [MovimientoStockController::class, 'index'])->name('stock.index');
+        Route::get('/stock/{articulo}', [MovimientoStockController::class, 'show'])->name('stock.show');
+        Route::post('/stock/ajuste', [MovimientoStockController::class, 'ajuste'])->name('stock.ajuste');
+    });
 
-    Route::resource('proveedores', ProveedorController::class)
-        ->parameters(['proveedores' => 'proveedor'])
-        ->only(['index', 'store', 'update', 'destroy']);
+    Route::middleware('can:ver-proveedores')->group(function () {
+        Route::resource('proveedores', ProveedorController::class)
+            ->parameters(['proveedores' => 'proveedor'])
+            ->only(['index', 'store', 'update', 'destroy']);
+    });
 
+    Route::middleware('can:ver-compras')->group(function () {
     Route::get('/compras', [CompraController::class, 'index'])->name('compras.index');
     Route::get('/compras/crear', [CompraController::class, 'create'])->name('compras.create');
     Route::post('/compras', [CompraController::class, 'store'])->name('compras.store');
@@ -128,34 +148,54 @@ Route::middleware(['tenant.context', 'auth'])->group(function () {
     Route::post('/compras/importar-facturae', [CompraFacturaeController::class, 'importar'])->name('compras.facturae.importar');
     Route::get('/compras/{compra}/facturae', [CompraFacturaeController::class, 'descargar'])->name('compras.facturae.descargar');
     Route::patch('/compras/{compra}/estado-b2b', [CompraFacturaeController::class, 'cambiarEstadoB2b'])->name('compras.estado-b2b.update');
+    });
 
     // Email marketing — plantillas y campañas
-    Route::resource('plantillas-email', PlantillaEmailController::class)
-        ->parameters(['plantillas-email' => 'plantilla'])
-        ->only(['index', 'store', 'update', 'destroy']);
+    Route::middleware('can:ver-plantillas-email')->group(function () {
+        Route::resource('plantillas-email', PlantillaEmailController::class)
+            ->parameters(['plantillas-email' => 'plantilla'])
+            ->only(['index', 'store', 'update', 'destroy']);
+    });
 
-    Route::get('/campanas', [CampanaController::class, 'index'])->name('campanas.index');
-    Route::get('/campanas/crear', [CampanaController::class, 'create'])->name('campanas.create');
-    Route::post('/campanas', [CampanaController::class, 'store'])->name('campanas.store');
-    Route::get('/campanas/{campana}', [CampanaController::class, 'show'])->name('campanas.show');
-    Route::post('/campanas/{campana}/enviar-tanda', [CampanaController::class, 'enviarTanda'])->name('campanas.enviar-tanda');
-    Route::post('/campanas/{campana}/reintentar', [CampanaController::class, 'reintentar'])->name('campanas.reintentar');
+    Route::middleware('can:ver-campanas')->group(function () {
+        Route::get('/campanas', [CampanaController::class, 'index'])->name('campanas.index');
+        Route::get('/campanas/crear', [CampanaController::class, 'create'])->name('campanas.create');
+        Route::post('/campanas', [CampanaController::class, 'store'])->name('campanas.store');
+        Route::get('/campanas/{campana}', [CampanaController::class, 'show'])->name('campanas.show');
+        Route::post('/campanas/{campana}/enviar-tanda', [CampanaController::class, 'enviarTanda'])->name('campanas.enviar-tanda');
+        Route::post('/campanas/{campana}/reintentar', [CampanaController::class, 'reintentar'])->name('campanas.reintentar');
+    });
 
-    Route::get('/archivos', [ArchivoController::class, 'index'])->name('archivos.index');
-    Route::post('/archivos', [ArchivoController::class, 'store'])->name('archivos.store');
-    Route::match(['put', 'patch'], '/archivos/{archivo}', [ArchivoController::class, 'update'])->name('archivos.update');
-    Route::delete('/archivos/{archivo}', [ArchivoController::class, 'destroy'])->name('archivos.destroy');
-    Route::get('/archivos/{archivo}/descargar', [ArchivoController::class, 'descargar'])->name('archivos.descargar');
-    Route::get('/archivos/{archivo}/preview', [ArchivoController::class, 'preview'])->name('archivos.preview');
-    Route::post('/archivos/carpetas', [CarpetaController::class, 'store'])->name('carpetas.store');
-    Route::match(['put', 'patch'], '/archivos/carpetas/{carpeta}', [CarpetaController::class, 'update'])->name('carpetas.update');
-    Route::delete('/archivos/carpetas/{carpeta}', [CarpetaController::class, 'destroy'])->name('carpetas.destroy');
+    Route::middleware('can:ver-archivos')->group(function () {
+        Route::get('/archivos', [ArchivoController::class, 'index'])->name('archivos.index');
+        Route::post('/archivos', [ArchivoController::class, 'store'])->name('archivos.store');
+        Route::match(['put', 'patch'], '/archivos/{archivo}', [ArchivoController::class, 'update'])->name('archivos.update');
+        Route::delete('/archivos/{archivo}', [ArchivoController::class, 'destroy'])->name('archivos.destroy');
+        Route::get('/archivos/{archivo}/descargar', [ArchivoController::class, 'descargar'])->name('archivos.descargar');
+        Route::get('/archivos/{archivo}/preview', [ArchivoController::class, 'preview'])->name('archivos.preview');
+        Route::post('/archivos/carpetas', [CarpetaController::class, 'store'])->name('carpetas.store');
+        Route::match(['put', 'patch'], '/archivos/carpetas/{carpeta}', [CarpetaController::class, 'update'])->name('carpetas.update');
+        Route::delete('/archivos/carpetas/{carpeta}', [CarpetaController::class, 'destroy'])->name('carpetas.destroy');
+    });
 
-    Route::get('/usuarios', [UsuarioController::class, 'index'])->name('usuarios.index');
-    Route::patch('/usuarios/{usuario}/aprobar', [UsuarioController::class, 'aprobar'])->name('usuarios.aprobar');
-    Route::patch('/usuarios/{usuario}/rechazar', [UsuarioController::class, 'rechazar'])->name('usuarios.rechazar');
+    Route::middleware('can:ver-usuarios')->group(function () {
+        Route::get('/usuarios', [UsuarioController::class, 'index'])->name('usuarios.index');
+        Route::patch('/usuarios/{usuario}/aprobar', [UsuarioController::class, 'aprobar'])->name('usuarios.aprobar');
+        Route::patch('/usuarios/{usuario}/rechazar', [UsuarioController::class, 'rechazar'])->name('usuarios.rechazar');
+        Route::patch('/usuarios/{usuario}/rol', [UsuarioController::class, 'actualizarRol'])->name('usuarios.rol.update');
+    });
 
-    Route::get('/logs', [LogActividadController::class, 'index'])->name('logs.index');
+    Route::middleware('can:ver-roles')->group(function () {
+        Route::get('/roles', [RolController::class, 'index'])->name('roles.index');
+        Route::post('/roles', [RolController::class, 'store'])->name('roles.store');
+        Route::match(['put', 'patch'], '/roles/{rol}', [RolController::class, 'update'])->name('roles.update');
+        Route::delete('/roles/{rol}', [RolController::class, 'destroy'])->name('roles.destroy');
+        Route::patch('/roles/{rol}/defecto', [RolController::class, 'actualizarDefecto'])->name('roles.defecto.update');
+    });
+
+    Route::middleware('can:ver-logs')->group(function () {
+        Route::get('/logs', [LogActividadController::class, 'index'])->name('logs.index');
+    });
 
     Route::get('/fichajes', [FichajeController::class, 'index'])->name('fichajes.index');
     Route::post('/fichajes', [FichajeController::class, 'store'])->name('fichajes.store');
@@ -163,7 +203,7 @@ Route::middleware(['tenant.context', 'auth'])->group(function () {
     Route::get('/mi-jornada', [MiJornadaController::class, 'index'])->name('mi-jornada.index');
     Route::get('/mi-jornada/exportar', [MiJornadaController::class, 'exportar'])->name('mi-jornada.exportar');
 
-    Route::middleware('can:gestiona-fichajes')->group(function () {
+    Route::middleware('can:ver-jornada')->group(function () {
         Route::get('/jornada', [InformeJornadaController::class, 'index'])->name('jornada.index');
         Route::get('/jornada/exportar', [InformeJornadaController::class, 'exportar'])->name('jornada.exportar');
 

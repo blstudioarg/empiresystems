@@ -21,6 +21,8 @@
 		rechazado: { label: 'Rechazado', clase: 'badge-danger' },
 	};
 
+	var rolesDisponibles = [];
+
 	window.updateUsuariosCards = function (totales) {
 		if (!totales) {
 			return;
@@ -38,6 +40,22 @@
 	function renderEstado(data) {
 		var meta = ESTADO_META[data] || { label: data, clase: 'badge-secondary' };
 		return '<span class="badge ' + meta.clase + '">' + escapeHtml(meta.label) + '</span>';
+	}
+
+	function renderRolAsignado(data, type, row) {
+		var asignadoId = row.rol_asignado ? row.rol_asignado.id : '';
+		var options = '<option value="">Sin rol</option>';
+
+		$.each(rolesDisponibles, function (_, rol) {
+			var selected = String(rol.id) === String(asignadoId) ? ' selected' : '';
+			options += '<option value="' + rol.id + '"' + selected + '>' + escapeHtml(rol.name) + '</option>';
+		});
+
+		return (
+			'<select class="form-select form-select-sm rol-select" data-rol-url="' + escapeAttr(row.rol_url) + '">' +
+				options +
+			'</select>'
+		);
 	}
 
 	function renderAcciones(data, type, row) {
@@ -131,6 +149,7 @@
 				url: window.location.href,
 				dataSrc: function (json) {
 					window.updateUsuariosCards(json.totales);
+					rolesDisponibles = json.roles_disponibles || [];
 					return json.data;
 				},
 			},
@@ -139,6 +158,7 @@
 				{ data: 'email', render: escapeHtml },
 				{ data: 'rol', render: renderRol },
 				{ data: 'estado', render: renderEstado },
+				{ data: null, orderable: false, render: renderRolAsignado },
 				{ data: null, orderable: false, render: renderAcciones },
 			],
 			buttons: [
@@ -181,6 +201,37 @@
 
 		$(document).on('click', '.btn-rechazar-usuario', function () {
 			patchAccion($(this), $(this).data('rechazar-url'), 'Usuario rechazado correctamente.', 'No se pudo rechazar el usuario. Inténtalo de nuevo.');
+		});
+
+		$(document).on('change', '.rol-select', function () {
+			var $select = $(this);
+			var roleId = $select.val() || null;
+
+			$select.prop('disabled', true);
+
+			$.ajax({
+				url: $select.data('rol-url'),
+				method: 'POST',
+				data: {
+					_method: 'PATCH',
+					role_id: roleId,
+					_token: (window.usuariosState && window.usuariosState.csrfToken) || $('meta[name="csrf-token"]').attr('content'),
+				},
+				dataType: 'json',
+				headers: { Accept: 'application/json' },
+			})
+				.done(function (response) {
+					window.showToast('success', (response && response.message) || 'Rol asignado correctamente.');
+					refreshListado();
+				})
+				.fail(function (xhr) {
+					var mensaje = (xhr.responseJSON && xhr.responseJSON.message) || 'No se pudo asignar el rol. Inténtalo de nuevo.';
+					window.showToast('danger', mensaje);
+					refreshListado();
+				})
+				.always(function () {
+					$select.prop('disabled', false);
+				});
 		});
 	});
 })(jQuery);

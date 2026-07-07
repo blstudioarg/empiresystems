@@ -40,7 +40,7 @@ class CertificadoTenantTest extends TestCase
     public function test_subida_valida_guarda_archivo_y_password_cifrada_y_muestra_titular_caducidad(): void
     {
         $tenant = Tenant::factory()->create();
-        $user = User::factory()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
+        $user = User::factory()->admin()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
 
         $this->loginAs($user);
 
@@ -70,7 +70,7 @@ class CertificadoTenantTest extends TestCase
     public function test_password_incorrecta_se_rechaza_y_no_guarda_nada(): void
     {
         $tenant = Tenant::factory()->create();
-        $user = User::factory()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
+        $user = User::factory()->admin()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
 
         $this->loginAs($user);
 
@@ -86,7 +86,7 @@ class CertificadoTenantTest extends TestCase
     public function test_certificado_caducado_se_rechaza(): void
     {
         $tenant = Tenant::factory()->create();
-        $user = User::factory()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
+        $user = User::factory()->admin()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
 
         $this->loginAs($user);
 
@@ -104,7 +104,7 @@ class CertificadoTenantTest extends TestCase
         $tenantA = Tenant::factory()->create();
         $tenantB = Tenant::factory()->create();
 
-        $userB = User::factory()->create(['tenant_id' => $tenantB->id, 'password' => bcrypt('secret123')]);
+        $userB = User::factory()->admin()->create(['tenant_id' => $tenantB->id, 'password' => bcrypt('secret123')]);
         $this->loginAs($userB);
         $this->subirCertificado('certificado.p12', self::PASSWORD);
 
@@ -117,7 +117,7 @@ class CertificadoTenantTest extends TestCase
             'clave' => 'certificado.archivo_path',
         ]);
 
-        $userA = User::factory()->create(['tenant_id' => $tenantA->id, 'password' => bcrypt('secret123')]);
+        $userA = User::factory()->admin()->create(['tenant_id' => $tenantA->id, 'password' => bcrypt('secret123')]);
         $this->loginAs($userA);
 
         $show = $this->get('/configuracion');

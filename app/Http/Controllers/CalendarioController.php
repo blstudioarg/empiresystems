@@ -107,8 +107,8 @@ class CalendarioController extends Controller
     }
 
     /**
-     * Recorre (miembros × días pasados) evaluando cada día una sola vez y acumula los agregados
-     * que consume el panel de métricas. Mismos veredictos y colores que el calendario (D6).
+     * Recorre (miembros × días pasados) evaluando cada día una sola vez y acumula los KPIs que
+     * consumen las cards informativas del calendario. Mismos veredictos que el feed (D6).
      *
      * @param  \Illuminate\Support\Collection<int, MiembroEquipo>  $miembros
      * @return array<string, mixed>
@@ -124,34 +124,16 @@ class CalendarioController extends Controller
         $horasPrevistas = 0.0;
         $horasTrabajadas = 0.0;
 
-        /** @var array<string, int> $distribucion veredicto => nº de días-miembro */
-        $distribucion = [];
-        /** @var array<string, array{previstas: float, trabajadas: float}> $porDia */
-        $porDia = [];
-        /** @var array<string, array{etiqueta: string, previstas: float, trabajadas: float}> $porSemana */
-        $porSemana = [];
-
         for ($dia = $desde->copy(); $dia->lt($fin); $dia->addDay()) {
-            $fecha = $dia->toDateString();
-
-            if ($fecha >= $hoy) {
+            if ($dia->toDateString() >= $hoy) {
                 continue;
             }
-
-            $porDia[$fecha] = ['previstas' => 0.0, 'trabajadas' => 0.0];
-            $semanaKey = $dia->format('o-\WW');
-            $porSemana[$semanaKey] ??= ['etiqueta' => $dia->copy()->startOfWeek()->format('d/m'), 'previstas' => 0.0, 'trabajadas' => 0.0];
 
             foreach ($miembros as $miembro) {
                 $resultado = $this->cumplimiento->evaluarDia($miembro, $dia);
 
-                $distribucion[$resultado->veredicto->value] = ($distribucion[$resultado->veredicto->value] ?? 0) + 1;
                 $horasPrevistas += $resultado->horasPrevistas;
                 $horasTrabajadas += $resultado->horasTrabajadas;
-                $porDia[$fecha]['previstas'] += $resultado->horasPrevistas;
-                $porDia[$fecha]['trabajadas'] += $resultado->horasTrabajadas;
-                $porSemana[$semanaKey]['previstas'] += $resultado->horasPrevistas;
-                $porSemana[$semanaKey]['trabajadas'] += $resultado->horasTrabajadas;
 
                 if ($resultado->veredicto !== VeredictoCumplimiento::Libre) {
                     $diasLaborables++;
@@ -178,31 +160,6 @@ class CalendarioController extends Controller
                 'ausencias' => $ausencias,
                 'incidencias' => $incidencias,
             ],
-            // Tendencia diaria de % de horas cubiertas (trabajadas/previstas) para el sparkline.
-            'sparkline' => collect($porDia)
-                ->filter(fn (array $d) => $d['previstas'] > 0)
-                ->map(fn (array $d) => (int) round($d['trabajadas'] / $d['previstas'] * 100))
-                ->values()
-                ->all(),
-            // Solo veredictos presentes; el front les pone el color exacto del calendario por clave.
-            'distribucion' => collect(VeredictoCumplimiento::cases())
-                ->filter(fn (VeredictoCumplimiento $v) => ($distribucion[$v->value] ?? 0) > 0)
-                ->map(fn (VeredictoCumplimiento $v) => [
-                    'veredicto' => $v->value,
-                    'label' => $v->label(),
-                    'cantidad' => $distribucion[$v->value],
-                ])
-                ->values()
-                ->all(),
-            'semanas' => collect($porSemana)
-                ->sortKeys()
-                ->map(fn (array $s) => [
-                    'etiqueta' => $s['etiqueta'],
-                    'previstas' => round($s['previstas'], 1),
-                    'trabajadas' => round($s['trabajadas'], 1),
-                ])
-                ->values()
-                ->all(),
         ];
     }
 

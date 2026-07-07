@@ -106,21 +106,9 @@
 		refrescarMetricas();
 	});
 
-	// ---------------------------------------------------------------- panel de métricas (feature 026)
+	// ---------------------------------------------------------------- cards de métricas (feature 026)
 
 	var rangoVisible = null;
-	var charts = {};
-
-	// Colores exactos del calendario: leídos de las variables CSS `--cal-*` (misma fuente que la
-	// leyenda y los tintes de día), para que donut y barras "hablen" el mismo idioma cromático.
-	function calColor(nombre, alpha) {
-		var raw = getComputedStyle(document.documentElement).getPropertyValue('--cal-' + nombre).trim();
-		return raw ? 'rgba(' + raw + ', ' + (alpha == null ? 1 : alpha) + ')' : '#8996a3';
-	}
-
-	function inkColor() {
-		return getComputedStyle(document.body).color || '#6e6e6e';
-	}
 
 	function refrescarMetricas() {
 		var panel = document.getElementById('cal-metricas');
@@ -170,117 +158,10 @@
 
 		texto('ausencias', k.ausencias);
 		texto('ausencias-detalle', (k.incidencias === 1 ? '1 incidencia' : k.incidencias + ' incidencias') + ' de fichaje');
-
-		pintarSparkline(data.sparkline || []);
-		pintarSemanas(data.semanas || []);
-		pintarDistribucion(data.distribucion || []);
 	}
 
 	function formatoHoras(n) {
 		return Number(n).toLocaleString('es-ES', { maximumFractionDigits: 1 });
-	}
-
-	function destruir(clave) {
-		if (charts[clave]) {
-			charts[clave].destroy();
-			charts[clave] = null;
-		}
-	}
-
-	function alternarVacio(clave, hayDatos) {
-		var box = document.querySelector('#cal-metricas [data-chart-vacio="' + clave + '"]');
-		if (box) box.style.display = hayDatos ? 'none' : '';
-		var canvas = box && box.parentElement.querySelector('.cal-chart-box');
-		if (canvas) canvas.style.display = hayDatos ? '' : 'none';
-	}
-
-	function pintarSparkline(valores) {
-		destruir('sparkline');
-		var canvas = document.getElementById('cal-chart-sparkline');
-		if (!canvas) return;
-		canvas.style.visibility = valores.length ? 'visible' : 'hidden';
-		if (!valores.length) return;
-
-		charts.sparkline = new Chart(canvas, {
-			type: 'line',
-			data: {
-				labels: valores.map(function (_, i) { return i; }),
-				datasets: [{
-					data: valores,
-					borderColor: calColor('cumplido', 1),
-					backgroundColor: calColor('cumplido', 0.12),
-					borderWidth: 2,
-					fill: true,
-					tension: 0.35,
-					pointRadius: 0,
-				}],
-			},
-			options: {
-				responsive: true,
-				maintainAspectRatio: false,
-				plugins: { legend: { display: false }, tooltip: { enabled: false } },
-				scales: { x: { display: false }, y: { display: false, min: 0, suggestedMax: 100 } },
-			},
-		});
-	}
-
-	function pintarSemanas(semanas) {
-		destruir('semanas');
-		alternarVacio('semanas', semanas.length > 0);
-		var canvas = document.getElementById('cal-chart-semanas');
-		if (!canvas || !semanas.length) return;
-
-		charts.semanas = new Chart(canvas, {
-			type: 'bar',
-			data: {
-				labels: semanas.map(function (s) { return 'Sem. ' + s.etiqueta; }),
-				datasets: [
-					{ label: 'Previstas', data: semanas.map(function (s) { return s.previstas; }), backgroundColor: calColor('libre', 0.55), borderRadius: 4, borderSkipped: false },
-					{ label: 'Trabajadas', data: semanas.map(function (s) { return s.trabajadas; }), backgroundColor: calColor('exceso', 0.9), borderRadius: 4, borderSkipped: false },
-				],
-			},
-			options: {
-				responsive: true,
-				maintainAspectRatio: false,
-				plugins: {
-					legend: { position: 'bottom', labels: { color: inkColor(), usePointStyle: true, boxWidth: 8 } },
-					tooltip: { callbacks: { label: function (c) { return c.dataset.label + ': ' + formatoHoras(c.parsed.y) + ' h'; } } },
-				},
-				scales: {
-					x: { grid: { display: false }, ticks: { color: inkColor() } },
-					y: { beginAtZero: true, grid: { color: 'rgba(137, 150, 163, 0.15)' }, ticks: { color: inkColor(), callback: function (v) { return v + ' h'; } } },
-				},
-			},
-		});
-	}
-
-	function pintarDistribucion(distribucion) {
-		destruir('distribucion');
-		alternarVacio('distribucion', distribucion.length > 0);
-		var canvas = document.getElementById('cal-chart-distribucion');
-		if (!canvas || !distribucion.length) return;
-
-		charts.distribucion = new Chart(canvas, {
-			type: 'doughnut',
-			data: {
-				labels: distribucion.map(function (d) { return d.label; }),
-				datasets: [{
-					data: distribucion.map(function (d) { return d.cantidad; }),
-					backgroundColor: distribucion.map(function (d) { return calColor(d.veredicto, 0.85); }),
-					borderColor: getComputedStyle(document.body).backgroundColor || '#fff',
-					borderWidth: 2,
-				}],
-			},
-			options: {
-				responsive: true,
-				maintainAspectRatio: false,
-				cutout: '62%',
-				plugins: {
-					legend: { position: 'bottom', labels: { color: inkColor(), usePointStyle: true, boxWidth: 8, padding: 12 } },
-					tooltip: { callbacks: { label: function (c) { return c.label + ': ' + c.parsed + (c.parsed === 1 ? ' día' : ' días'); } } },
-				},
-			},
-		});
 	}
 
 	// ---------------------------------------------------------------- detalle de día (US4)

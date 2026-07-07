@@ -12,6 +12,7 @@ use App\Models\Factura;
 use App\Models\Provincia;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Support\ProvisionadorRoles;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -22,6 +23,10 @@ use Stancl\Tenancy\Database\Models\Domain;
 
 class TenantController extends Controller
 {
+    public function __construct(
+        private readonly ProvisionadorRoles $provisionadorRoles,
+    ) {}
+
     /**
      * Contexto central (sin scope de tenant): lista todos los tenants con su dominio.
      */
@@ -84,7 +89,7 @@ class TenantController extends Controller
                 'tenant_id' => $tenant->id,
             ]);
 
-            User::create([
+            $admin = User::create([
                 'name' => 'Administrador',
                 'email' => $datos['admin_email'],
                 'password' => Hash::make($datos['admin_password']),
@@ -93,6 +98,12 @@ class TenantController extends Controller
                 'estado' => EstadoUsuario::Aprobado,
                 'activo' => true,
             ]);
+
+            // Rol "Administrador" (catálogo completo) para el admin inicial + "Usuario" base por
+            // defecto para altas públicas (feature 027, FR-007/FR-014). Misma transacción: si
+            // algo falla aquí no queda tenant/usuario/rol parcial (RN-03).
+            $this->provisionadorRoles->provisionarAdministrador($tenant, $admin);
+            $this->provisionadorRoles->provisionarUsuarioBase($tenant);
         });
 
         if ($request->wantsJson()) {

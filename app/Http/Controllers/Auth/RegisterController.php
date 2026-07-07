@@ -13,6 +13,7 @@ use App\Services\RegistradorActividad;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\View\View;
+use Spatie\Permission\Models\Role;
 
 class RegisterController extends Controller
 {
@@ -44,6 +45,14 @@ class RegisterController extends Controller
             'estado' => EstadoUsuario::Pendiente,
             'activo' => false,
         ]);
+
+        // Rol por defecto del tenant (feature 027, FR-014, RN-06). Sin rol por defecto
+        // configurado, el usuario queda sin rol (solo secciones personales) — nunca un error.
+        $rolPorDefecto = Role::where('tenant_id', tenant('id'))->where('es_defecto', true)->first();
+
+        if ($rolPorDefecto) {
+            $usuario->syncRoles([$rolPorDefecto]);
+        }
 
         $this->registradorActividad->registrar(
             $usuario,

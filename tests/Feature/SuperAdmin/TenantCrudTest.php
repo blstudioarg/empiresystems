@@ -8,12 +8,22 @@ use App\Enums\UserRole;
 use App\Models\Factura;
 use App\Models\Tenant;
 use App\Models\User;
+use Database\Seeders\PermisosSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class TenantCrudTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // El alta de tenant provisiona los roles Administrador/Usuario (feature 027) contra el
+        // catálogo global de permisos: debe existir antes, tal como en producción (migrate + seed).
+        $this->seed(PermisosSeeder::class);
+    }
 
     public function test_guest_es_redirigido_a_login(): void
     {
@@ -182,6 +192,70 @@ class TenantCrudTest extends TestCase
 
         $response->assertSessionHasErrors('email');
         $this->assertGuest();
+    }
+
+    public function test_alta_provisiona_rol_administrador_con_todo_el_catalogo(): void
+    {
+        $this->actingAsSuperAdmin();
+
+        $this->post('http://localhost/super_admin/tenants', [
+            'dominio' => 'nuevo-tenant.test',
+            'nombre_comercial' => 'Nuevo Tenant SL',
+            'razon_social' => 'Nuevo Tenant Sociedad Limitada',
+            'nif' => 'B12345674',
+            'regimen_impositivo' => 'iva',
+            'email' => 'contacto@nuevo-tenant.test',
+            'admin_email' => 'admin@nuevo-tenant.test',
+            'admin_password' => 'password123',
+        ]);
+
+        $tenant = Tenant::where('nombre_comercial', 'Nuevo Tenant SL')->first();
+        $admin = User::where('tenant_id', $tenant->id)->where('email', 'admin@nuevo-tenant.test')->first();
+
+        $registrar = app(\Spatie\Permission\PermissionRegistrar::class);
+        $registrar->setPermissionsTeamId($tenant->getTenantKey());
+
+        $rolAdmin = \Spatie\Permission\Models\Role::where('tenant_id', $tenant->getTenantKey())
+            ->where('name', \App\Support\ProvisionadorRoles::ROL_ADMINISTRADOR)->first();
+
+        $this->assertNotNull($rolAdmin);
+        $this->assertCount(17, $rolAdmin->permissions);
+        $this->assertTrue($admin->fresh()->hasRole($rolAdmin));
+
+        $rolUsuario = \Spatie\Permission\Models\Role::where('tenant_id', $tenant->getTenantKey())
+            ->where('name', \App\Support\ProvisionadorRoles::ROL_USUARIO)->first();
+        $this->assertNotNull($rolUsuario);
+        $this->assertTrue((bool) $rolUsuario->es_defecto);
+    }
+
+    public function test_fallo_al_provisionar_roles_no_deja_tenant_parcial(): void
+    {
+        $this->actingAsSuperAdmin();
+
+        \Spatie\Permission\Models\Role::creating(function () {
+            throw new \RuntimeException('Fallo simulado al provisionar roles.');
+        });
+
+        try {
+            $this->withoutExceptionHandling()->post('http://localhost/super_admin/tenants', [
+                'dominio' => 'falla-roles.test',
+                'nombre_comercial' => 'Falla Roles SL',
+                'razon_social' => 'Falla Roles Sociedad Limitada',
+                'nif' => 'B12345674',
+                'regimen_impositivo' => 'iva',
+                'email' => 'contacto@falla-roles.test',
+                'admin_email' => 'admin@falla-roles.test',
+                'admin_password' => 'password123',
+            ]);
+
+            $this->fail('Se esperaba que el fallo de provisión lanzara una excepción.');
+        } catch (\RuntimeException $e) {
+            $this->assertSame('Fallo simulado al provisionar roles.', $e->getMessage());
+        }
+
+        $this->assertDatabaseMissing('tenants', ['nombre_comercial' => 'Falla Roles SL']);
+        $this->assertDatabaseMissing('domains', ['domain' => 'falla-roles.test']);
+        $this->assertDatabaseMissing('users', ['email' => 'admin@falla-roles.test']);
     }
 
     public function test_fallo_al_crear_administrador_revierte_tenant_y_dominio(): void

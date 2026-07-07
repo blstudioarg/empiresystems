@@ -19,7 +19,7 @@ class ConfiguracionTenantIsolationTest extends TestCase
         $tenantA = Tenant::factory()->create();
         $tenantB = Tenant::factory()->create();
 
-        $userA = User::factory()->create([
+        $userA = User::factory()->admin()->create([
             'tenant_id' => $tenantA->id,
             'password' => bcrypt('secret123'),
         ]);
@@ -54,7 +54,7 @@ class ConfiguracionTenantIsolationTest extends TestCase
         $tenantA = Tenant::factory()->create();
         $tenantB = Tenant::factory()->create();
 
-        $userA = User::factory()->create([
+        $userA = User::factory()->admin()->create([
             'tenant_id' => $tenantA->id,
             'password' => bcrypt('secret123'),
         ]);
@@ -80,7 +80,7 @@ class ConfiguracionTenantIsolationTest extends TestCase
         $tenantA = Tenant::factory()->create();
         $tenantB = Tenant::factory()->create(['logo_path' => null]);
 
-        $userA = User::factory()->create([
+        $userA = User::factory()->admin()->create([
             'tenant_id' => $tenantA->id,
             'password' => bcrypt('secret123'),
         ]);

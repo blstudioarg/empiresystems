@@ -148,7 +148,7 @@ class LogActividadRegistroTest extends TestCase
     public function test_configuracion_apariencia_registra_evento(): void
     {
         $tenant = Tenant::factory()->create();
-        $user = User::factory()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
+        $user = User::factory()->admin()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
         $this->loginAs($user);
 
         $this->put('/configuracion/apariencia', [
@@ -163,7 +163,7 @@ class LogActividadRegistroTest extends TestCase
     public function test_configuracion_facturacion_registra_evento(): void
     {
         $tenant = Tenant::factory()->create();
-        $user = User::factory()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
+        $user = User::factory()->admin()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
         $this->loginAs($user);
 
         $this->put('/configuracion/facturacion', ['simplificada_tope_ampliado' => true]);
@@ -174,7 +174,7 @@ class LogActividadRegistroTest extends TestCase
     public function test_configuracion_email_registra_evento(): void
     {
         $tenant = Tenant::factory()->create();
-        $user = User::factory()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
+        $user = User::factory()->admin()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
         $this->loginAs($user);
 
         $this->put('/configuracion/email', [
@@ -194,7 +194,7 @@ class LogActividadRegistroTest extends TestCase
     public function test_configuracion_archivos_registra_evento(): void
     {
         $tenant = Tenant::factory()->create();
-        $user = User::factory()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
+        $user = User::factory()->admin()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
         $this->loginAs($user);
 
         $this->put('/configuracion/archivos', ['limite_mb' => 50]);
@@ -222,7 +222,7 @@ class LogActividadRegistroTest extends TestCase
     public function test_aprobar_usuario_registra_evento(): void
     {
         $tenant = Tenant::factory()->create();
-        $aprobador = User::factory()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
+        $aprobador = User::factory()->admin()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
         $pendiente = User::factory()->pendiente()->create(['tenant_id' => $tenant->id]);
         $this->loginAs($aprobador);
 
@@ -236,7 +236,7 @@ class LogActividadRegistroTest extends TestCase
     public function test_rechazar_usuario_registra_evento(): void
     {
         $tenant = Tenant::factory()->create();
-        $aprobador = User::factory()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
+        $aprobador = User::factory()->admin()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
         $pendiente = User::factory()->pendiente()->create(['tenant_id' => $tenant->id]);
         $this->loginAs($aprobador);
 

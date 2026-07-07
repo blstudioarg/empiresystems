@@ -10,88 +10,71 @@
 	<div class="content-body">
 		<div class="container-fluid">
 			@unless ($miembros->isEmpty())
-				{{-- Panel de métricas del rango visible (feature 026). Se rellena por JS con el feed
-				     /calendario/resumen al cambiar de mes o de miembro. --}}
-				<div id="cal-metricas" data-estado="cargando">
-					<div class="row">
-						<div class="col-xl-3 col-sm-6">
-							<div class="card same-card cal-kpi cal-kpi-cumplimiento">
-								<div class="card-body">
-									<div class="d-flex justify-content-between align-items-start">
-										<div>
-											<h6 class="mb-1 text-muted">Cumplimiento</h6>
-											<h3 class="mb-0" data-kpi="cumplimiento">—</h3>
-											<small class="text-muted" data-kpi="cumplimiento-detalle">&nbsp;</small>
-										</div>
-										<span class="cal-kpi-icono"><i class="fas fa-circle-check"></i></span>
+				{{-- Cards informativas del rango visible (feature 026). Mismo patrón que las métricas
+				     de clientes/dashboard (x-lordicon size=50, sin clases en el contenedor del ícono,
+				     ver docs/04-front-guidelines.md). Los valores los rellena calendario.init.js con
+				     el feed /calendario/resumen al cambiar de mes o de miembro. --}}
+				<div id="cal-metricas" class="row">
+					<div class="col-xl-3 col-sm-6">
+						<div class="card same-card">
+							<div class="card-body">
+								<div class="d-flex justify-content-between align-items-center">
+									<div>
+										<h6 class="mb-1">Cumplimiento</h6>
+										<h3 class="mb-0" data-kpi="cumplimiento">—</h3>
+										<small class="text-muted" data-kpi="cumplimiento-detalle">&nbsp;</small>
 									</div>
-									<div class="cal-sparkline-wrap"><canvas id="cal-chart-sparkline" height="34"></canvas></div>
-								</div>
-							</div>
-						</div>
-						<div class="col-xl-3 col-sm-6">
-							<div class="card same-card cal-kpi">
-								<div class="card-body">
-									<div class="d-flex justify-content-between align-items-start">
-										<div>
-											<h6 class="mb-1 text-muted">Horas trabajadas</h6>
-											<h3 class="mb-0"><span data-kpi="horas-trabajadas">—</span> <small class="text-muted fs-6">/ <span data-kpi="horas-previstas">—</span> h</small></h3>
-											<small data-kpi="horas-diferencia">&nbsp;</small>
-										</div>
-										<span class="cal-kpi-icono"><i class="fas fa-clock"></i></span>
-									</div>
-								</div>
-							</div>
-						</div>
-						<div class="col-xl-3 col-sm-6">
-							<div class="card same-card cal-kpi">
-								<div class="card-body">
-									<div class="d-flex justify-content-between align-items-start">
-										<div>
-											<h6 class="mb-1 text-muted">Retrasos</h6>
-											<h3 class="mb-0" data-kpi="retrasos">—</h3>
-											<small class="text-muted" data-kpi="retrasos-detalle">&nbsp;</small>
-										</div>
-										<span class="cal-kpi-icono"><i class="fas fa-hourglass-half"></i></span>
-									</div>
-								</div>
-							</div>
-						</div>
-						<div class="col-xl-3 col-sm-6">
-							<div class="card same-card cal-kpi">
-								<div class="card-body">
-									<div class="d-flex justify-content-between align-items-start">
-										<div>
-											<h6 class="mb-1 text-muted">Ausencias</h6>
-											<h3 class="mb-0" data-kpi="ausencias">—</h3>
-											<small class="text-muted" data-kpi="ausencias-detalle">&nbsp;</small>
-										</div>
-										<span class="cal-kpi-icono"><i class="fas fa-user-xmark"></i></span>
+									<div>
+										<x-lordicon icon="wired-outline-2764-reliable-alt-hover-pinch" size="50" trigger="hover" target=".card" />
 									</div>
 								</div>
 							</div>
 						</div>
 					</div>
-					<div class="row">
-						<div class="col-xl-8">
-							<div class="card same-card">
-								<div class="card-header">
-									<h4 class="card-title">Horas previstas vs. trabajadas por semana</h4>
-								</div>
-								<div class="card-body">
-									<p class="text-muted mb-0 cal-chart-vacio" data-chart-vacio="semanas">Sin días evaluados en este rango todavía.</p>
-									<div class="cal-chart-box"><canvas id="cal-chart-semanas"></canvas></div>
+					<div class="col-xl-3 col-sm-6">
+						<div class="card same-card">
+							<div class="card-body">
+								<div class="d-flex justify-content-between align-items-center">
+									<div>
+										<h6 class="mb-1">Horas trabajadas</h6>
+										<h3 class="mb-0"><span data-kpi="horas-trabajadas">—</span> <small class="text-muted fs-6">/ <span data-kpi="horas-previstas">—</span> h</small></h3>
+										<small data-kpi="horas-diferencia">&nbsp;</small>
+									</div>
+									<div>
+										<x-lordicon icon="wired-outline-1846-employee-working-hover-working" size="50" trigger="hover" target=".card" />
+									</div>
 								</div>
 							</div>
 						</div>
-						<div class="col-xl-4">
-							<div class="card same-card">
-								<div class="card-header">
-									<h4 class="card-title">Distribución de veredictos</h4>
+					</div>
+					<div class="col-xl-3 col-sm-6">
+						<div class="card same-card">
+							<div class="card-body">
+								<div class="d-flex justify-content-between align-items-center">
+									<div>
+										<h6 class="mb-1">Retrasos</h6>
+										<h3 class="mb-0" data-kpi="retrasos">—</h3>
+										<small class="text-muted" data-kpi="retrasos-detalle">&nbsp;</small>
+									</div>
+									<div>
+										<x-lordicon icon="wired-outline-3097-pause-circle-hover-pinch" size="50" trigger="hover" target=".card" />
+									</div>
 								</div>
-								<div class="card-body">
-									<p class="text-muted mb-0 cal-chart-vacio" data-chart-vacio="distribucion">Sin días evaluados en este rango todavía.</p>
-									<div class="cal-chart-box"><canvas id="cal-chart-distribucion"></canvas></div>
+							</div>
+						</div>
+					</div>
+					<div class="col-xl-3 col-sm-6">
+						<div class="card same-card">
+							<div class="card-body">
+								<div class="d-flex justify-content-between align-items-center">
+									<div>
+										<h6 class="mb-1">Ausencias</h6>
+										<h3 class="mb-0" data-kpi="ausencias">—</h3>
+										<small class="text-muted" data-kpi="ausencias-detalle">&nbsp;</small>
+									</div>
+									<div>
+										<x-lordicon icon="wired-outline-309-avatar-icon-cross-hover-click" size="50" trigger="hover" target=".card" />
+									</div>
 								</div>
 							</div>
 						</div>
@@ -149,7 +132,6 @@
 @push('scripts')
 	<script src="{{ asset('vendor/fullcalendar/main.min.js') }}"></script>
 	<script src="{{ asset('vendor/fullcalendar/locales/es.js') }}"></script>
-	<script src="{{ asset('vendor/chartjs/chart.umd.min.js') }}"></script>
 	<script>
 		window.calendarioConfig = {
 			eventosUrl: @json(route('calendario.eventos')),

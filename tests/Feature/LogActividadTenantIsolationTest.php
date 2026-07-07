@@ -40,7 +40,7 @@ class LogActividadTenantIsolationTest extends TestCase
     {
         $tenantA = Tenant::factory()->create();
         $tenantB = Tenant::factory()->create();
-        $userA = User::factory()->create(['tenant_id' => $tenantA->id]);
+        $userA = User::factory()->admin()->create(['tenant_id' => $tenantA->id]);
 
         LogActividad::factory()->for($tenantA)->count(3)->create();
         LogActividad::factory()->for($tenantB)->count(5)->create();
@@ -63,7 +63,7 @@ class LogActividadTenantIsolationTest extends TestCase
     {
         $tenantA = Tenant::factory()->create();
         $tenantB = Tenant::factory()->create();
-        $userA = User::factory()->create(['tenant_id' => $tenantA->id]);
+        $userA = User::factory()->admin()->create(['tenant_id' => $tenantA->id]);
 
         LogActividad::factory()->for($tenantA)->count(4)->create(['usuario_nombre' => 'Usuario Tenant A']);
         LogActividad::factory()->for($tenantB)->count(20)->create(['usuario_nombre' => 'Usuario Tenant A']);
@@ -91,7 +91,7 @@ class LogActividadTenantIsolationTest extends TestCase
     {
         $tenantA = Tenant::factory()->create();
         $tenantB = Tenant::factory()->create();
-        $userA = User::factory()->create(['tenant_id' => $tenantA->id]);
+        $userA = User::factory()->admin()->create(['tenant_id' => $tenantA->id]);
 
         LogActividad::factory()->for($tenantB)->count(10)->create();
 
