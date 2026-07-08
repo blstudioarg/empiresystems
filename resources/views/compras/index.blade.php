@@ -153,9 +153,14 @@
 				responsive: true,
 				processing: true,
 				ajax: {
-					url: function () {
+					url: window.location.pathname,
+					// El filtro se pasa como query param vía ajax.data (DataTables no admite una
+					// función en ajax.url: jQuery la castearía a string y pediría una URL inválida).
+					data: function (d) {
 						var estado = $('#filtro-estado-b2b').val();
-						return estado ? window.location.pathname + '?estado_b2b=' + encodeURIComponent(estado) : window.location.pathname;
+						if (estado) {
+							d.estado_b2b = estado;
+						}
 					},
 					dataSrc: function (json) {
 						if (json.totales) {

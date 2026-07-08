@@ -388,6 +388,7 @@ Catálogo del que se pueden traer líneas de factura. Un artículo puede ser un 
 | nombre | varchar | |
 | descripcion | text | |
 | unidad | varchar(20) | `ud`, `hora`, `kg`, `m2`, `servicio`… |
+| categoria_id | fk → categorias_articulo | nullable; `nullOnDelete` (catálogo opcional del tenant) |
 | precio | decimal(12,4) | precio unitario base |
 | tipo_impositivo | decimal(5,2) | % del impuesto indirecto según régimen del tenant (IVA/IGIC/IPSI) |
 | **Stock (solo `producto`):** | | |
@@ -401,6 +402,21 @@ Catálogo del que se pueden traer líneas de factura. Un artículo puede ser un 
 Índices: `(tenant_id, sku)`, `(tenant_id, tipo)`.
 
 > **Adaptabilidad:** el `tipo servicio` cubre mantenimiento, horas de trabajo, consultoría, etc. — sin stock. El `tipo producto` con `gestion_stock=false` cubre productos que no querés inventariar. Solo `producto` + `gestion_stock=true` mueve inventario.
+
+### `categorias_articulo` — catálogo de categorías (select dinámico)
+Catálogo del tenant para clasificar artículos (tabla simple id + nombre, mismo patrón que
+`unidades`). Alimenta el componente `<x-categoria-select>` (CRUD inline vía modal, ver
+`docs/05-dynamic-select-component.md`). Pasa por el global scope de tenant vía `BelongsToTenant`.
+
+| Campo | Tipo | Notas |
+|-------|------|-------|
+| id | bigint PK | |
+| tenant_id | fk | índice |
+| nombre | varchar(60) | único por tenant |
+| timestamps | | |
+
+Índice: `unique(tenant_id, nombre)`. Al borrar una categoría, los artículos que la usaban quedan
+con `categoria_id = null` (`nullOnDelete`).
 
 ### `movimientos_stock` — kardex de inventario (implementado)
 Historial de entradas/salidas de stock. Solo aplica a artículos `producto` con `gestion_stock=true`. Da trazabilidad y permite recalcular/auditar el stock. Ledger append-only: el único punto de escritura es `App\Services\RegistroMovimientoStock`.

@@ -78,6 +78,12 @@
 				});
 		}
 
+		function resetImagenPreview() {
+			$form.find('#imagen-preview').attr('hidden', true).attr('src', '');
+			$form.find('.campo-quitar-imagen').attr('hidden', true);
+			$form.find('#quitar_imagen').prop('checked', false);
+		}
+
 		function resetForm() {
 			clearErrors();
 			$form[0].reset();
@@ -88,6 +94,11 @@
 			if (unidad) {
 				unidad.clear();
 			}
+			var categoria = window.CategoriaSelect && window.CategoriaSelect.get('categoria_id');
+			if (categoria) {
+				categoria.clear();
+			}
+			resetImagenPreview();
 			toggleCamposPorTipo();
 			suggestSku();
 		}
@@ -106,6 +117,12 @@
 			} else {
 				$form.find('#unidad').val(data.unidad);
 			}
+			var categoria = window.CategoriaSelect && window.CategoriaSelect.get('categoria_id');
+			if (categoria) {
+				categoria.setValue(data.categoriaId);
+			} else {
+				$form.find('#categoria_id').val(data.categoriaId);
+			}
 			$form.find('#precio').val(data.precio);
 			// El data-attribute llega como "21.00" (cast decimal:2) pero las <option> del
 			// select usan valores cortos ("21"): normalizamos a número antes de asignar,
@@ -120,6 +137,11 @@
 			$form.find('#stock_actual').val(data.stockActual);
 			$form.find('#stock_minimo').val(data.stockMinimo);
 			$form.find('#aplica_recargo_equivalencia').prop('checked', data.recargo === '1');
+			resetImagenPreview();
+			if (data.imagenUrl) {
+				$form.find('#imagen-preview').attr('src', data.imagenUrl).attr('hidden', false);
+				$form.find('.campo-quitar-imagen').attr('hidden', false);
+			}
 			$('#articuloModalLabel').text('Editar artículo');
 			toggleCamposPorTipo();
 		}
@@ -138,13 +160,30 @@
 				nombre: $btn.data('nombre'),
 				descripcion: $btn.data('descripcion'),
 				unidad: $btn.data('unidad'),
+				categoriaId: $btn.data('categoria-id'),
 				precio: $btn.data('precio'),
 				tipoImpositivo: $btn.data('tipo-impositivo'),
 				gestionStock: String($btn.data('gestion-stock')),
 				stockActual: $btn.data('stock-actual'),
 				stockMinimo: $btn.data('stock-minimo'),
 				recargo: String($btn.data('recargo')),
+				imagenUrl: $btn.data('imagen-url'),
 			});
+		});
+
+		$form.on('change', '#imagen', function () {
+			var file = this.files && this.files[0];
+
+			if (!file) {
+				return;
+			}
+
+			var reader = new FileReader();
+			reader.onload = function (event) {
+				$form.find('#imagen-preview').attr('src', event.target.result).attr('hidden', false);
+			};
+			reader.readAsDataURL(file);
+			$form.find('#quitar_imagen').prop('checked', false);
 		});
 
 		$form.on('change', '#tipo', function () {
@@ -165,7 +204,9 @@
 				return $.ajax({
 					url: $form.attr('action'),
 					method: 'POST',
-					data: $form.serialize(),
+					data: new FormData($form[0]),
+					processData: false,
+					contentType: false,
 					dataType: 'json',
 					headers: { Accept: 'application/json' },
 				});

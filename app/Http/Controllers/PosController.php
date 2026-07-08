@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\TipoArticulo;
 use App\Enums\TipoFactura;
 use App\Exceptions\TicketFueraDeTopeException;
 use App\Http\Requests\StoreTicketRequest;
@@ -63,8 +64,28 @@ class PosController extends Controller
 
     public function create(): View
     {
+        // Solo productos: un ticket de TPV no factura servicios (regla de negocio).
+        $articulos = Articulo::where('tipo', TipoArticulo::Producto)
+            ->with('categoria:id,nombre')
+            ->orderBy('nombre')
+            ->get();
+
+        // Filtros del catálogo: solo categorías que tienen al menos un producto (con su conteo),
+        // ordenadas por nombre. Se renderizan como botones grandes tablet-first.
+        $categorias = $articulos
+            ->filter(fn (Articulo $a) => $a->categoria !== null)
+            ->groupBy('categoria_id')
+            ->map(fn ($grupo) => [
+                'id' => $grupo->first()->categoria_id,
+                'nombre' => $grupo->first()->categoria->nombre,
+                'total' => $grupo->count(),
+            ])
+            ->sortBy('nombre')
+            ->values();
+
         return view('pos.create', [
-            'articulos' => Articulo::orderBy('nombre')->get(),
+            'articulos' => $articulos,
+            'categorias' => $categorias,
             'clientes' => Cliente::orderBy('nombre')->get(),
             'topeAplicable' => $this->tope->topePara(),
             'regimen' => TiposImpositivos::payloadVista(tenant()->regimen_impositivo),

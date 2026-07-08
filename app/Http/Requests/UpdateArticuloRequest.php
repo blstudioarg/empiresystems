@@ -30,7 +30,13 @@ class UpdateArticuloRequest extends FormRequest
             'sku' => ['nullable', 'string', 'max:50'],
             'nombre' => ['required', 'string', 'max:255'],
             'descripcion' => ['nullable', 'string'],
+            'imagen' => ['nullable', 'image', 'max:2048'],
+            'quitar_imagen' => ['boolean'],
             'unidad' => ['nullable', 'string', 'max:20'],
+            'categoria_id' => [
+                'nullable',
+                Rule::exists('categorias_articulo', 'id')->where('tenant_id', tenant()->id),
+            ],
             'precio' => ['required', 'numeric', 'min:0'],
             'tipo_impositivo' => ['required', 'numeric', 'between:0,100', new TipoImpositivoValido],
             'gestion_stock' => ['boolean'],

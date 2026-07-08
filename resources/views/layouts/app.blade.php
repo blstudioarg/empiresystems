@@ -44,8 +44,6 @@
 		@include('partials.sidebar')
 
 		@yield('content')
-
-		@include('partials.footer')
 	</div>
 
 	@include('partials.confirm-delete-modal')

@@ -96,7 +96,7 @@
 				'<div class="col-xl-2 col-lg-3 col-sm-4 col-6 archivo-item" data-tipo="carpeta" data-id="' + carpeta.id + '" data-nombre="' + carpeta.nombre + '" data-update-url="' + carpeta.update_url + '" data-delete-url="' + carpeta.delete_url + '" draggable="true">' +
 					'<div class="card same-card h-100 archivo-card position-relative" role="button">' +
 						'<div class="card-body text-center py-4">' +
-							'<i class="fas fa-folder fa-2x text-warning mb-2"></i>' +
+							'<i class="fas fa-folder fa-3x text-warning mb-2"></i>' +
 							'<div class="small text-truncate" title="' + carpeta.nombre + '">' + carpeta.nombre + '</div>' +
 							rutaGridHtml(carpeta) +
 						'</div>' +
@@ -123,7 +123,7 @@
 				return '<img src="' + archivo.preview_url + '" class="rounded mb-2" style="width:48px;height:48px;object-fit:cover" alt="' + archivo.nombre + '" draggable="false">';
 			}
 
-			return '<i class="fas ' + iconoPorExtension(archivo.extension) + ' fa-2x mb-2"></i>';
+			return '<i class="fas ' + iconoPorExtension(archivo.extension) + ' fa-3x mb-2"></i>';
 		}
 
 		function renderArchivoGrid(archivo) {

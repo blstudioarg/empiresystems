@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AlertaController;
 use App\Http\Controllers\ArticuloController;
+use App\Http\Controllers\CategoriaArticuloController;
 use App\Http\Controllers\AsignacionHorarioController;
 use App\Http\Controllers\ArchivoController;
 use App\Http\Controllers\Auth\LoginController;
@@ -61,6 +62,7 @@ Route::middleware(['tenant.context', 'auth'])->group(function () {
     Route::middleware('can:ver-articulos')->group(function () {
         Route::resource('articulos', ArticuloController::class)->only(['index', 'store', 'update', 'destroy']);
         Route::resource('unidades', UnidadController::class)->only(['index', 'store', 'update', 'destroy']);
+        Route::resource('categorias', CategoriaArticuloController::class)->only(['index', 'store', 'update', 'destroy']);
     });
 
     Route::middleware('can:ver-facturas')->group(function () {

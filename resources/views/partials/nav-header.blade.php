@@ -1,5 +1,5 @@
 		<div class="nav-header">
-			<a href="{{ url('index') }}" class="brand-logo">
+			<a href="{{ url('/') }}" class="brand-logo">
 				@if (function_exists('tenant') && tenant() && tenant()->logo_mini_path)
 					<img src="{{ asset('storage/'.tenant()->logo_mini_path) }}" alt="Logo" class="logo-abbr" style="height: 33px;">
 				@else

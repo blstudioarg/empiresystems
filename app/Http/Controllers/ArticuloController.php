@@ -12,6 +12,7 @@ use App\Services\RegistradorActividad;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class ArticuloController extends Controller
@@ -23,7 +24,7 @@ class ArticuloController extends Controller
     public function index(Request $request): View|JsonResponse
     {
         if ($request->wantsJson()) {
-            $articulos = Articulo::orderBy('nombre')->get();
+            $articulos = Articulo::with('categoria:id,nombre')->orderBy('nombre')->get();
 
             return response()->json([
                 'data' => $articulos->map(fn (Articulo $articulo) => [
@@ -33,7 +34,10 @@ class ArticuloController extends Controller
                     'sku' => $articulo->sku,
                     'nombre' => $articulo->nombre,
                     'descripcion' => $articulo->descripcion,
+                    'imagen_url' => $articulo->imagenUrl(),
                     'unidad' => $articulo->unidad,
+                    'categoria_id' => $articulo->categoria_id,
+                    'categoria_nombre' => $articulo->categoria?->nombre,
                     'precio' => $articulo->precio,
                     'tipo_impositivo' => $articulo->tipo_impositivo,
                     'gestion_stock' => $articulo->gestion_stock,
@@ -57,7 +61,13 @@ class ArticuloController extends Controller
 
     public function store(StoreArticuloRequest $request): RedirectResponse|JsonResponse
     {
-        $articulo = Articulo::create($this->normalizarStock($request->validated()));
+        $datos = $this->normalizarStock($request->validated());
+
+        if ($request->hasFile('imagen')) {
+            $datos['imagen_path'] = $request->file('imagen')->store('articulos/'.tenant('id'), 'public');
+        }
+
+        $articulo = Articulo::create($datos);
 
         $this->registradorActividad->registrar(
             auth()->user(),
@@ -80,7 +90,23 @@ class ArticuloController extends Controller
         // se resuelve manualmente aquí, una vez el TenantScope ya está garantizado.
         $articulo = Articulo::findOrFail($articulo);
 
-        $articulo->update($this->normalizarStock($request->validated()));
+        $datos = $this->normalizarStock($request->validated());
+
+        if ($request->hasFile('imagen')) {
+            if ($articulo->imagen_path) {
+                Storage::disk('public')->delete($articulo->imagen_path);
+            }
+
+            $datos['imagen_path'] = $request->file('imagen')->store('articulos/'.tenant('id'), 'public');
+        } elseif ($request->boolean('quitar_imagen')) {
+            if ($articulo->imagen_path) {
+                Storage::disk('public')->delete($articulo->imagen_path);
+            }
+
+            $datos['imagen_path'] = null;
+        }
+
+        $articulo->update($datos);
 
         $this->registradorActividad->registrar(
             auth()->user(),

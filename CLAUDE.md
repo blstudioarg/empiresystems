@@ -101,15 +101,28 @@ Cuando una feature terminó de implementarse (`/speckit-implement` completo y va
   la vista). Para notificaciones desde JS/AJAX, usar `window.showToast(type, message)` (definido en
   `toastr-config.js`) en vez de construir markup de alerta a mano. No reintroducir divs
   `.alert-success`/`#algo-alert` ad-hoc en vistas nuevas.
-  - `jquery-asColorPicker` (y cualquier otro plugin del banco que dependa de otras libs UMD)
-    requiere vendorizar también sus dependencias: `jquery-asColor` y `jquery-asGradient` deben
-    cargarse *antes* que `jquery-asColorPicker.min.js`, si no el picker recibe `undefined` y
-    lanza `TypeError: (0, h.default) is not a function`. Revisar el `require(...)`/`define([...])`
-    del UMD wrapper del plugin antes de vendorizarlo para no dejar dependencias sueltas.
+  - Cualquier plugin del banco que dependa de otras libs UMD requiere vendorizar también esas
+    dependencias, cargadas *antes* que el propio plugin, o recibe `undefined` y lanza
+    `TypeError: ... is not a function`. Revisar el `require(...)`/`define([...])` del UMD wrapper
+    antes de vendorizar para no dejar dependencias sueltas.
   - **Orden de CSS en `layouts/app.blade.php`**: `@stack('styles')` (CSS de plugins por vista) va
     ANTES de `css/style.css`, no después. `style.css` (37k+ líneas) ya trae su propio theming para
-    varios plugins del banco (p. ej. `.asColorPicker-trigger { position: absolute; ... }`); si el
-    CSS del plugin se carga después, su regla base (`position: relative`) pisa el theming del
-    template por orden de cascada aunque tenga la misma especificidad — el picker se ve "roto"
-    (swatch fuera del input) sin ningún error en consola. Si un plugin nuevo se ve mal aunque
-    cargue bien, sospechar primero de esto antes de tocar JS.
+    varios plugins del banco; si el CSS de un plugin nuevo se carga después, su regla base pisa el
+    theming del template por orden de cascada aunque tenga la misma especificidad — el plugin se
+    ve "roto" sin ningún error en consola. Si un plugin nuevo se ve mal aunque cargue bien,
+    sospechar primero de esto antes de tocar JS.
+  - **El motor de esquemas de color (`dzSettings`) fija `data-primary`/`data-secondary` en
+    `<body>` en cada carga de página**, y `style.css` redefine ahí `--primary`/`--secondary` (y
+    derivados) al color por defecto del template. Un override de marca del tenant en `:root`
+    (`<html>`) nunca gana esa herencia porque `<body>` queda más cerca del contenido — hay que
+    declararlo también en `body` y con `!important` (ver `AparienciaTenant::variablesCss()`).
+    Mismo cuidado si se toca el color en vivo por JS: `documentElement.style.setProperty` sin más
+    no alcanza, hay que setear también `document.body.style` con prioridad `"important"`.
+  - **Color picker: Pickr** (vendorizado en `public/vendor/pickr/`, tema `classic`), no
+    `jquery-asColorPicker` (retirado: guardaba en cada movimiento del mouse dentro del picker,
+    sin debounce ni orden garantizado entre peticiones, lo que podía persistir un color
+    intermedio en vez del elegido). Patrón: un `<div data-color-picker-trigger>` como swatch +
+    un `<input readonly>` con el hex, inicializados en
+    `public/js/plugins-init/configuracion-apariencia.init.js`; el guardado en servidor va atado
+    al evento `save` del picker (confirmación explícita), no a `change` (que sigue disparando en
+    cada arrastre, solo para la previsualización en vivo).

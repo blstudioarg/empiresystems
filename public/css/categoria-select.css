@@ -1,0 +1,35 @@
+/*
+ * Componente categoria-select: Select2 con botones inline (agregar/editar/eliminar)
+ * embebido en un input-group. Igualamos exactamente la caja de .form-control
+ * (fuente 0.76563rem, line-height 1.5, padding vertical 0.25rem, borde 1px) para
+ * que el alto coincida con los demás inputs del template.
+ */
+.categoria-control .select2-container {
+	flex: 1 1 auto;
+	width: 1% !important;
+}
+
+.categoria-control .select2-container--default .select2-selection--single {
+	height: auto;
+	min-height: 0;
+	padding: 0.25rem 0.75rem;
+	font-size: 0.76563rem;
+	line-height: 1.5;
+	display: flex;
+	align-items: center;
+	border-top-right-radius: 0;
+	border-bottom-right-radius: 0;
+}
+
+.categoria-control .select2-container--default .select2-selection--single .select2-selection__rendered {
+	padding: 0;
+	margin: 0;
+	min-height: 0;
+	line-height: 1.5;
+	font-size: 0.76563rem;
+}
+
+.categoria-control .select2-container--default .select2-selection--single .select2-selection__arrow {
+	top: 0;
+	height: 100%;
+}

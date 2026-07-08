@@ -1,5 +1,9 @@
 @push('styles')
-	<link href="{{ asset('vendor/jquery-asColorPicker/css/asColorPicker.min.css') }}" rel="stylesheet">
+	<link href="{{ asset('vendor/pickr/pickr-classic.min.css') }}" rel="stylesheet">
+	<style>
+		.color-picker-campo { display: flex; align-items: center; gap: 0.5rem; }
+		.color-picker-swatch .pcr-button { width: 38px; height: 38px; border-radius: 0.375rem; }
+	</style>
 @endpush
 
 <form id="apariencia-form" method="POST" action="{{ route('configuracion.apariencia.update') }}" enctype="multipart/form-data">
@@ -11,24 +15,33 @@
 	<div class="row">
 		<div class="col-md-4 mb-3">
 			<label class="form-label" for="color_primario">Color primario</label>
-			<input type="text" class="form-control as_colorpicker" id="color_primario" name="color_primario"
-				value="{{ old('color_primario', $colores['color_primario']) }}">
+			<div class="color-picker-campo">
+				<div class="color-picker-swatch" data-color-picker-trigger></div>
+				<input type="text" class="form-control color-picker-input" id="color_primario" name="color_primario"
+					value="{{ old('color_primario', $colores['color_primario']) }}" readonly>
+			</div>
 			@error('color_primario')
 				<div class="text-danger small mt-1">{{ $message }}</div>
 			@enderror
 		</div>
 		<div class="col-md-4 mb-3">
 			<label class="form-label" for="color_secundario">Color secundario</label>
-			<input type="text" class="form-control as_colorpicker" id="color_secundario" name="color_secundario"
-				value="{{ old('color_secundario', $colores['color_secundario']) }}">
+			<div class="color-picker-campo">
+				<div class="color-picker-swatch" data-color-picker-trigger></div>
+				<input type="text" class="form-control color-picker-input" id="color_secundario" name="color_secundario"
+					value="{{ old('color_secundario', $colores['color_secundario']) }}" readonly>
+			</div>
 			@error('color_secundario')
 				<div class="text-danger small mt-1">{{ $message }}</div>
 			@enderror
 		</div>
 		<div class="col-md-4 mb-3">
 			<label class="form-label" for="color_topbar">Color de fondo de la topbar</label>
-			<input type="text" class="form-control as_colorpicker" id="color_topbar" name="color_topbar"
-				value="{{ old('color_topbar', $colores['color_topbar']) }}">
+			<div class="color-picker-campo">
+				<div class="color-picker-swatch" data-color-picker-trigger></div>
+				<input type="text" class="form-control color-picker-input" id="color_topbar" name="color_topbar"
+					value="{{ old('color_topbar', $colores['color_topbar']) }}" readonly>
+			</div>
 			@error('color_topbar')
 				<div class="text-danger small mt-1">{{ $message }}</div>
 			@enderror
@@ -124,11 +137,6 @@
 </form>
 
 @push('scripts')
-	{{-- asColorPicker depende de asColor y asGradient (variables globales AsColor/AsGradient);
-	     deben cargarse antes o el picker recibe undefined y lanza un TypeError. --}}
-	<script src="{{ asset('vendor/jquery-asColor/jquery-asColor.min.js') }}"></script>
-	<script src="{{ asset('vendor/jquery-asGradient/jquery-asGradient.min.js') }}"></script>
-	<script src="{{ asset('vendor/jquery-asColorPicker/js/jquery-asColorPicker.min.js') }}"></script>
-	<script src="{{ asset('js/plugins-init/jquery-asColorPicker.init.js') }}"></script>
+	<script src="{{ asset('vendor/pickr/pickr.min.js') }}"></script>
 	<script src="{{ asset('js/plugins-init/configuracion-apariencia.init.js') }}"></script>
 @endpush

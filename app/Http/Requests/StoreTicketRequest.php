@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\TipoArticulo;
+use App\Models\Articulo;
 use App\Models\Cliente;
 use App\Rules\TipoImpositivoValido;
 use Illuminate\Foundation\Http\FormRequest;
@@ -21,7 +23,15 @@ class StoreTicketRequest extends FormRequest
     {
         return [
             'lineas' => ['required', 'array', 'min:1'],
-            'lineas.*.articulo_id' => ['nullable', 'integer'],
+            // Si la línea viene de un artículo del catálogo, debe ser un PRODUCTO del tenant:
+            // un ticket de TPV no factura servicios (las líneas libres van con articulo_id nulo).
+            'lineas.*.articulo_id' => [
+                'nullable', 'integer',
+                Rule::exists(Articulo::class, 'id')
+                    ->where('tenant_id', tenant()->id)
+                    ->where('tipo', TipoArticulo::Producto->value)
+                    ->whereNull('deleted_at'),
+            ],
             'lineas.*.concepto' => ['required', 'string', 'max:255'],
             'lineas.*.unidad' => ['nullable', 'string', 'max:20'],
             'lineas.*.cantidad' => ['required', 'numeric', 'gt:0'],
@@ -54,6 +64,7 @@ class StoreTicketRequest extends FormRequest
         return [
             'lineas.required' => 'El ticket debe tener al menos una línea.',
             'lineas.min' => 'El ticket debe tener al menos una línea.',
+            'lineas.*.articulo_id.exists' => 'Solo se pueden añadir productos a un ticket, no servicios.',
             'lineas.*.cantidad.gt' => 'La cantidad debe ser mayor que cero.',
             'receptor.cliente_nif.required_with' => 'Para una simplificada cualificada indique el NIF del receptor.',
             'receptor.cliente_direccion.required_with' => 'Para una simplificada cualificada indique el domicilio del receptor.',

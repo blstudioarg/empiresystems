@@ -339,9 +339,10 @@ Cuando un campo de un formulario es un **select sobre un catálogo del tenant** 
 poder gestionar sin salir de la pantalla (crear/renombrar/eliminar entradas del catálogo al vuelo),
 el patrón es un **componente Blade reutilizable** que envuelve un `<select>` potenciado con Select2
 + tres botones inline (➕ nuevo / ✏️ renombrar / 🗑️ eliminar) + un modal compartido de alta/edición.
-Referencias: `<x-unidad-select>` (catálogo `unidades`, valor = nombre) y `<x-banco-select>`
-(catálogo `bancos`, valor = id). **Para crear uno nuevo, clonar uno de esos dos de punta a punta**;
-las piezas son:
+Referencias: `<x-unidad-select>` (catálogo `unidades`, valor = nombre), `<x-banco-select>`
+(catálogo `bancos`, valor = id) y `<x-categoria-select>` (catálogo `categorias_articulo`, valor =
+id, FK `articulos.categoria_id`). **Para crear uno nuevo, clonar uno de esos de punta a punta**
+(por nombre → clonar unidad; por id/FK → clonar banco o categoría); las piezas son:
 
 - **Componente Blade** (`resources/views/components/<algo>-select.blade.php`): `@props([name, id])`,
   un `<div class="input-group <algo>-control">` con el `<select class="<algo>-select">` + los tres
@@ -376,6 +377,27 @@ width: 1% !important` en `.select2-container`, y `height/padding/font-size` en
 del nuevo componente **no recibe `flex:1`** y los tres botones se rompen a la línea de abajo en vez
 de quedar en línea con el select — sin ningún error en consola. Copiá también el CSS y renombrá el
 scope, no solo el Blade/JS.
+
+## Catálogo del POS (TPV): filtros de categoría y badge de stock
+
+El grid del POS (`pos/create.blade.php`, `.pos-grid` de `.pos-articulo`) es **tablet-first, pensado
+para el dedo**. Dos convenciones:
+
+- **Filtros de categoría = botones GRANDES, no pills.** Sobre el grid va `.pos-filtros` (fila con
+  `overflow-x: auto` para scrollear en horizontal si hay muchas categorías) con `.pos-filtro`
+  (min-height 52px, borde 1.5px, radio 1rem, `:active { scale .96 }`, estado `.active` con el
+  primario del tenant). Primer botón siempre **"Todos"**; el resto una categoría cada uno con su
+  `<span class="badge-count">` (conteo). El controller (`PosController@create`) solo pasa las
+  categorías **que tienen al menos un producto** (agrupa los `articulos` cargados por `categoria_id`,
+  no una query aparte). Cada `.pos-articulo` lleva `data-categoria="{{ $articulo->categoria_id }}"`.
+  El filtrado es **client-side y se combina con la búsqueda** (`pos-form.js` → `aplicarFiltros()`
+  cruza texto + `categoriaActiva`; ocultar con la clase `.filtrado-oculto`, no `style.display`, para
+  no pisar el filtro con la búsqueda ni al revés).
+- **Badge de stock en el card.** Para productos con `gestion_stock`: si `stock_actual <= 0` →
+  `<span class="pos-art-badge sin-stock">Sin stock</span>` + clase `.agotado` en el card (lo atenúa
+  y desactiva el hover); si `stock_actual <= stock_minimo` → badge ámbar `.bajo-stock` ("Quedan N").
+  El badge es `position: absolute` en la esquina superior del `.pos-articulo`. Se sigue pudiendo
+  añadir al ticket (el POS permite stock negativo, misma decisión que la emisión de facturas).
 
 ## Vista full-page de creación con preview en vivo (facturas)
 

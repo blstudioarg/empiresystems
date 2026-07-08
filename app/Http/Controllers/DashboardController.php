@@ -12,6 +12,13 @@ class DashboardController extends Controller
 
     public function index(DashboardFiltroRequest $request, DashboardEstadisticas $dashboardEstadisticas)
     {
+        // El super admin no pertenece a ningún tenant (tenant_id null): las estadísticas de este
+        // dashboard son inherentemente de tenant (facturación, IVA, etc.), así que su landing es
+        // el panel de gestión de tenants, no este dashboard.
+        if ($request->user()->isSuperAdmin()) {
+            return redirect()->route('super_admin.tenants.index');
+        }
+
         // Landing sin permiso de dashboard (feature 027, D11/RN-07): la ruta `/` no lleva `can:`
         // para no dar un 403 de bienvenida; los usuarios sin `ver-dashboard` aterrizan en su
         // sección personal garantizada.

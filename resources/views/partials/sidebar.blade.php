@@ -1,3 +1,24 @@
+		<style>
+			/* Badge de notificación "tipo esquina" para el menú lateral: un punto rojo con
+			   contador, superpuesto al icono, en vez del pill grande junto al texto (leía
+			   demasiado invasivo). El anillo blanco lo separa visualmente del icono debajo.
+			   Nota: este parcial se incluye DESPUÉS de que el layout ya imprimió el stack de
+			   estilos del head, así que un bloque apilado ahí nunca llegaría a tiempo — por
+			   eso el <style> va inline aquí mismo, en el punto de inclusión. */
+			.nav-icon-badge-wrap { position: relative; }
+			.nav-icon-badge {
+				position: absolute; top: -4px; right: -6px; z-index: 1;
+				min-width: 16px; height: 16px; padding: 0 3px; border-radius: 999px;
+				background: #e5534b; color: #fff; font-size: .62rem; font-weight: 700; line-height: 16px;
+				text-align: center; box-shadow: 0 0 0 2px #fff;
+			}
+			.nav-link-badge-wrap { display: flex; align-items: center; gap: .4rem; }
+			.nav-inline-badge {
+				min-width: 16px; height: 16px; padding: 0 3px; border-radius: 999px;
+				background: #e5534b; color: #fff; font-size: .62rem; font-weight: 700; line-height: 16px;
+				text-align: center; display: inline-block;
+			}
+		</style>
 		<div class="deznav">
 			<div class="deznav-scroll grid-menu">
 				<div class="sidebar-user-card text-center">
@@ -45,13 +66,13 @@
 								: 0;
 						@endphp
 						<li><a class="has-arrow " href="javascript:void(0);" aria-expanded="false">
-								<div class="menu-icon">
+								<div class="menu-icon nav-icon-badge-wrap">
 									<x-lordicon icon="wired-outline-1846-employee-working-hover-working" size="30" trigger="hover" />
+									@if ($__alertasNuevas > 0)
+										<span class="nav-icon-badge">{{ $__alertasNuevas > 9 ? '9+' : $__alertasNuevas }}</span>
+									@endif
 								</div>
 								<span class="nav-text ms-2">Control de fichaje</span>
-								@if ($__alertasNuevas > 0)
-									<span class="badge badge-danger ms-2">{{ $__alertasNuevas }}</span>
-								@endif
 							</a>
 							<ul aria-expanded="false">
 								<li><a href="{{ route('fichajes.index') }}">Fichar</a></li>
@@ -61,10 +82,10 @@
 									<li><a href="{{ route('calendario.index') }}">Calendario</a></li>
 									<li><a href="{{ route('miembros-equipo.index') }}">Miembros</a></li>
 									<li><a href="{{ route('horarios.index') }}">Horarios</a></li>
-									<li><a href="{{ route('alertas.index') }}">
+									<li><a href="{{ route('alertas.index') }}" class="nav-link-badge-wrap">
 										Alertas
 										@if ($__alertasNuevas > 0)
-											<span class="badge badge-danger ms-1">{{ $__alertasNuevas }}</span>
+											<span class="nav-inline-badge">{{ $__alertasNuevas > 9 ? '9+' : $__alertasNuevas }}</span>
 										@endif
 									</a></li>
 								@endcan

@@ -22,7 +22,9 @@ class Articulo extends Model
         'sku',
         'nombre',
         'descripcion',
+        'imagen_path',
         'unidad',
+        'categoria_id',
         'precio',
         'tipo_impositivo',
         'gestion_stock',
@@ -49,6 +51,16 @@ class Articulo extends Model
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class);
+    }
+
+    public function categoria(): BelongsTo
+    {
+        return $this->belongsTo(CategoriaArticulo::class, 'categoria_id');
+    }
+
+    public function imagenUrl(): ?string
+    {
+        return $this->imagen_path ? asset('storage/'.$this->imagen_path) : null;
     }
 
     public function movimientos(): HasMany

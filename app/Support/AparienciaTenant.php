@@ -100,6 +100,16 @@ class AparienciaTenant
     /**
      * Bloque de variables CSS a inyectar en <head>, solo para las claves configuradas por el
      * tenant (si el tenant no configuró nada, no se emite override y se mantiene el default).
+     *
+     * Se declara en `:root` y también en `body`, ambas con !important: el motor de esquemas de
+     * color del template (dzSettings, en vendor/global/global.min.js) fija en cada carga de
+     * página un atributo `data-primary="color_N"` / `data-secondary="color_N"` sobre `<body>`, y
+     * style.css redefine ahí mismo --primary/--secondary (y sus derivados hover/dark/rgba) al
+     * color por defecto del template. Como todo el contenido vive dentro de `<body>`, esa regla
+     * queda más cerca que un `:root` (en `<html>`) y gana la herencia aunque nuestra hoja cargue
+     * después — un `:root{...}` normal nunca llega a aplicarse. Sin tocar ese motor (sigue
+     * gestionando sidebar/layout/dark mode), forzamos aquí el color de marca del tenant por
+     * encima de su default con !important.
      */
     public static function variablesCss(int $tenantId): string
     {
@@ -108,17 +118,17 @@ class AparienciaTenant
         $declaraciones = [];
 
         if ($valores['color_primario']) {
-            $declaraciones[] = "--primary: {$valores['color_primario']};";
-            $declaraciones[] = '--primary-hover: '.self::oscurecer($valores['color_primario']).';';
+            $declaraciones[] = "--primary: {$valores['color_primario']} !important;";
+            $declaraciones[] = '--primary-hover: '.self::oscurecer($valores['color_primario']).' !important;';
 
             foreach (range(1, 9) as $decima) {
                 $alpha = $decima / 10;
-                $declaraciones[] = "--rgba-primary-{$decima}: ".self::hexARgba($valores['color_primario'], $alpha).';';
+                $declaraciones[] = "--rgba-primary-{$decima}: ".self::hexARgba($valores['color_primario'], $alpha).' !important;';
             }
         }
 
         if ($valores['color_secundario']) {
-            $declaraciones[] = "--secondary: {$valores['color_secundario']};";
+            $declaraciones[] = "--secondary: {$valores['color_secundario']} !important;";
         }
 
         if ($valores['color_topbar']) {
@@ -129,7 +139,7 @@ class AparienciaTenant
             return '';
         }
 
-        return ':root{'.implode('', $declaraciones).'}';
+        return ':root, body{'.implode('', $declaraciones).'}';
     }
 
     public static function invalidarCache(int $tenantId): void

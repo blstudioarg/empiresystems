@@ -326,6 +326,31 @@ window.UnidadSelect.instances    // Array de UnidadInstance
 
 ---
 
+## Variante por FK: guardar el `id` en vez del `nombre` (`<x-categoria-select>`)
+
+`<x-unidad-select>` guarda el **nombre** como valor del `<option>` (el artículo persiste
+`unidad` como texto libre). Cuando el select alimenta una **relación real** (FK), el valor del
+`<option>` debe ser el **id** del catálogo. Caso vivo: `<x-categoria-select>` →
+`articulos.categoria_id` (fk → `categorias_articulo`).
+
+Diferencias respecto al caso base (mismo esqueleto Blade/CSS/JS):
+
+- **Migración**: además de la tabla `categorias_articulo` (id + nombre, único por tenant), se
+  añade `categoria_id` nullable en `articulos` con `constrained()->nullOnDelete()`.
+- **JS** (`categoria-select.js`): la `<option>` se construye con `new Option(nombre, id)` y el
+  módulo mantiene `idToNombre` (en vez de `nombreToId`). `currentId()`/`setValue(id)` operan sobre
+  el id; no hay soporte de "datos heredados de texto libre" (una FK siempre apunta a un id válido
+  o es `null`).
+- **Request**: `categoria_id` se valida con `Rule::exists('categorias_articulo','id')->where('tenant_id', ...)`
+  en vez de `Rule::unique`.
+- **Listado JSON del padre**: expone `categoria_id` (para preseleccionar el select al editar) y,
+  si hace falta mostrarlo, `categoria_nombre` vía eager load (`with('categoria:id,nombre')`).
+
+Cuándo usar cada variante: **por nombre** para atributos-etiqueta que pueden ser texto libre
+(unidad); **por id** cuando el dato es una relación de negocio con integridad referencial.
+
+---
+
 ## Características
 
 ✅ **Multi-instancia**: un modal compartido, varias instancias independientes  

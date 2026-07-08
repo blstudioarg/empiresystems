@@ -10,8 +10,21 @@
     var updateUrl = $form.attr("action");
     var csrfToken = $form.find('input[name="_token"]').val();
 
-    function enviarCampo(formData, onSuccess) {
-        $.ajax({
+    // Petición en curso y temporizador de debounce por campo: el picker de color dispara
+    // "change" en cada paso mientras se arrastra (o cada tecla si se escribe el hex a mano), así
+    // que sin esto se disparaban varios POST concurrentes por campo y, al no garantizarse el
+    // orden de respuesta, una petición vieja podía resolverse después que la más reciente y
+    // pisar en BD el color final elegido con uno intermedio (el color "no cambiaba" pese a
+    // verse aplicado un instante en pantalla).
+    var xhrPorCampo = {};
+    var timeoutPorCampo = {};
+
+    function enviarCampo(campo, formData, onSuccess) {
+        if (xhrPorCampo[campo]) {
+            xhrPorCampo[campo].abort();
+        }
+
+        xhrPorCampo[campo] = $.ajax({
             url: updateUrl,
             method: "POST",
             data: formData,
@@ -27,13 +40,37 @@
                 window.showToast("success", response.message || "Guardado correctamente.");
             })
             .fail(function (xhr) {
+                if (xhr.statusText === "abort") {
+                    return;
+                }
+
                 if (xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.errors) {
                     var primerError = Object.values(xhr.responseJSON.errors)[0][0];
                     window.showToast("danger", primerError);
                 } else {
                     window.showToast("danger", "Ocurrió un error inesperado. Inténtalo de nuevo.");
                 }
+            })
+            .always(function () {
+                xhrPorCampo[campo] = null;
             });
+    }
+
+    function enviarCampoConDebounce(campo, formData, onSuccess) {
+        if (timeoutPorCampo[campo]) {
+            clearTimeout(timeoutPorCampo[campo]);
+        }
+
+        timeoutPorCampo[campo] = setTimeout(function () {
+            timeoutPorCampo[campo] = null;
+            enviarCampo(campo, formData, onSuccess);
+        }, 400);
+    }
+
+    // Pickr devuelve #RRGGBBAA (con canal alfa) aunque el componente de opacidad esté
+    // deshabilitado; el backend valida hex de 6 dígitos, así que se recorta el alfa aquí.
+    function normalizarHex(hex) {
+        return "#" + hex.replace("#", "").substring(0, 6).toUpperCase();
     }
 
     function construirFormData(campo, valor) {
@@ -45,18 +82,50 @@
         return formData;
     }
 
-    // Colores: se guardan automáticamente al elegir un valor con el picker.
-    $(".as_colorpicker").on("change", function () {
-        var $input = $(this);
+    // Colores: Pickr (vendorizado en public/vendor/pickr) reemplaza a jquery-asColorPicker.
+    // Cada swatch abre el popup de Pickr; el input de texto asociado solo muestra el hex
+    // (readonly) y es el que viaja en el guardado automático. "change" se dispara en cada
+    // arrastre dentro del popup (preview en vivo), "save" solo al confirmar con el botón
+    // Guardar del propio picker: por eso el guardado en servidor va atado a "save" y no a
+    // "change" (evita el aluvión de POST que producía el picker anterior en cada movimiento).
+    $(".color-picker-swatch").each(function () {
+        var $swatch = $(this);
+        var $input = $swatch.siblings(".color-picker-input");
         var campo = $input.attr("name");
-        var valor = $input.val();
+        var valorInicial = $input.val() || "#000000";
 
-        if (!valor) {
-            return;
-        }
+        var pickr = Pickr.create({
+            el: $swatch.get(0),
+            theme: "classic",
+            default: valorInicial,
+            comparison: false,
+            components: {
+                preview: true,
+                opacity: false,
+                hue: true,
+                interaction: {
+                    hex: true,
+                    input: true,
+                    save: true,
+                },
+            },
+        });
 
-        enviarCampo(construirFormData(campo, valor), function () {
-            aplicarVariableCss(campo, valor);
+        pickr.on("change", function (color) {
+            var hex = normalizarHex(color.toHEXA().toString());
+            aplicarVariableCss(campo, hex);
+        });
+
+        pickr.on("save", function (color) {
+            if (!color) {
+                return;
+            }
+
+            var hex = normalizarHex(color.toHEXA().toString());
+            $input.val(hex);
+            aplicarVariableCss(campo, hex);
+            enviarCampoConDebounce(campo, construirFormData(campo, hex));
+            pickr.hide();
         });
     });
 
@@ -83,7 +152,7 @@
             formData.append("_method", "PUT");
             formData.append(campo, file);
 
-            enviarCampo(formData, function () {
+            enviarCampo(campo, formData, function () {
                 if (claseMenu) {
                     actualizarLogoEnMenu(claseMenu, $preview.attr("src"));
                 }
@@ -104,7 +173,7 @@
         var campo = $input.attr("name");
         var valor = $input.val();
 
-        enviarCampo(construirFormData(campo, valor));
+        enviarCampo(campo, construirFormData(campo, valor));
     });
 
     function actualizarLogoEnMenu(claseMenu, dataUrl) {
@@ -120,23 +189,31 @@
         $navLogo.append($('<img class="' + claseMenu + '" alt="Logo" style="height: 33px;">').attr("src", dataUrl));
     }
 
+    // El motor de esquemas de color del template (dzSettings) fija en <body> un atributo
+    // data-primary/data-secondary cuya regla en style.css redefine ahí mismo estas variables;
+    // como <body> queda más cerca del contenido que <html>, solo tocar documentElement (como
+    // hacía la versión anterior) no gana la herencia. Se setean en ambos, vía setProperty con
+    // prioridad "important" para asegurar que el inline del tenant gane sobre esa regla.
     function aplicarVariableCss(campo, valor) {
-        var root = document.documentElement.style;
+        [document.documentElement.style, document.body.style].forEach(function (root) {
+            if (campo === "color_primario") {
+                root.setProperty("--primary", valor, "important");
+                root.setProperty("--primary-hover", oscurecer(valor, 0.85), "important");
+
+                for (var i = 1; i <= 9; i++) {
+                    root.setProperty("--rgba-primary-" + i, hexARgba(valor, i / 10), "important");
+                }
+            } else if (campo === "color_secundario") {
+                root.setProperty("--secondary", valor, "important");
+            } else if (campo === "color_topbar") {
+                root.setProperty("--topbar-bg", valor, "important");
+            }
+        });
 
         if (campo === "color_primario") {
-            root.setProperty("--primary", valor);
-            root.setProperty("--primary-hover", oscurecer(valor, 0.85));
-
-            for (var i = 1; i <= 9; i++) {
-                root.setProperty("--rgba-primary-" + i, hexARgba(valor, i / 10));
-            }
-
             actualizarLordIcons("primary", valor);
         } else if (campo === "color_secundario") {
-            root.setProperty("--secondary", valor);
             actualizarLordIcons("secondary", valor);
-        } else if (campo === "color_topbar") {
-            root.setProperty("--topbar-bg", valor);
         }
     }
 

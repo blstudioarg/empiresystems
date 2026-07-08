@@ -19,6 +19,18 @@
 		return isNaN(numero) ? '' : numero + '%';
 	}
 
+	function renderNombre(data, type, row) {
+		if (type !== 'display') {
+			return data;
+		}
+
+		var thumb = row.imagen_url
+			? '<img src="' + escapeAttr(row.imagen_url) + '" class="rounded me-2" style="width:2rem;height:2rem;object-fit:cover;" alt="">'
+			: '';
+
+		return '<div class="d-flex align-items-center">' + thumb + '<span>' + escapeHtml(data) + '</span></div>';
+	}
+
 	window.updateArticulosCards = function (totales) {
 		if (!totales) {
 			return;
@@ -44,7 +56,9 @@
 							' data-sku="' + escapeAttr(row.sku) + '"' +
 							' data-nombre="' + escapeAttr(row.nombre) + '"' +
 							' data-descripcion="' + escapeAttr(row.descripcion) + '"' +
+							' data-imagen-url="' + escapeAttr(row.imagen_url) + '"' +
 							' data-unidad="' + escapeAttr(row.unidad) + '"' +
+							' data-categoria-id="' + escapeAttr(row.categoria_id) + '"' +
 							' data-precio="' + escapeAttr(row.precio) + '"' +
 							' data-tipo-impositivo="' + escapeAttr(row.tipo_impositivo) + '"' +
 							' data-gestion-stock="' + (row.gestion_stock ? '1' : '0') + '"' +
@@ -86,7 +100,7 @@
 			},
 			columns: [
 				{ data: 'sku', render: escapeHtml },
-				{ data: 'nombre', render: escapeHtml },
+				{ data: 'nombre', render: renderNombre },
 				{ data: 'tipo_label', render: escapeHtml },
 				{ data: 'precio', render: function (data) { return formatMoneda(data); } },
 				{ data: 'tipo_impositivo', render: function (data) { return formatPorcentaje(data); } },
