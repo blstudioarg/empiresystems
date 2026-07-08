@@ -99,6 +99,11 @@
 	</div>
 @endsection
 
+@section('ayuda-titulo', 'Proveedores')
+@section('ayuda')
+	@include('ayuda.proveedores')
+@endsection
+
 @push('scripts')
 	<script>
 		window.proveedorFormState = {

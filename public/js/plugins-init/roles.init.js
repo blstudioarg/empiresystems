@@ -171,12 +171,18 @@
 			$master.prop('indeterminate', marcados > 0 && marcados < total);
 		}
 
+		// Nota: NUNCA usar `.prop('disabled', true)` en los checkboxes protegidos (ver-roles/
+		// ver-usuarios) — un <input disabled> no se envía en el submit del form, así que el
+		// payload llegaría sin esos permisos y el backend rechazaría el guardado (422) para
+		// CUALQUIER edición del rol Administrador, no solo si alguien intenta desmarcarlos. Se
+		// bloquean visualmente con una clase (pointer-events:none) y se fuerzan a checked, pero
+		// siguen siendo inputs habilitados que sí viajan en el submit.
 		function actualizarProteccionAdministrador(esAdministrador) {
 			$nombreInput.prop('readonly', esAdministrador);
 
 			$form.find('#permiso_ver-roles, #permiso_ver-usuarios').each(function () {
 				var $checkbox = $(this);
-				$checkbox.prop('disabled', esAdministrador);
+				$checkbox.toggleClass('rol-permiso-bloqueado', esAdministrador);
 
 				if (esAdministrador) {
 					$checkbox.prop('checked', true);
@@ -188,17 +194,25 @@
 			var $master = $(this);
 			var $grupo = $master.closest('.rol-modulo-group');
 
-			$grupo.find('.rol-permiso-checkbox').prop('checked', $master.is(':checked'));
+			$grupo.find('.rol-permiso-checkbox').not('.rol-permiso-bloqueado').prop('checked', $master.is(':checked'));
 		});
 
 		$form.on('change', '.rol-permiso-checkbox', function () {
-			sincronizarMaster($(this).closest('.rol-modulo-group'));
+			var $checkbox = $(this);
+
+			// El pointer-events:none evita el click normal, pero por las dudas (teclado, etc.)
+			// re-forzamos checked si es uno de los permisos bloqueados del Administrador.
+			if ($checkbox.hasClass('rol-permiso-bloqueado')) {
+				$checkbox.prop('checked', true);
+			}
+
+			sincronizarMaster($checkbox.closest('.rol-modulo-group'));
 		});
 
 		function resetForm() {
 			clearErrors();
 			$form[0].reset();
-			$permisoCheckboxes.prop('checked', false).prop('disabled', false);
+			$permisoCheckboxes.prop('checked', false).removeClass('rol-permiso-bloqueado');
 			$form.find('.rol-modulo-group__master').prop('checked', false).prop('indeterminate', false);
 			$nombreInput.prop('readonly', false);
 			$form.find('#rol_method').val('POST');

@@ -111,6 +111,11 @@
 	</div>
 @endsection
 
+@section('ayuda-titulo', 'Usuarios')
+@section('ayuda')
+	@include('ayuda.usuarios')
+@endsection
+
 @push('scripts')
 	<script>
 		window.usuariosState = {

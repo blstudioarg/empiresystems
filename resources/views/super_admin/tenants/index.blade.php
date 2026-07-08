@@ -114,6 +114,11 @@
 	</div>
 @endsection
 
+@section('ayuda-titulo', 'Tenants')
+@section('ayuda')
+	@include('ayuda.tenants')
+@endsection
+
 @push('scripts')
 	<script>
 		window.tenantFormState = {

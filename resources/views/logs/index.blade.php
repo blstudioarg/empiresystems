@@ -55,6 +55,11 @@
 	</div>
 @endsection
 
+@section('ayuda-titulo', 'Logs de actividad')
+@section('ayuda')
+	@include('ayuda.logs')
+@endsection
+
 @push('scripts')
 	<script src="{{ asset('vendor/datatables/js/jquery.dataTables.min.js') }}"></script>
 	<script src="{{ asset('vendor/datatables/responsive/responsive.js') }}"></script>

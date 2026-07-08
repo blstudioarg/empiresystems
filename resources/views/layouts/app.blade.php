@@ -47,6 +47,7 @@
 	</div>
 
 	@include('partials.confirm-delete-modal')
+	@include('partials.ayuda-modal')
 
 	{{-- Assets base del template NexaDash (siempre cargados) --}}
 	<script src="{{ asset('vendor/global/global.min.js') }}"></script>

@@ -10,11 +10,13 @@ use App\Http\Requests\UpdateAparienciaRequest;
 use App\Http\Requests\UpdateEmailRequest;
 use App\Mail\EmailPrueba;
 use App\Models\Configuracion;
+use App\Models\User;
 use App\Services\RegistradorActividad;
 use App\Services\TenantMailer;
 use App\Support\AparienciaTenant;
 use App\Support\ArchivosTenant;
 use App\Support\CertificadoTenant;
+use App\Support\ConfigCrm;
 use App\Support\ConfigFichajes;
 use App\Support\ConfigTenant;
 use App\Support\EmailTenant;
@@ -69,6 +71,13 @@ class ConfiguracionController extends Controller
                 'zona_horaria' => ConfigTenant::zonaHoraria($tenantId),
             ],
             'zonasHorariasDisponibles' => ConfigTenant::ZONAS_HORARIAS_DISPONIBLES,
+            'crmConfig' => [
+                'asignacion_estrategia' => ConfigCrm::estrategiaAsignacion($tenantId)->value,
+                'asignacion_comerciales' => ConfigCrm::comercialesAsignacion($tenantId),
+                'retencion_dias' => ConfigCrm::retencionDias($tenantId),
+                'presupuesto_dias_validez' => ConfigCrm::diasValidezPresupuesto($tenantId),
+            ],
+            'comercialesDisponibles' => User::where('tenant_id', $tenantId)->orderBy('name')->get(['id', 'name']),
         ]);
     }
 
@@ -287,6 +296,53 @@ class ConfiguracionController extends Controller
         }
 
         return redirect()->route('configuracion.show')->with('success', 'Configuración de fichajes guardada correctamente.');
+    }
+
+    public function updateCrm(Request $request): RedirectResponse|JsonResponse
+    {
+        $tenantId = tenant()->getTenantKey();
+
+        $datos = $request->validate([
+            'asignacion_estrategia' => ['required', 'string', 'in:manual,round_robin'],
+            'asignacion_comerciales' => ['nullable', 'array'],
+            'asignacion_comerciales.*' => ['integer'],
+            'retencion_dias' => ['required', 'integer', 'min:1'],
+            'presupuesto_dias_validez' => ['required', 'integer', 'min:1'],
+        ]);
+
+        Configuracion::query()->updateOrCreate(
+            ['tenant_id' => $tenantId, 'clave' => ConfigCrm::CLAVE_ASIGNACION_ESTRATEGIA],
+            ['valor' => $datos['asignacion_estrategia'], 'tipo' => 'string', 'grupo' => 'crm']
+        );
+
+        Configuracion::query()->updateOrCreate(
+            ['tenant_id' => $tenantId, 'clave' => ConfigCrm::CLAVE_ASIGNACION_COMERCIALES],
+            ['valor' => json_encode(array_values($datos['asignacion_comerciales'] ?? [])), 'tipo' => 'json', 'grupo' => 'crm']
+        );
+
+        Configuracion::query()->updateOrCreate(
+            ['tenant_id' => $tenantId, 'clave' => ConfigCrm::CLAVE_RETENCION_DIAS],
+            ['valor' => (string) $datos['retencion_dias'], 'tipo' => 'integer', 'grupo' => 'crm']
+        );
+
+        Configuracion::query()->updateOrCreate(
+            ['tenant_id' => $tenantId, 'clave' => ConfigCrm::CLAVE_DIAS_VALIDEZ_PRESUPUESTO],
+            ['valor' => (string) $datos['presupuesto_dias_validez'], 'tipo' => 'integer', 'grupo' => 'crm']
+        );
+
+        $this->registradorActividad->registrar(
+            auth()->user(),
+            AccionLogActividad::Modificacion,
+            EntidadLogActividad::Configuracion,
+            null,
+            'Actualizó la configuración de CRM (leads/presupuestos)',
+        );
+
+        if ($request->wantsJson()) {
+            return response()->json(['message' => 'Configuración de CRM guardada correctamente.']);
+        }
+
+        return redirect()->route('configuracion.show')->with('success', 'Configuración de CRM guardada correctamente.');
     }
 
     public function updateGeneral(Request $request): RedirectResponse|JsonResponse

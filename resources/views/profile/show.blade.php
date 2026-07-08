@@ -72,6 +72,11 @@
 	</div>
 @endsection
 
+@section('ayuda-titulo', 'Mi perfil')
+@section('ayuda')
+	@include('ayuda.profile')
+@endsection
+
 @push('scripts')
 	<script>
 		document.getElementById('avatar').addEventListener('change', function (e) {

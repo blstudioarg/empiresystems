@@ -68,6 +68,13 @@
 			cursor: pointer;
 		}
 
+		/* Permisos "Roles"/"Usuarios" del rol Administrador: bloqueados visualmente sin usar
+		   `disabled` (un input disabled no viaja en el submit del form, ver roles.init.js). */
+		.rol-permiso-bloqueado {
+			pointer-events: none;
+			opacity: 0.6;
+		}
+
 		[data-theme="dark"] .rol-modulo-group,
 		[data-theme="dark"] .rol-modulo-group__header {
 			border-color: var(--bs-border-color-translucent, rgba(255, 255, 255, 0.1));
@@ -163,6 +170,11 @@
 
 		@include('roles._modales')
 	</div>
+@endsection
+
+@section('ayuda-titulo', 'Roles y permisos')
+@section('ayuda')
+	@include('ayuda.roles')
 @endsection
 
 @push('scripts')

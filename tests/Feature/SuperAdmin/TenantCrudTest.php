@@ -219,7 +219,7 @@ class TenantCrudTest extends TestCase
             ->where('name', \App\Support\ProvisionadorRoles::ROL_ADMINISTRADOR)->first();
 
         $this->assertNotNull($rolAdmin);
-        $this->assertCount(17, $rolAdmin->permissions);
+        $this->assertCount(20, $rolAdmin->permissions);
         $this->assertTrue($admin->fresh()->hasRole($rolAdmin));
 
         $rolUsuario = \Spatie\Permission\Models\Role::where('tenant_id', $tenant->getTenantKey())

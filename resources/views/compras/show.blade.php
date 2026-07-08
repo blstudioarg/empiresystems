@@ -92,6 +92,11 @@
 	</div>
 @endsection
 
+@section('ayuda-titulo', 'Detalle de compra')
+@section('ayuda')
+	@include('ayuda.compras-detalle')
+@endsection
+
 @push('scripts')
 	<script>
 		window.compraEstadoState = {

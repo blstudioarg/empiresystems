@@ -294,6 +294,11 @@
 	@include('archivos.partials._preview-modal')
 @endsection
 
+@section('ayuda-titulo', 'Archivos')
+@section('ayuda')
+	@include('ayuda.archivos')
+@endsection
+
 @push('scripts')
 	<script>
 		window.archivosState = {

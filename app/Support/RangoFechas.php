@@ -16,8 +16,7 @@ class RangoFechas
         public readonly Carbon $desde,
         public readonly Carbon $hasta,
         public readonly PresetRango $preset,
-    ) {
-    }
+    ) {}
 
     public static function mesEnCurso(?Carbon $hoy = null): self
     {

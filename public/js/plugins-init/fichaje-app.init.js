@@ -35,6 +35,25 @@
 
 		// ---------- Geolocalización: una sola suscripción, compartida por el mapa y el fichaje ----------
 		var posicionActual = null;
+		var $precisionInfo = $('#fichaje-precision-info');
+
+		// Umbral de precisión "utilizable": un GPS real al aire libre da ~5-20m; por encima de
+		// ~50m suele ser Wi-Fi/IP (habitual en interiores o sin buena señal) y el resultado
+		// dentro/fuera del perímetro puede no ser confiable todavía — avisar en vez de dejarlo en
+		// el mismo gris neutro de siempre.
+		var PRECISION_IMPRECISA_METROS = 50;
+
+		function actualizarPrecisionInfo(precisionMetros) {
+			var imprecisa = precisionMetros > PRECISION_IMPRECISA_METROS;
+
+			$precisionInfo
+				.toggleClass('fichaje-hint--imprecisa', imprecisa)
+				.text(
+					imprecisa
+						? 'Ubicación aproximada (±' + Math.round(precisionMetros) + ' m): esperá unos segundos o buscá mejor señal antes de fichar.'
+						: 'Precisión de tu ubicación: ±' + Math.round(precisionMetros) + ' m'
+				);
+		}
 
 		if (navigator.geolocation) {
 			navigator.geolocation.watchPosition(
@@ -53,10 +72,12 @@
 						}
 					}
 
-					$('#fichaje-precision-info').text('Precisión de tu ubicación: ±' + Math.round(posicionActual.precision) + ' m');
+					actualizarPrecisionInfo(posicionActual.precision);
 				},
 				function () {
-					$('#fichaje-precision-info').text('Sin acceso a tu ubicación: el fichaje se registrará como "sin ubicación".');
+					$precisionInfo
+						.addClass('fichaje-hint--imprecisa')
+						.text('Sin acceso a tu ubicación: el fichaje se registrará como "sin ubicación".');
 				},
 				{ enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
 			);
@@ -171,6 +192,79 @@
 			en_pausa: ['fin_pausa', 'salida'],
 		};
 
+		// ---------- Aplicar la respuesta de un fichaje ya confirmado por el servidor (comparte
+		// lógica entre el envío normal y el "Deshacer" de una salida) ----------
+		function aplicarRespuestaFichaje(response) {
+			// Congela el tramo que estaba corriendo antes de aplicar el nuevo estado, para
+			// que el contador de "horas trabajadas hoy" no pierda el tiempo ya transcurrido.
+			if (contandoDesdeMs !== null) {
+				segundosBase += (Date.now() - contandoDesdeMs) / 1000;
+			}
+			contandoDesdeMs = response.tipo === 'entrada' || response.tipo === 'fin_pausa' ? Date.now() : null;
+
+			aplicarEstado(response.estado);
+			prependTimeline(response.tipo_label, response.resultado_ubicacion_label, response.hora);
+			tickHorasHoy();
+		}
+
+		function enviarFichaje(tipo) {
+			var datos = { tipo: tipo, _token: state.csrf };
+
+			if (posicionActual) {
+				datos.latitud = posicionActual.lat;
+				datos.longitud = posicionActual.lon;
+				datos.precision = Math.round(posicionActual.precision);
+			}
+
+			return $.ajax({
+				url: state.storeUrl,
+				method: 'POST',
+				data: datos,
+				dataType: 'json',
+				headers: { Accept: 'application/json' },
+			});
+		}
+
+		// ---------- "Deshacer" de una salida: nunca borra el fichaje ya registrado (el ledger es
+		// append-only, ver RegistroFichajes), simplemente vuelve a fichar entrada — un evento
+		// nuevo y auditable, igual que si el empleado lo hubiera tocado a mano. Ventana corta
+		// (botón visible ~6s en el toast) porque es para el toque accidental, no una forma
+		// alternativa de cerrar/reabrir la jornada. ----------
+		function mostrarToastDeshacerSalida() {
+			var $toast = typeof toastr !== 'undefined'
+				? toastr.success(
+					'Fichaje de salida registrado. <button type="button" class="btn btn-sm btn-light ms-2 fichaje-deshacer-salida">Deshacer</button>',
+					null,
+					{ timeOut: 6000, tapToDismiss: false }
+				)
+				: null;
+
+			if (!$toast || !$toast.on) {
+				window.showToast('success', 'Fichaje registrado correctamente.');
+				return;
+			}
+
+			$toast.on('click', '.fichaje-deshacer-salida', function (e) {
+				e.stopPropagation();
+				var $btn = $(this);
+
+				window.withButtonLoading($btn, function () {
+					return enviarFichaje('entrada');
+				})
+					.done(function (response) {
+						window.showToast('success', 'Fichaje de salida deshecho: tu jornada sigue abierta.');
+						aplicarRespuestaFichaje(response);
+					})
+					.fail(function (xhr) {
+						var mensaje = (xhr.responseJSON && xhr.responseJSON.message) || 'No se pudo deshacer el fichaje.';
+						window.showToast('danger', mensaje);
+					})
+					.always(function () {
+						toastr.clear($toast);
+					});
+			});
+		}
+
 		var $botones = $('#fichaje-botones');
 		var registrarPausas = $botones.data('registrar-pausas') === 1 || $botones.data('registrar-pausas') === '1';
 		var $hero = $('.fichaje-hero');
@@ -225,36 +319,21 @@
 			// .attr() en aplicarEstado(), y jQuery cachea .data() en la primera lectura — con
 			// .data() acá, el segundo clic seguiría viendo el tipo del primer clic.
 			var tipo = $btn.attr('data-tipo');
-			var datos = { tipo: tipo, _token: state.csrf };
-
-			if (posicionActual) {
-				datos.latitud = posicionActual.lat;
-				datos.longitud = posicionActual.lon;
-				datos.precision = Math.round(posicionActual.precision);
-			}
 
 			window.withButtonLoading($btn, function () {
-				return $.ajax({
-					url: state.storeUrl,
-					method: 'POST',
-					data: datos,
-					dataType: 'json',
-					headers: { Accept: 'application/json' },
-				});
+				return enviarFichaje(tipo);
 			})
 				.done(function (response) {
-					window.showToast('success', response.message || 'Fichaje registrado correctamente.');
-
-					// Congela el tramo que estaba corriendo antes de aplicar el nuevo estado, para
-					// que el contador de "horas trabajadas hoy" no pierda el tiempo ya transcurrido.
-					if (contandoDesdeMs !== null) {
-						segundosBase += (Date.now() - contandoDesdeMs) / 1000;
+					if (response.tipo === 'salida') {
+						// La acción de mayor consecuencia del día (cierra la jornada): en vez del
+						// toast normal, uno con "Deshacer" por unos segundos para el toque
+						// accidental (bottom nav mobile, "Salida" queda a un dedo del FAB de pausa).
+						mostrarToastDeshacerSalida();
+					} else {
+						window.showToast('success', response.message || 'Fichaje registrado correctamente.');
 					}
-					contandoDesdeMs = response.tipo === 'entrada' || response.tipo === 'fin_pausa' ? Date.now() : null;
 
-					aplicarEstado(response.estado);
-					prependTimeline(response.tipo_label, response.resultado_ubicacion_label, response.hora);
-					tickHorasHoy();
+					aplicarRespuestaFichaje(response);
 				})
 				.fail(function (xhr) {
 					var mensaje = (xhr.responseJSON && xhr.responseJSON.message) || 'No se pudo registrar el fichaje.';

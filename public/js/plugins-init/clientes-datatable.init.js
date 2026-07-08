@@ -45,6 +45,7 @@
 							' data-notas="' + escapeAttr(row.notas) + '"' +
 						'>Editar</button>' +
 					'</li>' +
+					'<li><a class="dropdown-item" href="/oportunidades?cliente_id=' + escapeAttr(row.id) + '">+ Nueva oportunidad</a></li>' +
 					'<li><hr class="dropdown-divider"></li>' +
 					'<li>' +
 						'<button type="button" class="dropdown-item text-danger btn-delete-cliente"' +

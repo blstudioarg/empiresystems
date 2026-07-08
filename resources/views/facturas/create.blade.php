@@ -588,6 +588,11 @@
 	</template>
 @endsection
 
+@section('ayuda-titulo', 'Crear factura')
+@section('ayuda')
+	@include('ayuda.facturas-crear')
+@endsection
+
 @push('scripts')
 	<script>
 		window.facturaFormState = {

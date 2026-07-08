@@ -259,6 +259,11 @@
 	</div>
 @endsection
 
+@section('ayuda-titulo', 'Facturas')
+@section('ayuda')
+	@include('ayuda.facturas')
+@endsection
+
 @push('scripts')
 	<script src="{{ asset('vendor/datatables/js/jquery.dataTables.min.js') }}"></script>
 	<script src="{{ asset('vendor/datatables/responsive/responsive.js') }}"></script>

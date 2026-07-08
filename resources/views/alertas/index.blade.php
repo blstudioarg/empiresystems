@@ -92,6 +92,11 @@
 	</div>
 @endsection
 
+@section('ayuda-titulo', 'Alertas de fichaje')
+@section('ayuda')
+	@include('ayuda.alertas')
+@endsection
+
 @push('scripts')
 	<script src="{{ asset('vendor/datatables/js/jquery.dataTables.min.js') }}"></script>
 	<script src="{{ asset('vendor/datatables/responsive/responsive.js') }}"></script>

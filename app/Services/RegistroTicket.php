@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\EstadoFactura;
+use App\Enums\FormaPago;
 use App\Enums\TipoFactura;
 use App\Exceptions\TicketFueraDeTopeException;
 use App\Models\Cliente;
@@ -86,7 +87,7 @@ class RegistroTicket
                 'fecha_expedicion' => $hoy,
                 'fecha_operacion' => null,
                 'fecha_vencimiento' => VencimientoFactura::calcular($hoy),
-                'forma_pago' => \App\Enums\FormaPago::Efectivo,
+                'forma_pago' => FormaPago::Efectivo,
                 'moneda' => 'EUR',
                 'regimen_impositivo' => $regimen,
                 'aplica_recargo' => $aplicaRecargo,

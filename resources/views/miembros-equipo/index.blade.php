@@ -236,6 +236,11 @@
 	</div>
 @endsection
 
+@section('ayuda-titulo', 'Miembros de equipo')
+@section('ayuda')
+	@include('ayuda.miembros-equipo')
+@endsection
+
 @push('scripts')
 	<script src="{{ asset('vendor/datatables/js/jquery.dataTables.min.js') }}"></script>
 	<script src="{{ asset('vendor/datatables/responsive/responsive.js') }}"></script>

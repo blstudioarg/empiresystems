@@ -6,6 +6,7 @@ use App\Models\Configuracion;
 use App\Models\Tenant;
 use App\Support\AparienciaTenant;
 use App\Support\ArchivosTenant;
+use App\Support\ConfigCrm;
 use App\Support\ConfigFichajes;
 use App\Support\EmailTenant;
 use App\Support\TopeSimplificada;
@@ -151,6 +152,41 @@ class ConfiguracionSeeder extends Seeder
                 'tipo' => 'integer',
                 'grupo' => 'fichajes',
                 'descripcion' => 'Minutos por encima de lo previsto antes de marcar exceso de jornada.',
+            ],
+            [
+                'clave' => ConfigCrm::CLAVE_RETENCION_DIAS,
+                'valor' => (string) ConfigCrm::DEFAULT_RETENCION_DIAS,
+                'tipo' => 'integer',
+                'grupo' => 'crm',
+                'descripcion' => 'Días antes de purgar leads descartados o no convertidos (RGPD).',
+            ],
+            [
+                'clave' => ConfigCrm::CLAVE_ASIGNACION_ESTRATEGIA,
+                'valor' => 'manual',
+                'tipo' => 'string',
+                'grupo' => 'crm',
+                'descripcion' => 'Estrategia de asignación de leads nuevos: manual o round_robin.',
+            ],
+            [
+                'clave' => ConfigCrm::CLAVE_ASIGNACION_COMERCIALES,
+                'valor' => '[]',
+                'tipo' => 'json',
+                'grupo' => 'crm',
+                'descripcion' => 'IDs de usuarios que participan del reparto round-robin de leads.',
+            ],
+            [
+                'clave' => ConfigCrm::CLAVE_ASIGNACION_ULTIMO_INDICE,
+                'valor' => '0',
+                'tipo' => 'integer',
+                'grupo' => 'crm',
+                'descripcion' => 'Puntero interno del reparto round-robin (no editable en UI).',
+            ],
+            [
+                'clave' => ConfigCrm::CLAVE_DIAS_VALIDEZ_PRESUPUESTO,
+                'valor' => (string) ConfigCrm::DEFAULT_DIAS_VALIDEZ_PRESUPUESTO,
+                'tipo' => 'integer',
+                'grupo' => 'crm',
+                'descripcion' => 'Días de validez por defecto de un presupuesto nuevo.',
             ],
         ];
 

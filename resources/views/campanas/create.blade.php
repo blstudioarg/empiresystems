@@ -182,6 +182,11 @@
 	</div>
 @endsection
 
+@section('ayuda-titulo', 'Nueva campaña')
+@section('ayuda')
+	@include('ayuda.campanas-crear')
+@endsection
+
 @push('scripts')
 	<script>
 		window.campanaFormState = {

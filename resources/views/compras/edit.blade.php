@@ -58,6 +58,11 @@
 	</div>
 @endsection
 
+@section('ayuda-titulo', 'Editar compra')
+@section('ayuda')
+	@include('ayuda.compras-editar')
+@endsection
+
 @push('scripts')
 	<script>window.compraLineasIniciales = @json($lineasIniciales);</script>
 	<script src="{{ asset('js/plugins-init/compras-form.init.js') }}"></script>

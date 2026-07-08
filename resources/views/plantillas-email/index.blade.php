@@ -142,6 +142,11 @@
 	</div>
 @endsection
 
+@section('ayuda-titulo', 'Plantillas de email')
+@section('ayuda')
+	@include('ayuda.plantillas-email')
+@endsection
+
 @push('scripts')
 	<script>
 		window.plantillaFormState = {

@@ -140,6 +140,11 @@
 	</template>
 @endsection
 
+@section('ayuda-titulo', 'Horarios de trabajo')
+@section('ayuda')
+	@include('ayuda.horarios')
+@endsection
+
 @push('scripts')
 	<script src="{{ asset('vendor/datatables/js/jquery.dataTables.min.js') }}"></script>
 	<script src="{{ asset('vendor/datatables/responsive/responsive.js') }}"></script>

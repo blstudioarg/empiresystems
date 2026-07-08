@@ -100,6 +100,11 @@
 	</div>
 @endsection
 
+@section('ayuda-titulo', 'Registro de jornada')
+@section('ayuda')
+	@include('ayuda.jornada')
+@endsection
+
 @push('scripts')
 	<script src="{{ asset('js/plugins-init/jornada-filtro.init.js') }}"></script>
 @endpush

@@ -110,7 +110,7 @@ class CalendarioController extends Controller
      * Recorre (miembros × días pasados) evaluando cada día una sola vez y acumula los KPIs que
      * consumen las cards informativas del calendario. Mismos veredictos que el feed (D6).
      *
-     * @param  \Illuminate\Support\Collection<int, MiembroEquipo>  $miembros
+     * @param  Collection<int, MiembroEquipo>  $miembros
      * @return array<string, mixed>
      */
     private function agregarResumen(Collection $miembros, Carbon $desde, Carbon $fin, string $hoy, string $modo): array

@@ -118,6 +118,11 @@
 	</div>
 @endsection
 
+@section('ayuda-titulo', 'Kardex de stock')
+@section('ayuda')
+	@include('ayuda.stock')
+@endsection
+
 @push('scripts')
 	<script>
 		window.stockIndexUrl = @json(isset($articuloFiltrado) ? route('stock.show', $articuloFiltrado) : route('stock.index'));

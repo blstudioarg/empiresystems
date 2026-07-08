@@ -7,6 +7,7 @@ use App\Enums\CausaExencion;
 use App\Enums\EstadoFactura;
 use App\Enums\FormaPago;
 use App\Enums\RegimenImpositivo;
+use App\Exceptions\CertificadoInvalidoException;
 use App\Exceptions\FacturaeNoGenerableException;
 use App\Models\Factura;
 use App\Support\CertificadoTenant;
@@ -27,7 +28,7 @@ class GeneradorFacturae
 {
     /**
      * @throws FacturaeNoGenerableException
-     * @throws \App\Exceptions\CertificadoInvalidoException
+     * @throws CertificadoInvalidoException
      */
     public function generar(Factura $factura): string
     {
@@ -83,7 +84,7 @@ class GeneradorFacturae
      * @return array{xml: string, ruta: string, regenerado: bool}
      *
      * @throws FacturaeNoGenerableException
-     * @throws \App\Exceptions\CertificadoInvalidoException
+     * @throws CertificadoInvalidoException
      */
     public function generarYConservar(Factura $factura): array
     {
@@ -180,8 +181,8 @@ class GeneradorFacturae
 
     /**
      * @return array{0: FacturaeItem, 1: string|null} El item Facturae y, si aplica (ISP), la
-     *     mención legal a añadir a nivel de factura (el esquema Facturae no tiene un campo propio
-     *     para inversión del sujeto pasivo; se refleja como mención legal, docs/02 §6).
+     *                                                mención legal a añadir a nivel de factura (el esquema Facturae no tiene un campo propio
+     *                                                para inversión del sujeto pasivo; se refleja como mención legal, docs/02 §6).
      */
     private function itemDesdeLinea($linea, Factura $factura): array
     {

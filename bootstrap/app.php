@@ -29,6 +29,9 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Alertas de incumplimiento de jornada (ausencia/retraso) del día anterior (feature 025).
         $schedule->command('jornada:evaluar-cumplimiento')->daily();
+
+        // Retención de leads descartados/no convertidos (RGPD — minimización, feature 028).
+        $schedule->command('leads:purgar')->daily();
     })
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([

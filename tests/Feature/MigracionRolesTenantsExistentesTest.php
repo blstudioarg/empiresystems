@@ -60,7 +60,7 @@ class MigracionRolesTenantsExistentesTest extends TestCase
 
             $this->assertNotNull($rolAdmin);
             $this->assertNotNull($rolUsuario);
-            $this->assertCount(17, $rolAdmin->permissions);
+            $this->assertCount(20, $rolAdmin->permissions);
             $this->assertTrue((bool) $rolUsuario->es_defecto);
         }
 

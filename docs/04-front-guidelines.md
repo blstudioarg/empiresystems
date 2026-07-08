@@ -205,6 +205,48 @@ window.confirmDelete('¿Emitir esta factura?', onConfirm, {
 Referencia de uso: `clientes-modal.init.js`, `articulos-modal.init.js` (borrado, sin opciones),
 `facturas-datatable.init.js` (borrado sin opciones + emitir con opciones).
 
+## Acción frecuente y consecuente pero no destructiva: toast con "Deshacer", no modal
+
+El modal de confirmación (sección anterior) es para lo irreversible-destructivo (borrado,
+emitir). Hay un caso distinto: una acción que el usuario hace **muchas veces por sesión/día**,
+que en el camino feliz es normal y esperable, pero que si se toca por error es molesta de
+corregir (no hay "deshacer" real en el modelo de datos, o corregirla implica pasar por soporte/
+admin). Meterle un modal de confirmación a ese botón le agrega fricción al 100% de los usos
+correctos para prevenir un error que pasa pocas veces — peor trade-off que un modal en una acción
+rara (borrar un cliente).
+
+Patrón: dejar el clic tal cual (sin confirmar nada antes), pero la respuesta de éxito muestra un
+toast con un botón "Deshacer" embebido en el propio mensaje (unos segundos de ventana, no un
+`window.confirm` previo). Si el usuario toca "Deshacer", **no se borra/edita el registro ya
+creado** — se ejecuta la acción normal que lo revierte (otro evento nuevo, auditable), exactamente
+igual que si el usuario la hubiera disparado a mano. Referencia: `fichaje-app.init.js` (fichar
+salida es la acción de mayor consecuencia de la pantalla de fichar — bottom nav mobile, "Salida"
+queda a un dedo del FAB de pausa — y "deshacerla" es re-fichar entrada, no un endpoint de borrado
+nuevo, para no romper el ledger append-only de `RegistroFichajes`).
+
+```js
+var $toast = toastr.success(
+	'Fichaje de salida registrado. <button type="button" class="btn btn-sm btn-light ms-2 fichaje-deshacer-salida">Deshacer</button>',
+	null,
+	{ timeOut: 6000, tapToDismiss: false } // tapToDismiss:false para que solo lo cierre el botón/timeout
+);
+
+$toast.on('click', '.fichaje-deshacer-salida', function (e) {
+	e.stopPropagation();
+	var $btn = $(this);
+
+	window.withButtonLoading($btn, function () { return enviarFichaje('entrada'); })
+		.done(function (response) { /* aplicar el nuevo estado */ })
+		.always(function () { toastr.clear($toast); });
+});
+```
+
+Notas: el botón embebido en el toast sigue el mismo patrón de loading que cualquier otro botón
+AJAX (`withButtonLoading`, ver sección siguiente) — no es una excepción. `toastr.success/error/...`
+devuelve el elemento del toast (`escapeHtml: false` por defecto en la config global, así que HTML
+inline en el mensaje se renderiza tal cual). No usar este patrón para lo genuinamente destructivo
+(seguir usando `confirmDelete`) ni para acciones poco frecuentes (ahí un modal previo no molesta).
+
 ## Estado de carga en botones (AJAX/fetch)
 
 **Todo botón que dispare una petición que puede tardar (`$.ajax`, `fetch`, submit de un form vía
@@ -509,6 +551,42 @@ Esto **no aplica** cuando el número sale de un endpoint JSON hacia JS/DataTable
 controller ya castea a `(float)` antes de `response()->json(...)`, así que JS recibe un número
 limpio (sin ceros de relleno) y no hace falta `Formato` del lado del cliente — el problema es
 exclusivamente de Blade renderizando directo un atributo del modelo.
+
+## Ayuda contextual (mini-tutoriales por vista/proceso)
+
+Documentación in-app para el usuario final (no para devs). **Un único punto de entrada global**:
+el botón **"Ayuda de esta pantalla"** del `help-desk` en el pie del sidebar
+(`partials/sidebar.blade.php`), que abre **un solo modal global** cuyo contenido cambia según la
+vista actual. No se pone un botón `?` por vista ni por modal — el usuario aprende un solo lugar
+donde está la ayuda y siempre es contextual.
+
+Piezas del mecanismo:
+
+- **Modal global**: `partials/ayuda-modal.blade.php`, incluido **una sola vez** en
+  `layouts/app.blade.php` (id `#ayudaContextualModal`, clase `.ayuda-modal`). Trae el chrome
+  (cabecera con lordicon + eyebrow "Guía rápida" + título, botón de cierre, cuerpo scrolleable);
+  el contenido lo inyecta la vista.
+- **Contenido por vista**: cada vista que tenga ayuda declara dos secciones Blade —
+  `@section('ayuda-titulo', 'Clientes')` y un `@section('ayuda') @include('ayuda.<slug>') @endsection`
+  al final del archivo (fuera de `@section('content')`). El modal las lee con
+  `@yield('ayuda-titulo')` y `@hasSection('ayuda')`/`@yield('ayuda')`. Funciona porque con
+  `@extends` las `@section` del hijo se registran antes de que el layout renderice sus `@yield`.
+- **Contenido modular**: el texto vive en su propio archivo `resources/views/ayuda/<slug>.blade.php`
+  — nunca inline en la vista. Un archivo por pantalla/proceso.
+- **Fallback**: si la vista actual no define `@section('ayuda')`, el modal muestra un estado vacío
+  ("Todavía no hay una guía para esta pantalla"); el botón del sidebar es siempre visible.
+
+**Convención de markup del contenido de ayuda** (para que el CSS lo estilice sin clases extra):
+un `<p>` de intro, un `<ol>` de pasos (los números salen en círculos con el color del tenant, vía
+`counter`), `<strong>` para los términos, y un `<p class="ayuda-nota">` final para el error común a
+evitar (se renderiza como callout con ícono de info). Estilos en `app-overrides.css`, bloque
+"Ayuda contextual"; light/dark cubiertos.
+
+**Qué tan largo debe ser**: la prueba práctica es que casi no debería hacer falta scrollear (el
+cuerpo tiene `max-height` con scroll como red de seguridad, no como norma). Responder solo tres
+cosas — qué hace esta pantalla, cómo se usa (pasos), qué error común evitar — nunca contexto de
+negocio/normativa (eso vive en `docs/`). Referencia completa: `resources/views/ayuda/clientes.blade.php`
++ las secciones `@section('ayuda*')` al final de `clientes/index.blade.php`.
 
 ## Nueva entrada de menú ⇒ nuevo permiso (obligatorio)
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\MiembroEquipo;
 use App\Services\InformeJornada;
 use App\Support\RangoFechas;
 use App\Support\ResolutorHorario;
@@ -46,7 +47,7 @@ class MiJornadaController extends Controller
     /**
      * @return array<int, array{hora_inicio: string, hora_fin: string}>|null null = sin horario vigente hoy
      */
-    private function turnoDia(\App\Models\MiembroEquipo $miembro, Carbon $fecha): ?array
+    private function turnoDia(MiembroEquipo $miembro, Carbon $fecha): ?array
     {
         $horario = ResolutorHorario::vigente($miembro, $fecha);
 
@@ -68,7 +69,7 @@ class MiJornadaController extends Controller
     /**
      * @return array<int, array{dia_semana: int, tramos: array<int, array{hora_inicio: string, hora_fin: string}>}>|null
      */
-    private function turnoSemana(\App\Models\MiembroEquipo $miembro): ?array
+    private function turnoSemana(MiembroEquipo $miembro): ?array
     {
         $horario = ResolutorHorario::vigente($miembro, now());
 

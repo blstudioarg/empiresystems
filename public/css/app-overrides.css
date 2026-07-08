@@ -101,6 +101,28 @@
 	padding: 1rem !important;
 }
 
+/* Modales con `.modal-dialog-scrollable` (ej. #rolModal) cuyo `<form>` envuelve
+   header/body/footer (patrón estándar del proyecto, ver `roles/_modales.blade.php`): el scroll
+   interno de Bootstrap depende de que `.modal-header/.modal-body/.modal-footer` sean HIJOS
+   DIRECTOS de `.modal-content` (que es `display:flex; flex-direction:column`) — así
+   `.modal-header`/`.modal-footer` quedan fijos (`flex-shrink:0`) y `.modal-body` absorbe el resto
+   con `flex:1 1 auto; overflow-y:auto`. El `<form>` de por medio rompe esa cadena: pasa a ser el
+   único hijo (real) de `.modal-content`, y como es un bloque normal (no flex) sin `overflow`
+   propio, simplemente crece con su contenido — el `.modal-body` de adentro nunca activa su
+   scroll y el `.modal-footer` (Guardar/Cancelar) queda cortado por el `overflow:hidden` de
+   `.modal-content`, sin forma de llegar a él. `display:contents` en el `<form>` lo saca de la
+   caja (sigue funcionando igual para submit/eventos) y deja que sus hijos participen del flex de
+   `.modal-content` como si el `<form>` no existiera en el layout. El `min-height:0` en
+   `.modal-body` es el mismo arreglo que ya usa el menú del sidebar más abajo: un ítem flex no
+   encoge por debajo de su contenido (min-height:auto por defecto) salvo que se lo digamos. */
+.modal-dialog-scrollable .modal-content > form {
+	display: contents;
+}
+
+.modal-dialog-scrollable .modal-body {
+	min-height: 0;
+}
+
 /* El gutter de Bootstrap por defecto (25px, ver .row en style.css) deja mucho aire entre
    columnas/filas de cards y de formularios, en cualquier .row del sitio, no solo en modales.
    Lo bajamos a 1rem (equivalente a `g-3`) en todos lados, para no depender de que cada vista
@@ -450,4 +472,310 @@
 .fc .fc-event.cal-resumen-equipo {
 	background: transparent;
 	border: 0;
+}
+
+/* ============================================================================
+   Ayuda contextual (mini-tutorial por pantalla)
+   Trigger en el sidebar (.ayuda-trigger) + modal global (.ayuda-modal).
+   Ver docs/04-front-guidelines.md, sección "Ayuda contextual".
+   ============================================================================ */
+
+/* --- Trigger en el sidebar --- */
+.help-desk .ayuda-trigger {
+	display: flex;
+	align-items: center;
+	gap: 0.625rem;
+	width: 100%;
+	padding: 0.625rem 0.75rem;
+	border: 1px solid color-mix(in srgb, var(--primary, #1D69D6) 18%, transparent);
+	border-radius: 0.75rem;
+	background: color-mix(in srgb, var(--primary, #1D69D6) 7%, transparent);
+	color: inherit;
+	text-align: left;
+	cursor: pointer;
+	transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1),
+		background-color 160ms ease, border-color 160ms ease;
+}
+
+.help-desk .ayuda-trigger:hover {
+	background: color-mix(in srgb, var(--primary, #1D69D6) 12%, transparent);
+	border-color: color-mix(in srgb, var(--primary, #1D69D6) 32%, transparent);
+}
+
+.help-desk .ayuda-trigger:active {
+	transform: scale(0.98);
+}
+
+.ayuda-trigger-icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex: 0 0 2rem;
+	width: 2rem;
+	height: 2rem;
+	line-height: 0;
+	border-radius: 0.5rem;
+	background: color-mix(in srgb, var(--primary, #1D69D6) 15%, transparent);
+}
+
+.ayuda-trigger-text {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+	flex: 1 1 auto;
+}
+
+.ayuda-trigger-title {
+	font-size: 0.8125rem;
+	font-weight: 600;
+	line-height: 1.2;
+	color: var(--primary, #1D69D6);
+}
+
+.ayuda-trigger-sub {
+	font-size: 0.6875rem;
+	line-height: 1.2;
+	color: #8a94a6;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.ayuda-trigger-chevron {
+	flex: 0 0 auto;
+	font-size: 0.625rem;
+	color: color-mix(in srgb, var(--primary, #1D69D6) 55%, transparent);
+	transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.help-desk .ayuda-trigger:hover .ayuda-trigger-chevron {
+	transform: translateX(2px);
+}
+
+/* --- Modal --- */
+.ayuda-modal .ayuda-content {
+	position: relative;
+	border: 0;
+	border-radius: 1rem;
+	overflow: hidden;
+	box-shadow: 0 24px 60px -12px rgba(16, 24, 40, 0.28),
+		0 0 0 1px rgba(16, 24, 40, 0.04);
+}
+
+/* Entrada un pelín más marcada que el default de Bootstrap: escala desde 0.96
+   (nunca desde 0) con una curva ease-out fuerte. Modal centrado → origen centro. */
+.ayuda-modal.fade .modal-dialog {
+	transform: scale(0.96);
+	transition: transform 220ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.ayuda-modal.show .modal-dialog {
+	transform: scale(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.ayuda-modal.fade .modal-dialog {
+		transition: none;
+	}
+	.help-desk .ayuda-trigger,
+	.ayuda-trigger-chevron {
+		transition: none;
+	}
+}
+
+.ayuda-close {
+	position: absolute;
+	top: 0.875rem;
+	right: 0.875rem;
+	z-index: 2;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 1.875rem;
+	height: 1.875rem;
+	padding: 0;
+	border: 0;
+	border-radius: 50%;
+	background: rgba(16, 24, 40, 0.05);
+	color: #667085;
+	font-size: 0.8125rem;
+	cursor: pointer;
+	transition: background-color 140ms ease, color 140ms ease, transform 140ms ease;
+}
+
+.ayuda-close:hover {
+	background: rgba(16, 24, 40, 0.1);
+	color: #1f2937;
+}
+
+.ayuda-close:active {
+	transform: scale(0.94);
+}
+
+.ayuda-head {
+	display: flex;
+	align-items: center;
+	gap: 0.875rem;
+	padding: 1.375rem 1.5rem 1.125rem;
+	background: linear-gradient(180deg,
+		color-mix(in srgb, var(--primary, #1D69D6) 9%, transparent),
+		transparent);
+	border-bottom: 1px solid rgba(16, 24, 40, 0.06);
+}
+
+.ayuda-head-icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex: 0 0 3rem;
+	width: 3rem;
+	height: 3rem;
+	line-height: 0;
+	border-radius: 0.875rem;
+	background: color-mix(in srgb, var(--primary, #1D69D6) 14%, transparent);
+	box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary, #1D69D6) 18%, transparent);
+}
+
+.ayuda-eyebrow {
+	display: block;
+	font-size: 0.6875rem;
+	font-weight: 700;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: var(--primary, #1D69D6);
+}
+
+.ayuda-title {
+	margin: 0.0625rem 0 0;
+	font-size: 1.0625rem;
+	font-weight: 600;
+	line-height: 1.2;
+}
+
+.ayuda-body {
+	padding: 1.25rem 1.5rem 1.5rem;
+	font-size: 0.875rem;
+	line-height: 1.55;
+	color: #475467;
+	max-height: min(65vh, 32rem);
+	overflow-y: auto;
+}
+
+.ayuda-body > p:first-child {
+	margin-top: 0;
+}
+
+.ayuda-body p:last-child {
+	margin-bottom: 0;
+}
+
+.ayuda-body strong {
+	color: #1f2937;
+	font-weight: 600;
+}
+
+/* Lista de pasos: números en círculo con el color del tenant. */
+.ayuda-body ol {
+	counter-reset: ayuda-paso;
+	list-style: none;
+	margin: 0.75rem 0 0.875rem;
+	padding: 0;
+}
+
+.ayuda-body ol > li {
+	position: relative;
+	padding-left: 2.125rem;
+	margin-bottom: 0.75rem;
+}
+
+.ayuda-body ol > li:last-child {
+	margin-bottom: 0;
+}
+
+.ayuda-body ol > li::before {
+	counter-increment: ayuda-paso;
+	content: counter(ayuda-paso);
+	position: absolute;
+	left: 0;
+	top: -0.0625rem;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 1.5rem;
+	height: 1.5rem;
+	border-radius: 50%;
+	background: color-mix(in srgb, var(--primary, #1D69D6) 12%, transparent);
+	color: var(--primary, #1D69D6);
+	font-size: 0.75rem;
+	font-weight: 700;
+	line-height: 1;
+}
+
+.ayuda-body ul {
+	padding-left: 1.125rem;
+	margin: 0.5rem 0;
+}
+
+.ayuda-body ul > li {
+	margin-bottom: 0.375rem;
+}
+
+/* Nota final (error común a evitar): callout suave, ícono de info implícito. */
+.ayuda-body .ayuda-nota,
+.ayuda-body > p.text-muted:last-child {
+	margin-top: 1rem;
+	padding: 0.625rem 0.75rem 0.625rem 2.25rem;
+	position: relative;
+	border-radius: 0.625rem;
+	background: color-mix(in srgb, var(--primary, #1D69D6) 6%, transparent);
+	color: #667085;
+	font-size: 0.8125rem;
+}
+
+.ayuda-body .ayuda-nota::before,
+.ayuda-body > p.text-muted:last-child::before {
+	content: "\f05a";
+	font-family: "Font Awesome 6 Free";
+	font-weight: 900;
+	position: absolute;
+	left: 0.75rem;
+	top: 0.6875rem;
+	color: color-mix(in srgb, var(--primary, #1D69D6) 70%, #667085);
+}
+
+.ayuda-empty {
+	padding: 0.5rem 0;
+	color: #667085;
+}
+
+/* --- Dark mode --- */
+[data-theme-version="dark"] .ayuda-trigger-sub {
+	color: #9aa4b8;
+}
+
+[data-theme-version="dark"] .ayuda-modal .ayuda-content {
+	box-shadow: 0 24px 60px -12px rgba(0, 0, 0, 0.55),
+		0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+[data-theme-version="dark"] .ayuda-close {
+	background: rgba(255, 255, 255, 0.08);
+	color: #c2c9d6;
+}
+
+[data-theme-version="dark"] .ayuda-close:hover {
+	background: rgba(255, 255, 255, 0.16);
+	color: #fff;
+}
+
+[data-theme-version="dark"] .ayuda-head {
+	border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme-version="dark"] .ayuda-body {
+	color: #b3bccb;
+}
+
+[data-theme-version="dark"] .ayuda-body strong {
+	color: #f0f2f5;
 }

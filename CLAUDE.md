@@ -33,7 +33,11 @@ Léela antes de tocar código de negocio; toda spec/plan/PR debe respetarla.
   distintas. El motor de estilo real es `dzSettingsOptions` en `public/js/deznav-init.js`
   (sidebar full/mini/compact/modern/overlay/icon-hover, layout vertical/horizontal, 15 esquemas
   de color, light/dark) — ya soportado por `style.css`. Default actual: sidebar `full`, modo
-  claro con toggle persistido en `localStorage` (`public/js/theme-persist.js`). No volver a
+  claro con toggle persistido en `localStorage` (`public/js/theme-persist.js`). **El toggle de
+  Dark Mode está oculto a propósito** (`.mode-btn` con `d-none` en `partials/sidebar.blade.php`,
+  decisión explícita del 2026-07-08): no se usa dark mode por ahora. El mecanismo sigue
+  funcionando (no se borró nada), así que reactivarlo es solo sacar esa clase — no reintroducir
+  el toggle "arreglando" un supuesto olvido sin que el usuario lo pida. No volver a
   descartar este motor al simplificar: lo que se sacó a propósito fue el `config/dz.php` que
   cargaba CSS/JS distinto por cada demo page, no el selector de layout.
 
@@ -63,6 +67,31 @@ Cuando una feature terminó de implementarse (`/speckit-implement` completo y va
   con el bump de versión correspondiente (ver reglas de semver en el propio archivo).
 - Si no cambió nada respecto a lo documentado, no hace falta tocar `docs/` — evitar
   actualizaciones innecesarias.
+
+## Documentación al día en TODO cambio (con o sin spec)
+
+**Regla transversal, no atada al flujo de spec-kit.** Cada vez que se cambia algo —una feature
+completa por spec, un fix menor, un ajuste de config, un cambio de UI, lo que sea— antes de dar el
+trabajo por terminado hay que **razonar explícitamente si queda alguna documentación por
+actualizar**, y decirlo (aunque la conclusión sea "no hace falta"). No es un paso opcional ni
+reservado a los features grandes: aplica a cualquier cambio, se haya usado spec o no.
+
+Las tres capas de documentación a revisar en cada cambio:
+
+1. **Docs técnicos (`docs/`)** — visión, arquitectura, normativa, modelo de datos. Actualizar si
+   el cambio toca tablas, decisiones técnicas o alcance (ver "Al cerrar un spec/feature" arriba).
+2. **Guías de front (`docs/04-front-guidelines.md`)** — si el cambio introduce o modifica una
+   convención de UI reutilizable, anotarla ahí.
+3. **Guías in-app del usuario (`resources/views/ayuda/`)** — la documentación que el usuario final
+   ve desde el botón "Ayuda de esta pantalla" del sidebar. **Si un cambio altera lo que el usuario
+   hace o ve en una pantalla que ya tiene guía (campos nuevos/renombrados, pasos distintos, reglas
+   de negocio que cambian, un flujo que se mueve), hay que actualizar el archivo
+   `resources/views/ayuda/<slug>.blade.php` correspondiente.** Y si el cambio agrega una pantalla
+   nueva que amerita guía, considerar crearla. Detalle del mecanismo en
+   `docs/04-front-guidelines.md`, sección "Ayuda contextual".
+
+Regla de oro: una guía in-app desactualizada es peor que no tenerla (le miente al usuario). Si
+tocaste una vista con guía, la guía entra en el mismo cambio, no "después".
 
 ## Notas
 

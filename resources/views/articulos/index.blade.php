@@ -134,6 +134,11 @@
 	</div>
 @endsection
 
+@section('ayuda-titulo', 'Catálogo de artículos')
+@section('ayuda')
+	@include('ayuda.articulos')
+@endsection
+
 @push('scripts')
 	<script>
 		window.articuloFormState = {

@@ -49,18 +49,18 @@
 
 **Requisitos funcionales mínimos:**
 
-- **Gestión de clientes**: alta desde oportunidad de negocio, datos, simular compra/contratación. ✅ *(parcial: clientes ✔)*
-- **Gestión de Leads**: alta manual o **importación por fichero** + reglas de asignación. ⚠️ *Gap.*
-- **Gestión de oportunidades**: ofertas y **presupuestos** al lead/cliente. ⚠️ *Gap.*
-- **Alertas** de clientes en **formato gráfico**. ⚠️ *(parcial: hay dashboard 015)*
+- **Gestión de clientes**: alta desde oportunidad de negocio, datos, simular compra/contratación. ✅ *(clientes ✔ + alta desde lead/oportunidad, spec 028)*
+- **Gestión de Leads**: alta manual o **importación por fichero** + reglas de asignación. ✅ *(spec 028: alta manual + importación CSV/Excel con reporte de rechazos, dedup, asignación manual/round-robin)*
+- **Gestión de oportunidades**: ofertas y **presupuestos** al lead/cliente. ✅ *(spec 028: pipeline nueva→negociación→ganada/perdida + presupuestos con conversión a factura borrador)*
+- **Alertas** de clientes en **formato gráfico**. ⚠️ *(parcial: hay dashboard 015 y la vista pipeline de oportunidades agrega recuento/importe por etapa, spec 028; sigue faltando un módulo de alertas dedicado sobre clientes)*
 - **Gestión documental** de la actividad comercial. ✅ *(spec 019 gestor documental)*
 - **Diseño responsive**. ✅ *(template NexaDash)*
 - **Integración con plataformas**: **APIs o Web Services**. ⚠️ *Gap.*
 
 ### Implicaciones / gaps para homologar esta categoría
-1. **Leads** (con importación por fichero y reglas de asignación) — no existe.
-2. **Oportunidades + presupuestos** — no existe (sería el paso previo a la factura).
-3. **Alertas gráficas** de clientes — ampliar el dashboard.
+1. ~~**Leads** (con importación por fichero y reglas de asignación) — no existe.~~ ✅ Implementado (spec 028).
+2. ~~**Oportunidades + presupuestos** — no existe (sería el paso previo a la factura).~~ ✅ Implementado (spec 028).
+3. **Alertas gráficas** de clientes — la vista pipeline (spec 028) cubre parcialmente el recuento/importe agregado por etapa, pero no sustituye un módulo de alertas de clientes propiamente dicho; sigue pendiente ampliar el dashboard.
 4. **API / Web Services** — exponer API para consolidar datos.
 
 ---

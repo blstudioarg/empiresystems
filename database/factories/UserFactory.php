@@ -6,9 +6,13 @@ use App\Enums\EstadoUsuario;
 use App\Enums\UserRole;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Support\CatalogoPermisos;
+use App\Support\ProvisionadorRoles;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
 
 /**
  * @extends Factory<User>
@@ -86,11 +90,11 @@ class UserFactory extends Factory
                 return;
             }
 
-            foreach (\App\Support\CatalogoPermisos::claves() as $clave) {
-                \Spatie\Permission\Models\Permission::firstOrCreate(['name' => $clave, 'guard_name' => 'web']);
+            foreach (CatalogoPermisos::claves() as $clave) {
+                Permission::firstOrCreate(['name' => $clave, 'guard_name' => 'web']);
             }
 
-            $provisionador = app(\App\Support\ProvisionadorRoles::class);
+            $provisionador = app(ProvisionadorRoles::class);
             $tenant = $user->tenant()->first();
 
             if ($user->rol === UserRole::Admin) {
@@ -101,7 +105,7 @@ class UserFactory extends Factory
 
             $rol = $provisionador->provisionarUsuarioBase($tenant);
 
-            $registrar = app(\Spatie\Permission\PermissionRegistrar::class);
+            $registrar = app(PermissionRegistrar::class);
             $anterior = $registrar->getPermissionsTeamId();
             $registrar->setPermissionsTeamId($tenant->getTenantKey());
             $user->assignRole($rol);

@@ -603,6 +603,11 @@ Almacén clave-valor por tenant para parámetros ajustables sin tocar código (t
 | `apariencia.titulo_login` | apariencia | `Iniciar sesión` (default en `AparienciaTenant::DEFAULT_TITULO_LOGIN`) |
 | `archivos.limite_mb` | archivos | `10` (default en `App\Support\ArchivosTenant::DEFAULT_LIMITE_MB`) — tamaño máximo por archivo subido en el gestor documental |
 | `general.zona_horaria` | general | `Europe/Madrid` (default en `App\Support\ConfigTenant::DEFAULT_ZONA_HORARIA`) — zona horaria **global del tenant**; catálogo fijo de 3 zonas (Madrid / Canarias / Argentina) en `ConfigTenant::ZONAS_HORARIAS_DISPONIBLES`. Se edita en la tab **General** de configuración |
+| `leads.retencion_dias` | crm | `1095` (3 años, default en `App\Support\ConfigCrm::DEFAULT_RETENCION_DIAS`) — plazo antes de purgar leads descartados/no convertidos (comando `leads:purgar`, RGPD) |
+| `leads.asignacion_estrategia` | crm | `manual` / `round_robin` (default en `ConfigCrm::estrategiaAsignacion`) — estrategia de asignación de leads nuevos |
+| `leads.asignacion_comerciales` | crm | `[]` (json de ids de `users`) — comerciales del reparto round-robin |
+| `leads.asignacion_ultimo_indice` | crm | `0` — puntero interno del round-robin (`App\Services\AsignadorLeads`, bloqueo transaccional); no editable en UI |
+| `presupuesto.dias_validez` | crm | `30` (default en `ConfigCrm::DEFAULT_DIAS_VALIDEZ_PRESUPUESTO`) — validez por defecto de un presupuesto nuevo |
 
 > **Zona horaria (convención transversal).** Todos los timestamps se **guardan y calculan en UTC**
 > (`config('app.timezone')`, Principio III: hora de servidor). `general.zona_horaria` **no** cambia
@@ -904,6 +909,118 @@ horas trabajadas, incidencia (fichaje incompleto, FR-015a) y veredicto (`Veredic
 libre, ausencia, retraso, parcial, cumplido, exceso). El informe (`GET /jornada`) lo calcula **al
 vuelo**; el comando diario `jornada:evaluar-cumplimiento` evalúa el día anterior de cada miembro y
 persiste únicamente las **alertas** de ausencia/retraso (no una tabla de resultados).
+
+---
+
+## Módulo CRM — leads, oportunidades, presupuestos (feature 028)
+
+Embudo comercial previo a la factura: **Lead → Oportunidad → Presupuesto → conversión a factura**.
+El presupuesto reutiliza `App\Services\CalculadoraFactura` (no duplica el motor de cálculo) y no es
+documento fiscal: numeración propia, sin Verifactu ni serie de factura.
+
+```
+tenants ──< leads ──< lead_notas
+users   ──(asignado_a)── leads
+leads   ──(opcional)── clientes           (convertido_a_cliente_id)
+tenants ──< oportunidades
+oportunidades ──(lead_id XOR cliente_id)── leads / clientes
+tenants ──< presupuestos ──< presupuesto_lineas
+oportunidades ──(opcional)──< presupuestos
+presupuestos ──(opcional)── facturas       (convertido_a_factura_id)
+articulos ──(opcional)── presupuesto_lineas
+```
+
+### `leads` — contacto potencial (aún no cliente)
+
+| Campo | Tipo | Notas |
+|-------|------|-------|
+| id | bigint PK | |
+| tenant_id | unsignedBigInteger, indexado | `BelongsToTenant` |
+| nombre | varchar(150) | requerido |
+| empresa | varchar(150), nullable | |
+| email / telefono | varchar, nullable | al menos uno de los dos requerido; dedup por tenant (FR-004, rechazo sin fusión) |
+| estado | varchar(15) | enum `EstadoLead`: `nuevo`, `contactado`, `cualificado`, `descartado`, `convertido` |
+| origen | varchar(15) | enum `OrigenLead`: `manual`, `importacion` |
+| asignado_a | fk `users`, nullable, `nullOnDelete` | `null` = bandeja "sin asignar" |
+| convertido_a_cliente_id | fk `clientes`, nullable, `nullOnDelete` | trazabilidad al convertir |
+| motivo_descarte | varchar, nullable | |
+| timestamps, softDeletes | | |
+
+Índices: `(tenant_id, estado)`, `(tenant_id, asignado_a)`, `(tenant_id, email)`, `(tenant_id, telefono)`.
+Retención RGPD: leads `descartado`/no convertidos se purgan pasado `leads.retencion_dias` (comando
+`leads:purgar`, patrón `RetencionLogsTenant`/feature 021).
+
+### `lead_notas` — actividad comercial sobre un lead
+
+| Campo | Tipo | Notas |
+|-------|------|-------|
+| id | bigint PK | |
+| tenant_id | unsignedBigInteger, indexado | `BelongsToTenant` |
+| lead_id | fk `leads`, `cascadeOnDelete` | |
+| user_id | fk `users`, nullable, `nullOnDelete` | autor |
+| tipo | varchar(15) | `nota`, `llamada`, `email`, `reunion`, `sistema` |
+| contenido | varchar(500) | |
+| timestamps | | |
+
+Índice `(tenant_id, lead_id)`.
+
+### `oportunidades` — posible venta en curso
+
+| Campo | Tipo | Notas |
+|-------|------|-------|
+| id | bigint PK | |
+| tenant_id | unsignedBigInteger, indexado | `BelongsToTenant` |
+| titulo | varchar(150) | |
+| lead_id / cliente_id | fk, nullable, `nullOnDelete` | **XOR**: exactamente uno no nulo (validado en el Request) |
+| etapa | varchar(15) | enum `EtapaOportunidad`: `nueva`, `en_negociacion`, `ganada`, `perdida` (`ganada`/`perdida` terminales) |
+| importe_estimado | decimal(12,2), nullable | |
+| asignado_a | fk `users`, nullable, `nullOnDelete` | |
+| motivo_perdida | varchar, nullable | requerido al pasar a `perdida` |
+| cerrada_at | datetime, nullable | fecha de cierre |
+| timestamps, softDeletes | | |
+
+Índices: `(tenant_id, etapa)`, `(tenant_id, lead_id)`, `(tenant_id, cliente_id)`, `(tenant_id, asignado_a)`.
+Al ganar una oportunidad con `lead_id`, `App\Services\ConversorLeadCliente` convierte el lead en
+cliente (FR-012). **Nota de modelo Eloquent**: `Oportunidad` fija `$table = 'oportunidades'`
+explícito — el inflector de Laravel no pluraliza bien "Oportunidad" en español (daría
+`oportunidads`).
+
+### `presupuestos` — oferta comercial (documento NO fiscal)
+
+| Campo | Tipo | Notas |
+|-------|------|-------|
+| id | bigint PK | |
+| tenant_id | unsignedBigInteger, indexado | `BelongsToTenant` |
+| numero | varchar(20) | numeración propia `P-{año}-{n}`, **no** consume `series.proximo_numero` ni participa de Verifactu |
+| oportunidad_id / cliente_id / lead_id | fk, nullable, `nullOnDelete` | receptor cliente o lead |
+| estado | varchar(12) | enum `EstadoPresupuesto`: `borrador`→`enviado`→`aceptado`→`facturado` (terminal); `rechazado`/`caducado` |
+| receptor_* (nombre, nif, direccion, cp, ciudad, provincia, pais) | | snapshot congelado, mismo patrón que `facturas.cliente_*` |
+| fecha_emision / fecha_validez / fecha_envio | date / date / datetime | |
+| regimen_impositivo, aplica_recargo | | del tenant/cliente al crear |
+| base_total, cuota_impuesto_total, cuota_recargo_total, irpf_porcentaje, irpf_cuota, total | decimal | calculados por `CalculadoraFactura` (Principio III) |
+| convertido_a_factura_id | fk `facturas`, nullable, `nullOnDelete` | factura borrador creada al convertir |
+| timestamps, softDeletes | | |
+
+Índices: `(tenant_id, estado)`, `(tenant_id, oportunidad_id)`, `(tenant_id, cliente_id)`,
+`unique(tenant_id, numero)`. Solo editable en `borrador` (FR-018); `facturado` es terminal y de
+solo lectura (FR-022).
+
+### `presupuesto_lineas` — detalle de la oferta
+
+Espejo de `factura_lineas` en las columnas de importe, sin los campos fiscales de Verifactu
+(`calificacion_operacion`, `causa_exencion`, `mencion_legal`).
+
+| Campo | Tipo | Notas |
+|-------|------|-------|
+| id | bigint PK | |
+| tenant_id | unsignedBigInteger, indexado | `BelongsToTenant` |
+| presupuesto_id | fk `presupuestos`, `cascadeOnDelete` | |
+| articulo_id | fk `articulos`, nullable, `nullOnDelete` | |
+| concepto, unidad, cantidad, precio_unitario, descuento_porcentaje, base, tipo_impositivo, cuota_impuesto, tipo_recargo, cuota_recargo, orden | | mismas columnas que `factura_lineas` |
+| timestamps | | |
+
+Al convertir a factura, cada línea se copia a `factura_lineas` con sus importes **congelados** (no
+releídos del catálogo).
 
 ---
 

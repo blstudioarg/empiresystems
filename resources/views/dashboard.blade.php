@@ -89,3 +89,8 @@
 		</div>
 	</div>
 @endsection
+
+@section('ayuda-titulo', 'Inicio')
+@section('ayuda')
+	@include('ayuda.dashboard')
+@endsection

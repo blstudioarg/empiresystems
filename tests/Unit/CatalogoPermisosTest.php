@@ -7,9 +7,9 @@ use PHPUnit\Framework\TestCase;
 
 class CatalogoPermisosTest extends TestCase
 {
-    public function test_expone_las_17_claves_del_catalogo(): void
+    public function test_expone_las_20_claves_del_catalogo(): void
     {
-        $this->assertCount(17, CatalogoPermisos::claves());
+        $this->assertCount(20, CatalogoPermisos::claves());
     }
 
     public function test_no_hay_claves_duplicadas(): void
@@ -69,6 +69,6 @@ class CatalogoPermisosTest extends TestCase
         $this->assertNotContains('ver-logs', $base);
         $this->assertContains('ver-clientes', $base);
         $this->assertContains('ver-dashboard', $base);
-        $this->assertCount(12, $base);
+        $this->assertCount(15, $base);
     }
 }

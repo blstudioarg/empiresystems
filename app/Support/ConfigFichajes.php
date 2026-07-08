@@ -8,7 +8,7 @@ use App\Models\Configuracion;
  * Flags de configuración del módulo de fichajes por tenant (D8/D9), reutilizando el patrón
  * clave/valor de `configuraciones` ya usado por el resto del proyecto.
  *
- * La zona horaria ya NO vive aquí: se promovió a {@see \App\Support\ConfigTenant} porque es una
+ * La zona horaria ya NO vive aquí: se promovió a {@see ConfigTenant} porque es una
  * config global del tenant (aplica a todo el front), no específica de fichajes.
  */
 class ConfigFichajes

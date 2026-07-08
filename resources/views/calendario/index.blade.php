@@ -129,6 +129,11 @@
 	@include('calendario._modales')
 @endsection
 
+@section('ayuda-titulo', 'Calendario de fichajes')
+@section('ayuda')
+	@include('ayuda.calendario')
+@endsection
+
 @push('scripts')
 	<script src="{{ asset('vendor/fullcalendar/main.min.js') }}"></script>
 	<script src="{{ asset('vendor/fullcalendar/locales/es.js') }}"></script>

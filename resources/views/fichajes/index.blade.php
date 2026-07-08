@@ -151,6 +151,14 @@
 			min-height: 1.1em;
 		}
 
+		/* GPS con mala precisión (>50m, típico de fallback por IP/Wi-Fi en vez de GPS real): mismo
+		   ámbar que el estado "en pausa" del hero, para que se note que conviene esperar antes de
+		   fichar en vez de quedar con el mismo gris neutro de siempre. */
+		.fichaje-hint--imprecisa {
+			color: #f2a600;
+			font-weight: 600;
+		}
+
 		/* ---------- Card "Hoy": horas + timeline ---------- */
 		.fichaje-horas-hoy {
 			display: flex;
@@ -214,9 +222,15 @@
 			margin-top: 0.75rem;
 		}
 
-		/* ---------- Ubicación / mapa (cabecera de la card, de punta a punta) ---------- */
+		/* ---------- Ubicación / mapa ----------
+		   Vive dentro de .card-body (después del reloj/acciones, nunca antes: ver "Vistas
+		   self-service mobile-first" en docs/04-front-guidelines.md — el reloj+estado+acción es
+		   la única idea protagonista del hero, el mapa es contexto de apoyo). Al no ser ya el
+		   primer hijo de la card, necesita márgenes negativos para seguir yendo de punta a punta
+		   pese al padding de .card-body. */
 		#fichaje-mapa {
 			height: 220px;
+			margin: 1rem calc(-1 * var(--bs-card-spacer-x, 1rem)) 0;
 		}
 
 		@media (min-width: 992px) {
@@ -244,6 +258,18 @@
 		[data-theme-version="dark"] .fichaje-bottom-nav {
 			background: #272627;
 			border-top-color: rgba(255, 255, 255, 0.2);
+		}
+
+		/* .btn-outline-dark (style.css) no trae override para dark mode a diferencia de
+		   .btn-outline-secondary (que sí lo tiene) — sin esto, su gris #444 por defecto queda casi
+		   invisible sobre el fondo oscuro de la card. */
+		[data-theme-version="dark"] .btn-fichar-principal.btn-outline-dark {
+			color: #fff;
+			border-color: rgba(255, 255, 255, 0.35);
+		}
+
+		[data-theme-version="dark"] .btn-fichar-principal.btn-outline-dark:hover {
+			background: rgba(255, 255, 255, 0.08);
 		}
 
 		.fichaje-bottom-nav-item {
@@ -360,8 +386,6 @@
 					<div class="col-12 col-lg-8 col-xl-6">
 						{{-- Una sola card "app": mapa arriba, estado+reloj+acción, resumen de hoy debajo --}}
 						<div class="card fichaje-hero" data-estado="{{ $estado }}">
-							<div id="fichaje-mapa"></div>
-
 							<div class="card-body">
 								<div class="fichaje-hero-top">
 									<span id="fichaje-estado-badge" class="badge fichaje-estado-badge {{ ['cerrada' => 'bg-secondary', 'abierta' => 'bg-primary', 'en_pausa' => 'bg-warning text-dark'][$estado] }}" data-estado="{{ $estado }}">
@@ -400,7 +424,10 @@
 									<button type="button" class="btn btn-primary btn-lg btn-fichar-principal" data-tipo="fin_pausa">
 										<span>Terminar pausa</span>
 									</button>
-									<button type="button" class="btn btn-outline-danger btn-fichar-principal" data-tipo="salida">
+									{{-- outline-dark (no outline-danger): fichar salida es una acción normal del día
+										(irse a casa), no destructiva — el rojo queda reservado para borrado real
+										(ver "Confirmación de acciones irreversibles" en docs/04-front-guidelines.md). --}}
+									<button type="button" class="btn btn-outline-dark btn-fichar-principal" data-tipo="salida">
 										<span>Fichar salida</span>
 									</button>
 									@if ($registrarPausas)
@@ -411,6 +438,8 @@
 								</div>
 
 								<div id="fichaje-precision-info" class="fichaje-hint"></div>
+
+								<div id="fichaje-mapa"></div>
 
 								<hr>
 
@@ -484,6 +513,11 @@
 			</button>
 		</nav>
 	@endif
+@endsection
+
+@section('ayuda-titulo', 'Fichar')
+@section('ayuda')
+	@include('ayuda.fichajes')
 @endsection
 
 @if ($miembro)

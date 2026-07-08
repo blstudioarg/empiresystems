@@ -103,6 +103,11 @@
 	</div>
 @endsection
 
+@section('ayuda-titulo', 'Detalle de campaña')
+@section('ayuda')
+	@include('ayuda.campanas-detalle')
+@endsection
+
 @push('scripts')
 	<script>
 		window.campanaFormState = {

@@ -138,6 +138,11 @@
 	</div>
 @endsection
 
+@section('ayuda-titulo', 'Clientes')
+@section('ayuda')
+	@include('ayuda.clientes')
+@endsection
+
 @push('scripts')
 	<script>
 		window.clienteFormState = {

@@ -99,6 +99,11 @@
 	</div>
 @endsection
 
+@section('ayuda-titulo', 'Facturas simplificadas (POS)')
+@section('ayuda')
+	@include('ayuda.pos')
+@endsection
+
 @push('scripts')
 	<script src="{{ asset('vendor/datatables/js/jquery.dataTables.min.js') }}"></script>
 	<script src="{{ asset('vendor/datatables/responsive/responsive.js') }}"></script>

@@ -1,21 +1,21 @@
 <?php
 
 use App\Http\Controllers\AlertaController;
-use App\Http\Controllers\ArticuloController;
-use App\Http\Controllers\CategoriaArticuloController;
-use App\Http\Controllers\AsignacionHorarioController;
 use App\Http\Controllers\ArchivoController;
+use App\Http\Controllers\ArticuloController;
+use App\Http\Controllers\AsignacionHorarioController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\BancoController;
 use App\Http\Controllers\CalendarioController;
+use App\Http\Controllers\CampanaController;
 use App\Http\Controllers\CarpetaController;
+use App\Http\Controllers\CategoriaArticuloController;
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\CompraController;
 use App\Http\Controllers\CompraFacturaeController;
 use App\Http\Controllers\ConfiguracionController;
 use App\Http\Controllers\CorreccionFichajeController;
-use App\Http\Controllers\CampanaController;
 use App\Http\Controllers\CuentaBancariaController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FacturaController;
@@ -23,14 +23,18 @@ use App\Http\Controllers\FacturaeController;
 use App\Http\Controllers\FichajeController;
 use App\Http\Controllers\HorarioController;
 use App\Http\Controllers\InformeJornadaController;
+use App\Http\Controllers\LeadController;
+use App\Http\Controllers\LeadImportacionController;
 use App\Http\Controllers\LocalidadController;
 use App\Http\Controllers\LogActividadController;
 use App\Http\Controllers\MiembroEquipoController;
 use App\Http\Controllers\MiJornadaController;
 use App\Http\Controllers\MovimientoStockController;
+use App\Http\Controllers\OportunidadController;
 use App\Http\Controllers\PagoController;
 use App\Http\Controllers\PlantillaEmailController;
 use App\Http\Controllers\PosController;
+use App\Http\Controllers\PresupuestoController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProveedorController;
 use App\Http\Controllers\RolController;
@@ -66,22 +70,57 @@ Route::middleware(['tenant.context', 'auth'])->group(function () {
     });
 
     Route::middleware('can:ver-facturas')->group(function () {
-    Route::get('/facturas', [FacturaController::class, 'index'])->name('facturas.index');
-    Route::get('/facturas/crear', [FacturaController::class, 'create'])->name('facturas.create');
-    Route::post('/facturas', [FacturaController::class, 'store'])->name('facturas.store');
-    Route::get('/facturas/{factura}/editar', [FacturaController::class, 'edit'])->name('facturas.edit');
-    Route::match(['put', 'patch'], '/facturas/{factura}', [FacturaController::class, 'update'])->name('facturas.update');
-    Route::delete('/facturas/{factura}', [FacturaController::class, 'destroy'])->name('facturas.destroy');
-    Route::post('/facturas/{factura}/emitir', [FacturaController::class, 'emitir'])->name('facturas.emitir');
-    Route::post('/facturas/{factura}/rectificar', [FacturaController::class, 'rectificar'])->name('facturas.rectificar');
-    Route::get('/facturas/{factura}/pdf', [FacturaController::class, 'pdf'])->name('facturas.pdf');
-    Route::post('/facturas/{factura}/enviar', [FacturaController::class, 'enviar'])->name('facturas.enviar');
-    Route::get('/facturas/{factura}/facturae', [FacturaeController::class, 'descargar'])->name('facturas.facturae.descargar');
-    Route::post('/facturas/{factura}/facturae', [FacturaeController::class, 'generarYEnviar'])->name('facturas.facturae.generar-enviar');
-    Route::post('/facturas/{factura}/facturae/reenviar', [FacturaeController::class, 'reenviar'])->name('facturas.facturae.reenviar');
-    Route::get('/facturas/{factura}/pagos', [PagoController::class, 'index'])->name('facturas.pagos.index');
-    Route::post('/facturas/{factura}/pagos', [PagoController::class, 'store'])->name('facturas.pagos.store');
-    Route::post('/pagos/{pago}/anular', [PagoController::class, 'anular'])->name('pagos.anular');
+        Route::get('/facturas', [FacturaController::class, 'index'])->name('facturas.index');
+        Route::get('/facturas/crear', [FacturaController::class, 'create'])->name('facturas.create');
+        Route::post('/facturas', [FacturaController::class, 'store'])->name('facturas.store');
+        Route::get('/facturas/{factura}/editar', [FacturaController::class, 'edit'])->name('facturas.edit');
+        Route::match(['put', 'patch'], '/facturas/{factura}', [FacturaController::class, 'update'])->name('facturas.update');
+        Route::delete('/facturas/{factura}', [FacturaController::class, 'destroy'])->name('facturas.destroy');
+        Route::post('/facturas/{factura}/emitir', [FacturaController::class, 'emitir'])->name('facturas.emitir');
+        Route::post('/facturas/{factura}/rectificar', [FacturaController::class, 'rectificar'])->name('facturas.rectificar');
+        Route::get('/facturas/{factura}/pdf', [FacturaController::class, 'pdf'])->name('facturas.pdf');
+        Route::post('/facturas/{factura}/enviar', [FacturaController::class, 'enviar'])->name('facturas.enviar');
+        Route::get('/facturas/{factura}/facturae', [FacturaeController::class, 'descargar'])->name('facturas.facturae.descargar');
+        Route::post('/facturas/{factura}/facturae', [FacturaeController::class, 'generarYEnviar'])->name('facturas.facturae.generar-enviar');
+        Route::post('/facturas/{factura}/facturae/reenviar', [FacturaeController::class, 'reenviar'])->name('facturas.facturae.reenviar');
+        Route::get('/facturas/{factura}/pagos', [PagoController::class, 'index'])->name('facturas.pagos.index');
+        Route::post('/facturas/{factura}/pagos', [PagoController::class, 'store'])->name('facturas.pagos.store');
+        Route::post('/pagos/{pago}/anular', [PagoController::class, 'anular'])->name('pagos.anular');
+    });
+
+    // CRM — leads, oportunidades, presupuestos (feature 028)
+    Route::middleware('can:ver-leads')->group(function () {
+        Route::get('/leads', [LeadController::class, 'index'])->name('leads.index');
+        Route::get('/leads/importar', [LeadImportacionController::class, 'form'])->name('leads.importar.form');
+        Route::post('/leads/importar', [LeadImportacionController::class, 'importar'])->name('leads.importar');
+        Route::post('/leads', [LeadController::class, 'store'])->name('leads.store');
+        Route::get('/leads/{lead}', [LeadController::class, 'show'])->name('leads.show');
+        Route::put('/leads/{lead}', [LeadController::class, 'update'])->name('leads.update');
+        Route::delete('/leads/{lead}', [LeadController::class, 'destroy'])->name('leads.destroy');
+        Route::post('/leads/{lead}/notas', [LeadController::class, 'storeNota'])->name('leads.notas.store');
+        Route::post('/leads/{lead}/convertir', [LeadController::class, 'convertir'])->name('leads.convertir');
+    });
+
+    Route::middleware('can:ver-oportunidades')->group(function () {
+        Route::get('/oportunidades', [OportunidadController::class, 'index'])->name('oportunidades.index');
+        Route::post('/oportunidades', [OportunidadController::class, 'store'])->name('oportunidades.store');
+        Route::get('/oportunidades/{oportunidad}', [OportunidadController::class, 'show'])->name('oportunidades.show');
+        Route::put('/oportunidades/{oportunidad}', [OportunidadController::class, 'update'])->name('oportunidades.update');
+        Route::put('/oportunidades/{oportunidad}/etapa', [OportunidadController::class, 'actualizarEtapa'])->name('oportunidades.etapa');
+        Route::delete('/oportunidades/{oportunidad}', [OportunidadController::class, 'destroy'])->name('oportunidades.destroy');
+    });
+
+    Route::middleware('can:ver-presupuestos')->group(function () {
+        Route::get('/presupuestos', [PresupuestoController::class, 'index'])->name('presupuestos.index');
+        Route::get('/presupuestos/crear', [PresupuestoController::class, 'create'])->name('presupuestos.create');
+        Route::post('/presupuestos', [PresupuestoController::class, 'store'])->name('presupuestos.store');
+        Route::get('/presupuestos/{presupuesto}/editar', [PresupuestoController::class, 'edit'])->name('presupuestos.edit');
+        Route::put('/presupuestos/{presupuesto}', [PresupuestoController::class, 'update'])->name('presupuestos.update');
+        Route::delete('/presupuestos/{presupuesto}', [PresupuestoController::class, 'destroy'])->name('presupuestos.destroy');
+        Route::put('/presupuestos/{presupuesto}/estado', [PresupuestoController::class, 'actualizarEstado'])->name('presupuestos.estado');
+        Route::post('/presupuestos/{presupuesto}/convertir', [PresupuestoController::class, 'convertir'])->name('presupuestos.convertir');
+        Route::get('/presupuestos/{presupuesto}/pdf', [PresupuestoController::class, 'pdf'])->name('presupuestos.pdf');
+        Route::post('/presupuestos/{presupuesto}/enviar', [PresupuestoController::class, 'enviar'])->name('presupuestos.enviar');
     });
 
     // POS — facturas simplificadas (tickets)
@@ -104,25 +143,27 @@ Route::middleware(['tenant.context', 'auth'])->group(function () {
     });
 
     Route::middleware('can:ver-configuracion')->group(function () {
-    Route::get('/configuracion', [ConfiguracionController::class, 'show'])->name('configuracion.show');
-    Route::match(['put', 'patch'], '/configuracion/apariencia', [ConfiguracionController::class, 'update'])
-        ->name('configuracion.apariencia.update');
-    Route::match(['put', 'patch'], '/configuracion/facturacion', [ConfiguracionController::class, 'updateFacturacion'])
-        ->name('configuracion.facturacion.update');
-    Route::match(['put', 'patch'], '/configuracion/email', [ConfiguracionController::class, 'updateEmail'])
-        ->name('configuracion.email.update');
-    Route::post('/configuracion/email/prueba', [ConfiguracionController::class, 'enviarPrueba'])
-        ->name('configuracion.email.prueba');
-    Route::match(['put', 'patch'], '/configuracion/archivos', [ConfiguracionController::class, 'updateArchivos'])
-        ->name('configuracion.archivos.update');
-    Route::match(['put', 'patch'], '/configuracion/certificado', [ConfiguracionController::class, 'updateCertificado'])
-        ->name('configuracion.certificado.update');
-    Route::post('/configuracion/certificado/verificar-vies', [ConfiguracionController::class, 'verificarVies'])
-        ->name('configuracion.certificado.verificar-vies');
-    Route::match(['put', 'patch'], '/configuracion/fichajes', [ConfiguracionController::class, 'updateFichajes'])
-        ->name('configuracion.fichajes.update');
-    Route::match(['put', 'patch'], '/configuracion/general', [ConfiguracionController::class, 'updateGeneral'])
-        ->name('configuracion.general.update');
+        Route::get('/configuracion', [ConfiguracionController::class, 'show'])->name('configuracion.show');
+        Route::match(['put', 'patch'], '/configuracion/apariencia', [ConfiguracionController::class, 'update'])
+            ->name('configuracion.apariencia.update');
+        Route::match(['put', 'patch'], '/configuracion/facturacion', [ConfiguracionController::class, 'updateFacturacion'])
+            ->name('configuracion.facturacion.update');
+        Route::match(['put', 'patch'], '/configuracion/email', [ConfiguracionController::class, 'updateEmail'])
+            ->name('configuracion.email.update');
+        Route::post('/configuracion/email/prueba', [ConfiguracionController::class, 'enviarPrueba'])
+            ->name('configuracion.email.prueba');
+        Route::match(['put', 'patch'], '/configuracion/archivos', [ConfiguracionController::class, 'updateArchivos'])
+            ->name('configuracion.archivos.update');
+        Route::match(['put', 'patch'], '/configuracion/certificado', [ConfiguracionController::class, 'updateCertificado'])
+            ->name('configuracion.certificado.update');
+        Route::post('/configuracion/certificado/verificar-vies', [ConfiguracionController::class, 'verificarVies'])
+            ->name('configuracion.certificado.verificar-vies');
+        Route::match(['put', 'patch'], '/configuracion/fichajes', [ConfiguracionController::class, 'updateFichajes'])
+            ->name('configuracion.fichajes.update');
+        Route::match(['put', 'patch'], '/configuracion/general', [ConfiguracionController::class, 'updateGeneral'])
+            ->name('configuracion.general.update');
+        Route::match(['put', 'patch'], '/configuracion/crm', [ConfiguracionController::class, 'updateCrm'])
+            ->name('configuracion.crm.update');
     });
 
     Route::middleware('can:ver-stock')->group(function () {
@@ -138,18 +179,18 @@ Route::middleware(['tenant.context', 'auth'])->group(function () {
     });
 
     Route::middleware('can:ver-compras')->group(function () {
-    Route::get('/compras', [CompraController::class, 'index'])->name('compras.index');
-    Route::get('/compras/crear', [CompraController::class, 'create'])->name('compras.create');
-    Route::post('/compras', [CompraController::class, 'store'])->name('compras.store');
-    Route::get('/compras/{compra}', [CompraController::class, 'show'])->name('compras.show');
-    Route::get('/compras/{compra}/editar', [CompraController::class, 'edit'])->name('compras.edit');
-    Route::match(['put', 'patch'], '/compras/{compra}', [CompraController::class, 'update'])->name('compras.update');
-    Route::post('/compras/{compra}/confirmar', [CompraController::class, 'confirmar'])->name('compras.confirmar');
-    Route::post('/compras/{compra}/anular', [CompraController::class, 'anular'])->name('compras.anular');
-    Route::delete('/compras/{compra}', [CompraController::class, 'destroy'])->name('compras.destroy');
-    Route::post('/compras/importar-facturae', [CompraFacturaeController::class, 'importar'])->name('compras.facturae.importar');
-    Route::get('/compras/{compra}/facturae', [CompraFacturaeController::class, 'descargar'])->name('compras.facturae.descargar');
-    Route::patch('/compras/{compra}/estado-b2b', [CompraFacturaeController::class, 'cambiarEstadoB2b'])->name('compras.estado-b2b.update');
+        Route::get('/compras', [CompraController::class, 'index'])->name('compras.index');
+        Route::get('/compras/crear', [CompraController::class, 'create'])->name('compras.create');
+        Route::post('/compras', [CompraController::class, 'store'])->name('compras.store');
+        Route::get('/compras/{compra}', [CompraController::class, 'show'])->name('compras.show');
+        Route::get('/compras/{compra}/editar', [CompraController::class, 'edit'])->name('compras.edit');
+        Route::match(['put', 'patch'], '/compras/{compra}', [CompraController::class, 'update'])->name('compras.update');
+        Route::post('/compras/{compra}/confirmar', [CompraController::class, 'confirmar'])->name('compras.confirmar');
+        Route::post('/compras/{compra}/anular', [CompraController::class, 'anular'])->name('compras.anular');
+        Route::delete('/compras/{compra}', [CompraController::class, 'destroy'])->name('compras.destroy');
+        Route::post('/compras/importar-facturae', [CompraFacturaeController::class, 'importar'])->name('compras.facturae.importar');
+        Route::get('/compras/{compra}/facturae', [CompraFacturaeController::class, 'descargar'])->name('compras.facturae.descargar');
+        Route::patch('/compras/{compra}/estado-b2b', [CompraFacturaeController::class, 'cambiarEstadoB2b'])->name('compras.estado-b2b.update');
     });
 
     // Email marketing — plantillas y campañas

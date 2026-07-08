@@ -510,6 +510,11 @@
 	</div>
 @endsection
 
+@section('ayuda-titulo', 'Crear ticket (POS)')
+@section('ayuda')
+	@include('ayuda.pos-crear')
+@endsection
+
 @push('scripts')
 	<script>
 		window.posState = {
