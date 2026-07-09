@@ -76,10 +76,28 @@ de facturas, logos de tenant e imágenes de artículos.
 - Para seeders o crear el primer super admin, usá la consola del servicio en Railway:
   `php artisan db:seed` / `php artisan tinker`, o el comando que tenga el proyecto.
 
-## Cola de trabajos
-El worker `queue:work` va incluido en el contenedor (supervisord). Si preferís aislarlo,
-poné `autostart=false` en `docker/supervisord.conf` y creá un segundo servicio Railway
-sobre el mismo repo con start command `php artisan queue:work`.
+## Cola de trabajos y tareas programadas
+El contenedor levanta con supervisord tres procesos además de Nginx/PHP-FPM:
+
+- **`queue`** (`queue:work`): procesa jobs (mails, PDFs, etc.). Driver `database`.
+- **`scheduler`** (`schedule:work`): reemplaza al cron de hosting compartido y dispara los
+  comandos programados de `bootstrap/app.php` (purgas RGPD de logs/Facturae/geo, alertas de
+  jornada). Sin esto, esas tareas de cumplimiento **no se ejecutan**.
+
+> **Escalado a varias réplicas**: el `scheduler` debe correr en **una sola** instancia para no
+> duplicar las tareas diarias. Si escalás, poné `autostart=false` a `scheduler` (y opcionalmente a
+> `queue`) en `docker/supervisord.conf` y creá un servicio Railway aparte sobre el mismo repo con
+> start command `php artisan schedule:work` / `php artisan queue:work`.
+
+## Health check
+`railway.json` apunta el health check a `/up` (endpoint nativo de Laravel 12, ya configurado en
+`bootstrap/app.php`). Railway espera 200 en esa ruta antes de dar el deploy por sano.
+
+## Proxy y HTTPS
+Railway termina TLS en su borde y reenvía por HTTP con cabeceras `X-Forwarded-*`.
+`bootstrap/app.php` ya llama a `trustProxies(at: '*')`, así Laravel genera URLs `https`,
+respeta el esquema y detecta la IP real del cliente (importante para el registro de accesos y la
+geo de fichajes). No hace falta configuración extra.
 
 ## Notas y límites
 

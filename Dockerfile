@@ -7,7 +7,13 @@
 FROM node:20-slim AS assets
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm install
+# npm bug con dependencias opcionales nativas de rollup (npm/cli#4828): un lockfile
+# generado en otra plataforma (Windows) puede hacer que `npm ci` no baje el binario
+# nativo de linux (@rollup/rollup-linux-x64-gnu en node:20-slim) y Vite falle con
+# "Cannot find module @rollup/rollup-linux-*". Si pasa, reinstalación limpia que
+# resuelve la dependencia opcional para la plataforma del contenedor.
+RUN npm ci --no-audit --no-fund \
+    || (rm -rf node_modules package-lock.json && npm install --no-audit --no-fund)
 COPY vite.config.js ./
 COPY resources ./resources
 COPY public ./public
