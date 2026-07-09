@@ -36,5 +36,14 @@ php /app/artisan event:cache 2>/dev/null || true
 echo "[entrypoint] Ejecutando migraciones..."
 php /app/artisan migrate --force || echo "[entrypoint] AVISO: las migraciones fallaron; revisá la conexión a la base de datos."
 
+# --- Seed inicial (opt-in) -------------------------------------------------
+# Con SEED_ON_DEPLOY=true crea el super admin + catálogo de permisos (idempotente).
+# Pensado para el primer deploy; se puede dejar activado (firstOrCreate no duplica).
+if [ "${SEED_ON_DEPLOY}" = "true" ]; then
+    echo "[entrypoint] Sembrando datos iniciales (DeploySeeder)..."
+    php /app/artisan db:seed --class=DeploySeeder --force \
+        || echo "[entrypoint] AVISO: el seed inicial falló; revisá la conexión a la base de datos."
+fi
+
 echo "[entrypoint] Arrancando servicios."
 exec "$@"
