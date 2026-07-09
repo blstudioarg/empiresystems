@@ -30,19 +30,36 @@ php /app/artisan route:cache
 php /app/artisan view:cache
 php /app/artisan event:cache 2>/dev/null || true
 
-# --- Migraciones -----------------------------------------------------------
-# No abortamos el arranque si fallan: dejamos el server arriba para inspeccionar
-# logs en Railway en vez de entrar en un bucle de reinicios.
-echo "[entrypoint] Ejecutando migraciones..."
-php /app/artisan migrate --force || echo "[entrypoint] AVISO: las migraciones fallaron; revisá la conexión a la base de datos."
+# --- Migraciones (con reintentos) ------------------------------------------
+# En Railway los servicios arrancan en paralelo: la red privada del MySQL
+# (mysql.railway.internal) puede no estar lista cuando corre el entrypoint. Sin
+# reintento, `migrate` falla, el arranque sigue y las tablas nunca se crean
+# (el error típico es "Table 'railway.cache' doesn't exist" en el worker). Por
+# eso reintentamos hasta que la DB responde y las migraciones aplican.
+echo "[entrypoint] Ejecutando migraciones (esperando a la base de datos)..."
+MIGRATED=false
+i=1
+while [ "$i" -le 30 ]; do
+    if php /app/artisan migrate --force 2>&1; then
+        MIGRATED=true
+        break
+    fi
+    echo "[entrypoint] La base no está lista todavía (intento $i/30); reintento en 3s..."
+    sleep 3
+    i=$((i + 1))
+done
+
+if [ "$MIGRATED" != "true" ]; then
+    echo "[entrypoint] AVISO: las migraciones no se aplicaron tras 30 intentos; revisá la conexión a la base de datos."
+fi
 
 # --- Seed inicial (opt-in) -------------------------------------------------
 # Con SEED_ON_DEPLOY=true crea el super admin + catálogo de permisos (idempotente).
-# Pensado para el primer deploy; se puede dejar activado (firstOrCreate no duplica).
-if [ "${SEED_ON_DEPLOY}" = "true" ]; then
+# Solo si las migraciones aplicaron, para no fallar contra tablas inexistentes.
+if [ "$MIGRATED" = "true" ] && [ "${SEED_ON_DEPLOY}" = "true" ]; then
     echo "[entrypoint] Sembrando datos iniciales (DeploySeeder)..."
     php /app/artisan db:seed --class=DeploySeeder --force \
-        || echo "[entrypoint] AVISO: el seed inicial falló; revisá la conexión a la base de datos."
+        || echo "[entrypoint] AVISO: el seed inicial falló."
 fi
 
 echo "[entrypoint] Arrancando servicios."
