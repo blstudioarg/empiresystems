@@ -29,7 +29,10 @@ http {
                application/xml text/xml image/svg+xml;
 
     server {
+        # Railway enruta el tráfico público al contenedor por IPv6; sin el listen [::]
+        # nginx solo bindea IPv4 y el edge recibe "connection reset" -> 502 en todo.
         listen ${PORT} default_server;
+        listen [::]:${PORT} default_server;
         server_name _;
         root /app/public;
         index index.php;
