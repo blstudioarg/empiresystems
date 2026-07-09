@@ -6,6 +6,8 @@
   },
   "deploy": {
     "startCommand": "supervisord -c /etc/supervisord.conf",
+    "healthcheckPath": "/up",
+    "healthcheckTimeout": 120,
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
   }
