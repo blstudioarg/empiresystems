@@ -16,11 +16,16 @@ return [
      * The list of domains hosting your central app.
      *
      * Only relevant if you're using the domain or subdomain identification middleware.
+     *
+     * Se puede sobrescribir por entorno con CENTRAL_DOMAINS (lista separada por comas), sin tocar
+     * código: en Railway/producción hay que incluir el dominio asignado (ej.
+     * `empiresystems-production.up.railway.app`) para que la app central (login, super_admin)
+     * resuelva por Host. Fallback: los dominios de desarrollo local.
      */
-    'central_domains' => [
-        '127.0.0.1',
-        'localhost',
-    ],
+    'central_domains' => array_values(array_filter(array_map(
+        'trim',
+        explode(',', (string) env('CENTRAL_DOMAINS', '127.0.0.1,localhost'))
+    ))),
 
     /**
      * Tenancy bootstrappers are executed when tenancy is initialized.
