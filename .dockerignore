@@ -1,0 +1,39 @@
+# Dependencias y build: se generan dentro de la imagen
+/vendor
+/node_modules
+/public/build
+/public/hot
+
+# Entorno local y secretos
+.env
+.env.*
+!.env.example
+
+# Git y metadatos
+.git
+.gitignore
+.gitattributes
+
+# Herramientas de dev y specs pesadas (no se necesitan en runtime)
+/tests
+/specs
+/.specify
+/.claude
+/docs
+/tutoriales-video
+/remotion
+/imagaenes_para_crear_articulos
+/template
+
+# Almacenamiento local y caches: se recrean en el contenedor / volumen
+/storage/logs/*
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+/database/database.sqlite
+
+# Misc
+*.md
+!README.md
+.editorconfig
+.DS_Store
