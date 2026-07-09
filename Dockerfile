@@ -4,7 +4,7 @@
 # ============================================================================
 
 # --- Stage 1: build de assets front (Vite + Tailwind) ---------------------
-FROM node:20-alpine AS assets
+FROM node:20-slim AS assets
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
