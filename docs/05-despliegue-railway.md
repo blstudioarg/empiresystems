@@ -73,8 +73,21 @@ de facturas, logos de tenant e imágenes de artículos.
 
 ### 5. Migraciones y datos iniciales
 - Las migraciones corren solas en cada arranque (`entrypoint.sh`, `migrate --force`).
-- Para seeders o crear el primer super admin, usá la consola del servicio en Railway:
-  `php artisan db:seed` / `php artisan tinker`, o el comando que tenga el proyecto.
+- Con la variable **`SEED_ON_DEPLOY=true`**, el `entrypoint.sh` corre `DeploySeeder`
+  automáticamente tras las migraciones (idempotente, se puede dejar seteada en todos los
+  redeploys). Crea:
+  - El super admin (`ADMIN_EMAIL` / `ADMIN_PASSWORD`, o valores por defecto a cambiar tras
+    el primer login).
+  - El catálogo global de permisos (feature 027).
+  - El catálogo INE de **provincias y localidades** (`ProvinciaLocalidadSeeder`, tablas
+    centrales sin `tenant_id`) — alimenta los selects de dirección de clientes/proveedores/
+    tenants en toda la app. Sin `SEED_ON_DEPLOY=true` estas tablas quedan vacías y hay que
+    sembrarlas a mano (ver abajo).
+- Para correr seeders sueltos a mano (o si no usás `SEED_ON_DEPLOY`), usá la consola del
+  servicio en Railway, p. ej.:
+  ```
+  php artisan db:seed --class=ProvinciaLocalidadSeeder --force
+  ```
 
 ## Cola de trabajos y tareas programadas
 El contenedor levanta con supervisord tres procesos además de Nginx/PHP-FPM:
