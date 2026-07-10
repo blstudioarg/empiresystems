@@ -18,6 +18,8 @@ use Spatie\Permission\Models\Permission;
  *   - Un super admin (sin tenant) que resuelve por el dominio central.
  *   - El catálogo global de permisos (feature 027), para que al crear tenants desde el panel
  *     el ProvisionadorRoles tenga permisos que sincronizar.
+ *   - El catálogo INE de provincias/localidades (tablas centrales, sin tenant_id), que
+ *     alimenta los selects de dirección de clientes/proveedores/tenants en toda la app.
  *
  * NO crea un tenant demo: en un hosting real el tenant se resuelve por Host contra la tabla
  * `domains`, y un dominio de ejemplo no sería alcanzable. El super admin crea los tenants reales
@@ -46,5 +48,8 @@ class DeploySeeder extends Seeder
         foreach (CatalogoPermisos::claves() as $clave) {
             Permission::firstOrCreate(['name' => $clave, 'guard_name' => 'web']);
         }
+
+        // Catálogo INE de provincias/localidades (idempotente: upsert por id).
+        $this->call(ProvinciaLocalidadSeeder::class);
     }
 }
