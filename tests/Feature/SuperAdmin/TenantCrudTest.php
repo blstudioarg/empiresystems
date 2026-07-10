@@ -363,6 +363,73 @@ class TenantCrudTest extends TestCase
         $response->assertSessionHasErrors('dominio');
     }
 
+    public function test_alta_con_nif_duplicado_falla_con_422_no_500(): void
+    {
+        $existente = Tenant::factory()->create(['nif' => 'B12345674']);
+
+        $this->actingAsSuperAdmin();
+
+        $response = $this->post('http://localhost/super_admin/tenants', [
+            'dominio' => 'otro-tenant.test',
+            'nombre_comercial' => 'Otro Tenant',
+            'razon_social' => 'Otro Tenant SL',
+            'nif' => $existente->nif,
+            'regimen_impositivo' => 'iva',
+            'email' => 'otro@example.com',
+            'admin_email' => 'admin@otro-tenant.test',
+            'admin_password' => 'password123',
+        ]);
+
+        // Antes: el NIF único de la tabla `tenants` reventaba el INSERT con un QueryException (500),
+        // porque la unicidad no se validaba. Ahora la validación la captura -> 422 amable, sin dejar
+        // ni tenant ni dominio a medias.
+        $response->assertSessionHasErrors('nif');
+        $this->assertDatabaseMissing('tenants', ['nombre_comercial' => 'Otro Tenant']);
+        $this->assertDatabaseMissing('domains', ['domain' => 'otro-tenant.test']);
+    }
+
+    public function test_edicion_con_nif_de_otro_tenant_falla(): void
+    {
+        $tenantA = Tenant::factory()->create(['nif' => 'B12345674']);
+        $tenantB = Tenant::factory()->create(['nif' => 'B87654323']);
+
+        $this->actingAsSuperAdmin();
+
+        $response = $this->put("http://localhost/super_admin/tenants/{$tenantA->id}", [
+            'dominio' => $this->domainFor($tenantA),
+            'nombre_comercial' => $tenantA->nombre_comercial,
+            'razon_social' => $tenantA->razon_social,
+            'nif' => $tenantB->nif,
+            'regimen_impositivo' => $tenantA->regimen_impositivo->value,
+            'email' => $tenantA->email,
+            'activo' => '1',
+        ]);
+
+        $response->assertSessionHasErrors('nif');
+    }
+
+    public function test_edicion_conservando_su_propio_nif_funciona(): void
+    {
+        $tenant = Tenant::factory()->create(['nif' => 'B12345674']);
+
+        $this->actingAsSuperAdmin();
+
+        $response = $this->put("http://localhost/super_admin/tenants/{$tenant->id}", [
+            'dominio' => $this->domainFor($tenant),
+            'nombre_comercial' => 'Nombre Editado SL',
+            'razon_social' => $tenant->razon_social,
+            'nif' => $tenant->nif,
+            'regimen_impositivo' => $tenant->regimen_impositivo->value,
+            'email' => $tenant->email,
+            'activo' => '1',
+        ]);
+
+        // El propio NIF del tenant no debe chocar consigo mismo (ignore()).
+        $response->assertRedirect(route('super_admin.tenants.index'));
+        $response->assertSessionHasNoErrors();
+        $this->assertEquals('Nombre Editado SL', $tenant->fresh()->nombre_comercial);
+    }
+
     public function test_dominio_normalizado_se_trata_como_el_mismo(): void
     {
         $existente = Tenant::factory()->create();
