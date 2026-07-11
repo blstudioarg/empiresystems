@@ -34,6 +34,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $schedule->command('leads:purgar')->daily();
     })
     ->withMiddleware(function (Middleware $middleware): void {
+        // Detrás del edge proxy de Railway (TLS terminado en el borde): confiar en las cabeceras
+        // X-Forwarded-* para que Laravel genere URLs https, respete el esquema y detecte la IP
+        // real del cliente (relevante para el registro de accesos / fichajes con geo).
+        $middleware->trustProxies(at: '*');
+
         $middleware->alias([
             'tenant.context' => SetTenantContext::class,
             'super_admin' => EnsureSuperAdmin::class,

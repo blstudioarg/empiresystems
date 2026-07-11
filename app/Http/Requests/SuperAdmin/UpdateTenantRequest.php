@@ -35,7 +35,7 @@ class UpdateTenantRequest extends FormRequest
             ],
             'nombre_comercial' => ['required', 'string', 'max:255'],
             'razon_social' => ['required', 'string', 'max:255'],
-            'nif' => ['required', 'string', 'max:15', new NifEspanol],
+            'nif' => ['required', 'string', 'max:15', new NifEspanol, Rule::unique('tenants', 'nif')->ignore($tenant->id)],
             'direccion' => ['nullable', 'string', 'max:255'],
             'cp' => ['nullable', 'string', 'max:10'],
             'ciudad' => ['nullable', 'string', 'max:255'],
@@ -66,6 +66,7 @@ class UpdateTenantRequest extends FormRequest
             'dominio.regex' => 'El dominio no tiene un formato de host válido.',
             'dominio.unique' => 'Ese dominio ya está en uso por otro tenant.',
             'nif.required' => 'El NIF es obligatorio.',
+            'nif.unique' => 'Ese NIF ya está registrado por otro tenant.',
         ];
     }
 }
