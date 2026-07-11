@@ -30,6 +30,7 @@ class MovimientoStock extends Model
         'origen',
         'factura_id',
         'compra_id',
+        'albaran_id',
         'motivo',
         'ocurrido_at',
     ];
@@ -63,5 +64,10 @@ class MovimientoStock extends Model
     public function factura(): BelongsTo
     {
         return $this->belongsTo(Factura::class);
+    }
+
+    public function albaran(): BelongsTo
+    {
+        return $this->belongsTo(Albaran::class);
     }
 }

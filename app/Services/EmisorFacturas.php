@@ -78,6 +78,13 @@ class EmisorFacturas
      */
     private function moverStock(Factura $factura): void
     {
+        // El stock de las líneas que provienen de albaranes ya se movió al confirmarlos como
+        // entregados (EntregadorAlbaran); si esta factura consolida albaranes, no se mueve de nuevo
+        // (research D4, feature 029).
+        if ($factura->albaranes()->exists()) {
+            return;
+        }
+
         foreach ($factura->lineas as $linea) {
             $articulo = $linea->articulo;
 

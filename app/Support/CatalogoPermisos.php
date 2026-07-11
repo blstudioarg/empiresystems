@@ -22,6 +22,7 @@ class CatalogoPermisos
         ['clave' => 'ver-leads', 'etiqueta' => 'Leads', 'modulo' => 'CRM'],
         ['clave' => 'ver-oportunidades', 'etiqueta' => 'Oportunidades', 'modulo' => 'CRM'],
         ['clave' => 'ver-presupuestos', 'etiqueta' => 'Presupuestos', 'modulo' => 'CRM'],
+        ['clave' => 'ver-albaranes', 'etiqueta' => 'Albaranes', 'modulo' => 'CRM'],
         ['clave' => 'ver-articulos', 'etiqueta' => 'Catálogo', 'modulo' => 'Stock'],
         ['clave' => 'ver-stock', 'etiqueta' => 'Kardex', 'modulo' => 'Stock'],
         ['clave' => 'ver-proveedores', 'etiqueta' => 'Proveedores', 'modulo' => 'Stock'],

@@ -18,6 +18,7 @@ class FacturaLinea extends Model
     protected $fillable = [
         'tenant_id',
         'factura_id',
+        'albaran_id',
         'articulo_id',
         'concepto',
         'unidad',
@@ -60,5 +61,10 @@ class FacturaLinea extends Model
     public function articulo(): BelongsTo
     {
         return $this->belongsTo(Articulo::class);
+    }
+
+    public function albaran(): BelongsTo
+    {
+        return $this->belongsTo(Albaran::class);
     }
 }

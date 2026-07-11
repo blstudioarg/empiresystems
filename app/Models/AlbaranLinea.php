@@ -2,25 +2,25 @@
 
 namespace App\Models;
 
-use Database\Factories\PresupuestoLineaFactory;
+use Database\Factories\AlbaranLineaFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
-class PresupuestoLinea extends Model
+class AlbaranLinea extends Model
 {
-    /** @use HasFactory<PresupuestoLineaFactory> */
+    /** @use HasFactory<AlbaranLineaFactory> */
     use BelongsToTenant, HasFactory;
 
     protected $fillable = [
         'tenant_id',
-        'presupuesto_id',
+        'albaran_id',
+        'presupuesto_linea_id',
         'articulo_id',
         'concepto',
         'unidad',
         'cantidad',
-        'cantidad_entregada',
         'precio_unitario',
         'descuento_porcentaje',
         'base',
@@ -35,7 +35,6 @@ class PresupuestoLinea extends Model
     {
         return [
             'cantidad' => 'decimal:4',
-            'cantidad_entregada' => 'decimal:4',
             'precio_unitario' => 'decimal:4',
             'descuento_porcentaje' => 'decimal:2',
             'base' => 'decimal:2',
@@ -47,22 +46,18 @@ class PresupuestoLinea extends Model
         ];
     }
 
-    public function presupuesto(): BelongsTo
+    public function albaran(): BelongsTo
     {
-        return $this->belongsTo(Presupuesto::class);
+        return $this->belongsTo(Albaran::class);
+    }
+
+    public function presupuestoLinea(): BelongsTo
+    {
+        return $this->belongsTo(PresupuestoLinea::class);
     }
 
     public function articulo(): BelongsTo
     {
         return $this->belongsTo(Articulo::class);
-    }
-
-    /**
-     * Saldo pendiente de entrega en albaranes (research D2): tope que valida `RegistroAlbaran`
-     * antes de crear/editar un albarán en borrador que referencie esta línea.
-     */
-    public function cantidadPendiente(): float
-    {
-        return round((float) $this->cantidad - (float) $this->cantidad_entregada, 4);
     }
 }

@@ -71,6 +71,10 @@
 			'</li>'
 		);
 
+		if (row.puede_generar_albaran) {
+			items.push('<li><a class="dropdown-item" href="' + escapeAttr(row.generar_albaran_url) + '">Generar albarán</a></li>');
+		}
+
 		if (row.es_eliminable) {
 			items.push('<li><hr class="dropdown-divider"></li>');
 			items.push(

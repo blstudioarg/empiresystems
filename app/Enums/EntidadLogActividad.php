@@ -12,6 +12,7 @@ enum EntidadLogActividad: string
     case Lead = 'lead';
     case Oportunidad = 'oportunidad';
     case Presupuesto = 'presupuesto';
+    case Albaran = 'albaran';
 
     public function label(): string
     {
@@ -24,6 +25,7 @@ enum EntidadLogActividad: string
             self::Lead => 'Lead',
             self::Oportunidad => 'Oportunidad',
             self::Presupuesto => 'Presupuesto',
+            self::Albaran => 'Albarán',
         };
     }
 }

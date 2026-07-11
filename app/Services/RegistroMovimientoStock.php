@@ -6,6 +6,7 @@ use App\Enums\OrigenMovimientoStock;
 use App\Enums\TipoArticulo;
 use App\Enums\TipoMovimientoStock;
 use App\Exceptions\MovimientoStockInvalidoException;
+use App\Models\Albaran;
 use App\Models\Articulo;
 use App\Models\Compra;
 use App\Models\Factura;
@@ -27,12 +28,13 @@ class RegistroMovimientoStock
         ?string $motivo = null,
         ?Factura $factura = null,
         ?Compra $compra = null,
+        ?Albaran $albaran = null,
     ): MovimientoStock {
         if ($cantidad <= 0) {
             throw new MovimientoStockInvalidoException('La cantidad del movimiento debe ser mayor que cero.');
         }
 
-        return DB::transaction(function () use ($articulo, $tipo, $cantidad, $origen, $motivo, $factura, $compra) {
+        return DB::transaction(function () use ($articulo, $tipo, $cantidad, $origen, $motivo, $factura, $compra, $albaran) {
             /** @var Articulo $articuloBloqueado */
             $articuloBloqueado = Articulo::whereKey($articulo->getKey())->lockForUpdate()->firstOrFail();
 
@@ -59,6 +61,7 @@ class RegistroMovimientoStock
                 'origen' => $origen,
                 'factura_id' => $factura?->id,
                 'compra_id' => $compra?->id,
+                'albaran_id' => $albaran?->id,
                 'motivo' => $motivo,
                 'ocurrido_at' => now(),
             ]);

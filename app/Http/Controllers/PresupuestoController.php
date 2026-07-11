@@ -40,7 +40,7 @@ class PresupuestoController extends Controller
     public function index(Request $request): View|JsonResponse
     {
         if ($request->wantsJson()) {
-            $presupuestos = Presupuesto::with(['cliente', 'lead'])->orderByDesc('fecha_emision')->get();
+            $presupuestos = Presupuesto::with(['cliente', 'lead', 'lineas'])->orderByDesc('fecha_emision')->get();
 
             return response()->json([
                 'data' => $presupuestos->map(fn (Presupuesto $presupuesto) => [
@@ -60,6 +60,9 @@ class PresupuestoController extends Controller
                     'enviar_url' => route('presupuestos.enviar', $presupuesto),
                     'estado_url' => route('presupuestos.estado', $presupuesto),
                     'convertir_url' => route('presupuestos.convertir', $presupuesto),
+                    'puede_generar_albaran' => $presupuesto->estado === EstadoPresupuesto::Aceptado
+                        && $presupuesto->lineas->contains(fn ($linea) => $linea->cantidadPendiente() > 0),
+                    'generar_albaran_url' => route('albaranes.create', ['presupuesto_id' => $presupuesto->id]),
                 ]),
                 'totales' => [
                     'total' => Presupuesto::count(),

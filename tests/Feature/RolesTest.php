@@ -47,12 +47,12 @@ class RolesTest extends TestCase
 
         $data = $response->json();
         $this->assertSame(2, $data['totales']['roles']);
-        $this->assertSame(20, $data['totales']['permisos_catalogo']);
+        $this->assertSame(21, $data['totales']['permisos_catalogo']);
         $this->assertCount(count(CatalogoPermisos::porModulo()), $data['catalogo']);
 
         $admin = collect($data['data'])->firstWhere('name', 'Administrador');
         $this->assertTrue($admin['es_administrador']);
-        $this->assertSame(20, $admin['num_permisos']);
+        $this->assertSame(21, $admin['num_permisos']);
     }
 
     public function test_store_valida_nombre_requerido_y_unico_por_tenant_pero_permite_repetir_en_otro(): void

@@ -116,6 +116,16 @@ class Factura extends Model
         return $this->hasMany(FacturaImpuesto::class);
     }
 
+    /**
+     * Albaranes consolidados en esta factura (research D4, feature 029) — solo lectura; determina
+     * si `EmisorFacturas::moverStock()` debe omitir el movimiento de stock (ya ocurrió al entregar
+     * cada albarán).
+     */
+    public function albaranes(): HasMany
+    {
+        return $this->hasMany(Albaran::class, 'convertido_a_factura_id');
+    }
+
     public function eventos(): HasMany
     {
         return $this->hasMany(FacturaEvento::class)->orderBy('ocurrido_at');

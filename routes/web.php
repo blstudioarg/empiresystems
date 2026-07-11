@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AlbaranController;
 use App\Http\Controllers\AlertaController;
 use App\Http\Controllers\ArchivoController;
 use App\Http\Controllers\ArticuloController;
@@ -121,6 +122,18 @@ Route::middleware(['tenant.context', 'auth'])->group(function () {
         Route::post('/presupuestos/{presupuesto}/convertir', [PresupuestoController::class, 'convertir'])->name('presupuestos.convertir');
         Route::get('/presupuestos/{presupuesto}/pdf', [PresupuestoController::class, 'pdf'])->name('presupuestos.pdf');
         Route::post('/presupuestos/{presupuesto}/enviar', [PresupuestoController::class, 'enviar'])->name('presupuestos.enviar');
+    });
+
+    Route::middleware('can:ver-albaranes')->group(function () {
+        Route::get('/albaranes', [AlbaranController::class, 'index'])->name('albaranes.index');
+        Route::get('/albaranes/crear', [AlbaranController::class, 'create'])->name('albaranes.create');
+        Route::post('/albaranes', [AlbaranController::class, 'store'])->name('albaranes.store');
+        Route::post('/albaranes/convertir', [AlbaranController::class, 'convertir'])->name('albaranes.convertir');
+        Route::get('/albaranes/{albaran}', [AlbaranController::class, 'show'])->name('albaranes.show');
+        Route::get('/albaranes/{albaran}/editar', [AlbaranController::class, 'edit'])->name('albaranes.edit');
+        Route::put('/albaranes/{albaran}', [AlbaranController::class, 'update'])->name('albaranes.update');
+        Route::delete('/albaranes/{albaran}', [AlbaranController::class, 'destroy'])->name('albaranes.destroy');
+        Route::put('/albaranes/{albaran}/estado', [AlbaranController::class, 'estado'])->name('albaranes.estado');
     });
 
     // POS — facturas simplificadas (tickets)

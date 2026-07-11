@@ -103,7 +103,7 @@
 							</ul>
 						</li>
 						@endcan
-						@canany(['ver-leads', 'ver-oportunidades', 'ver-presupuestos'])
+						@canany(['ver-leads', 'ver-oportunidades', 'ver-presupuestos', 'ver-albaranes'])
 						<li><a class="has-arrow " href="javascript:void(0);" aria-expanded="false">
 								<div class="menu-icon">
 									<x-lordicon icon="wired-outline-456-handshake-deal-hover-pinch" size="30" trigger="hover" />
@@ -114,6 +114,7 @@
 								@can('ver-leads')<li><a href="{{ route('leads.index') }}">Leads</a></li>@endcan
 								@can('ver-oportunidades')<li><a href="{{ route('oportunidades.index') }}">Oportunidades</a></li>@endcan
 								@can('ver-presupuestos')<li><a href="{{ route('presupuestos.index') }}">Presupuestos</a></li>@endcan
+									@can('ver-albaranes')<li><a href="{{ route('albaranes.index') }}">Albaranes</a></li>@endcan
 							</ul>
 						</li>
 						@endcanany

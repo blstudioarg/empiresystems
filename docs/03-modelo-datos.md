@@ -1022,6 +1022,74 @@ Espejo de `factura_lineas` en las columnas de importe, sin los campos fiscales d
 Al convertir a factura, cada línea se copia a `factura_lineas` con sus importes **congelados** (no
 releídos del catálogo).
 
+## Módulo CRM — albaranes de entrega (feature 029)
+
+```
+tenants ──< albaranes ──< albaran_lineas
+clientes ──< albaranes
+presupuestos ──(opcional)──< albaranes
+presupuesto_lineas ──(opcional, +cantidad_entregada)── albaran_lineas
+articulos ──(opcional)── albaran_lineas
+albaranes ──(N:1, convertido_a_factura_id)── facturas
+movimientos_stock ──(+albaran_id nullable)── albaranes
+factura_lineas ──(+albaran_id nullable, solo trazabilidad)── albaranes
+```
+
+### `albaranes` — documento de entrega (NO fiscal)
+
+| Campo | Tipo | Notas |
+|-------|------|-------|
+| id | bigint PK | |
+| tenant_id | unsignedBigInteger, indexado | `BelongsToTenant` |
+| numero | varchar(20) | numeración propia `A-{año}-{n}`, independiente de series de factura y de Verifactu |
+| presupuesto_id | fk `presupuestos`, nullable, `nullOnDelete` | origen si nace de un presupuesto aceptado |
+| cliente_id | fk `clientes`, `restrictOnDelete` | receptor, siempre obligatorio (a diferencia del presupuesto, no admite lead) |
+| estado | varchar(12) | enum `EstadoAlbaran`: `borrador`→`entregado`→`facturado` (terminal) / `anulado` (terminal) |
+| receptor_* (nombre, nif, direccion, cp, ciudad, provincia, pais) | | snapshot congelado, mismo patrón que `presupuestos.receptor_*` |
+| fecha_entrega | date, nullable | se fija al pasar a `entregado` |
+| regimen_impositivo, aplica_recargo | | heredado del presupuesto o del cliente/tenant |
+| base_total, cuota_impuesto_total, cuota_recargo_total, total | decimal | calculados por `CalculadoraFactura` (Principio III); sin IRPF (no aplica a un documento de entrega) |
+| convertido_a_factura_id | fk `facturas`, nullable, `nullOnDelete` | varios albaranes pueden compartir el mismo valor (N:1) |
+| timestamps, softDeletes | | |
+
+Índices: `(tenant_id, estado)`, `(tenant_id, cliente_id)`, `(tenant_id, presupuesto_id)`,
+`(tenant_id, convertido_a_factura_id)`, `unique(tenant_id, numero)`. Solo editable en `borrador`;
+`facturado` y `anulado` son terminales y de solo lectura.
+
+### `albaran_lineas` — detalle de la entrega
+
+Espejo de `presupuesto_lineas`/`factura_lineas` en las columnas de importe, con el vínculo
+adicional a la línea de presupuesto de origen que habilita el seguimiento de entrega parcial.
+
+| Campo | Tipo | Notas |
+|-------|------|-------|
+| id | bigint PK | |
+| tenant_id | unsignedBigInteger, indexado | `BelongsToTenant` |
+| albaran_id | fk `albaranes`, `cascadeOnDelete` | |
+| presupuesto_linea_id | fk `presupuesto_lineas`, nullable, `nullOnDelete` | origen si el albarán nace de un presupuesto; `null` en albarán directo a cliente |
+| articulo_id | fk `articulos`, nullable, `nullOnDelete` | |
+| concepto, unidad, cantidad, precio_unitario, descuento_porcentaje, base, tipo_impositivo, cuota_impuesto, tipo_recargo, cuota_recargo, orden | | mismas columnas que `presupuesto_lineas`/`factura_lineas`; `cantidad` es lo efectivamente entregado en **este** albarán |
+| timestamps | | |
+
+Al confirmar el albarán como `entregado`, cada línea con artículo `producto`+`gestion_stock`
+genera un movimiento de stock de **salida** (origen `Albaran`) y suma `cantidad` al acumulado
+`presupuesto_lineas.cantidad_entregada` de su línea de origen, si la tiene. Al **anular**, el
+movimiento inverso (**entrada**, mismo origen `Devolucion` que las rectificativas de factura) y
+resta de vuelta ese acumulado.
+
+### Columnas nuevas en tablas existentes (feature 029)
+
+| Tabla.columna | Tipo | Notas |
+|---------------|------|-------|
+| `presupuesto_lineas.cantidad_entregada` | decimal(12,4), default 0 | acumulado de lo ya entregado en albaranes confirmados sobre esta línea; nunca supera `cantidad` — ver `PresupuestoLinea::cantidadPendiente()` |
+| `movimientos_stock.albaran_id` | fk `albaranes`, nullable, `nullOnDelete` | traza el movimiento hasta el albarán que lo generó, igual que ya existen `factura_id`/`compra_id` |
+| `factura_lineas.albaran_id` | fk `albaranes`, nullable, `nullOnDelete` | solo trazabilidad: de qué albarán proviene la línea cuando la factura nace de consolidar N albaranes (`ConversorAlbaranesFactura`); no participa en el cálculo |
+
+Al convertir N albaranes `entregado`/no facturados del mismo cliente en una única factura
+(`ConversorAlbaranesFactura`), la emisión posterior de esa factura **no** vuelve a mover stock: el
+guard en `EmisorFacturas::moverStock()` lo salta si `factura->albaranes()->exists()`, porque el
+stock ya se movió al confirmar cada albarán como entregado.
+
 ---
 
 ## Notas de implementación
