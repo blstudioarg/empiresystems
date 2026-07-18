@@ -1097,3 +1097,14 @@ stock ya se movió al confirmar cada albarán como entregado.
 - **Global scope de tenant:** aplicar en un `TenantScope` sobre un `BaseModel`; todas las consultas filtran por `tenant_id` automáticamente. Cubrir con tests para evitar fugas entre tenants.
 - **Numeración:** asignar `numero` dentro de una transacción con bloqueo (evitar huecos/duplicados en concurrencia).
 - **Verifactu:** el cálculo de huella y encadenamiento se hace al **emitir** (pasar de borrador a emitida), en un servicio dedicado; a partir de ahí la factura es inmutable.
+
+## Asistente IA (feature 030) — sin tablas nuevas
+
+- **`configuraciones`, grupo `ia`**: fila `ia.api_key` con la API key de OpenAI del tenant,
+  cifrada con `Crypt::encryptString` (patrón `email.smtp_password`). Acceso solo vía
+  `App\Support\IaTenant`; a la vista se entrega enmascarada (`sk-ant-…XXXX`). Guardar/quitar la clave
+  se registra en `logs_actividad`.
+- **Conversación del asistente**: estado efímero en la sesión de Laravel (clave
+  `asistente.conversacion`), no persistido en BD. Formato Chat Completions de OpenAI (roles user/assistant/tool, con
+  tool_calls) + una acción pendiente opcional (máx. 1). Se destruye con la sesión (RGPD:
+  efímero por diseño, sin retención adicional).

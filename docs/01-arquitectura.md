@@ -175,3 +175,29 @@ coordenadas y el geofencing (Haversine) se siguen calculando/validando en backen
 ## Infraestructura (estado actual)
 - **Hosting:** compartido (cPanel/Hostinger) como punto de partida.
 - **Camino de escalado:** VPS (Hostinger/DigitalOcean/Hetzner) + Laravel Forge/Ploi cuando el tráfico lo exija.
+
+## Decisión 9 — Asistente IA: SDK oficial, SSE síncrono, bloqueo estructural, clave por tenant (030-chat-asistente-ia)
+
+Widget de chat flotante (área tenant) conectado a la API de OpenAI (Chat Completions) con function calling.
+
+- **SDK oficial `openai-php/client`** (única dependencia nueva) contra la Chat Completions API. Errores
+  tipados → mensajes amigables (FR-011).
+- **Modelo fijo del sistema** en `config/ia.php` (`ia.modelo`, env `IA_MODELO`, default
+  `gpt-4o-mini`); el tenant no elige modelo.
+- **API key por tenant**, cifrada en `configuraciones` (grupo `ia`, clave `ia.api_key`), gestionada
+  con `App\Support\IaTenant` (espejo de `EmailTenant`). Coste a cargo del tenant.
+- **Streaming SSE dentro del request** (`response()->stream()`), sin colas ni websockets
+  (Principio V). El loop de tool use ocurre en el mismo request.
+- **Bloqueo estructural de acciones prohibidas** (`app/Ia/CatalogoTools.php`): solo existen tools de
+  lectura por sección + crear/editar cliente, artículo, presupuesto y factura **borrador**. No hay
+  tools de emitir/anular factura, registrar pago, borrar ni configurar. La seguridad no depende del
+  prompt: si la tool no existe, ninguna inyección la ejecuta.
+- **Filtrado por permisos**: `CatalogoTools::paraUsuario()` envía solo las tools cuyo permiso tiene
+  el usuario; `resolver()` re-verifica al ejecutar y al confirmar (doble capa).
+- **Escrituras en dos fases**: la tool `proponer()` valida y guarda una acción pendiente en sesión;
+  solo `POST /asistente/accion/{id}/confirmar` (request separado, CSRF) ejecuta vía los servicios de
+  cálculo del servidor (`CalculadoraFactura`, `RegistroPresupuesto`, `RegistroFacturaBorrador`).
+- **Conversación efímera** en la sesión de Laravel (`app/Ia/ConversacionAsistente.php`): sobrevive a
+  la navegación, muere con la sesión, truncado en servidor. Sin tablas nuevas.
+- **Base de conocimiento modular** en `resources/ia/conocimiento/*.md` (un archivo por módulo);
+  `ConocimientoAsistente` los ensambla en el system prompt. Añadir feature = añadir archivo (SC-007).

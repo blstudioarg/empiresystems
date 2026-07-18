@@ -61,6 +61,13 @@
 							</button>
 						</li>
 						<li class="nav-item" role="presentation">
+							<button class="nav-link" id="tab-ia-btn" data-bs-toggle="tab"
+								data-bs-target="#tab-ia" type="button" role="tab"
+								aria-controls="tab-ia" aria-selected="false">
+								Asistente IA
+							</button>
+						</li>
+						<li class="nav-item" role="presentation">
 							<button class="nav-link" id="tab-crm-btn" data-bs-toggle="tab"
 								data-bs-target="#tab-crm" type="button" role="tab"
 								aria-controls="tab-crm" aria-selected="false">
@@ -101,6 +108,10 @@
 						<div class="tab-pane fade" id="tab-fichajes" role="tabpanel"
 							aria-labelledby="tab-fichajes-btn">
 							@include('configuracion._tab_fichajes')
+						</div>
+						<div class="tab-pane fade" id="tab-ia" role="tabpanel"
+							aria-labelledby="tab-ia-btn">
+							@include('configuracion._tab_ia')
 						</div>
 						<div class="tab-pane fade" id="tab-crm" role="tabpanel"
 							aria-labelledby="tab-crm-btn">

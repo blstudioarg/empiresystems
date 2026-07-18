@@ -10730,7 +10730,7 @@ label {
   position: fixed; }
 
 .nav-header {
-  height: 5rem;
+  height: 4rem;
   width: 17.5rem;
   display: inline-block;
   text-align: left;
@@ -10917,7 +10917,7 @@ label {
     display: none; }
 
 .header {
-  height: 5rem;
+  height: 4rem;
   z-index: 1;
   position: relative;
   padding: 0rem;
@@ -13923,9 +13923,9 @@ html[dir="rtl"] [direction="rtl"][data-sidebar-style="compact"]:not([data-layout
 .deznav {
   width: 17.5rem;
   padding-bottom: 7px;
-  height: calc(100% - 5rem);
+  height: calc(100% - 4rem);
   position: absolute;
-  top: 5rem;
+  top: 4rem;
   padding-top: 4px;
   padding-bottom: 4px;
   z-index: 6;

@@ -30,6 +30,17 @@ php artisan serve
 | Super admin (global, sin tenant) | `admin@empiresystems.es` | `password` |
 | Admin del tenant demo ("Empresa Demo SL") | `demo@empiresystems.es` | `password` |
 
+### Acceso personal (no genérico)
+
+Además del demo de arriba, `database/seeders/AccesoPersonalSeeder.php` garantiza un superadmin y
+un tenant fijos con credenciales propias (no hardcodeadas en el código — salen de `ACCESO_PERSONAL_*`
+en `.env`). Los valores reales están en `ACCESOS.local.md` en la raíz del repo (no versionado).
+Es idempotente: correrlo de nuevo no pisa la contraseña de un usuario que ya existe.
+
+```powershell
+php artisan db:seed --class=AccesoPersonalSeeder
+```
+
 ## Tests
 
 ```powershell

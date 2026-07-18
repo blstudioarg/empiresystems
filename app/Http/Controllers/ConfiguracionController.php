@@ -20,6 +20,7 @@ use App\Support\ConfigCrm;
 use App\Support\ConfigFichajes;
 use App\Support\ConfigTenant;
 use App\Support\EmailTenant;
+use App\Support\IaTenant;
 use App\Support\RetencionGeoTenant;
 use App\Support\RetencionMiembroTenant;
 use App\Support\TopeSimplificada;
@@ -78,6 +79,8 @@ class ConfiguracionController extends Controller
                 'presupuesto_dias_validez' => ConfigCrm::diasValidezPresupuesto($tenantId),
             ],
             'comercialesDisponibles' => User::where('tenant_id', $tenantId)->orderBy('name')->get(['id', 'name']),
+            'iaConfigurada' => IaTenant::configurada($tenantId),
+            'iaClaveEnmascarada' => IaTenant::apiKeyEnmascarada($tenantId),
         ]);
     }
 
@@ -214,6 +217,64 @@ class ConfiguracionController extends Controller
         }
 
         return redirect()->route('configuracion.show')->with('success', $mensaje);
+    }
+
+    public function updateIa(Request $request): RedirectResponse|JsonResponse
+    {
+        $datos = $request->validate([
+            'api_key' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $apiKey = $datos['api_key'] ?? null;
+        $quitar = $apiKey === null || trim($apiKey) === '';
+
+        IaTenant::guardarApiKey($apiKey);
+
+        $this->registradorActividad->registrar(
+            auth()->user(),
+            AccionLogActividad::Modificacion,
+            EntidadLogActividad::Configuracion,
+            null,
+            $quitar ? 'Quitó la clave de API del asistente IA' : 'Configuró la clave de API del asistente IA',
+        );
+
+        $mensaje = $quitar
+            ? 'Se quitó la clave del asistente IA.'
+            : 'Clave del asistente IA guardada correctamente.';
+
+        if ($request->wantsJson()) {
+            return response()->json(['message' => $mensaje]);
+        }
+
+        return redirect()->route('configuracion.show')->with('success', $mensaje);
+    }
+
+    public function probarIa(Request $request): JsonResponse
+    {
+        if (! IaTenant::configurada()) {
+            return response()->json(['ok' => false, 'mensaje' => 'Primero guardá una clave de API.'], 422);
+        }
+
+        try {
+            $cliente = \OpenAI::client(IaTenant::apiKey());
+            $cliente->chat()->create([
+                'model' => (string) config('ia.modelo'),
+                'max_tokens' => 5,
+                'messages' => [['role' => 'user', 'content' => 'ping']],
+            ]);
+        } catch (\OpenAI\Exceptions\ErrorException $e) {
+            if ($e->getStatusCode() === 401) {
+                return response()->json(['ok' => false, 'mensaje' => 'La clave no es válida. Revisá que la copiaste completa.'], 200);
+            }
+
+            return response()->json(['ok' => false, 'mensaje' => 'No se pudo conectar con el servicio de IA. Probá de nuevo en unos instantes.'], 200);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json(['ok' => false, 'mensaje' => 'No se pudo conectar con el servicio de IA. Probá de nuevo en unos instantes.'], 200);
+        }
+
+        return response()->json(['ok' => true, 'mensaje' => 'Conexión correcta. El asistente está listo.']);
     }
 
     public function updateFacturacion(Request $request): RedirectResponse|JsonResponse

@@ -66,6 +66,8 @@
 
 	@include('partials.flash-toastr')
 
+	@include('partials.asistente-chat')
+
 	@stack('scripts')
 </body>
 

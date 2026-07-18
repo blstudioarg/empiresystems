@@ -5,6 +5,7 @@ use App\Http\Controllers\AlertaController;
 use App\Http\Controllers\ArchivoController;
 use App\Http\Controllers\ArticuloController;
 use App\Http\Controllers\AsignacionHorarioController;
+use App\Http\Controllers\AsistenteChatController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\BancoController;
@@ -177,7 +178,17 @@ Route::middleware(['tenant.context', 'auth'])->group(function () {
             ->name('configuracion.general.update');
         Route::match(['put', 'patch'], '/configuracion/crm', [ConfiguracionController::class, 'updateCrm'])
             ->name('configuracion.crm.update');
+        Route::match(['put', 'patch'], '/configuracion/ia', [ConfiguracionController::class, 'updateIa'])
+            ->name('configuracion.ia.update');
+        Route::post('/configuracion/ia/probar', [ConfiguracionController::class, 'probarIa'])
+            ->name('configuracion.ia.probar');
     });
+
+    // Asistente IA (feature 030): disponible para todo usuario autenticado del tenant.
+    Route::post('/asistente/mensaje', [AsistenteChatController::class, 'mensaje'])->name('asistente.mensaje');
+    Route::post('/asistente/accion/{id}/confirmar', [AsistenteChatController::class, 'confirmar'])->name('asistente.accion.confirmar');
+    Route::post('/asistente/accion/{id}/cancelar', [AsistenteChatController::class, 'cancelar'])->name('asistente.accion.cancelar');
+    Route::post('/asistente/reiniciar', [AsistenteChatController::class, 'reiniciar'])->name('asistente.reiniciar');
 
     Route::middleware('can:ver-stock')->group(function () {
         Route::get('/stock', [MovimientoStockController::class, 'index'])->name('stock.index');

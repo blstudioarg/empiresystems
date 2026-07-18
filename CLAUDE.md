@@ -67,6 +67,13 @@ Cuando una feature terminó de implementarse (`/speckit-implement` completo y va
   con el bump de versión correspondiente (ver reglas de semver en el propio archivo).
 - Si no cambió nada respecto a lo documentado, no hace falta tocar `docs/` — evitar
   actualizaciones innecesarias.
+- **Actualizar la base de conocimiento del asistente IA (`resources/ia/conocimiento/*.md`)**:
+  toda feature nueva que agregue o cambie una pantalla/módulo o sus reglas de negocio debe
+  añadir/actualizar su archivo `.md` (uno por módulo funcional). Es parte obligatoria de cerrar el
+  spec, no un extra opcional: si el asistente no lo sabe, le explica mal la app al usuario. Ver la
+  regla completa (FR-013) en la sección "Documentación al día en TODO cambio" (capa 4).
+- En resumen, cerrar un spec-kit obliga a repasar **las 4 capas** de la sección siguiente
+  (`docs/`, `docs/04-front-guidelines.md`, `resources/views/ayuda/`, `resources/ia/conocimiento/`).
 
 ## Documentación al día en TODO cambio (con o sin spec)
 
@@ -76,7 +83,7 @@ trabajo por terminado hay que **razonar explícitamente si queda alguna document
 actualizar**, y decirlo (aunque la conclusión sea "no hace falta"). No es un paso opcional ni
 reservado a los features grandes: aplica a cualquier cambio, se haya usado spec o no.
 
-Las tres capas de documentación a revisar en cada cambio:
+Las **cuatro** capas de documentación a revisar en cada cambio:
 
 1. **Docs técnicos (`docs/`)** — visión, arquitectura, normativa, modelo de datos. Actualizar si
    el cambio toca tablas, decisiones técnicas o alcance (ver "Al cerrar un spec/feature" arriba).
@@ -89,6 +96,14 @@ Las tres capas de documentación a revisar en cada cambio:
    `resources/views/ayuda/<slug>.blade.php` correspondiente.** Y si el cambio agrega una pantalla
    nueva que amerita guía, considerar crearla. Detalle del mecanismo en
    `docs/04-front-guidelines.md`, sección "Ayuda contextual".
+
+4. **Base de conocimiento del asistente IA (`resources/ia/conocimiento/*.md`)** — feature 030,
+   regla FR-013. Es lo que el asistente IA sabe sobre la app. **Si un cambio agrega una pantalla o
+   módulo, o altera el funcionamiento o las reglas de negocio de uno ya cubierto, hay que añadir o
+   actualizar su archivo `.md` aquí** (un archivo por módulo funcional, orden alfabético,
+   ensamblado por `ConocimientoAsistente`). Añadir una feature = añadir un archivo, sin tocar el
+   resto (invariante SC-007). Una base de conocimiento desactualizada hace que el asistente
+   explique mal la app.
 
 Regla de oro: una guía in-app desactualizada es peor que no tenerla (le miente al usuario). Si
 tocaste una vista con guía, la guía entra en el mismo cambio, no "después".

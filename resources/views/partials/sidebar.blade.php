@@ -199,7 +199,7 @@
 						@endcanany
 					@endif
 				</ul>
-				<div class="help-desk">
+				<div class="help-desk pb-3">
 					<button type="button" class="ayuda-trigger" data-bs-toggle="modal" data-bs-target="#ayudaContextualModal">
 						<span class="ayuda-trigger-icon">
 							<x-lordicon icon="wired-outline-424-question-bubble-hover-wiggle" trigger="hover" size="22" target=".ayuda-trigger" />

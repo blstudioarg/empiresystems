@@ -702,3 +702,21 @@ Patrón de referencia:
   existente vía `setInterval`, sin reconstruir markup — el server sigue siendo la única fuente de
   verdad de lo que se persiste; el contador en el cliente es solo percepción de vida en la
   pantalla.
+
+## Widget del asistente IA (feature 030)
+
+El chat flotante vive en `resources/views/partials/asistente-chat.blade.php` (incluido en
+`layouts/app.blade.php`, nunca en superadmin/fullwidth) + `public/js/asistente-chat.js`. Convenciones
+reutilizables que introdujo:
+
+- **Render condicional en servidor** (nunca ocultar por CSS): con clave IA configurada el widget se
+  emite para todos; sin clave, solo para `ver-configuracion` en modo "activar"; el resto no recibe
+  markup (no filtra la existencia de la función).
+- **Streaming por `fetch` + `ReadableStream`** (no `EventSource`, porque el endpoint es POST con
+  CSRF): se parsean a mano los bloques SSE `event:`/`data:` separados por `\n\n`. Patrón replicable
+  para cualquier endpoint que emita progreso con `response()->stream()`.
+- **Tarjetas de confirmación en el chat**: las escrituras del asistente se muestran como una tarjeta
+  con resumen + botones Confirmar/Cancelar que llaman a endpoints AJAX separados; feedback con
+  `window.showToast`. La acción se deshabilita al resolverse.
+- CSS scoped bajo `.asistente-chat__*` en un `@push('styles')` dentro del propio partial; usa
+  `var(--primary)` para respetar el color de marca del tenant.

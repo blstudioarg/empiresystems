@@ -27,3 +27,6 @@ Thumbs.db
 /template/
 .playwright-mcp/
 tutoriales-video/node_modules/
+
+# Credenciales de acceso personal de desarrollo (ver ACCESO_PERSONAL_* en .env)
+/ACCESOS.local.md
