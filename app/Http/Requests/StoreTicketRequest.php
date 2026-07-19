@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\FormaPago;
 use App\Enums\TipoArticulo;
 use App\Models\Articulo;
 use App\Models\Cliente;
@@ -52,6 +53,14 @@ class StoreTicketRequest extends FormRequest
             'receptor.cliente_provincia' => ['nullable', 'string', 'max:255'],
             'receptor.cliente_pais' => ['nullable', 'string', 'size:2'],
 
+            // Desglose de cobro (pago simple o dividido). Opcional: si se omite, el ticket se
+            // cobra íntegro en efectivo. Si se informa, cada método suma su importe y el total
+            // del reparto debe cuadrar con el total del ticket (se valida en RegistroTicket, que
+            // es donde se conoce el total calculado en servidor).
+            'pagos' => ['nullable', 'array', 'min:1'],
+            'pagos.*.metodo' => ['required_with:pagos', Rule::enum(FormaPago::class)],
+            'pagos.*.importe' => ['required_with:pagos', 'numeric', 'gt:0'],
+
             'notas' => ['nullable', 'string'],
         ];
     }
@@ -68,6 +77,9 @@ class StoreTicketRequest extends FormRequest
             'lineas.*.cantidad.gt' => 'La cantidad debe ser mayor que cero.',
             'receptor.cliente_nif.required_with' => 'Para una simplificada cualificada indique el NIF del receptor.',
             'receptor.cliente_direccion.required_with' => 'Para una simplificada cualificada indique el domicilio del receptor.',
+            'pagos.*.metodo.required_with' => 'Cada pago del reparto debe indicar un método.',
+            'pagos.*.importe.required_with' => 'Cada pago del reparto debe indicar un importe.',
+            'pagos.*.importe.gt' => 'El importe de cada pago debe ser mayor que cero.',
         ];
     }
 }

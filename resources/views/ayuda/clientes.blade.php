@@ -1,6 +1,8 @@
 <p>Acá gestionás tu cartera de clientes: los datos que después se usan para emitir facturas
 (nombre o razón social, NIF, dirección fiscal). Se crean y editan desde el botón
-<strong>“Agregar cliente”</strong> y el menú <strong>Acciones</strong> de cada fila.</p>
+<strong>“Agregar cliente”</strong> y el menú <strong>Acciones</strong> de cada fila. También podés
+<strong>exportar</strong> el listado (respeta el filtro/búsqueda activos) o <strong>importar</strong>
+tu cartera desde un Excel/CSV, con previsualización antes de confirmar.</p>
 
 <ol>
 	<li><strong>Tipo</strong>: “Particular” o “Empresa” cambia qué dato es el principal

@@ -22,7 +22,79 @@
 
 **Sanción por software no homologado:** hasta **50.000 €** por ejercicio.
 
-> **Implicación de diseño:** el modelo de facturas incluye desde el día uno los campos de huella, hash anterior, QR y estado Verifactu, aunque la emisión efectiva a la AEAT se active más adelante.
+> **Implicación de diseño:** el modelo de facturas incluye desde el día uno los campos de huella, hash anterior, QR y estado Verifactu. **Implementado (feature 032):** el registro, el QR y la remisión a la AEAT son funcionales; se activan por tenant con el flag `verifactu.activo` (default `false`, no afecta a ningún tenant existente hasta que se encienda a conciencia).
+
+### 1.1 Algoritmo de la huella o «hash» (feature 032)
+
+**Fuente oficial:** AEAT — "Detalle de las especificaciones técnicas para generación de la huella o
+hash de los registros de facturación", v0.1.2 (27/08/2024), documento técnico del desarrollador
+Verifactu (`Veri-Factu_especificaciones_huella_hash_registros.pdf`), que desarrolla el art. 13 de la
+Orden HAC/1177/2024. Verificado julio 2026.
+
+- **Algoritmo:** SHA-256 (único algoritmo permitido, Lista L12 del anexo de la orden).
+- **Cadena de entrada:** concatenación `nombreCampo1=valorCampo1&nombreCampo2=valorCampo2&…`, en el
+  orden exacto listado abajo, codificada en bytes **UTF-8**. Si un campo no tiene valor, se incluye
+  igualmente su nombre y el `=` sin valor a continuación (p. ej. `Huella=` en el primer registro de
+  la cadena). Los valores se toman recortando espacios al inicio/fin; en campos numéricos da igual
+  1 o 2 decimales (ceros a la derecha no relevantes), pero este proyecto siempre emite 2 decimales
+  (coherente con `DECIMAL(12,2)`).
+- **Campos del registro de alta**, en este orden: `IDEmisorFactura`, `NumSerieFactura`,
+  `FechaExpedicionFactura` (formato `DD-MM-AAAA`), `TipoFactura` (`F1`/`F2`/`F3`…), `CuotaTotal`,
+  `ImporteTotal`, `Huella` (del registro anterior de la cadena del tenant; vacío si es el primero),
+  `FechaHoraHusoGenRegistro` (ISO 8601 con offset horario, p. ej. `2024-01-01T19:20:30+01:00`).
+- **Campos del registro de anulación**, en este orden: `IDEmisorFacturaAnulada`,
+  `NumSerieFacturaAnulada`, `FechaExpedicionFacturaAnulada` (`DD-MM-AAAA`), `Huella` (anterior),
+  `FechaHoraHusoGenRegistro`.
+- **Salida:** hexadecimal en **mayúsculas**, 64 caracteres.
+
+**Vectores de prueba oficiales** (usados literalmente en `tests/Unit/HuellaVerifactuTest.php`, no
+inventados):
+
+| Caso | Entrada (orden de campos) | Huella resultante |
+|------|---------------------------|--------------------|
+| 1 — primer registro de la cadena (alta) | `IDEmisorFactura=89890001K&NumSerieFactura=12345678/G33&FechaExpedicionFactura=01-01-2024&TipoFactura=F1&CuotaTotal=12.35&ImporteTotal=123.45&Huella=&FechaHoraHusoGenRegistro=2024-01-01T19:20:30+01:00` | `3C464DAF61ACB827C65FDA19F352A4E3BDC2C640E9E9FC4CC058073F38F12F60` |
+| 2 — segundo registro (alta, encadenado al caso 1) | `IDEmisorFactura=89890001K&NumSerieFactura=12345679/G34&FechaExpedicionFactura=01-01-2024&TipoFactura=F1&CuotaTotal=12.35&ImporteTotal=123.45&Huella=3C464DAF61ACB827C65FDA19F352A4E3BDC2C640E9E9FC4CC058073F38F12F60&FechaHoraHusoGenRegistro=2024-01-01T19:20:35+01:00` | `F7B94CFD8924EDFF273501B01EE5153E4CE8F259766F88CF6ACB8935802A2B97` |
+| 3 — anulación (encadenada al caso 2) | `IDEmisorFacturaAnulada=89890001K&NumSerieFacturaAnulada=12345679/G34&FechaExpedicionFacturaAnulada=01-01-2024&Huella=F7B94CFD8924EDFF273501B01EE5153E4CE8F259766F88CF6ACB8935802A2B97&FechaHoraHusoGenRegistro=2024-01-01T19:20:40+01:00` | `177547C0D57AC74748561D054A9CEC14B4C4EA23D1BEFD6F2E69E3A388F90C68` |
+
+### 1.2 Código QR de cotejo (feature 032)
+
+**Fuente oficial:** AEAT — "Características del QR y especificaciones del servicio de cotejo…"
+(`DetalleEspecificacTecnCodigoQRfactura.pdf`), desarrolla el art. 7 RD 1007/2023 y el capítulo VIII
+de la Orden HAC/1177/2024. Contrastado con fuentes secundarias (b2brouter, codigonext,
+facturascloud) para tamaño/textos. Verificado julio 2026.
+
+- **URL de cotejo — producción:** `https://www2.agenciatributaria.gob.es/wlpl/TIKE-CONT/ValidarQR`
+- **URL de cotejo — preproducción/pruebas:** `https://prewww2.aeat.es/wlpl/TIKE-CONT/ValidarQR`
+- **Parámetros de la query string**, en este orden: `nif` (NIF del emisor), `numserie` (serie +
+  número de factura tal cual, p. ej. `12345678/G33`), `fecha` (`DD-MM-AAAA`), `importe` (con punto
+  decimal, p. ej. `123.45`).
+- **Tamaño impreso:** entre 30×30 mm y 40×40 mm, con un margen de silencio mínimo de 2 mm alrededor.
+- **Nivel de corrección de errores:** ISO/IEC 18004:2015, nivel M.
+- **Textos obligatorios:** encima del QR, **"QR tributario"**; debajo, **"Factura verificable en la
+  sede electrónica de la AEAT"** o su forma abreviada **"VERI\*FACTU"** (la que usa este proyecto,
+  FR-009), en tamaño de letra igual o superior al resto de la factura.
+- **Ubicación:** al principio de la factura; en documentos verticales (A4), arriba y centrado; en el
+  ticket 80 mm se respeta igualmente el tamaño mínimo pese al ancho reducido.
+
+### 1.3 Servicio web de remisión (feature 032)
+
+**Fuente:** portal de desarrolladores AEAT (`preportal.aeat.es`) + WSDL público
+`SistemaFacturacion.wsdl` (esquemas `SuministroLR.xsd`, `RespuestaSuministro.xsd`). Verificado julio
+2026; **el endpoint de producción exacto debe reconfirmarse contra el WSDL oficial vigente antes de
+activar envíos reales**, ya que la obligación no entra en vigor hasta 2027 y la AEAT puede publicar
+variaciones menores de dominio.
+
+- **Preproducción (SOAP):** `https://prewww1.aeat.es/wlpl/TIKE-CONT/ws/SistemaFacturacion/VerifactuSOAP`
+- **Producción (SOAP):** `https://www1.aeat.es/wlpl/TIKE-CONT/ws/SistemaFacturacion/VerifactuSOAP`
+  (mismo patrón de dominio que preproducción sin el prefijo `pre`; confirmar contra el WSDL antes de
+  ir a producción real).
+- **Autenticación:** TLS mutuo con el certificado del obligado tributario (mismo certificado
+  PKCS#12 que Facturae, gestionado por `CertificadoTenant`).
+- **Transporte elegido:** Guzzle + opciones `cert`/`ssl_key` (sobre construido a mano), no
+  `ext-soap`, para no depender de una extensión no garantizada en hosting compartido (Principio V).
+- **Respuestas:** `Correcto` (aceptado), `AceptadoConErrores` (aceptado con aviso — p. ej. huella
+  recalculada por la AEAT no coincide), `Incorrecto` (rechazado). Mapeo a `verifactu_estado` en
+  `contracts/aeat-webservice.md` de la feature 032.
 
 ## 2. Factura electrónica B2B obligatoria (Ley Crea y Crece)
 
@@ -190,6 +262,9 @@ referencia legal, p. ej.:
 ## Fuentes
 - Verifactu / plazos: [b2brouter](https://www.b2brouter.net/es/verifactu-obligatorio-autonomos/), [AEAT — nota ampliación de plazo](https://sede.agenciatributaria.gob.es/Sede/iva/sistemas-informaticos-facturacion-verifactu/nota-informativa-ampliacion-plazo-adaptacion-facturacion.html), [autonomosyemprendedor](https://www.autonomosyemprendedor.es/articulo/autonomos/nuevos-plazos-verifactu-2027-que-autonomos-van-tener-que-cambiar-programas-facturacion/20251230143941047321.html)
 - Verifactu técnica (hash/QR/XML): [AEAT — FAQ huella/hash](https://sede.agenciatributaria.gob.es/Sede/iva/sistemas-informaticos-facturacion-verifactu/preguntas-frecuentes/huella-hash.html), [AEAT — FAQ sistemas Verifactu](https://sede.agenciatributaria.gob.es/Sede/iva/sistemas-informaticos-facturacion-verifactu/preguntas-frecuentes/sistemas-verifactu.html)
+- Verifactu — especificación técnica huella/hash (PDF oficial, v0.1.2): [Veri-Factu_especificaciones_huella_hash_registros.pdf](https://www.agenciatributaria.es/static_files/AEAT_Desarrolladores/EEDD/IVA/VERI-FACTU/Veri-Factu_especificaciones_huella_hash_registros.pdf)
+- Verifactu — especificación técnica del QR (PDF oficial): [DetalleEspecificacTecnCodigoQRfactura.pdf](https://www.agenciatributaria.es/static_files/AEAT_Desarrolladores/EEDD/IVA/VERI-FACTU/DetalleEspecificacTecnCodigoQRfactura.pdf)
+- Verifactu — portal de pruebas externas para desarrolladores: [preportal.aeat.es](https://preportal.aeat.es/PRE-Exteriores/Inicio/_menu_/VERI_FACTU___Sistemas_Informaticos_de_Facturacion/VERI_FACTU___Sistemas_Informaticos_de_Facturacion.html)
 - Factura electrónica B2B / RD 238/2026: [BOE-A-2026-7295](https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-7295), [AEAT — facturación electrónica obligatoria](https://sede.agenciatributaria.gob.es/Sede/todas-noticias/2026/marzo/31/facturacion-electronica-obligatoria.html), [BBVA](https://www.bbva.com/es/es/empresas/factura-electronica-b2b-y-ley-crea-y-crece-calendario-requisitos-y-retos/)
 - Tipos de factura / campos: [AEAT — contenido de las facturas](https://sede.agenciatributaria.gob.es/Sede/iva/facturacion-registro/facturacion-iva/contenido-facturas.html), [tukonta — factura simplificada](https://tukonta.com/asesoramiento/factura-simplificada/), [AEAT — facturas rectificativas](https://sede.agenciatributaria.gob.es/Sede/iva/facturacion-registro/facturacion-iva/facturas-rectificativas.html)
 - Factura simplificada (supuestos, contenido, cualificada): [AEAT — Manual actividades económicas 5.10.6 Facturas simplificadas](https://sede.agenciatributaria.gob.es/Sede/ayuda/manuales-videos-folletos/manuales-practicos/folleto-actividades-economicas/5-impuesto-sobre-valor-anadido/5_10-facturas/5_10_6-facturas-simplificadas.html)

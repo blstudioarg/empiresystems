@@ -70,6 +70,7 @@
 											<th>Receptor</th>
 											<th>Fecha</th>
 											<th>Total</th>
+											<th>Pago</th>
 											<th>Tipo</th>
 											<th>Acciones</th>
 										</tr>

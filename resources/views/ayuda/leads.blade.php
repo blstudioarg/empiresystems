@@ -9,6 +9,8 @@ están listos se convierten en cliente.</p>
 	<li><strong>Importar</strong>: subí un CSV o Excel con columnas
 		<code>nombre, empresa, email, telefono</code>. Las filas inválidas o duplicadas se
 		reportan al final, sin bloquear la importación de las válidas.</li>
+	<li><strong>Exportar</strong>: el botón "Exportar" del listado descarga a Excel los leads que
+		estás viendo (respeta el filtro activo).</li>
 	<li><strong>Asignación</strong>: si dejás “Según regla de asignación vigente”, el lead se
 		reparte automáticamente entre los comerciales configurados (o queda “Sin asignar” si no
 		hay ninguno configurado).</li>

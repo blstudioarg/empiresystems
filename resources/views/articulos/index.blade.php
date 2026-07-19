@@ -83,6 +83,8 @@
 							<h4 class="card-title mb-0">Catálogo de productos/servicios</h4>
 							<div class="d-flex gap-2 align-items-center">
 								<div id="articulos-colvis"></div>
+								<button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#importarModal">Importar</button>
+								<button type="button" id="btn-exportar-articulos" class="btn btn-outline-secondary">Exportar</button>
 								<button type="button" class="btn btn-primary btn-add-articulo" data-bs-toggle="modal" data-bs-target="#articuloModal">
 									+ Agregar artículo
 								</button>
@@ -131,6 +133,8 @@
 				</div>
 			</div>
 		</div>
+
+		@include('excel._importar_modal', ['modulo' => 'articulos', 'etiqueta' => 'artículos'])
 	</div>
 @endsection
 
@@ -155,4 +159,18 @@
 	<script src="{{ asset('vendor/datatables/js/buttons.colVis.min.js') }}"></script>
 	<script src="{{ asset('js/plugins-init/articulos-datatable.init.js') }}"></script>
 	<script src="{{ asset('js/plugins-init/articulos-modal.init.js') }}"></script>
+	<script src="{{ asset('js/plugins-init/excel-export.init.js') }}"></script>
+	<script src="{{ asset('js/plugins-init/excel-importar-modal.init.js') }}"></script>
+	<script>
+		window.initExportacionExcel({
+			boton: '#btn-exportar-articulos',
+			url: @json(route('articulos.exportar', ['modulo' => 'articulos'])),
+			table: function () { return $('#articulos-table').DataTable(); },
+		});
+		window.initImportacionModal({
+			previsualizarUrl: @json(route('articulos.importar.previsualizar', ['modulo' => 'articulos'])),
+			confirmarUrl: @json(route('articulos.importar.confirmar', ['modulo' => 'articulos'])),
+			tabla: '#articulos-table',
+		});
+	</script>
 @endpush

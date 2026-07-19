@@ -21,9 +21,15 @@
 		.logo { display: block; max-height: 50px; max-width: 220px; width: auto; height: auto; }
 		.emisor-info { display: block; clear: both; }
 		.badge { display: inline-block; padding: 2px 8px; background: #eee; border-radius: 4px; }
+		.verifactu-qr { text-align: center; float: right; margin: 0 0 10px 15px; }
+		.verifactu-qr__imagen { width: 35mm; height: 35mm; }
+		.verifactu-qr__etiqueta, .verifactu-qr__leyenda { font-size: 9px; color: #333; }
+		.verifactu-qr__leyenda { font-weight: bold; }
 	</style>
 </head>
 <body>
+	@include('partials.verifactu-qr', ['factura' => $factura])
+
 	<div class="header">
 		<div class="col">
 			@php

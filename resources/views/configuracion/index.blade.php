@@ -75,8 +75,10 @@
 							</button>
 						</li>
 						<li class="nav-item" role="presentation">
-							<button class="nav-link disabled" type="button" role="tab" disabled>
-								Verifactu <span class="badge badge-sm badge-secondary light ms-1">Próximamente</span>
+							<button class="nav-link" id="tab-verifactu-btn" data-bs-toggle="tab"
+								data-bs-target="#tab-verifactu" type="button" role="tab"
+								aria-controls="tab-verifactu" aria-selected="false">
+								Verifactu
 							</button>
 						</li>
 					</ul>
@@ -116,6 +118,10 @@
 						<div class="tab-pane fade" id="tab-crm" role="tabpanel"
 							aria-labelledby="tab-crm-btn">
 							@include('configuracion._tab_crm')
+						</div>
+						<div class="tab-pane fade" id="tab-verifactu" role="tabpanel"
+							aria-labelledby="tab-verifactu-btn">
+							@include('configuracion._tab_verifactu')
 						</div>
 					</div>
 				</div>

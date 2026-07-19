@@ -292,6 +292,16 @@ funciones:
 tocar el JS, `withButtonLoading`/`setButtonLoading` lo detectan solos y restauran el texto original
 al terminar.
 
+**Excepción documentada — bottom nav de fichaje (mobile)**: los 3 botones de
+`#fichaje-bottom-nav` (Entrada/Pausa/Salida en `fichajes/index.blade.php`) NO usan
+`withButtonLoading` (`fichaje-app.init.js`, handler de click delegado). El spinner que antepone
+`setButtonLoading` rompe el layout circular del FAB central de Pausa y, en la card de escritorio,
+tapaba el ícono; a pedido explícito del usuario se sacó para esos 3 botones puntuales. El feedback
+de que el fichaje se registró sigue existiendo (toast + `aplicarEstado` recoloreando/deshabilitando
+según el nuevo estado apenas llega la respuesta) — lo que no hay es el disabled+spinner mientras la
+petición está en vuelo. No copiar este patrón a otros botones sin el mismo motivo (ícono FAB
+circular); para cualquier botón AJAX nuevo seguir usando `withButtonLoading` por defecto.
+
 **`confirmDelete` ya usa este mecanismo internamente** sobre su propio botón de confirmación (ver
 sección anterior) — un botón de fila que dispara `window.confirmDelete(...)` no necesita loading
 propio, alcanza con que su `onConfirm` haga `return $.ajax(...)`.
@@ -519,6 +529,68 @@ Si una acción necesita separarse en dos (ej. "Ver" vs "Editar" en vez de un ún
 "Ver/Editar"), se agregan como dos `<li>` distintos dentro del mismo dropdown — no se sale del
 patrón dropdown para eso.
 
+## Botón "Exportar"/"Importar" en la cabecera de un DataTable (feature 031)
+
+Los listados con exportación a Excel (`clientes`, `articulos`, `facturas`, `albaranes`, `leads`)
+llevan un botón `<button id="btn-exportar-{modulo}" class="btn btn-outline-secondary">Exportar</button>`
+en la cabecera de la card, junto al resto de acciones. Los que además admiten importación
+(`clientes`, `articulos`, `proveedores`) llevan también
+`<button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#importarModal">Importar</button>`.
+Ambos van **antes** del botón primario "+ Agregar …" (acción secundaria, no la principal de la
+pantalla).
+
+**El botón "Exportar" nunca hace un `GET`/descarga directa**: exportar respeta los filtros activos
+del DataTable (búsqueda, columnas visibles), y estos cinco listados no tienen filtrado server-side
+(cargan el dataset completo y DataTables filtra en el navegador). El patrón, implementado una sola
+vez en `public/js/plugins-init/excel-export.init.js` y reutilizado por cada vista:
+
+```js
+window.initExportacionExcel({
+	boton: '#btn-exportar-clientes',
+	url: @json(route('clientes.exportar', ['modulo' => 'clientes'])),
+	table: function () { return $('#clientes-table').DataTable(); },
+});
+```
+
+`initExportacionExcel` recoge los IDs de las filas visibles con
+`table.rows({ search: 'applied' }).data()`, hace `POST` con `fetch()` (no se puede navegar a un
+`GET` con miles de IDs en la query string) y dispara la descarga del blob de respuesta manualmente
+(`URL.createObjectURL` + `<a download>`). Si no hay filas visibles, muestra un toast de aviso en
+vez de mandar la petición.
+
+**"Importar" abre un modal, nunca navega a otra página** (consistente con "CRUD simple: alta/edición
+en modal + AJAX" más abajo, aunque acá no hay alta/edición sino un flujo de tres pasos: subir →
+previsualizar → confirmar). El modal es un partial único y reutilizable,
+`resources/views/excel/_importar_modal.blade.php`, incluido una vez por vista con
+`@include('excel._importar_modal', ['modulo' => 'clientes', 'etiqueta' => 'clientes'])`, y
+manejado por `public/js/plugins-init/excel-importar-modal.init.js`:
+
+```js
+window.initImportacionModal({
+	previsualizarUrl: @json(route('clientes.importar.previsualizar', ['modulo' => 'clientes'])),
+	confirmarUrl: @json(route('clientes.importar.confirmar', ['modulo' => 'clientes'])),
+	tabla: '#clientes-table',
+});
+```
+
+Los tres pasos viven en el mismo modal (`#importar-paso-subir` / `#importar-paso-previsualizacion`
+/ `#importar-paso-resultado`, alternados con `d-none`), sin volver a pedir el fichero: el `token`
+que devuelve la previsualización viaja al confirmar. Para que esto funcione,
+`ImportacionController@previsualizar` **y** `@confirmar` responden JSON cuando
+`$request->wantsJson()` (el flujo con redirect + `session('resumen_importacion')` sigue existiendo
+como fallback de `GET /importar/{modulo}`, pero ya no lo enlaza ningún botón de la UI). Al confirmar
+con éxito, recarga la tabla con `table.ajax.reload(null, false)` — mismo patrón que cualquier alta
+por modal.
+
+Cada módulo exportable/importable necesita su propia ruta literal (`/exportar/clientes`,
+`/importar/articulos/previsualizar`, …) dentro de su grupo `can:ver-{modulo}` — **nunca**
+`Route::post('/exportar/{modulo}')` con `where()`/`whereIn()` repetido por grupo: Laravel no
+permite registrar dos rutas con el mismo método+URI literal aunque tengan constraints distintos (la
+segunda pisa a la primera en el `RouteCollection`, silenciosamente, sin error). El patrón correcto
+para inyectar igualmente el nombre del módulo en el controller es `->defaults('modulo', 'clientes')`
+sobre la ruta literal. Ver `routes/web.php` y `specs/031-import-export-excel/` para el patrón
+completo.
+
 ## DataTable: inputs nativos de "Mostrar registros" / "Buscar"
 
 Los controles `dataTables_length` (`<select>`) y `dataTables_filter` (`<input>`) los genera el
@@ -720,3 +792,32 @@ reutilizables que introdujo:
   `window.showToast`. La acción se deshabilita al resolverse.
 - CSS scoped bajo `.asistente-chat__*` en un `@push('styles')` dentro del propio partial; usa
   `var(--primary)` para respetar el color de marca del tenant.
+- **Exclusión por vista, también en servidor**: el `@include('partials.asistente-chat')` en
+  `layouts/app.blade.php` está envuelto en `@unless (request()->routeIs('fichajes.index'))` — en
+  la vista de fichar (`/fichajes`) el botón flotante tapa el hero de fichaje en pantallas chicas,
+  justo la pantalla de uso diario y rápido. Mismo criterio que el resto del widget: la exclusión
+  se resuelve en el layout (servidor), nunca con CSS (`display:none`) sobre el widget ya emitido.
+  Si aparece otra vista donde el widget estorbe, sumar su `routeIs(...)` a la misma condición.
+
+## Bloque QR normativo en documentos PDF (Verifactu, feature 032)
+
+Cuando un PDF (dompdf) debe llevar un código QR con un tamaño mínimo/máximo exigido por normativa
+(no solo estético), usar **unidades `mm` directamente en el CSS** (`width: 35mm; height: 35mm;`) en
+vez de convertir a `px`/`pt` a mano — dompdf las respeta de forma nativa y es la única forma de
+garantizar el rango exacto (30–40 mm en este caso) en A4 y en un ticket de 80 mm a la vez, donde el
+espacio disponible cambia mucho. El QR se genera server-side como **SVG embebido en un data URI**
+(`chillerlan/php-qrcode`, sin `ext-gd`/`imagick`, Principio V) y se comparte entre formatos en un
+único partial (`resources/views/partials/verifactu-qr.blade.php`) incluido con `@include(...,
+['factura' => $factura])` al principio del `<body>` de cada plantilla — nunca duplicado por formato.
+Se renderiza a partir de una URL ya persistida en BD (`facturas.qr_contenido`), no recomponiéndola en
+cada render, y el partial decide por sí mismo si mostrarse (factura con registro sellado) para no
+repetir esa condición en cada vista que lo incluye.
+
+## Badge secundario bajo el estado principal (DataTable)
+
+Cuando una fila necesita mostrar un segundo estado independiente del "estado" principal de la columna
+(p. ej. estado Verifactu de una factura, o el badge "Enviada" ya existente), no se añade una columna
+nueva: se apila un `<div class="mt-1">` con su propio `<span class="badge light ...">` dentro del
+mismo `render()` de la columna de estado, condicionado a que el dato exista (`if (row.algo) { ... }`).
+Mantiene la tabla legible sin ensanchar el layout con columnas casi siempre vacías. Ver
+`renderEstado()` en `public/js/plugins-init/facturas-datatable.init.js`.

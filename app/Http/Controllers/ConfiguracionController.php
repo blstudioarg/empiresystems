@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\AccionLogActividad;
 use App\Enums\EntidadLogActividad;
+use App\Enums\EntornoVerifactu;
 use App\Exceptions\CertificadoInvalidoException;
 use App\Exceptions\EmailNoConfiguradoException;
 use App\Http\Requests\UpdateAparienciaRequest;
@@ -25,11 +26,13 @@ use App\Support\RetencionGeoTenant;
 use App\Support\RetencionMiembroTenant;
 use App\Support\TopeSimplificada;
 use App\Support\VerificadorVies;
+use App\Support\VerifactuTenant;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 
@@ -81,6 +84,11 @@ class ConfiguracionController extends Controller
             'comercialesDisponibles' => User::where('tenant_id', $tenantId)->orderBy('name')->get(['id', 'name']),
             'iaConfigurada' => IaTenant::configurada($tenantId),
             'iaClaveEnmascarada' => IaTenant::apiKeyEnmascarada($tenantId),
+            'verifactuConfig' => [
+                'activo' => VerifactuTenant::activo($tenantId),
+                'entorno' => VerifactuTenant::entorno($tenantId)->value,
+                'cadena_iniciada' => VerifactuTenant::cadenaIniciada($tenantId),
+            ],
         ]);
     }
 
@@ -301,6 +309,50 @@ class ConfiguracionController extends Controller
         }
 
         return redirect()->route('configuracion.show')->with('success', 'Configuración de facturación guardada correctamente.');
+    }
+
+    /**
+     * Flag Verifactu (activo/entorno). El entorno no puede cambiarse una vez la cadena del tenant
+     * ya tiene algún eslabón (FR-020): mezclaría registros de pruebas con la cadena fiscal real.
+     */
+    public function updateVerifactu(Request $request): RedirectResponse|JsonResponse
+    {
+        $tenantId = tenant()->getTenantKey();
+
+        $datos = $request->validate([
+            'activo' => ['sometimes', 'boolean'],
+            'entorno' => ['required', Rule::enum(EntornoVerifactu::class)],
+        ]);
+
+        $entornoActual = VerifactuTenant::entorno($tenantId);
+        $entornoSolicitado = EntornoVerifactu::from($datos['entorno']);
+
+        if ($entornoSolicitado !== $entornoActual && VerifactuTenant::cadenaIniciada($tenantId)) {
+            $mensaje = 'No se puede cambiar el entorno: este tenant ya tiene una cadena Verifactu iniciada.';
+
+            if ($request->wantsJson()) {
+                return response()->json(['message' => $mensaje], 422);
+            }
+
+            return redirect()->route('configuracion.show')->with('error', $mensaje);
+        }
+
+        VerifactuTenant::activar($tenantId, $request->boolean('activo'));
+        VerifactuTenant::establecerEntorno($tenantId, $entornoSolicitado);
+
+        $this->registradorActividad->registrar(
+            auth()->user(),
+            AccionLogActividad::Modificacion,
+            EntidadLogActividad::Configuracion,
+            null,
+            'Actualizó la configuración de Verifactu',
+        );
+
+        if ($request->wantsJson()) {
+            return response()->json(['message' => 'Configuración de Verifactu guardada correctamente.']);
+        }
+
+        return redirect()->route('configuracion.show')->with('success', 'Configuración de Verifactu guardada correctamente.');
     }
 
     public function updateFichajes(Request $request): RedirectResponse|JsonResponse

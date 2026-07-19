@@ -32,6 +32,14 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Retención de leads descartados/no convertidos (RGPD — minimización, feature 028).
         $schedule->command('leads:purgar')->daily();
+
+        // Ficheros de importación huérfanos: previsualizaciones nunca confirmadas ni canceladas
+        // (RGPD — minimización, feature 031).
+        $schedule->command('importaciones:purgar')->daily();
+
+        // Reintento automático de envíos Verifactu en error, con tope de intentos (research R6,
+        // feature 032). El registro local ya está sellado; esto solo reintenta la remisión.
+        $schedule->command('verifactu:reintentar')->everyFiveMinutes();
     })
     ->withMiddleware(function (Middleware $middleware): void {
         // Detrás del edge proxy de Railway (TLS terminado en el borde): confiar en las cabeceras

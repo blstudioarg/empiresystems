@@ -48,6 +48,7 @@
 							<h4 class="card-title mb-0">Proveedores</h4>
 							<div class="d-flex gap-2 align-items-center">
 								<div id="proveedores-colvis"></div>
+								<button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#importarModal">Importar</button>
 								<button type="button" class="btn btn-primary btn-add-proveedor" data-bs-toggle="modal" data-bs-target="#proveedorModal">
 									+ Agregar proveedor
 								</button>
@@ -96,6 +97,8 @@
 				</div>
 			</div>
 		</div>
+
+		@include('excel._importar_modal', ['modulo' => 'proveedores', 'etiqueta' => 'proveedores'])
 	</div>
 @endsection
 
@@ -119,4 +122,12 @@
 	<script src="{{ asset('vendor/datatables/js/buttons.colVis.min.js') }}"></script>
 	<script src="{{ asset('js/plugins-init/proveedores-datatable.init.js') }}"></script>
 	<script src="{{ asset('js/plugins-init/proveedores-modal.init.js') }}"></script>
+	<script src="{{ asset('js/plugins-init/excel-importar-modal.init.js') }}"></script>
+	<script>
+		window.initImportacionModal({
+			previsualizarUrl: @json(route('proveedores.importar.previsualizar', ['modulo' => 'proveedores'])),
+			confirmarUrl: @json(route('proveedores.importar.confirmar', ['modulo' => 'proveedores'])),
+			tabla: '#proveedores-table',
+		});
+	</script>
 @endpush

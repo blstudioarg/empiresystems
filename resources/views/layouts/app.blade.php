@@ -66,7 +66,11 @@
 
 	@include('partials.flash-toastr')
 
-	@include('partials.asistente-chat')
+	{{-- Oculto en la vista de fichar: el botón flotante tapa el hero de fichaje (mapa, reloj,
+	     botón de fichar) en pantallas chicas, justo la pantalla que se usa a diario y rápido. --}}
+	@unless (request()->routeIs('fichajes.index'))
+		@include('partials.asistente-chat')
+	@endunless
 
 	@stack('scripts')
 </body>

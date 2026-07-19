@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\TipoArticulo;
 use App\Enums\TipoFactura;
+use App\Exceptions\PagoTicketDescuadradoException;
 use App\Exceptions\TicketFueraDeTopeException;
 use App\Http\Requests\StoreTicketRequest;
 use App\Models\Articulo;
@@ -30,6 +31,7 @@ class PosController extends Controller
     {
         if ($request->wantsJson()) {
             $tickets = Factura::where('tipo', TipoFactura::Simplificada)
+                ->with('pagosTicket')
                 ->orderByDesc('fecha_expedicion')
                 ->orderByDesc('id')
                 ->get();
@@ -48,6 +50,13 @@ class PosController extends Controller
                             : 'Consumidor final',
                         'fecha_expedicion' => $ticket->fecha_expedicion->toDateString(),
                         'total' => number_format((float) $ticket->total, 2, '.', ''),
+                        // Desglose interno de cómo se cobró en caja (pago simple o dividido).
+                        'pagos' => $ticket->pagosTicket->map(fn ($pago) => [
+                            'metodo' => $pago->metodo->value,
+                            'metodo_label' => ucfirst($pago->metodo->value),
+                            'importe' => number_format((float) $pago->importe, 2, '.', ''),
+                        ])->values(),
+                        'dividido' => $ticket->pagosTicket->count() > 1,
                         'pdf_ticket_url' => route('pos.pdf', ['factura' => $ticket->id, 'formato' => 'ticket']),
                         'pdf_a4_url' => route('pos.pdf', ['factura' => $ticket->id, 'formato' => 'a4']),
                     ];
@@ -96,7 +105,7 @@ class PosController extends Controller
     {
         try {
             $ticket = $this->registroTicket->registrar($request->validated());
-        } catch (TicketFueraDeTopeException $e) {
+        } catch (TicketFueraDeTopeException|PagoTicketDescuadradoException $e) {
             if ($request->wantsJson()) {
                 return response()->json(['message' => $e->getMessage()], 422);
             }

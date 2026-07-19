@@ -13,6 +13,7 @@ enum EntidadLogActividad: string
     case Oportunidad = 'oportunidad';
     case Presupuesto = 'presupuesto';
     case Albaran = 'albaran';
+    case Proveedor = 'proveedor';
 
     public function label(): string
     {
@@ -26,6 +27,7 @@ enum EntidadLogActividad: string
             self::Oportunidad => 'Oportunidad',
             self::Presupuesto => 'Presupuesto',
             self::Albaran => 'Albarán',
+            self::Proveedor => 'Proveedor',
         };
     }
 }

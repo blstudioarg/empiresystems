@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\EstadoFactura;
 use App\Enums\FormaPago;
 use App\Enums\TipoFactura;
+use App\Exceptions\PagoTicketDescuadradoException;
 use App\Exceptions\TicketFueraDeTopeException;
 use App\Models\Cliente;
 use App\Models\Factura;
@@ -67,7 +68,11 @@ class RegistroTicket
             throw TicketFueraDeTopeException::paraTope($topeAplicable);
         }
 
-        return DB::transaction(function () use ($datos, $receptor, $cliente, $regimen, $aplicaRecargo, $resultado) {
+        // Desglose de cobro (pago simple o dividido); debe cuadrar al céntimo con el total.
+        $pagos = $this->resolverPagos($datos['pagos'] ?? null, (float) $resultado->total);
+        $formaPago = $this->formaPagoPredominante($pagos);
+
+        return DB::transaction(function () use ($datos, $receptor, $cliente, $regimen, $aplicaRecargo, $resultado, $pagos, $formaPago) {
             $serie = Serie::activaPorTipo(TipoFactura::Simplificada);
             $hoy = now()->toDateString();
 
@@ -87,7 +92,7 @@ class RegistroTicket
                 'fecha_expedicion' => $hoy,
                 'fecha_operacion' => null,
                 'fecha_vencimiento' => VencimientoFactura::calcular($hoy),
-                'forma_pago' => FormaPago::Efectivo,
+                'forma_pago' => $formaPago,
                 'moneda' => 'EUR',
                 'regimen_impositivo' => $regimen,
                 'aplica_recargo' => $aplicaRecargo,
@@ -128,8 +133,57 @@ class RegistroTicket
                 ]);
             }
 
+            // Desglose interno de cómo se cobró en caja (uno o varios métodos).
+            foreach ($pagos as $pago) {
+                $factura->pagosTicket()->create([
+                    'metodo' => $pago['metodo'],
+                    'importe' => $pago['importe'],
+                ]);
+            }
+
             // Emisión: número correlativo de la serie "S" con bloqueo, evento e inmutabilidad.
             return $this->emisor->emitir($factura);
         });
+    }
+
+    /**
+     * Normaliza y valida el desglose de cobro contra el total del ticket. Si no se aporta desglose,
+     * asume un único pago íntegro en efectivo (comportamiento por defecto del TPV). Si se aporta,
+     * la suma de importes debe cuadrar al céntimo con el total; si no, lanza excepción.
+     *
+     * @param  list<array{metodo: string, importe: mixed}>|null  $pagosDatos
+     * @return list<array{metodo: FormaPago, importe: float}>
+     */
+    private function resolverPagos(?array $pagosDatos, float $total): array
+    {
+        if (empty($pagosDatos)) {
+            return [['metodo' => FormaPago::Efectivo, 'importe' => round($total, 2)]];
+        }
+
+        $pagos = array_map(fn (array $pago) => [
+            'metodo' => $pago['metodo'] instanceof FormaPago ? $pago['metodo'] : FormaPago::from($pago['metodo']),
+            'importe' => round((float) $pago['importe'], 2),
+        ], array_values($pagosDatos));
+
+        $asignado = array_sum(array_column($pagos, 'importe'));
+
+        if ((int) round($asignado * 100) !== (int) round($total * 100)) {
+            throw PagoTicketDescuadradoException::paraTotal($total, $asignado);
+        }
+
+        return $pagos;
+    }
+
+    /**
+     * Método de pago "principal" del ticket para el único campo `forma_pago` de la factura (que se
+     * muestra en el PDF): el de mayor importe del reparto. El desglose completo vive en `ticket_pagos`.
+     *
+     * @param  list<array{metodo: FormaPago, importe: float}>  $pagos
+     */
+    private function formaPagoPredominante(array $pagos): FormaPago
+    {
+        $principal = collect($pagos)->sortByDesc('importe')->first();
+
+        return $principal['metodo'] ?? FormaPago::Efectivo;
     }
 }

@@ -8,9 +8,11 @@ use App\Enums\TipoArticulo;
 use App\Enums\TipoFactura;
 use App\Enums\TipoMovimientoStock;
 use App\Exceptions\FacturaNoEmitibleException;
+use App\Jobs\RemitirRegistroVerifactu;
 use App\Models\Factura;
 use App\Models\FacturaEvento;
 use App\Support\VencimientoFactura;
+use App\Support\VerifactuTenant;
 use Illuminate\Support\Facades\DB;
 
 class EmisorFacturas
@@ -18,6 +20,7 @@ class EmisorFacturas
     public function __construct(
         private readonly NumeradorFacturas $numerador,
         private readonly RegistroMovimientoStock $registroMovimientoStock,
+        private readonly RegistroVerifactu $registroVerifactu,
     ) {}
 
     public function emitir(Factura $factura): Factura
@@ -37,6 +40,12 @@ class EmisorFacturas
             $factura->save();
 
             $this->moverStock($factura);
+
+            if (VerifactuTenant::activo($factura->tenant_id)) {
+                $factura = $this->registroVerifactu->registrar($factura);
+
+                DB::afterCommit(fn () => RemitirRegistroVerifactu::dispatch($factura->id));
+            }
 
             FacturaEvento::create([
                 'tenant_id' => $factura->tenant_id,

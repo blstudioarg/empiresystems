@@ -69,6 +69,7 @@
 									<button type="button" class="btn btn-outline-secondary btn-filtro-factura" data-filtro-factura="emitida">Emitidas</button>
 									<button type="button" class="btn btn-outline-secondary btn-filtro-factura" data-filtro-factura="rectificativa">Rectificativas</button>
 								</div>
+								<button type="button" id="btn-exportar-facturas" class="btn btn-outline-secondary">Exportar</button>
 								<a href="{{ route('facturas.create') }}" class="btn btn-primary">
 									+ Nueva factura
 								</a>
@@ -257,15 +258,50 @@
 			</form>
 		</div>
 	</div>
+
+	<div class="modal fade" id="anularFacturaModal" tabindex="-1" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered">
+			<form id="anularFacturaForm" class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title">Anular factura</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+				</div>
+				<div class="modal-body">
+					<p class="text-muted">
+						Solo para un registro erróneo sin efectos económicos (sin cobros registrados).
+						Para corregir una factura ya en circulación, usa una rectificativa.
+					</p>
+					<div class="mb-3">
+						<label for="anularMotivo" class="form-label">Motivo</label>
+						<textarea id="anularMotivo" name="motivo" class="form-control" rows="3" required></textarea>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+					<button type="submit" class="btn btn-danger">Anular</button>
+				</div>
+			</form>
+		</div>
+	</div>
 @endsection
 
 @section('ayuda-titulo', 'Facturas')
 @section('ayuda')
 	@include('ayuda.facturas')
+	<hr>
+	@include('ayuda.verifactu')
 @endsection
 
 @push('scripts')
 	<script src="{{ asset('vendor/datatables/js/jquery.dataTables.min.js') }}"></script>
 	<script src="{{ asset('vendor/datatables/responsive/responsive.js') }}"></script>
 	<script src="{{ asset('js/plugins-init/facturas-datatable.init.js') }}"></script>
+	<script src="{{ asset('js/plugins-init/excel-export.init.js') }}"></script>
+	<script>
+		window.initExportacionExcel({
+			boton: '#btn-exportar-facturas',
+			url: @json(route('facturas.exportar', ['modulo' => 'facturas'])),
+			table: function () { return $('#facturas-table').DataTable(); },
+		});
+	</script>
 @endpush

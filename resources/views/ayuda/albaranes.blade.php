@@ -16,3 +16,6 @@ de un mismo cliente en una única factura.</p>
 <p class="ayuda-nota">Un mismo presupuesto se puede entregar en varios albaranes parciales, pero la
 suma nunca puede superar la cantidad de cada línea. Un albarán ya facturado queda de solo lectura y
 no se puede anular.</p>
+
+<p>El botón <strong>Exportar</strong> del listado descarga a Excel los albaranes que estás viendo
+(respeta el filtro activo). Los albaranes no se pueden importar.</p>

@@ -1,6 +1,8 @@
 <p>Este es tu catálogo: los <strong>productos y servicios</strong> que después cargás en facturas
 y tickets. Se crean y editan con el botón <strong>“Agregar artículo”</strong> y el menú
-<strong>Acciones</strong> de cada fila.</p>
+<strong>Acciones</strong> de cada fila. También podés <strong>exportar</strong> el catálogo a Excel
+o <strong>importarlo</strong> desde un fichero (la categoría se resuelve por nombre; si no existe,
+esa fila se rechaza en vez de crearla sola).</p>
 
 <ol>
 	<li><strong>Tipo</strong>: “Producto” (algo físico, puede llevar control de stock) o “Servicio”

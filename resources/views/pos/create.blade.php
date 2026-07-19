@@ -248,6 +248,117 @@
 		.pos-total-modal .row-desglose.total .lbl { color: #16a34a; font-weight: 800; font-size: 1.2rem; }
 		.pos-total-modal .row-desglose.total .val { color: #16a34a; font-size: 2.6rem; letter-spacing: -.02em; }
 
+		/* ── Modal de cobro (pago simple o dividido) — tablet-first ──
+		   Patrón TPV real: total arriba, tarjetas grandes de método, teclado numérico en pantalla
+		   y lista de pagos añadidos con un "restante" que baja hasta 0. Nada de dropdowns ni inputs
+		   diminutos: todo pensado para el dedo. Reutiliza el "verde dinero" y el primario del tenant. */
+		.pos-cobro-modal {
+			--pos-primary: var(--primary, #1d69d6);
+			--pos-money: #16a34a; --pos-money-2: #22c55e;
+			--ease-out: cubic-bezier(.23, 1, .32, 1);
+		}
+		.pos-cobro-modal .modal-body { padding: 1.1rem 1.15rem; }
+
+		/* Total + restante en una tira: el total (verde) manda, el restante informa cuánto falta. */
+		.pos-cobro-cab { display: flex; gap: .7rem; margin-bottom: 1rem; }
+		.pos-cobro-total, .pos-cobro-restante {
+			flex: 1 1 0; border-radius: 1rem; padding: .85rem 1rem; text-align: center;
+			display: flex; flex-direction: column; gap: .1rem;
+		}
+		.pos-cobro-total { background: linear-gradient(135deg, var(--pos-money), var(--pos-money-2)); color: #fff; box-shadow: 0 8px 20px rgba(22,163,74,.28); }
+		.pos-cobro-restante { background: #f5f6f8; border: 1px solid var(--bs-border-color, #e6e6e6); color: #2b2f36; }
+		.pos-cobro-cab .lbl { font-size: .64rem; text-transform: uppercase; letter-spacing: .13em; font-weight: 700; opacity: .9; }
+		.pos-cobro-cab .val { font-size: 1.7rem; font-weight: 800; letter-spacing: -.02em; line-height: 1.05; font-variant-numeric: tabular-nums; }
+		.pos-cobro-restante.completo { background: #e9f9ef; border-color: #b6ebc8; color: #14833b; }
+		.pos-cobro-restante.completo .val { color: #14833b; }
+		/* Con el teclado abierto, tocar "Restante" autocompleta el importe con lo que falta. */
+		.pos-cobro-restante.tappable {
+			cursor: pointer; border-style: dashed; border-color: var(--pos-primary);
+			transition: background .14s var(--ease-out), transform .08s var(--ease-out);
+		}
+		.pos-cobro-restante.tappable:hover { background: #eef3ff; }
+		.pos-cobro-restante.tappable:active { transform: scale(.97); }
+		.pos-cobro-restante .tap-hint { font-size: .58rem; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--pos-primary); margin-top: .1rem; display: none; }
+		.pos-cobro-restante.tappable .tap-hint { display: block; }
+
+		/* Pagos ya añadidos (chips): método + importe + quitar. Aparecen sólo cuando hay alguno. */
+		.pos-cobro-tenders { display: flex; flex-direction: column; gap: .5rem; margin-bottom: 1rem; }
+		.pos-cobro-tender {
+			display: flex; align-items: center; gap: .7rem; padding: .6rem .75rem; border-radius: .85rem;
+			background: #fff; border: 1px solid var(--bs-border-color, #e6e6e6);
+			animation: pos-tender-in .22s var(--ease-out);
+		}
+		@keyframes pos-tender-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+		.pos-cobro-tender .ic { width: 38px; height: 38px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center;
+			background: color-mix(in srgb, var(--pos-primary) 12%, #fff); color: var(--pos-primary); font-size: 1.05rem; flex: none; }
+		.pos-cobro-tender .nom { flex: 1 1 auto; font-weight: 650; }
+		.pos-cobro-tender .imp { font-weight: 800; font-variant-numeric: tabular-nums; }
+		.pos-cobro-tender .quitar {
+			flex: none; width: 38px; height: 38px; border-radius: 10px; border: none; background: #fdf1f0; color: #c0392b;
+			font-size: 1.3rem; line-height: 1; display: inline-flex; align-items: center; justify-content: center;
+			-webkit-tap-highlight-color: transparent; transition: background .12s ease, transform .08s var(--ease-out);
+		}
+		.pos-cobro-tender .quitar:hover { background: #f9dedb; }
+		.pos-cobro-tender .quitar:active { transform: scale(.9); }
+
+		.pos-cobro-hint { font-size: .82rem; color: #9aa0a6; font-weight: 600; margin: 0 0 .6rem; }
+
+		/* Tarjetas de método: grid 2×2, grandes y táctiles (misma familia que .pos-bkey/.pos-filtro). */
+		.pos-cobro-metodos { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; }
+		.pos-metodo {
+			display: flex; align-items: center; gap: .7rem; min-height: 66px; padding: .75rem .9rem;
+			border: 1.5px solid var(--bs-border-color, #e6e6e6); background: #fff; border-radius: 1rem;
+			font-weight: 700; font-size: 1rem; color: #2b2f36; cursor: pointer; text-align: left;
+			-webkit-tap-highlight-color: transparent;
+			transition: background .14s var(--ease-out), border-color .14s var(--ease-out), color .14s var(--ease-out), box-shadow .14s var(--ease-out), transform .08s var(--ease-out);
+		}
+		.pos-metodo .ic { width: 40px; height: 40px; border-radius: 11px; display: inline-flex; align-items: center; justify-content: center;
+			background: color-mix(in srgb, var(--pos-primary) 12%, #fff); color: var(--pos-primary); font-size: 1.15rem; flex: none; transition: background .14s var(--ease-out), color .14s var(--ease-out); }
+		.pos-metodo:hover { border-color: var(--pos-primary); background: #f5f8ff; }
+		.pos-metodo:active { transform: scale(.97); }
+		.pos-metodo.activo { background: var(--pos-primary); border-color: var(--pos-primary); color: #fff; box-shadow: 0 6px 16px rgba(29,105,214,.25); }
+		.pos-metodo.activo .ic { background: rgba(255,255,255,.22); color: #fff; }
+
+		/* Teclado numérico en pantalla: aparece al elegir un método; el foco no sale de la app. */
+		.pos-keypad { margin-top: .3rem; }
+		.pos-keypad-head { display: flex; align-items: center; justify-content: space-between; gap: .6rem; margin-bottom: .7rem; }
+		.pos-keypad-head .metodo-lbl { display: inline-flex; align-items: center; gap: .5rem; font-weight: 700; color: #2b2f36; }
+		.pos-keypad-head .metodo-lbl .ic { color: var(--pos-primary); font-size: 1.05rem; }
+		.pos-keypad-monto {
+			font-size: 1.7rem; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -.01em; color: #16a34a;
+		}
+		.pos-keypad-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .55rem; }
+		.pos-key {
+			min-height: 60px; border-radius: 14px; border: 1px solid var(--bs-border-color, #e6e6e6); background: #fff;
+			font-size: 1.5rem; font-weight: 700; color: #2b2f36; cursor: pointer; -webkit-tap-highlight-color: transparent;
+			display: inline-flex; align-items: center; justify-content: center;
+			transition: background .12s var(--ease-out), border-color .12s var(--ease-out), transform .07s var(--ease-out);
+		}
+		.pos-key:hover { background: #f5f8ff; border-color: var(--pos-primary); }
+		.pos-key:active { transform: scale(.94); background: #e6edfb; }
+		.pos-key.wide { font-size: 1.25rem; }
+
+		.pos-keypad-acciones { display: flex; gap: .55rem; margin-top: .7rem; }
+		.pos-keypad-acciones .btn { flex: 1 1 0; min-height: 54px; font-weight: 700; border-radius: 14px !important; font-size: 1rem !important; }
+		.pos-keypad-anadir { background: var(--pos-primary); border: none; color: #fff; }
+		.pos-keypad-anadir:disabled { background: #c9ccd1; }
+
+		/* Doble clase (.pos-cobro-modal .pos-cobro-emitir) para ganarle en especificidad al
+		   `.btn { font-size:.76rem !important }` de app-overrides.css, que carga después. */
+		.pos-cobro-modal .pos-cobro-emitir {
+			min-height: 68px; font-size: 1.45rem !important; font-weight: 800; padding: 1rem !important; border-radius: 14px !important;
+			background: linear-gradient(135deg, var(--pos-money), var(--pos-money-2)); border: none; color: #fff !important;
+			letter-spacing: .01em; box-shadow: 0 10px 24px rgba(22,163,74,.32);
+			transition: transform .08s var(--ease-out), box-shadow .18s var(--ease-out), background .18s var(--ease-out);
+		}
+		.pos-cobro-modal .pos-cobro-emitir:active:not(:disabled) { transform: scale(.98); }
+		.pos-cobro-modal .pos-cobro-emitir:disabled { background: #c9ccd1; color: #fff !important; box-shadow: none; }
+
+		@media (prefers-reduced-motion: reduce) {
+			.pos-cobro-tender { animation: none; }
+			.pos-metodo, .pos-key, .pos-cobro-emitir, .pos-cobro-tender .quitar { transition: none; }
+		}
+
 		/* ── Modal de éxito al emitir ──────────────────────────────── */
 		.pos-exito-icono { margin: .25rem 0 .5rem; }
 		/* Acciones grandes pensadas para el dedo en tablet (no mouse). */
@@ -389,8 +500,9 @@
 							<span class="pos-bkey-label" id="pos-cliente-btn-label">Cliente</span>
 						</button>
 
-						<button type="button" class="pos-cobrar" id="pos-emitir" disabled>
-							<x-lordicon icon="euro" size="24" trigger="hover" target="#pos-emitir" colors="primary:#ffffff,secondary:#ffffff" />
+						<button type="button" class="pos-cobrar" id="pos-cobrar" disabled
+							data-bs-toggle="modal" data-bs-target="#posCobroModal">
+							<x-lordicon icon="euro" size="24" trigger="hover" target="#pos-cobrar" colors="primary:#ffffff,secondary:#ffffff" />
 							<span>Cobrar</span>
 						</button>
 					</aside>
@@ -426,6 +538,93 @@
 			</div>
 		</div>
 	</div>
+
+	{{-- Cobro: reparte el total en uno o varios métodos de pago (pago dividido). Táctil, tablet-first;
+	     el desglose es interno (no se refleja en el PDF del ticket). --}}
+	@php
+		$metodosPago = [
+			'efectivo' => ['label' => 'Efectivo', 'icon' => 'fa-money-bill-wave'],
+			'tarjeta' => ['label' => 'Tarjeta', 'icon' => 'fa-credit-card'],
+			'transferencia' => ['label' => 'Transferencia', 'icon' => 'fa-building-columns'],
+			'domiciliacion' => ['label' => 'Domiciliación', 'icon' => 'fa-file-invoice-dollar'],
+		];
+	@endphp
+	<div class="modal fade pos-cobro-modal" id="posCobroModal" tabindex="-1" aria-labelledby="posCobroModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="posCobroModalLabel">Cobrar</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+				</div>
+				<div class="modal-body">
+					<div class="pos-cobro-cab">
+						<div class="pos-cobro-total">
+							<span class="lbl">Total</span>
+							<span class="val" id="pos-cobro-total">0,00 €</span>
+						</div>
+						<div class="pos-cobro-restante" id="pos-cobro-restante" role="button" tabindex="0" aria-label="Autocompletar con el importe restante">
+							<span class="lbl" id="pos-cobro-restante-lbl">Restante</span>
+							<span class="val" id="pos-cobro-restante-val">0,00 €</span>
+							<span class="tap-hint">Tocar para autocompletar</span>
+						</div>
+					</div>
+
+					{{-- Pagos ya añadidos (aparece sólo cuando hay alguno). --}}
+					<div class="pos-cobro-tenders d-none" id="pos-cobro-tenders"></div>
+
+					{{-- Selección de método (visible mientras falte por asignar). --}}
+					<div id="pos-cobro-eleccion">
+						<p class="pos-cobro-hint" id="pos-cobro-hint">Tocá el método con el que cobrás.</p>
+						<div class="pos-cobro-metodos">
+							@foreach ($metodosPago as $valor => $meta)
+								<button type="button" class="pos-metodo" data-metodo="{{ $valor }}" data-label="{{ $meta['label'] }}">
+									<span class="ic"><i class="fas {{ $meta['icon'] }}"></i></span>
+									<span>{{ $meta['label'] }}</span>
+								</button>
+							@endforeach
+						</div>
+					</div>
+
+					{{-- Teclado numérico: aparece al elegir un método. --}}
+					<div class="pos-keypad d-none" id="pos-cobro-keypad">
+						<div class="pos-keypad-head">
+							<span class="metodo-lbl">
+								<span class="ic"><i class="fas" id="pos-keypad-icon"></i></span>
+								<span id="pos-keypad-metodo-lbl">Efectivo</span>
+							</span>
+							<span class="pos-keypad-monto" id="pos-keypad-monto">0,00 €</span>
+						</div>
+						<div class="pos-keypad-grid">
+							<button type="button" class="pos-key" data-key="1">1</button>
+							<button type="button" class="pos-key" data-key="2">2</button>
+							<button type="button" class="pos-key" data-key="3">3</button>
+							<button type="button" class="pos-key" data-key="4">4</button>
+							<button type="button" class="pos-key" data-key="5">5</button>
+							<button type="button" class="pos-key" data-key="6">6</button>
+							<button type="button" class="pos-key" data-key="7">7</button>
+							<button type="button" class="pos-key" data-key="8">8</button>
+							<button type="button" class="pos-key" data-key="9">9</button>
+							<button type="button" class="pos-key wide" data-key=",">,</button>
+							<button type="button" class="pos-key" data-key="0">0</button>
+							<button type="button" class="pos-key wide" data-key="del" aria-label="Borrar">⌫</button>
+						</div>
+						<div class="pos-keypad-acciones">
+							<button type="button" class="btn btn-light" id="pos-keypad-cancelar">Cancelar</button>
+							<button type="button" class="btn pos-keypad-anadir" id="pos-keypad-anadir">Añadir pago</button>
+						</div>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn pos-cobro-emitir w-100" id="pos-cobro-emitir" disabled>
+						Emitir ticket
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	{{-- Metadatos de métodos de pago para el JS (etiqueta + icono por valor). --}}
+	<script type="application/json" id="pos-metodos-data">@json($metodosPago)</script>
 
 	{{-- Éxito al emitir: OK + mensaje + acciones grandes (táctil). Sin PDF embebido. --}}
 	<div class="modal fade" id="posExitoModal" tabindex="-1" aria-labelledby="posExitoModalLabel" aria-hidden="true" data-bs-backdrop="static">

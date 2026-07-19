@@ -86,6 +86,8 @@
 							<h4 class="card-title mb-0">Cartera de clientes</h4>
 							<div class="d-flex gap-2 align-items-center">
 								<div id="clientes-colvis"></div>
+								<button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#importarModal">Importar</button>
+								<button type="button" id="btn-exportar-clientes" class="btn btn-outline-secondary">Exportar</button>
 								<button type="button" class="btn btn-primary btn-add-cliente" data-bs-toggle="modal" data-bs-target="#clienteModal">
 									+ Agregar cliente
 								</button>
@@ -135,6 +137,8 @@
 				</div>
 			</div>
 		</div>
+
+		@include('excel._importar_modal', ['modulo' => 'clientes', 'etiqueta' => 'clientes'])
 	</div>
 @endsection
 
@@ -158,4 +162,18 @@
 	<script src="{{ asset('vendor/datatables/js/buttons.colVis.min.js') }}"></script>
 	<script src="{{ asset('js/plugins-init/clientes-datatable.init.js') }}"></script>
 	<script src="{{ asset('js/plugins-init/clientes-modal.init.js') }}"></script>
+	<script src="{{ asset('js/plugins-init/excel-export.init.js') }}"></script>
+	<script src="{{ asset('js/plugins-init/excel-importar-modal.init.js') }}"></script>
+	<script>
+		window.initExportacionExcel({
+			boton: '#btn-exportar-clientes',
+			url: @json(route('clientes.exportar', ['modulo' => 'clientes'])),
+			table: function () { return $('#clientes-table').DataTable(); },
+		});
+		window.initImportacionModal({
+			previsualizarUrl: @json(route('clientes.importar.previsualizar', ['modulo' => 'clientes'])),
+			confirmarUrl: @json(route('clientes.importar.confirmar', ['modulo' => 'clientes'])),
+			tabla: '#clientes-table',
+		});
+	</script>
 @endpush

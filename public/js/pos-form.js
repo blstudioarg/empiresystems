@@ -16,7 +16,34 @@
 	var $vaciar = document.getElementById('pos-vaciar');
 	var $total = document.getElementById('pos-total');
 	var $topeAlert = document.getElementById('pos-tope-alert');
-	var $emitir = document.getElementById('pos-emitir');
+	var $cobrar = document.getElementById('pos-cobrar');
+
+	// Cobro (pago simple o dividido), táctil tablet-first: tarjetas de método + teclado numérico.
+	var $cobroModalEl = document.getElementById('posCobroModal');
+	var cobroModal = $cobroModalEl ? bootstrap.Modal.getOrCreateInstance($cobroModalEl) : null;
+	var $cobroTotal = document.getElementById('pos-cobro-total');
+	var $cobroRestante = document.getElementById('pos-cobro-restante');
+	var $cobroRestanteLbl = document.getElementById('pos-cobro-restante-lbl');
+	var $cobroRestanteVal = document.getElementById('pos-cobro-restante-val');
+	var $cobroTenders = document.getElementById('pos-cobro-tenders');
+	var $cobroEleccion = document.getElementById('pos-cobro-eleccion');
+	var $cobroHint = document.getElementById('pos-cobro-hint');
+	var $cobroMetodos = $cobroEleccion ? $cobroEleccion.querySelectorAll('.pos-metodo') : [];
+	var $cobroKeypad = document.getElementById('pos-cobro-keypad');
+	var $keypadIcon = document.getElementById('pos-keypad-icon');
+	var $keypadMetodoLbl = document.getElementById('pos-keypad-metodo-lbl');
+	var $keypadMonto = document.getElementById('pos-keypad-monto');
+	var $keypadCancelar = document.getElementById('pos-keypad-cancelar');
+	var $keypadAnadir = document.getElementById('pos-keypad-anadir');
+	var $cobroEmitir = document.getElementById('pos-cobro-emitir');
+
+	var metodosMeta = {};
+	try { metodosMeta = JSON.parse((document.getElementById('pos-metodos-data') || {}).textContent || '{}'); } catch (e) { metodosMeta = {}; }
+
+	var tenders = [];        // [{ metodo, importe }]
+	var keypadMetodo = null; // método en edición
+	var keypadStr = '';      // importe tecleado (decimal con coma)
+	var keypadPrellenado = false;
 
 	// Modal de éxito al emitir (OK + mensaje + acciones; sin PDF embebido).
 	var $exitoModalEl = document.getElementById('posExitoModal');
@@ -125,7 +152,7 @@
 
 		var excede = Math.round(bruto * 100) > Math.round(state.tope * 100);
 		$topeAlert.classList.toggle('show', excede);
-		$emitir.disabled = !lineas.length || excede;
+		$cobrar.disabled = !lineas.length || excede;
 	}
 
 	function addArticulo(btn) {
@@ -469,6 +496,7 @@
 					tipo_impositivo: l.tipo,
 				};
 			}),
+			pagos: leerPagos(),
 		};
 
 		if (receptorTieneDatos()) {
@@ -484,12 +512,197 @@
 		return data;
 	}
 
-	if ($emitir) {
-		$emitir.addEventListener('click', function () {
-			// render() recalcula el disabled real (cart vacío / tope excedido) DESPUÉS de que
-			// withButtonLoading restaure el botón — si no, la restauración automática
-			// (disabled=false) pisaría la lógica de negocio de render().
-			window.withButtonLoading($emitir, function () {
+	// ── Cobro: reparto del total en uno o varios métodos de pago (tender-by-tender) ──
+	function totalCobro() {
+		return Math.round(totalBruto() * 100) / 100;
+	}
+
+	function centimos(n) { return Math.round(n * 100); }
+
+	function sumaAsignada() {
+		return tenders.reduce(function (acc, t) { return acc + t.importe; }, 0);
+	}
+
+	function restanteCobro() {
+		return Math.round((totalCobro() - sumaAsignada()) * 100) / 100;
+	}
+
+	function metodoLabel(metodo) {
+		return (metodosMeta[metodo] && metodosMeta[metodo].label) || metodo;
+	}
+
+	function metodoIcon(metodo) {
+		return (metodosMeta[metodo] && metodosMeta[metodo].icon) || 'fa-money-bill-wave';
+	}
+
+	// Importe tecleado (coma decimal es-ES) → número.
+	function montoKeypad() {
+		var val = parseFloat((keypadStr || '0').replace(',', '.'));
+		return isNaN(val) ? 0 : Math.round(val * 100) / 100;
+	}
+
+	function renderTenders() {
+		if (!$cobroTenders) { return; }
+		if (!tenders.length) {
+			$cobroTenders.classList.add('d-none');
+			$cobroTenders.innerHTML = '';
+			return;
+		}
+		$cobroTenders.classList.remove('d-none');
+		$cobroTenders.innerHTML = '';
+		tenders.forEach(function (t, i) {
+			var row = document.createElement('div');
+			row.className = 'pos-cobro-tender';
+			row.innerHTML =
+				'<span class="ic"><i class="fas ' + metodoIcon(t.metodo) + '"></i></span>' +
+				'<span class="nom">' + escapeHtml(metodoLabel(t.metodo)) + '</span>' +
+				'<span class="imp">' + format(t.importe) + ' €</span>' +
+				'<button type="button" class="quitar" data-i="' + i + '" aria-label="Quitar pago">×</button>';
+			$cobroTenders.appendChild(row);
+		});
+	}
+
+	function renderRestante() {
+		var restante = restanteCobro();
+		var completo = centimos(restante) === 0 && tenders.length > 0;
+
+		var tecleando = keypadMetodo !== null;
+		if ($cobroRestante) {
+			$cobroRestante.classList.toggle('completo', completo);
+			// Tocable sólo mientras se teclea un importe y aún queda algo por asignar.
+			$cobroRestante.classList.toggle('tappable', tecleando && restante > 0);
+		}
+		if ($cobroRestanteLbl) { $cobroRestanteLbl.textContent = completo ? 'Cobrado' : 'Restante'; }
+		if ($cobroRestanteVal) { $cobroRestanteVal.textContent = format(completo ? totalCobro() : Math.max(0, restante)) + ' €'; }
+
+		// Elección de método visible sólo mientras falte por asignar (y no se esté tecleando).
+		if ($cobroEleccion) { $cobroEleccion.classList.toggle('d-none', tecleando || restante <= 0); }
+		if ($cobroHint) {
+			$cobroHint.textContent = tenders.length
+				? 'Añadí otro método para dividir el pago.'
+				: 'Tocá el método con el que cobrás.';
+		}
+
+		if ($cobroEmitir) { $cobroEmitir.disabled = !completo || !lineas.length; }
+	}
+
+	function renderCobro() {
+		if ($cobroTotal) { $cobroTotal.textContent = format(totalCobro()) + ' €'; }
+		renderTenders();
+		renderRestante();
+	}
+
+	function abrirKeypad(metodo) {
+		keypadMetodo = metodo;
+		keypadStr = restanteCobro().toFixed(2).replace('.', ','); // prellena con lo que falta
+		keypadPrellenado = true;
+		if ($keypadIcon) { $keypadIcon.className = 'fas ' + metodoIcon(metodo); }
+		if ($keypadMetodoLbl) { $keypadMetodoLbl.textContent = metodoLabel(metodo); }
+		if ($cobroKeypad) { $cobroKeypad.classList.remove('d-none'); }
+		if ($cobroEleccion) { $cobroEleccion.classList.add('d-none'); }
+		renderKeypad();
+	}
+
+	function cerrarKeypad() {
+		keypadMetodo = null;
+		keypadStr = '';
+		if ($cobroKeypad) { $cobroKeypad.classList.add('d-none'); }
+		renderRestante();
+	}
+
+	function renderKeypad() {
+		var monto = montoKeypad();
+		var restante = restanteCobro();
+		if ($keypadMonto) { $keypadMonto.textContent = format(monto) + ' €'; }
+		// Sólo se puede añadir un importe > 0 que no supere lo que falta (comparación en céntimos).
+		if ($keypadAnadir) { $keypadAnadir.disabled = centimos(monto) <= 0 || centimos(monto) > centimos(restante); }
+	}
+
+	function pulsarTecla(key) {
+		if (key === 'del') {
+			keypadStr = keypadPrellenado ? '' : keypadStr.slice(0, -1);
+			keypadPrellenado = false;
+			renderKeypad();
+			return;
+		}
+		// La primera pulsación tras prellenar arranca de cero (el cajero teclea su importe).
+		if (keypadPrellenado) { keypadStr = ''; keypadPrellenado = false; }
+		if (key === ',') {
+			if (keypadStr.indexOf(',') === -1) { keypadStr = (keypadStr || '0') + ','; }
+		} else {
+			// Máximo 2 decimales.
+			var partes = keypadStr.split(',');
+			if (partes[1] && partes[1].length >= 2) { return; }
+			keypadStr += key;
+		}
+		renderKeypad();
+	}
+
+	function anadirTender() {
+		var monto = montoKeypad();
+		var restante = restanteCobro();
+		if (centimos(monto) <= 0 || centimos(monto) > centimos(restante)) { return; }
+		tenders.push({ metodo: keypadMetodo, importe: monto });
+		cerrarKeypad();
+		renderCobro();
+	}
+
+	function resetCobro() {
+		tenders = [];
+		cerrarKeypad();
+		renderCobro();
+	}
+
+	// pagos[] para el backend. El desglose siempre cuadra (el UI no deja emitir hasta restante 0).
+	function leerPagos() {
+		return tenders.map(function (t) { return { metodo: t.metodo, importe: t.importe }; });
+	}
+
+	if ($cobroModalEl) {
+		$cobroModalEl.addEventListener('show.bs.modal', resetCobro);
+	}
+
+	Array.prototype.forEach.call($cobroMetodos, function (btn) {
+		btn.addEventListener('click', function () { abrirKeypad(btn.getAttribute('data-metodo')); });
+	});
+
+	if ($cobroKeypad) {
+		$cobroKeypad.addEventListener('click', function (e) {
+			var tecla = e.target.closest('.pos-key');
+			if (tecla) { pulsarTecla(tecla.getAttribute('data-key')); }
+		});
+	}
+	if ($keypadCancelar) { $keypadCancelar.addEventListener('click', cerrarKeypad); }
+	if ($keypadAnadir) { $keypadAnadir.addEventListener('click', anadirTender); }
+
+	// Tocar "Restante" (con el teclado abierto) autocompleta el importe con lo que falta por asignar.
+	function autocompletarRestante() {
+		if (keypadMetodo === null) { return; }
+		var restante = restanteCobro();
+		if (restante <= 0) { return; }
+		keypadStr = restante.toFixed(2).replace('.', ',');
+		keypadPrellenado = true;
+		renderKeypad();
+	}
+	if ($cobroRestante) {
+		$cobroRestante.addEventListener('click', autocompletarRestante);
+		$cobroRestante.addEventListener('keydown', function (e) {
+			if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); autocompletarRestante(); }
+		});
+	}
+
+	if ($cobroTenders) {
+		$cobroTenders.addEventListener('click', function (e) {
+			var btn = e.target.closest('.quitar');
+			if (!btn) { return; }
+			tenders.splice(parseInt(btn.getAttribute('data-i'), 10), 1);
+			renderCobro();
+		});
+	}
+
+	if ($cobroEmitir) {
+		$cobroEmitir.addEventListener('click', function () {
+			window.withButtonLoading($cobroEmitir, function () {
 				return fetch(state.storeUrl, {
 					method: 'POST',
 					headers: {
@@ -506,13 +719,14 @@
 							window.showToast('error', res.data.message || 'No se pudo emitir el ticket.');
 							return;
 						}
+						if (cobroModal) { cobroModal.hide(); }
 						mostrarExito(res.data);
 					})
 					.catch(function () {
 						window.showToast('error', 'No se pudo emitir el ticket.');
 					});
 			}).always(function () {
-				render();
+				renderRestante();
 			});
 		});
 	}

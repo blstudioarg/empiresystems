@@ -6,6 +6,8 @@
 		cobrar en el momento.</li>
 	<li><strong>Ver / imprimir</strong>: desde Acciones abrís la vista previa del ticket para
 		reimprimirlo o descargarlo.</li>
+	<li><strong>Pago</strong>: la columna muestra cómo se cobró cada ticket. Si se dividió en
+		varios métodos, verás el chip <em>Dividido</em> con el detalle de cada método y su importe.</li>
 </ol>
 
 <p class="ayuda-nota">Un ticket es una factura simplificada: se emite en el acto y, como toda

@@ -243,19 +243,20 @@ Cabecera de factura. **Núcleo del sistema.**
 | factura_rectificada_id | fk → facturas | nullable |
 | motivo_rectificacion | text | nullable |
 | tipo_rectificacion | enum | `sustitucion`, `diferencias` |
-| **Verifactu (RD 1007/2023):** | | |
-| huella | varchar(64) | hash SHA-256 del registro |
-| huella_anterior | varchar(64) | hash del registro anterior (encadenamiento) |
-| qr_contenido | text | URL/datos de verificación AEAT |
+| **Verifactu (RD 1007/2023) — implementado en la feature 032:** | | |
+| huella | varchar(64) | hash SHA-256 del registro de **alta**. `null` en borrador o si se emitió con `verifactu.activo = false` |
+| huella_anterior | varchar(64) | hash del registro anterior de la cadena del tenant (encadenamiento); cadena vacía `''` en el primer eslabón |
+| qr_contenido | text | URL de cotejo AEAT ya compuesta (lo que codifica el QR), persistida para no recomponerla en cada render |
 | verifactu_estado | enum | `pendiente`, `registrada`, `enviada`, `error` |
-| registro_xml | longtext / path | XML del registro (Orden HAC/1177/2024) |
-| registrada_at | datetime | timestamp del registro inalterable |
+| registro_xml | longtext | XML del registro de alta (Orden HAC/1177/2024) tal cual se remitió |
+| registrada_at | datetime | timestamp del sellado local (no el del acuse de la AEAT) |
+| verifactu_entorno | varchar(12) | **nueva (feature 032)**: `pruebas` \| `produccion` — entorno en que se generó el registro; `null` si se emitió sin Verifactu. No modificable con la cadena del tenant ya iniciada |
 | **Ciclo B2B (Ley Crea y Crece):** | | |
 | estado_b2b | enum | nullable: `emitida`, `aceptada`, `rechazada`, `pagada` |
 | estado_b2b_fecha | datetime | nullable |
 | softDeletes, timestamps | | |
 
-Índices: `(tenant_id, serie_id, numero)` único, `(tenant_id, cliente_id)`, `(tenant_id, estado)`, `(tenant_id, fecha_expedicion)`.
+Índices: `(tenant_id, serie_id, numero)` único, `(tenant_id, cliente_id)`, `(tenant_id, estado)`, `(tenant_id, fecha_expedicion)`, `(tenant_id, registrada_at, id)` (feature 032 — localizar el último eslabón de la cadena Verifactu del tenant).
 
 > **Regla de inmutabilidad:** una factura `emitida` no se edita ni se borra (Verifactu). Cualquier corrección se hace con una **rectificativa**. En `borrador` sí es editable.
 
@@ -278,6 +279,14 @@ Cabecera de factura. **Núcleo del sistema.**
 > - **PDF** del ticket en 80 mm (`facturas/ticket-80mm.blade.php`) o A4 (reutiliza `facturas/pdf`),
 >   elegible al ver/descargar (`pos.pdf?formato=ticket|a4`).
 > - El `FacturaController::index` excluye las simplificadas; el listado POS sólo muestra `tipo = simplificada`.
+> - **Pago dividido (2026-07-19):** al emitir un ticket se registra el desglose de cómo se cobró en
+>   caja (uno o varios métodos con su importe) en la tabla `ticket_pagos`. Es puramente **interno**:
+>   no aparece en el PDF (que sigue mostrando un único `forma_pago` = el método de mayor importe) y
+>   **no** interviene en el módulo de cobros `pagos` ni en el dashboard (evita contaminar el KPI
+>   "cobrado", que suma todos los `pagos` sin filtrar por tipo). El reparto se valida en backend
+>   (`RegistroTicket`): la suma debe cuadrar al céntimo con el total, o se lanza
+>   `PagoTicketDescuadradoException`. Si el POS no envía desglose, se asume un único pago en efectivo
+>   por el total (compatibilidad hacia atrás). El desglose se consulta en la datatable de tickets.
 >
 > **Fuera de alcance (012):** la "rectificativa en formato simplificado" (la normativa permite
 > simplificada sin tope cuando el motivo es rectificar) sigue sin soportarse — `simplificada` y
@@ -343,6 +352,27 @@ bancaria (fuera de alcance).
 | anulado_at | dateTime | nullable; `NULL` = vigente, con valor = anulado (soft, sin `deleted_at`) |
 | timestamps | | |
 
+### `ticket_pagos` — desglose de cobro del TPV (pago dividido, 2026-07-19)
+Desglose **interno** de cómo se cobró en caja un ticket (factura simplificada): uno o varios métodos
+de pago con su importe. **No** es el sistema de cobros (`pagos`): no admite anulación ni cobro
+parcial posterior, no aparece en el PDF y no lo lee el dashboard. Se crea de una vez al emitir el
+ticket (`RegistroTicket`), dentro de la misma transacción, y la suma cuadra al céntimo con el total.
+
+| Campo | Tipo | Notas |
+|-------|------|-------|
+| id | bigint PK | |
+| tenant_id | fk | |
+| factura_id | fk → facturas | `cascadeOnDelete` |
+| metodo | enum | igual que `forma_pago` (`efectivo`/`tarjeta`/`transferencia`/`domiciliacion`) |
+| importe | decimal(12,2) | > 0 |
+| timestamps | | |
+
+Un ticket sin reparto explícito recibe una fila única (`efectivo` = total). El campo `Factura::forma_pago`
+(único, mostrado en el PDF) se fija al método de **mayor importe** del reparto; el desglose completo
+solo vive aquí y se consulta desde la datatable de tickets (`pos.index`, relación `Factura::pagosTicket`).
+
+### `pagos` (cont.)
+
 El **estado de cobro** (`pendiente` / `parcial` / `cobrada`) y el **saldo pendiente** son
 **derivados**, no columnas: se calculan en `Factura::estadoCobro()` / `saldoPendiente()` a partir de
 la suma de `pagos` vigentes (`anulado_at IS NULL`), comparando en céntimos para evitar residuos de
@@ -366,7 +396,7 @@ cliente (la devolución en sí no se modela aún).
 | id | bigint PK | |
 | tenant_id | fk | |
 | factura_id | fk | nullable (eventos de sistema) |
-| tipo_evento | varchar | `alta`, `anulacion`, `rectificacion`, `envio_aeat`, `envio_email`, `error`… |
+| tipo_evento | varchar | `emitida`, `rectificada`, `anulada`, `verifactu_alta`, `verifactu_anulacion`, `verifactu_enviado`, `verifactu_error`, `envio_email`, `facturae_generado`, `envio_facturae`… |
 | detalle | json | payload del evento |
 | huella | varchar(64) | hash del evento; `null` en eventos que no participan del encadenamiento Verifactu (p. ej. `envio_email`) |
 | ocurrido_at | datetime | |
@@ -375,6 +405,23 @@ cliente (la devolución en sí no se modela aún).
 `detalle` = `{ destinatario, resultado: 'ok'|'error', error? }`. Una factura se considera "enviada"
 (`Factura::fueEnviada()`) si existe ≥1 evento de este tipo con `resultado = 'ok'`; el reenvío añade un
 evento nuevo sin borrar los anteriores (log append-only, igual que el resto de `factura_eventos`).
+
+**Tipos `verifactu_*` (feature 032)** — estos son los que sí participan del encadenamiento; la
+cadena real de la AEAT es la secuencia de estos eventos (alta **y** anulación intercalados), no solo
+`facturas.huella` (que únicamente guarda la huella del alta de esa factura):
+
+| `tipo_evento` | Cuándo | `detalle` (JSON) | `huella` |
+|---------------|--------|-------------------|----------|
+| `verifactu_alta` | Se sella el registro al emitir (`RegistroVerifactu::registrar()`) | `{ huella, huella_anterior, entorno }` | huella del registro de alta |
+| `verifactu_anulacion` | Se genera el registro de anulación (`RegistroVerifactu::registrarAnulacion()`) | `{ huella, huella_anterior, motivo, entorno, xml }` — el XML de la anulación vive **solo** aquí, no en `facturas.registro_xml` | huella del registro de anulación |
+| `verifactu_enviado` | La AEAT acepta el envío (`Correcto`/`AceptadoConErrores`) | `{ codigo, descripcion, csv, tipo, operacion }` | `null` (el envío no encadena, solo el registro) |
+| `verifactu_error` | Rechazo funcional o fallo de transporte | `{ codigo, descripcion, csv, tipo: 'rechazo'\|'transporte', operacion }` | `null` |
+
+`facturas.huella`/`facturas.huella_anterior` nunca se tocan al anular ni al reintentar un envío
+(FR-013/FR-014): son inmutables desde el sellado del alta. El "último eslabón de la cadena" para el
+siguiente registro (alta o anulación) se busca en `factura_eventos` filtrando
+`tipo_evento IN ('verifactu_alta','verifactu_anulacion')` y `huella` no nula, ordenado por
+`ocurrido_at`/`id` descendente — no directamente en `facturas`.
 
 ### `articulos` — catálogo unificado (producto o servicio)
 Catálogo del que se pueden traer líneas de factura. Un artículo puede ser un **producto** (bien físico, puede llevar stock) o un **servicio** (mano de obra, mantenimiento… nunca lleva stock). El catálogo es opcional: siempre se puede facturar un concepto libre sin artículo asociado.

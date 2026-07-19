@@ -319,10 +319,15 @@
 			// .attr() en aplicarEstado(), y jQuery cachea .data() en la primera lectura — con
 			// .data() acá, el segundo clic seguiría viendo el tipo del primer clic.
 			var tipo = $btn.attr('data-tipo');
-
-			window.withButtonLoading($btn, function () {
+			// Bottom nav (mobile): sin spinner de espera — el spinner de withButtonLoading se
+			// antepone al ícono del botón y le rompe el layout circular del FAB central; acá el
+			// propio cambio de estado (aplicarEstado, tras la respuesta) ya da el feedback visual.
+			var esBottomNav = $btn.closest('#fichaje-bottom-nav').length > 0;
+			var peticion = esBottomNav ? $.when(enviarFichaje(tipo)) : window.withButtonLoading($btn, function () {
 				return enviarFichaje(tipo);
-			})
+			});
+
+			peticion
 				.done(function (response) {
 					if (response.tipo === 'salida') {
 						// La acción de mayor consecuencia del día (cierra la jornada): en vez del

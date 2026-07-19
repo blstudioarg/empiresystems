@@ -1,6 +1,8 @@
 <p>Acá están todas tus facturas de venta. Cada una pasa por estados: nace como
 <strong>borrador</strong> (editable) y, al emitirla, se vuelve <strong>emitida</strong> con número
-fiscal definitivo. Filtrá por tipo con los botones de arriba.</p>
+fiscal definitivo. Filtrá por tipo con los botones de arriba. El botón <strong>Exportar</strong>
+descarga a Excel lo que estás viendo (respeta el filtro activo); las facturas no se pueden
+importar, solo se generan desde la propia aplicación.</p>
 
 <ol>
 	<li><strong>Nueva factura</strong>: te lleva al editor de factura para cargar cliente, líneas

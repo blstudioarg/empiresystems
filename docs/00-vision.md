@@ -31,7 +31,8 @@ El corazón del producto es **facturar cumpliendo la normativa española vigente
 - Emisión de facturas (ordinaria, simplificada, rectificativa).
 - Cálculo correcto de IVA, IRPF y recargo de equivalencia.
 - Series y numeración correlativa sin huecos.
-- Preparado para **Verifactu** (registro con huella/hash encadenado y QR) desde el diseño.
+- **Verifactu** implementado (feature 032): registro con huella/hash encadenado, QR de cotejo y
+  remisión en tiempo real a la AEAT, activable por tenant con un flag (`verifactu.activo`).
 - Preparado para **factura electrónica B2B** (Ley Crea y Crece / RD 238/2026).
 
 ## Alcance ampliado — Control de stock (incorporado al MVP)

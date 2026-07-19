@@ -74,6 +74,7 @@
 							<h4 class="card-title mb-0">Albaranes</h4>
 							<div class="d-flex gap-2">
 								<button type="button" class="btn btn-success" id="btn-convertir-albaranes" disabled>Convertir a factura</button>
+								<button type="button" id="btn-exportar-albaranes" class="btn btn-outline-secondary">Exportar</button>
 								<a href="{{ route('albaranes.create') }}" class="btn btn-primary">+ Nuevo albarán</a>
 							</div>
 						</div>
@@ -127,6 +128,14 @@
 	<script src="{{ asset('vendor/datatables/js/jquery.dataTables.min.js') }}"></script>
 	<script src="{{ asset('vendor/datatables/responsive/responsive.js') }}"></script>
 	<script src="{{ asset('js/plugins-init/albaranes-datatable.init.js') }}"></script>
+	<script src="{{ asset('js/plugins-init/excel-export.init.js') }}"></script>
+	<script>
+		window.initExportacionExcel({
+			boton: '#btn-exportar-albaranes',
+			url: @json(route('albaranes.exportar', ['modulo' => 'albaranes'])),
+			table: function () { return $('#albaranes-table').DataTable(); },
+		});
+	</script>
 @endpush
 
 @section('ayuda-titulo', 'Albaranes')

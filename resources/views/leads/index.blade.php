@@ -79,6 +79,7 @@
 									<button type="button" class="btn btn-outline-primary btn-filtro-leads" data-filtro="sin_asignar">Sin asignar</button>
 								</div>
 								<a href="{{ route('leads.importar.form') }}" class="btn btn-outline-secondary">Importar</a>
+								<button type="button" id="btn-exportar-leads" class="btn btn-outline-secondary">Exportar</button>
 								<button type="button" class="btn btn-primary btn-add-lead" data-bs-toggle="modal" data-bs-target="#leadModal">
 									+ Agregar lead
 								</button>
@@ -287,6 +288,14 @@
 	<script src="{{ asset('js/plugins-init/leads-datatable.init.js') }}"></script>
 	<script src="{{ asset('js/plugins-init/leads-modal.init.js') }}"></script>
 	<script src="{{ asset('js/plugins-init/leads-ficha.init.js') }}"></script>
+	<script src="{{ asset('js/plugins-init/excel-export.init.js') }}"></script>
+	<script>
+		window.initExportacionExcel({
+			boton: '#btn-exportar-leads',
+			url: @json(route('leads.exportar', ['modulo' => 'leads'])),
+			table: function () { return $('#leads-table').DataTable(); },
+		});
+	</script>
 @endpush
 
 @section('ayuda-titulo', 'Leads')

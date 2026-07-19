@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use App\Enums\EntornoVerifactu;
 use App\Enums\EstadoCobro;
 use App\Enums\EstadoFactura;
 use App\Enums\FormaPago;
 use App\Enums\RegimenImpositivo;
 use App\Enums\TipoFactura;
 use App\Enums\TipoRectificacion;
+use App\Enums\VerifactuEstado;
 use Database\Factories\FacturaFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -60,6 +62,8 @@ class Factura extends Model
         'irpf_cuota',
         'total',
         'notas',
+        'verifactu_estado',
+        'verifactu_entorno',
     ];
 
     protected function casts(): array
@@ -83,6 +87,8 @@ class Factura extends Model
             'total' => 'decimal:2',
             'registrada_at' => 'datetime',
             'estado_b2b_fecha' => 'datetime',
+            'verifactu_estado' => VerifactuEstado::class,
+            'verifactu_entorno' => EntornoVerifactu::class,
         ];
     }
 
@@ -144,6 +150,16 @@ class Factura extends Model
     public function pagos(): HasMany
     {
         return $this->hasMany(Pago::class);
+    }
+
+    /**
+     * Desglose interno de métodos de pago con que se cobró el ticket en caja (pago simple o
+     * dividido). Solo aplica a facturas simplificadas (POS); es informativo y no interviene en el
+     * módulo de cobros (`pagos`) ni en el dashboard. Ver App\Models\TicketPago.
+     */
+    public function pagosTicket(): HasMany
+    {
+        return $this->hasMany(TicketPago::class);
     }
 
     public function pagosVigentes(): HasMany
@@ -236,5 +252,23 @@ class Factura extends Model
         }
 
         return EstadoCobro::Parcial;
+    }
+
+    /**
+     * ¿Tiene esta factura un registro Verifactu sellado? Falso en borradores y en facturas
+     * emitidas con el flag `verifactu.activo` apagado (no se registran retroactivamente, R5).
+     */
+    public function tieneRegistroVerifactu(): bool
+    {
+        return $this->huella !== null && $this->huella !== '';
+    }
+
+    /**
+     * ¿Puede reintentarse el envío a la AEAT? Solo tiene sentido si hay registro sellado y el
+     * último intento de envío quedó en error (FR-013).
+     */
+    public function verifactuReintentable(): bool
+    {
+        return $this->tieneRegistroVerifactu() && $this->verifactu_estado === VerifactuEstado::Error;
     }
 }

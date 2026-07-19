@@ -58,6 +58,20 @@
 		);
 	}
 
+	var verifactuLabels = {
+		pendiente: 'Verifactu: pendiente',
+		registrada: 'Verifactu: registrada',
+		enviada: 'Verifactu: enviada',
+		error: 'Verifactu: error de envío',
+	};
+
+	var verifactuBadges = {
+		pendiente: 'badge-secondary',
+		registrada: 'badge-info',
+		enviada: 'badge-success',
+		error: 'badge-danger',
+	};
+
 	function renderEstado(data, type, row) {
 		var badge = estadoBadges[row.estado] || 'badge-secondary';
 		var label = estadoLabels[row.estado] || row.estado;
@@ -71,6 +85,12 @@
 
 		if (row.enviada) {
 			html += '<div class="mt-1"><span class="badge light badge-info">Enviada</span></div>';
+		}
+
+		if (row.verifactu_estado) {
+			var vBadge = verifactuBadges[row.verifactu_estado] || 'badge-secondary';
+			var vLabel = verifactuLabels[row.verifactu_estado] || row.verifactu_estado;
+			html += '<div class="mt-1"><span class="badge light ' + vBadge + '">' + escapeHtml(vLabel) + '</span></div>';
 		}
 
 		return html;
@@ -199,6 +219,27 @@
 						' data-generar-enviar-url="' + row.facturae_generar_enviar_url + '"' +
 						' data-cliente-email="' + escapeHtml(row.cliente_email || '') + '"' +
 					'>Generar y enviar Facturae</button>' +
+				'</li>'
+			);
+		}
+
+		if (row.verifactu_reintentar_url) {
+			items.push(
+				'<li>' +
+					'<button type="button" class="dropdown-item btn-reintentar-verifactu"' +
+						' data-reintentar-url="' + row.verifactu_reintentar_url + '"' +
+					'>Reintentar envío a la AEAT</button>' +
+				'</li>'
+			);
+		}
+
+		if (row.anular_url) {
+			items.push('<li><hr class="dropdown-divider"></li>');
+			items.push(
+				'<li>' +
+					'<button type="button" class="dropdown-item text-danger btn-anular-factura"' +
+						' data-anular-url="' + row.anular_url + '"' +
+					'>Anular factura</button>' +
 				'</li>'
 			);
 		}
@@ -587,6 +628,59 @@
 					}
 
 					window.showToast('error', xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'No se pudo generar el Facturae.');
+				});
+		});
+
+		$table.on('click', '.btn-reintentar-verifactu', function () {
+			var reintentarUrl = $(this).data('reintentar-url');
+
+			$.ajax({
+				url: reintentarUrl,
+				type: 'POST',
+				dataType: 'json',
+				headers: $.extend({ Accept: 'application/json' }, csrfHeaders()),
+			})
+				.done(function (response) {
+					window.showToast('success', response.message);
+					table.ajax.reload(null, false);
+				})
+				.fail(function (xhr) {
+					window.showToast('error', xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'No se pudo reintentar el envío.');
+				});
+		});
+
+		$table.on('click', '.btn-anular-factura', function () {
+			var anularUrl = $(this).data('anular-url');
+			var $form = $('#anularFacturaForm');
+
+			$form.attr('action', anularUrl);
+			$form[0].reset();
+
+			bootstrap.Modal.getOrCreateInstance(document.getElementById('anularFacturaModal')).show();
+		});
+
+		$('#anularFacturaForm').on('submit', function (e) {
+			e.preventDefault();
+
+			var $form = $(this);
+			var $submit = $form.find('button[type="submit"]');
+
+			window.withButtonLoading($submit, function () {
+				return $.ajax({
+					url: $form.attr('action'),
+					type: 'POST',
+					dataType: 'json',
+					headers: $.extend({ Accept: 'application/json' }, csrfHeaders()),
+					data: $form.serialize(),
+				});
+			})
+				.done(function (response) {
+					window.showToast('success', response.message);
+					bootstrap.Modal.getInstance(document.getElementById('anularFacturaModal')).hide();
+					table.ajax.reload();
+				})
+				.fail(function (xhr) {
+					window.showToast('error', xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'No se pudo anular la factura.');
 				});
 		});
 

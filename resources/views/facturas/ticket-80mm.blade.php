@@ -17,9 +17,15 @@
 		.lineas td { font-size: 10px; }
 		.total { font-size: 13px; font-weight: bold; }
 		.muted { color: #333; }
+		.verifactu-qr { text-align: center; margin-bottom: 6px; }
+		.verifactu-qr__imagen { width: 30mm; height: 30mm; }
+		.verifactu-qr__etiqueta, .verifactu-qr__leyenda { font-size: 8px; }
+		.verifactu-qr__leyenda { font-weight: bold; }
 	</style>
 </head>
 <body>
+	@include('partials.verifactu-qr', ['factura' => $factura])
+
 	<div class="emisor">
 		@php
 			$__logoFacturacion = $factura->tenant->logo_facturacion_path

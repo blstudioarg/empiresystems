@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Excel\RegistroDefiniciones;
 use App\Models\User;
 use App\Support\ConfigTenant;
 use Illuminate\Support\Carbon;
@@ -15,7 +16,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(RegistroDefiniciones::class);
     }
 
     /**

@@ -20,10 +20,12 @@ use App\Http\Controllers\ConfiguracionController;
 use App\Http\Controllers\CorreccionFichajeController;
 use App\Http\Controllers\CuentaBancariaController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ExportacionController;
 use App\Http\Controllers\FacturaController;
 use App\Http\Controllers\FacturaeController;
 use App\Http\Controllers\FichajeController;
 use App\Http\Controllers\HorarioController;
+use App\Http\Controllers\ImportacionController;
 use App\Http\Controllers\InformeJornadaController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\LeadImportacionController;
@@ -43,6 +45,7 @@ use App\Http\Controllers\RolController;
 use App\Http\Controllers\SuperAdmin\TenantController as SuperAdminTenantController;
 use App\Http\Controllers\UnidadController;
 use App\Http\Controllers\UsuarioController;
+use App\Http\Controllers\VerifactuController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['tenant.context', 'guest'])->group(function () {
@@ -63,12 +66,40 @@ Route::middleware(['tenant.context', 'auth'])->group(function () {
     Route::middleware('can:ver-clientes')->group(function () {
         Route::resource('clientes', ClienteController::class)->only(['index', 'store', 'update', 'destroy']);
         Route::get('/localidades', [LocalidadController::class, 'index'])->name('localidades.index');
+
+        Route::post('/exportar/clientes', [ExportacionController::class, 'exportar'])
+            ->defaults('modulo', 'clientes')->name('clientes.exportar');
+
+        Route::get('/importar/clientes', [ImportacionController::class, 'form'])
+            ->defaults('modulo', 'clientes')->name('clientes.importar.form');
+        Route::get('/importar/clientes/plantilla', [ImportacionController::class, 'plantilla'])
+            ->defaults('modulo', 'clientes')->name('clientes.importar.plantilla');
+        Route::post('/importar/clientes/previsualizar', [ImportacionController::class, 'previsualizar'])
+            ->defaults('modulo', 'clientes')->name('clientes.importar.previsualizar');
+        Route::post('/importar/clientes/confirmar', [ImportacionController::class, 'confirmar'])
+            ->defaults('modulo', 'clientes')->name('clientes.importar.confirmar');
+        Route::get('/importar/clientes/rechazos/{token}', [ImportacionController::class, 'rechazos'])
+            ->defaults('modulo', 'clientes')->name('clientes.importar.rechazos');
     });
 
     Route::middleware('can:ver-articulos')->group(function () {
         Route::resource('articulos', ArticuloController::class)->only(['index', 'store', 'update', 'destroy']);
         Route::resource('unidades', UnidadController::class)->only(['index', 'store', 'update', 'destroy']);
         Route::resource('categorias', CategoriaArticuloController::class)->only(['index', 'store', 'update', 'destroy']);
+
+        Route::post('/exportar/articulos', [ExportacionController::class, 'exportar'])
+            ->defaults('modulo', 'articulos')->name('articulos.exportar');
+
+        Route::get('/importar/articulos', [ImportacionController::class, 'form'])
+            ->defaults('modulo', 'articulos')->name('articulos.importar.form');
+        Route::get('/importar/articulos/plantilla', [ImportacionController::class, 'plantilla'])
+            ->defaults('modulo', 'articulos')->name('articulos.importar.plantilla');
+        Route::post('/importar/articulos/previsualizar', [ImportacionController::class, 'previsualizar'])
+            ->defaults('modulo', 'articulos')->name('articulos.importar.previsualizar');
+        Route::post('/importar/articulos/confirmar', [ImportacionController::class, 'confirmar'])
+            ->defaults('modulo', 'articulos')->name('articulos.importar.confirmar');
+        Route::get('/importar/articulos/rechazos/{token}', [ImportacionController::class, 'rechazos'])
+            ->defaults('modulo', 'articulos')->name('articulos.importar.rechazos');
     });
 
     Route::middleware('can:ver-facturas')->group(function () {
@@ -80,6 +111,8 @@ Route::middleware(['tenant.context', 'auth'])->group(function () {
         Route::delete('/facturas/{factura}', [FacturaController::class, 'destroy'])->name('facturas.destroy');
         Route::post('/facturas/{factura}/emitir', [FacturaController::class, 'emitir'])->name('facturas.emitir');
         Route::post('/facturas/{factura}/rectificar', [FacturaController::class, 'rectificar'])->name('facturas.rectificar');
+        Route::post('/facturas/{factura}/anular', [FacturaController::class, 'anular'])->name('facturas.anular');
+        Route::post('/facturas/{factura}/verifactu/reintentar', [VerifactuController::class, 'reintentar'])->name('verifactu.reintentar');
         Route::get('/facturas/{factura}/pdf', [FacturaController::class, 'pdf'])->name('facturas.pdf');
         Route::post('/facturas/{factura}/enviar', [FacturaController::class, 'enviar'])->name('facturas.enviar');
         Route::get('/facturas/{factura}/facturae', [FacturaeController::class, 'descargar'])->name('facturas.facturae.descargar');
@@ -88,6 +121,9 @@ Route::middleware(['tenant.context', 'auth'])->group(function () {
         Route::get('/facturas/{factura}/pagos', [PagoController::class, 'index'])->name('facturas.pagos.index');
         Route::post('/facturas/{factura}/pagos', [PagoController::class, 'store'])->name('facturas.pagos.store');
         Route::post('/pagos/{pago}/anular', [PagoController::class, 'anular'])->name('pagos.anular');
+
+        Route::post('/exportar/facturas', [ExportacionController::class, 'exportar'])
+            ->defaults('modulo', 'facturas')->name('facturas.exportar');
     });
 
     // CRM — leads, oportunidades, presupuestos (feature 028)
@@ -101,6 +137,9 @@ Route::middleware(['tenant.context', 'auth'])->group(function () {
         Route::delete('/leads/{lead}', [LeadController::class, 'destroy'])->name('leads.destroy');
         Route::post('/leads/{lead}/notas', [LeadController::class, 'storeNota'])->name('leads.notas.store');
         Route::post('/leads/{lead}/convertir', [LeadController::class, 'convertir'])->name('leads.convertir');
+
+        Route::post('/exportar/leads', [ExportacionController::class, 'exportar'])
+            ->defaults('modulo', 'leads')->name('leads.exportar');
     });
 
     Route::middleware('can:ver-oportunidades')->group(function () {
@@ -135,6 +174,9 @@ Route::middleware(['tenant.context', 'auth'])->group(function () {
         Route::put('/albaranes/{albaran}', [AlbaranController::class, 'update'])->name('albaranes.update');
         Route::delete('/albaranes/{albaran}', [AlbaranController::class, 'destroy'])->name('albaranes.destroy');
         Route::put('/albaranes/{albaran}/estado', [AlbaranController::class, 'estado'])->name('albaranes.estado');
+
+        Route::post('/exportar/albaranes', [ExportacionController::class, 'exportar'])
+            ->defaults('modulo', 'albaranes')->name('albaranes.exportar');
     });
 
     // POS — facturas simplificadas (tickets)
@@ -162,6 +204,8 @@ Route::middleware(['tenant.context', 'auth'])->group(function () {
             ->name('configuracion.apariencia.update');
         Route::match(['put', 'patch'], '/configuracion/facturacion', [ConfiguracionController::class, 'updateFacturacion'])
             ->name('configuracion.facturacion.update');
+        Route::match(['put', 'patch'], '/configuracion/verifactu', [ConfiguracionController::class, 'updateVerifactu'])
+            ->name('configuracion.verifactu.update');
         Route::match(['put', 'patch'], '/configuracion/email', [ConfiguracionController::class, 'updateEmail'])
             ->name('configuracion.email.update');
         Route::post('/configuracion/email/prueba', [ConfiguracionController::class, 'enviarPrueba'])
@@ -200,6 +244,17 @@ Route::middleware(['tenant.context', 'auth'])->group(function () {
         Route::resource('proveedores', ProveedorController::class)
             ->parameters(['proveedores' => 'proveedor'])
             ->only(['index', 'store', 'update', 'destroy']);
+
+        Route::get('/importar/proveedores', [ImportacionController::class, 'form'])
+            ->defaults('modulo', 'proveedores')->name('proveedores.importar.form');
+        Route::get('/importar/proveedores/plantilla', [ImportacionController::class, 'plantilla'])
+            ->defaults('modulo', 'proveedores')->name('proveedores.importar.plantilla');
+        Route::post('/importar/proveedores/previsualizar', [ImportacionController::class, 'previsualizar'])
+            ->defaults('modulo', 'proveedores')->name('proveedores.importar.previsualizar');
+        Route::post('/importar/proveedores/confirmar', [ImportacionController::class, 'confirmar'])
+            ->defaults('modulo', 'proveedores')->name('proveedores.importar.confirmar');
+        Route::get('/importar/proveedores/rechazos/{token}', [ImportacionController::class, 'rechazos'])
+            ->defaults('modulo', 'proveedores')->name('proveedores.importar.rechazos');
     });
 
     Route::middleware('can:ver-compras')->group(function () {

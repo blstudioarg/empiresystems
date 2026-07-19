@@ -9,6 +9,7 @@ enum AccionLogActividad: string
     case Alta = 'alta';
     case Baja = 'baja';
     case Modificacion = 'modificacion';
+    case Exportacion = 'exportacion';
 
     public function label(): string
     {
@@ -18,6 +19,7 @@ enum AccionLogActividad: string
             self::Alta => 'Alta',
             self::Baja => 'Baja',
             self::Modificacion => 'Modificación',
+            self::Exportacion => 'Exportación',
         };
     }
 }

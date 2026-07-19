@@ -1,6 +1,8 @@
 <p>Acá gestionás tus proveedores: a quién le comprás. Estos datos se usan al registrar
 <strong>compras</strong> y al importar facturas de proveedor. Se crean y editan con
-<strong>“Agregar proveedor”</strong> y el menú <strong>Acciones</strong> de cada fila.</p>
+<strong>“Agregar proveedor”</strong> y el menú <strong>Acciones</strong> de cada fila. También
+podés <strong>importar</strong> tu listado de proveedores desde un Excel/CSV (con previsualización
+antes de confirmar); no hay exportación de proveedores por ahora.</p>
 
 <ol>
 	<li><strong>Nombre / razón social</strong> y <strong>NIF</strong>: el NIF es la clave que

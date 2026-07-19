@@ -24,10 +24,12 @@ use App\Services\CalculadoraFactura;
 use App\Services\EmisorFacturas;
 use App\Services\GeneradorRectificativa;
 use App\Services\RegistradorActividad;
+use App\Services\RegistroVerifactu;
 use App\Services\TenantMailer;
 use App\Support\EmailTenant;
 use App\Support\TiposImpositivos;
 use App\Support\VencimientoFactura;
+use App\Support\VerifactuTenant;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -43,6 +45,7 @@ class FacturaController extends Controller
         private readonly EmisorFacturas $emisor,
         private readonly GeneradorRectificativa $generadorRectificativa,
         private readonly RegistradorActividad $registradorActividad,
+        private readonly RegistroVerifactu $registroVerifactu,
     ) {}
 
     public function index(Request $request): View|JsonResponse
@@ -107,6 +110,9 @@ class FacturaController extends Controller
                         'enviada' => $factura->fueEnviada(),
                         'facturae_descargar_url' => $esEmitida ? route('facturas.facturae.descargar', $factura) : null,
                         'facturae_generar_enviar_url' => $esEmitida ? route('facturas.facturae.generar-enviar', $factura) : null,
+                        'verifactu_estado' => $factura->tieneRegistroVerifactu() ? $factura->verifactu_estado->value : null,
+                        'verifactu_reintentar_url' => $factura->verifactuReintentable() ? route('verifactu.reintentar', $factura) : null,
+                        'anular_url' => ($esEmitida && $factura->montoCobrado() <= 0) ? route('facturas.anular', $factura) : null,
                     ];
                 })->values(),
                 'totales' => [
@@ -313,6 +319,65 @@ class FacturaController extends Controller
         }
 
         return redirect()->route('facturas.edit', $rectificativa)->with('success', 'Rectificativa creada correctamente.');
+    }
+
+    /**
+     * Disparador de anulación (FR-015, nota de alcance): restringido al caso de un registro
+     * erróneo que aún no produjo efectos económicos (sin cobros registrados). La corrección
+     * ordinaria de una factura ya emitida y cobrada sigue siendo la rectificativa.
+     */
+    public function anular(Request $request, string $factura): RedirectResponse|JsonResponse
+    {
+        $factura = Factura::findOrFail($factura);
+
+        $datos = $request->validate(['motivo' => ['required', 'string', 'max:500']]);
+
+        if ($factura->estado !== EstadoFactura::Emitida) {
+            $mensaje = 'Solo se pueden anular facturas emitidas.';
+
+            return $request->wantsJson()
+                ? response()->json(['message' => $mensaje], 422)
+                : redirect()->back()->with('error', $mensaje);
+        }
+
+        if ($factura->montoCobrado() > 0) {
+            $mensaje = 'No se puede anular una factura con cobros registrados: usa una rectificativa.';
+
+            return $request->wantsJson()
+                ? response()->json(['message' => $mensaje], 422)
+                : redirect()->back()->with('error', $mensaje);
+        }
+
+        DB::transaction(function () use ($factura, $datos) {
+            $factura->estado = EstadoFactura::Anulada;
+            $factura->save();
+
+            FacturaEvento::create([
+                'tenant_id' => $factura->tenant_id,
+                'factura_id' => $factura->id,
+                'tipo_evento' => 'anulada',
+                'detalle' => ['motivo' => $datos['motivo']],
+                'ocurrido_at' => now(),
+            ]);
+
+            if (VerifactuTenant::activo($factura->tenant_id) && $factura->tieneRegistroVerifactu()) {
+                $this->registroVerifactu->registrarAnulacion($factura, $datos['motivo']);
+            }
+        });
+
+        $this->registradorActividad->registrar(
+            auth()->user(),
+            AccionLogActividad::Modificacion,
+            EntidadLogActividad::Factura,
+            $factura->id,
+            "Anuló la factura {$factura->numero_completo}",
+        );
+
+        if ($request->wantsJson()) {
+            return response()->json(['message' => 'Factura anulada correctamente.']);
+        }
+
+        return redirect()->route('facturas.index')->with('success', 'Factura anulada correctamente.');
     }
 
     public function pdf(string $factura): Response
