@@ -7,9 +7,9 @@ use PHPUnit\Framework\TestCase;
 
 class CatalogoPermisosTest extends TestCase
 {
-    public function test_expone_las_21_claves_del_catalogo(): void
+    public function test_expone_las_31_claves_del_catalogo(): void
     {
-        $this->assertCount(21, CatalogoPermisos::claves());
+        $this->assertCount(31, CatalogoPermisos::claves());
     }
 
     public function test_no_hay_claves_duplicadas(): void
@@ -58,17 +58,47 @@ class CatalogoPermisosTest extends TestCase
         $this->assertCount(4, $stock['permisos']);
     }
 
+    public function test_control_de_fichaje_agrupa_siete_permisos(): void
+    {
+        $porModulo = collect(CatalogoPermisos::porModulo());
+        $fichaje = $porModulo->firstWhere('modulo', 'Control de fichaje');
+
+        $this->assertNotNull($fichaje);
+        // Fichar, Mi jornada, Jornada, Calendario, Miembros, Horarios, Alertas (doc 09, Cambios 1 y 5).
+        $this->assertCount(7, $fichaje['permisos']);
+    }
+
+    public function test_no_existe_el_permiso_fantasma_ver_bancos(): void
+    {
+        // Bancos se administra desde Configuración → Facturación, no es una vista de menú
+        // (doc 09, Cambio 4).
+        $this->assertNotContains('ver-bancos', CatalogoPermisos::claves());
+    }
+
     public function test_usuario_base_excluye_permisos_de_gestion(): void
     {
         $base = CatalogoPermisos::clavesUsuarioBase();
 
+        // Gestión de fichaje: vedada al rol base (Cambio 1). Fichar/Mi jornada sí las tiene (Cambio 5).
         $this->assertNotContains('ver-jornada', $base);
+        $this->assertNotContains('ver-calendario', $base);
+        $this->assertNotContains('ver-miembros', $base);
+        $this->assertNotContains('ver-horarios', $base);
+        $this->assertNotContains('ver-alertas', $base);
         $this->assertNotContains('ver-roles', $base);
         $this->assertNotContains('ver-usuarios', $base);
         $this->assertNotContains('ver-configuracion', $base);
         $this->assertNotContains('ver-logs', $base);
+        $this->assertNotContains('ver-informes-equipo', $base);
+        $this->assertContains('ver-fichar', $base);
+        $this->assertContains('ver-mi-jornada', $base);
         $this->assertContains('ver-clientes', $base);
         $this->assertContains('ver-dashboard', $base);
-        $this->assertCount(16, $base);
+        $this->assertContains('ver-informes-comerciales', $base);
+        // Las subvistas de crear no se excluyen (el rol base ya podía crear vía el permiso de listado).
+        $this->assertContains('ver-facturas-crear', $base);
+        $this->assertContains('ver-pos-crear', $base);
+        $this->assertContains('ver-campanas-crear', $base);
+        $this->assertCount(21, $base);
     }
 }

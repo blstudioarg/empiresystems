@@ -71,7 +71,7 @@
 					<div class="card">
 						<div class="card-header border-0 flex-wrap">
 							<h4 class="card-title mb-0">Campañas de email</h4>
-							<a href="{{ route('campanas.create') }}" class="btn btn-primary">+ Nueva campaña</a>
+							@can('ver-campanas-crear')<a href="{{ route('campanas.create') }}" class="btn btn-primary">+ Nueva campaña</a>@endcan
 						</div>
 						<div class="card-body pt-0">
 							<div class="table-responsive">

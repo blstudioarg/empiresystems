@@ -23,7 +23,7 @@ class CuentaBancariaTenantIsolationTest extends TestCase
         $tenantA = Tenant::factory()->create();
         $tenantB = Tenant::factory()->create();
 
-        $userA = User::factory()->create(['tenant_id' => $tenantA->id, 'password' => bcrypt('secret123')]);
+        $userA = User::factory()->admin()->create(['tenant_id' => $tenantA->id, 'password' => bcrypt('secret123')]);
         $cuentaA = CuentaBancaria::factory()->create(['tenant_id' => $tenantA->id]);
         $cuentaB = CuentaBancaria::factory()->create(['tenant_id' => $tenantB->id]);
 
@@ -40,7 +40,7 @@ class CuentaBancariaTenantIsolationTest extends TestCase
     public function test_store_crea_la_cuenta_bajo_el_tenant_activo(): void
     {
         $tenantA = Tenant::factory()->create();
-        $userA = User::factory()->create(['tenant_id' => $tenantA->id, 'password' => bcrypt('secret123')]);
+        $userA = User::factory()->admin()->create(['tenant_id' => $tenantA->id, 'password' => bcrypt('secret123')]);
         $banco = Banco::create(['tenant_id' => $tenantA->id, 'nombre' => 'Banco Test '.uniqid()]);
 
         $this->loginAs($userA);
@@ -63,7 +63,7 @@ class CuentaBancariaTenantIsolationTest extends TestCase
         $tenantA = Tenant::factory()->create();
         $tenantB = Tenant::factory()->create();
 
-        $userA = User::factory()->create(['tenant_id' => $tenantA->id, 'password' => bcrypt('secret123')]);
+        $userA = User::factory()->admin()->create(['tenant_id' => $tenantA->id, 'password' => bcrypt('secret123')]);
         $banco = Banco::create(['tenant_id' => $tenantA->id, 'nombre' => 'Banco Test '.uniqid()]);
         $cuentaB = CuentaBancaria::factory()->create(['tenant_id' => $tenantB->id]);
 
@@ -84,7 +84,7 @@ class CuentaBancariaTenantIsolationTest extends TestCase
         $tenantA = Tenant::factory()->create();
         $tenantB = Tenant::factory()->create();
 
-        $userA = User::factory()->create(['tenant_id' => $tenantA->id, 'password' => bcrypt('secret123')]);
+        $userA = User::factory()->admin()->create(['tenant_id' => $tenantA->id, 'password' => bcrypt('secret123')]);
         $cuentaB = CuentaBancaria::factory()->create(['tenant_id' => $tenantB->id]);
 
         $this->loginAs($userA);

@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Models\Lead;
 use Illuminate\Contracts\Validation\Validator as ValidatorContract;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreLeadRequest extends FormRequest
 {
@@ -24,6 +25,9 @@ class StoreLeadRequest extends FormRequest
             'email' => ['nullable', 'email', 'max:255'],
             'telefono' => ['nullable', 'string', 'max:30'],
             'asignado_a' => ['nullable', 'integer'],
+            // En el alta se exige que el canal esté activo (data-model.md §2); al editar un lead
+            // se admite conservar uno ya desactivado (ver UpdateLeadRequest).
+            'canal_captacion_id' => ['nullable', Rule::exists('canales_captacion', 'id')->where('tenant_id', tenant()->id)->where('activo', true)],
             'notas' => ['nullable', 'string'],
         ];
     }

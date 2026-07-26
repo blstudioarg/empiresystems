@@ -8,6 +8,7 @@ use App\Enums\UserRole;
 use App\Models\Factura;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Support\CatalogoPermisos;
 use Database\Seeders\PermisosSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -219,7 +220,7 @@ class TenantCrudTest extends TestCase
             ->where('name', \App\Support\ProvisionadorRoles::ROL_ADMINISTRADOR)->first();
 
         $this->assertNotNull($rolAdmin);
-        $this->assertCount(21, $rolAdmin->permissions);
+        $this->assertCount(count(CatalogoPermisos::claves()), $rolAdmin->permissions);
         $this->assertTrue($admin->fresh()->hasRole($rolAdmin));
 
         $rolUsuario = \Spatie\Permission\Models\Role::where('tenant_id', $tenant->getTenantKey())

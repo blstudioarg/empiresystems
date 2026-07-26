@@ -6,9 +6,11 @@ use App\Enums\AccionLogActividad;
 use App\Enums\ResultadoLogActividad;
 use App\Models\LogActividad;
 use App\Support\AgenteUsuario;
+use App\Support\ConfigTenant;
 use App\Support\GeolocalizadorIp;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\View\View;
 
 class LogActividadController extends Controller
@@ -32,6 +34,15 @@ class LogActividadController extends Controller
         $query = LogActividad::where('tenant_id', auth()->user()->tenant_id);
 
         $recordsTotal = (clone $query)->count();
+
+        // Cards informativas: totales absolutos del tenant, ajenos a la búsqueda del DataTable
+        // (mismo criterio que $recordsTotal, capturado antes de aplicar el filtro de búsqueda).
+        $zonaTenant = ConfigTenant::zonaHoraria(auth()->user()->tenant_id);
+        $inicioHoy = Carbon::now($zonaTenant)->startOfDay()->setTimezone(config('app.timezone'));
+        $finHoy = Carbon::now($zonaTenant)->endOfDay()->setTimezone(config('app.timezone'));
+
+        $eventosHoy = (clone $query)->whereBetween('ocurrido_at', [$inicioHoy, $finHoy])->count();
+        $accesosFallidos = (clone $query)->where('resultado', ResultadoLogActividad::Fallo)->count();
 
         $termino = trim((string) $request->input('search.value', ''));
 
@@ -83,7 +94,13 @@ class LogActividadController extends Controller
             'draw' => (int) $request->input('draw'),
             'recordsTotal' => $recordsTotal,
             'recordsFiltered' => $recordsFiltered,
+            'totales' => [
+                'total' => $recordsTotal,
+                'hoy' => $eventosHoy,
+                'fallidos' => $accesosFallidos,
+            ],
             'data' => $logs->map(fn (LogActividad $log) => [
+                'id' => $log->id,
                 'fecha' => $log->ocurrido_at->enZonaTenant()->format('d/m/Y H:i'),
                 'usuario_nombre' => $log->usuario_nombre,
                 'accion' => $log->accion->value,

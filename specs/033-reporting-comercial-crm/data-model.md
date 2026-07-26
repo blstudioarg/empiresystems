@@ -41,7 +41,7 @@ provisión inicial del tenant, y (b) para los tenants ya existentes, desde la pr
 
 | Columna | Tipo | Notas |
 |---|---|---|
-| `canal_captacion_id` | FK nullable → `canales_captacion`, `nullOnDelete` | FR-011. `NULL` = "Sin especificar" (FR-014) |
+| `canal_captacion_id` | FK nullable → `canales_captacion`, `nullOnDelete` | FR-011. `NULL` = "Sin especificar" (FR-014). El parámetro HTTP equivalente se llama `canal_id` (forma corta); la columna conserva el nombre largo |
 | `convertido_at` | DATETIME nullable | Research D2. Se puebla al convertir el lead |
 
 **Índices nuevos**: `index(tenant_id, canal_captacion_id)`, `index(tenant_id, created_at)`.
@@ -109,6 +109,13 @@ InformeComercial
 
 - Cada indicador se adscribe al periodo según la tabla de criterios de research D1, que es la fuente
   de verdad; la UI muestra ese criterio junto al indicador (FR-006).
+- **Negocio cerrado del embudo** (FR-030/FR-031): cuenta únicamente facturas alcanzables desde un
+  presupuesto del periodo, es decir, presupuestos con `fecha_emision` en rango cuyo
+  `convertido_a_factura_id` no es nulo. Se adscribe por **cohorte de `fecha_emision` del
+  presupuesto**, igual que el resto de indicadores de presupuesto, para que
+  `conversion_presupuesto_factura` tenga numerador y denominador de la misma población. Las facturas
+  de alta directa y las simplificadas de punto de venta **nunca** entran aquí: no son alcanzables
+  desde un presupuesto, así que la exclusión es estructural y no requiere un filtro aparte.
 - Un ratio con denominador cero se representa como **`null`** ("sin datos"), nunca `0` (FR-005). La
   capa de presentación es la única responsable de traducir `null` a texto.
 - Los ratios se calculan siempre sobre una única población (research D1), de modo que el numerador

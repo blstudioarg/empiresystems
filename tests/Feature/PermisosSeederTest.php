@@ -16,11 +16,11 @@ class PermisosSeederTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_siembra_las_21_claves_del_catalogo(): void
+    public function test_siembra_las_claves_del_catalogo(): void
     {
         $this->seed(PermisosSeeder::class);
 
-        $this->assertSame(21, Permission::count());
+        $this->assertSame(count(CatalogoPermisos::claves()), Permission::count());
         foreach (CatalogoPermisos::claves() as $clave) {
             $this->assertDatabaseHas('permissions', ['name' => $clave, 'guard_name' => 'web']);
         }
@@ -31,7 +31,7 @@ class PermisosSeederTest extends TestCase
         $this->seed(PermisosSeeder::class);
         $this->seed(PermisosSeeder::class);
 
-        $this->assertSame(21, Permission::count());
+        $this->assertSame(count(CatalogoPermisos::claves()), Permission::count());
     }
 
     public function test_permiso_nuevo_llega_al_rol_administrador_pero_no_a_otros_roles(): void

@@ -48,18 +48,22 @@
 							</ul>
 						</li>
 					@else
-						{{-- Inicio: solo si el rol tiene acceso al dashboard; el resto aterriza en Mi jornada (D11). --}}
-						<li><a href="{{ auth()->user()->can('ver-dashboard') ? route('dashboard') : route('mi-jornada.index') }}">
+						{{-- Inicio: solo si el rol tiene acceso al dashboard (doc 09, Cambio 5). Quien no lo
+						     tiene ni siquiera ve "Inicio"; su landing lo resuelve ResolvedorLanding. --}}
+						@can('ver-dashboard')
+						<li><a href="{{ route('dashboard') }}">
 								<div class="menu-icon">
 									<x-lordicon icon="home" size="30" trigger="hover" />
 								</div>
 								<span class="nav-text ms-2">Inicio</span>
 							</a>
 						</li>
-						{{-- Control de fichaje: Fichar/Mi jornada son personales (siempre visibles); el bloque
-						     de gestión va bajo can:ver-jornada. --}}
+						@endcan
+						{{-- Control de fichaje: cada subvista con su permiso (doc 09, Cambios 1 y 5). Fichar y
+						     Mi jornada son personales (por defecto todos las tienen); el resto es gestión. --}}
+						@canany(['ver-fichar', 'ver-mi-jornada', 'ver-jornada', 'ver-calendario', 'ver-miembros', 'ver-horarios', 'ver-alertas'])
 						@php
-							$__alertasNuevas = auth()->user()->can('ver-jornada')
+							$__alertasNuevas = auth()->user()->can('ver-alertas')
 								? \App\Models\Alerta::where('tenant_id', tenant()->getTenantKey())
 									->where('estado', \App\Enums\EstadoAlerta::Nueva)
 									->count()
@@ -75,13 +79,13 @@
 								<span class="nav-text ms-2">Control de fichaje</span>
 							</a>
 							<ul aria-expanded="false">
-								<li><a href="{{ route('fichajes.index') }}">Fichar</a></li>
-								<li><a href="{{ route('mi-jornada.index') }}">Mi jornada</a></li>
-								@can('ver-jornada')
-									<li><a href="{{ route('jornada.index') }}">Jornada</a></li>
-									<li><a href="{{ route('calendario.index') }}">Calendario</a></li>
-									<li><a href="{{ route('miembros-equipo.index') }}">Miembros</a></li>
-									<li><a href="{{ route('horarios.index') }}">Horarios</a></li>
+								@can('ver-fichar')<li><a href="{{ route('fichajes.index') }}">Fichar</a></li>@endcan
+								@can('ver-mi-jornada')<li><a href="{{ route('mi-jornada.index') }}">Mi jornada</a></li>@endcan
+								@can('ver-jornada')<li><a href="{{ route('jornada.index') }}">Jornada</a></li>@endcan
+								@can('ver-calendario')<li><a href="{{ route('calendario.index') }}">Calendario</a></li>@endcan
+								@can('ver-miembros')<li><a href="{{ route('miembros-equipo.index') }}">Miembros</a></li>@endcan
+								@can('ver-horarios')<li><a href="{{ route('horarios.index') }}">Horarios</a></li>@endcan
+								@can('ver-alertas')
 									<li><a href="{{ route('alertas.index') }}" class="nav-link-badge-wrap">
 										Alertas
 										@if ($__alertasNuevas > 0)
@@ -91,6 +95,7 @@
 								@endcan
 							</ul>
 						</li>
+						@endcanany
 						@can('ver-clientes')
 						<li><a class="has-arrow " href="javascript:void(0);" aria-expanded="false">
 								<div class="menu-icon">
@@ -103,7 +108,7 @@
 							</ul>
 						</li>
 						@endcan
-						@canany(['ver-leads', 'ver-oportunidades', 'ver-presupuestos', 'ver-albaranes'])
+						@canany(['ver-leads', 'ver-oportunidades', 'ver-presupuestos', 'ver-albaranes', 'ver-informes-comerciales'])
 						<li><a class="has-arrow " href="javascript:void(0);" aria-expanded="false">
 								<div class="menu-icon">
 									<x-lordicon icon="wired-outline-456-handshake-deal-hover-pinch" size="30" trigger="hover" />
@@ -115,6 +120,7 @@
 								@can('ver-oportunidades')<li><a href="{{ route('oportunidades.index') }}">Oportunidades</a></li>@endcan
 								@can('ver-presupuestos')<li><a href="{{ route('presupuestos.index') }}">Presupuestos</a></li>@endcan
 									@can('ver-albaranes')<li><a href="{{ route('albaranes.index') }}">Albaranes</a></li>@endcan
+								@can('ver-informes-comerciales')<li><a href="{{ route('informes-comerciales.index') }}">Informes comerciales</a></li>@endcan
 							</ul>
 						</li>
 						@endcanany
@@ -133,7 +139,7 @@
 							</ul>
 						</li>
 						@endcanany
-						@can('ver-facturas')
+						@canany(['ver-facturas', 'ver-facturas-crear'])
 						<li><a class="has-arrow " href="javascript:void(0);" aria-expanded="false">
 								<div class="menu-icon">
 									<x-lordicon icon="invoice" size="30" trigger="hover" />
@@ -141,12 +147,12 @@
 								<span class="nav-text ms-2">Facturas</span>
 							</a>
 							<ul aria-expanded="false">
-								<li><a href="{{ route('facturas.index') }}">Facturas</a></li>
-									<li><a href="{{ route('facturas.create') }}">Crear factura</a></li>
+								@can('ver-facturas')<li><a href="{{ route('facturas.index') }}">Facturas</a></li>@endcan
+								@can('ver-facturas-crear')<li><a href="{{ route('facturas.create') }}">Crear factura</a></li>@endcan
 							</ul>
 						</li>
-						@endcan
-						@can('ver-pos')
+						@endcanany
+						@canany(['ver-pos', 'ver-pos-crear'])
 						<li><a class="has-arrow " href="javascript:void(0);" aria-expanded="false">
 								<div class="menu-icon">
 									<x-lordicon icon="ticket" size="30" trigger="hover" />
@@ -154,11 +160,11 @@
 								<span class="nav-text ms-2">POS</span>
 							</a>
 							<ul aria-expanded="false">
-								<li><a href="{{ route('pos.index') }}">Facturas simplificadas</a></li>
-								<li><a href="{{ route('pos.create') }}">Crear ticket</a></li>
+								@can('ver-pos')<li><a href="{{ route('pos.index') }}">Facturas simplificadas</a></li>@endcan
+								@can('ver-pos-crear')<li><a href="{{ route('pos.create') }}">Crear ticket</a></li>@endcan
 							</ul>
 						</li>
-						@endcan
+						@endcanany
 						@can('ver-archivos')
 						<li><a href="{{ route('archivos.index') }}">
 								<div class="menu-icon">
@@ -168,7 +174,7 @@
 							</a>
 						</li>
 						@endcan
-						@canany(['ver-campanas', 'ver-plantillas-email'])
+						@canany(['ver-campanas', 'ver-campanas-crear', 'ver-plantillas-email'])
 						<li><a class="has-arrow " href="javascript:void(0);" aria-expanded="false">
 								<div class="menu-icon">
 									<x-lordicon icon="system-regular-1-share" size="30" trigger="hover" />
@@ -176,10 +182,8 @@
 								<span class="nav-text ms-2">Marketing</span>
 							</a>
 							<ul aria-expanded="false">
-								@can('ver-campanas')
-									<li><a href="{{ route('campanas.index') }}">Campañas</a></li>
-									<li><a href="{{ route('campanas.create') }}">Nueva campaña</a></li>
-								@endcan
+								@can('ver-campanas')<li><a href="{{ route('campanas.index') }}">Campañas</a></li>@endcan
+								@can('ver-campanas-crear')<li><a href="{{ route('campanas.create') }}">Nueva campaña</a></li>@endcan
 								@can('ver-plantillas-email')<li><a href="{{ route('plantillas-email.index') }}">Plantillas de email</a></li>@endcan
 							</ul>
 						</li>

@@ -15,15 +15,18 @@ SaaS de **facturación para España**, reconstrucción desde cero del CRM actual
 
 ## Roles y permisos por tenant
 Cada tenant gestiona sus propios **roles** (autoservicio, sin intervención del Super Admin):
-un catálogo global de ~17 permisos (uno por sección funcional del menú, ver
-`docs/03-modelo-datos.md`) se agrupa en roles con nombre libre por tenant (ej. "Administrador",
-"Ventas"). El acceso se controla en dos capas: el menú lateral solo muestra las secciones
-permitidas, y cada ruta exige su permiso en el servidor (403 si falta, nunca solo ocultar en el
-menú). El alta de un tenant nuevo aprovisiona automáticamente su rol "Administrador" con el
-catálogo completo; un rol "Usuario" acotado queda marcado como **rol por defecto** para quienes
-se registran públicamente. Las secciones personales (fichar, mi jornada, perfil) no requieren
-ningún permiso — las tiene cualquier usuario autenticado del tenant. El Super Admin central
-queda fuera de este sistema (bypass total, sigue con su propio middleware de acceso).
+un catálogo global de permisos (uno por sección/subvista del menú, ver `docs/03-modelo-datos.md`)
+se agrupa en roles con nombre libre por tenant (ej. "Administrador", "Ventas"). El acceso se
+controla en dos capas: el menú lateral solo muestra las secciones permitidas, y cada ruta exige su
+permiso en el servidor (403 si falta, nunca solo ocultar en el menú). El alta de un tenant nuevo
+aprovisiona automáticamente su rol "Administrador" con el catálogo completo; un rol "Usuario"
+acotado queda marcado como **rol por defecto** para quienes se registran públicamente. **Fichar** y
+**mi jornada** son secciones personales gateables (`ver-fichar`, `ver-mi-jornada`): tienen permiso
+propio pero por defecto lo recibe todo rol (no se excluyen del rol base), así que siguen siendo de
+facto universales salvo que un administrador se los quite a un rol a propósito (doc 09, Cambio 5).
+El **perfil** es la única sección genuinamente sin permiso (universal) y hace de aterrizaje de
+fallback cuando un usuario no tiene ninguna otra sección permitida. El Super Admin central queda
+fuera de este sistema (bypass total, sigue con su propio middleware de acceso).
 
 ## Alcance funcional inicial (MVP)
 El corazón del producto es **facturar cumpliendo la normativa española vigente**:

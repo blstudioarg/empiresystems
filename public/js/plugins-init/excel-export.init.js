@@ -19,7 +19,13 @@
 	 * @param {Object} opciones
 	 * @param {string} opciones.boton Selector del botón "Exportar".
 	 * @param {string} opciones.url Endpoint POST /exportar/{modulo}.
-	 * @param {Function} opciones.table Devuelve la instancia de DataTable ya inicializada.
+	 * @param {Function} [opciones.table] Devuelve la instancia de DataTable ya inicializada
+	 *        (tablas client-side, con el dataset completo cargado: clientes/artículos/facturas/
+	 *        albaranes/leads).
+	 * @param {Function} [opciones.ids] Devuelve (o resuelve, vía Promise) el array de IDs a
+	 *        exportar. Para tablas server-side (p. ej. logs de actividad) donde el navegador nunca
+	 *        tiene cargadas todas las filas que matchean el filtro — `table` no sirve ahí, ver
+	 *        `logs-datatable.init.js`. Exactamente una de las dos opciones, nunca ambas.
 	 */
 	window.initExportacionExcel = function (opciones) {
 		var $boton = $(opciones.boton);
@@ -29,20 +35,30 @@
 		}
 
 		$boton.on('click', function () {
-			var table = opciones.table();
+			var idsPromesa = opciones.ids
+				? Promise.resolve(opciones.ids())
+				: Promise.resolve(recogerIdsDeTabla(opciones.table()));
 
+			idsPromesa.then(function (ids) {
+				exportar(ids);
+			});
+		});
+
+		function recogerIdsDeTabla(table) {
 			if (!table) {
-				return;
+				return [];
 			}
 
-			var ids = table
+			return table
 				.rows({ search: 'applied' })
 				.data()
 				.toArray()
 				.map(function (fila) {
 					return fila.id;
 				});
+		}
 
+		function exportar(ids) {
 			if (ids.length === 0) {
 				window.showToast('warning', 'No hay filas para exportar con los filtros actuales.');
 
@@ -88,6 +104,6 @@
 				.finally(function () {
 					$boton.prop('disabled', false).text(textoOriginal);
 				});
-		});
+		}
 	};
 })(jQuery);

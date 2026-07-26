@@ -558,6 +558,16 @@ window.initExportacionExcel({
 (`URL.createObjectURL` + `<a download>`). Si no hay filas visibles, muestra un toast de aviso en
 vez de mandar la petición.
 
+**Variante para tablas server-side** (p. ej. `logs`, feature "logs de actividad"): cuando el
+DataTable pagina en servidor (dataset potencialmente grande, no cargado entero en el navegador),
+la opción `table` no sirve — el navegador solo tiene la página actual. `initExportacionExcel`
+acepta en su lugar `ids: function ()`, que debe devolver (o resolver, vía `Promise`) el array de
+IDs a exportar; internamente se le pide al mismo endpoint del listado (el `ajax.url` de la propia
+tabla) todas las filas que matchean la búsqueda activa, con `length` alto y sin paginar, y de ahí
+se extraen los `id`. Exactamente una de las dos opciones (`table` o `ids`), nunca ambas. Ver
+`resources/views/logs/index.blade.php` y `LogActividadController::index()` (que expone `id` en
+cada fila del JSON justamente para esto).
+
 **"Importar" abre un modal, nunca navega a otra página** (consistente con "CRUD simple: alta/edición
 en modal + AJAX" más abajo, aunque acá no hay alta/edición sino un flujo de tres pasos: subir →
 previsualizar → confirmar). El modal es un partial único y reutilizable,
@@ -663,8 +673,18 @@ negocio/normativa (eso vive en `docs/`). Referencia completa: `resources/views/a
 ## Nueva entrada de menú ⇒ nuevo permiso (obligatorio)
 
 Toda sección nueva del sidebar (feature 027) necesita un **permiso propio en el catálogo global**,
-nunca reutilizar uno existente "porque ya alcanza" ni dejar la sección sin permiso (salvo que sea
-genuinamente personal, como fichar/mi-jornada/perfil). Pasos, en este orden:
+nunca reutilizar uno existente "porque ya alcanza" ni dejar la sección sin permiso (salvo el
+**perfil**, la única sección genuinamente universal, sin permiso). **Granularidad = una vista o
+subvista del menú**: si un módulo tiene una subvista de "crear" con entrada propia en el menú
+(p. ej. "Crear factura", "Crear ticket", "Nueva campaña"), esa subvista lleva su **propio** permiso
+`ver-{seccion}-crear` — no se agrupa bajo el permiso del listado (doc 09, Cambios 2 y 3). Del mismo
+modo, un módulo con varias subvistas de gestión se desglosa en un permiso por subvista (el bloque
+"Control de fichaje" → `ver-jornada`/`ver-calendario`/`ver-miembros`/`ver-horarios`/`ver-alertas`,
+doc 09, Cambio 1). Nota: **fichar** y **mi jornada** SÍ tienen permiso (`ver-fichar`,
+`ver-mi-jornada`) pero por defecto lo recibe todo rol (no se excluyen del rol base), así que siguen
+siendo de facto universales salvo que un admin los acote (doc 09, Cambio 5). Cuando conviertas una
+sección universal en gateada, revisá el aterrizaje de `/` (`App\Support\ResolvedorLanding`). Pasos,
+en este orden:
 
 1. **Permiso en el catálogo**: añadir la entrada (`clave`, `etiqueta`, `modulo`) en
    `App\Support\CatalogoPermisos::PERMISOS`. La clave sigue el patrón `ver-{seccion}` kebab-case.
@@ -684,7 +704,27 @@ genuinamente personal, como fichar/mi-jornada/perfil). Pasos, en este orden:
    comportamiento esperado, no un bug — evita que una sección nueva aparezca sin aviso en roles que
    el tenant configuró a propósito con acceso acotado.
 
-Referencia de implementación completa: `specs/027-roles-permisos-tenant/`.
+**Dividir, mover o quitar un permiso ya existente** (no dar de alta uno nuevo) necesita además una
+**migración de datos** para no quitarle acceso a los roles personalizados de los tenants ya en
+producción (el seeder solo resincroniza "Administrador" y "Usuario" base, no los roles a medida).
+Patrón (ver `database/migrations/2026_07_23_12*` como referencia, doc 09):
+
+1. Correr `PermisosSeeder` (crea los permisos nuevos, resincroniza los roles base).
+2. Iterar tenants y, por cada rol **personalizado** (≠ Administrador/Usuario) que tenía el permiso
+   viejo, concederle el/los nuevo(s) con `givePermissionTo(...)`, fijando el team de spatie
+   (`setPermissionsTeamId($tenant->getTenantKey())`) antes y `forgetCachedPermissions()` al terminar.
+3. Al **quitar** un permiso fantasma, borrarlo con `Permission::where('name', ...)->delete()` (cascada
+   a `role_has_permissions`) y regatear sus rutas con el permiso correcto (p. ej. `ver-bancos` →
+   `ver-configuracion`, doc 09, Cambio 4).
+
+**Contabilidad de tests** al tocar el catálogo: `CatalogoPermisosTest` cuenta `claves()` (total) y
+`clavesUsuarioBase()` (total − excluidos). Agregar un permiso **no excluido** sube ambos; uno
+**excluido** solo el total. `RutasPermisosTest::mapaRutas()` debe reflejar altas/bajas de rutas con
+permiso propio (excepto rutas con requisito de negocio extra como `/mi-jornada`, que exige perfil de
+miembro y se prueba aparte).
+
+Referencia de implementación completa: `specs/027-roles-permisos-tenant/`. Ajustes posteriores de
+granularidad del catálogo: doc 09 (`docs/09-ajustes-catalogo-permisos.md` en la copia de origen).
 
 ## Calendario (FullCalendar vendorizado)
 
@@ -812,6 +852,17 @@ espacio disponible cambia mucho. El QR se genera server-side como **SVG embebido
 Se renderiza a partir de una URL ya persistida en BD (`facturas.qr_contenido`), no recomponiéndola en
 cada render, y el partial decide por sí mismo si mostrarse (factura con registro sellado) para no
 repetir esa condición en cada vista que lo incluye.
+
+## Etiqueta de criterio de fecha en indicadores agregados (informes)
+
+Cuando un indicador agregado (recuento/importe) se adscribe a un periodo por un criterio de fecha
+que no es obvio a simple vista (cohorte de alta vs. evento de cierre vs. instantánea a fecha de
+corte — ver `informes-comerciales`), mostrar ese criterio como una pequeña etiqueta de color junto
+al título del indicador (`.criterio-badge`, `resources/views/informes-comerciales/index.blade.php`),
+no solo en un tooltip o en la documentación aparte. Tres criterios ya tienen su clase de color
+(`.criterio-cohorte`, `.criterio-evento`, `.criterio-instantanea`); si un informe nuevo necesita un
+cuarto criterio, sumar su propia clase con el mismo patrón (fondo translúcido + texto del mismo
+tono) en vez de reusar uno existente con un significado distinto.
 
 ## Badge secundario bajo el estado principal (DataTable)
 

@@ -18,6 +18,11 @@ financiero **no se toca**; la única refactorización sobre código existente es
 buckets temporales de `DashboardEstadisticas` a `App\Support\BucketsRango` para que ambos servicios
 la compartan.
 
+El embudo se cierra hasta la factura, pero **solo la atribuible al embudo comercial**: se cuentan
+las facturas originadas en un presupuesto (`presupuestos.convertido_a_factura_id`), nunca las de
+alta directa ni las simplificadas de punto de venta. Así aparece el ratio presupuesto → factura sin
+solaparse con lo que ya mide el dashboard financiero y sin el doble conteo que advertía la spec.
+
 El alcance de datos por perfil (lo que el requisito llama "diferentes niveles de agregación en
 función del perfil del usuario") se resuelve con dos permisos nuevos sobre el sistema de roles ya
 existente, aplicados **en servidor**.
@@ -107,6 +112,7 @@ app/
 ├── Support/
 │   ├── BucketsRango.php                          # nuevo — extraído de DashboardEstadisticas
 │   ├── RangoFechas.php                           # modificado — mismoPeriodoEjercicioAnterior()
+│   ├── FiltrosInforme.php                        # nuevo — objeto de valor de los filtros
 │   ├── AlcanceInformeComercial.php               # nuevo — resuelve alcance por permisos
 │   └── CatalogoPermisos.php                      # modificado — 2 permisos nuevos
 ├── Excel/Definiciones/
@@ -115,6 +121,7 @@ app/
 
 database/migrations/                              # canales_captacion, columnas leads, índices
 database/seeders/                                 # siembra de canales por defecto
+database/factories/CanalCaptacionFactory.php      # nuevo — para los tests de US2
 
 resources/views/
 ├── informes-comerciales/index.blade.php          # nuevo

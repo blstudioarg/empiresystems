@@ -19,7 +19,7 @@ Pantalla del informe. Acepta los mismos parámetros que la variante JSON.
 |---|---|---|
 | `preset` | `mes` \| `trimestre` \| `anio` \| `personalizado` | Default `mes` |
 | `desde`, `hasta` | `Y-m-d` | Obligatorios si `preset=personalizado` |
-| `canal_id` | entero \| `sin_especificar` | Filtro por canal (FR-015) |
+| `canal_id` | entero \| `sin_especificar` | Filtro por canal (FR-015). Forma corta de la columna `leads.canal_captacion_id` |
 | `comercial_id` | entero | Ignorado si el usuario no tiene `ver-informes-equipo` (FR-024) |
 | `fase` | string | Estado de lead, etapa de oportunidad o estado de presupuesto |
 | `comparar` | booleano | Activa la comparativa con el ejercicio anterior (FR-018) |
@@ -57,6 +57,9 @@ Recarga parcial sin refrescar la página (research D8). Mismo control de acceso 
 
 **Invariantes de la respuesta**:
 
+- El bloque de negocio cerrado del embudo (FR-030) solo aparece si el usuario tiene
+  `ver-presupuestos`, porque se deriva de presupuestos convertidos; **no** requiere
+  `ver-facturas`, ya que no expone facturas individuales sino un agregado del embudo.
 - Un ratio sin datos se serializa como `null`, nunca como `0` (FR-005).
 - Los bloques no visibles por permisos **no aparecen** en `graficos` ni en `html` (FR-022).
 - Los importes llegan ya redondeados a 2 decimales; el cliente no recalcula nada (FR-010).

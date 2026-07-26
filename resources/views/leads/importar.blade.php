@@ -21,9 +21,10 @@
 										<div class="invalid-feedback">{{ $message }}</div>
 									@enderror
 									<small class="form-text text-muted">
-										Columnas esperadas: <code>nombre, empresa, email, telefono</code>. Cada fila necesita
-										nombre y al menos un email o teléfono. Las filas duplicadas (mismo email/teléfono
-										que un lead ya existente) se rechazan.
+										Columnas esperadas: <code>nombre, empresa, email, telefono, canal</code> (canal es
+										opcional). Cada fila necesita nombre y al menos un email o teléfono. Las filas
+										duplicadas (mismo email/teléfono que un lead ya existente) se rechazan. Si el
+										nombre de canal no existe en tu catálogo, la fila se importa igual, sin canal.
 									</small>
 								</div>
 								<button type="submit" class="btn btn-primary" data-loading-text="Importando...">Importar</button>
@@ -52,6 +53,15 @@
 									</ul>
 								@else
 									<p class="text-success mb-0">Sin filas rechazadas.</p>
+								@endif
+
+								@if (! empty($resumen['avisos']))
+									<p class="text-warning mb-2 mt-3"><strong>{{ count($resumen['avisos']) }}</strong> filas importadas con aviso:</p>
+									<ul class="list-group list-group-flush">
+										@foreach ($resumen['avisos'] as $aviso)
+											<li class="list-group-item px-0">Fila {{ $aviso['fila'] }}: {{ $aviso['motivo'] }}</li>
+										@endforeach
+									</ul>
 								@endif
 							</div>
 						</div>

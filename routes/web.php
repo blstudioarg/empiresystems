@@ -11,6 +11,7 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\BancoController;
 use App\Http\Controllers\CalendarioController;
 use App\Http\Controllers\CampanaController;
+use App\Http\Controllers\CanalCaptacionController;
 use App\Http\Controllers\CarpetaController;
 use App\Http\Controllers\CategoriaArticuloController;
 use App\Http\Controllers\ClienteController;
@@ -26,6 +27,7 @@ use App\Http\Controllers\FacturaeController;
 use App\Http\Controllers\FichajeController;
 use App\Http\Controllers\HorarioController;
 use App\Http\Controllers\ImportacionController;
+use App\Http\Controllers\InformeComercialController;
 use App\Http\Controllers\InformeJornadaController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\LeadImportacionController;
@@ -102,10 +104,16 @@ Route::middleware(['tenant.context', 'auth'])->group(function () {
             ->defaults('modulo', 'articulos')->name('articulos.importar.rechazos');
     });
 
-    Route::middleware('can:ver-facturas')->group(function () {
-        Route::get('/facturas', [FacturaController::class, 'index'])->name('facturas.index');
+    // Crear factura: subvista con permiso propio (doc 09, Cambio 2). La acción de crear (formulario
+    // + alta) queda atada a este permiso; editar un borrador sigue bajo ver-facturas (se llega desde
+    // el listado, no desde "Crear factura").
+    Route::middleware('can:ver-facturas-crear')->group(function () {
         Route::get('/facturas/crear', [FacturaController::class, 'create'])->name('facturas.create');
         Route::post('/facturas', [FacturaController::class, 'store'])->name('facturas.store');
+    });
+
+    Route::middleware('can:ver-facturas')->group(function () {
+        Route::get('/facturas', [FacturaController::class, 'index'])->name('facturas.index');
         Route::get('/facturas/{factura}/editar', [FacturaController::class, 'edit'])->name('facturas.edit');
         Route::match(['put', 'patch'], '/facturas/{factura}', [FacturaController::class, 'update'])->name('facturas.update');
         Route::delete('/facturas/{factura}', [FacturaController::class, 'destroy'])->name('facturas.destroy');
@@ -164,6 +172,11 @@ Route::middleware(['tenant.context', 'auth'])->group(function () {
         Route::post('/presupuestos/{presupuesto}/enviar', [PresupuestoController::class, 'enviar'])->name('presupuestos.enviar');
     });
 
+    Route::middleware('can:ver-informes-comerciales')->group(function () {
+        Route::get('/informes-comerciales', [InformeComercialController::class, 'index'])->name('informes-comerciales.index');
+        Route::post('/informes-comerciales/exportar', [InformeComercialController::class, 'exportar'])->name('informes-comerciales.exportar');
+    });
+
     Route::middleware('can:ver-albaranes')->group(function () {
         Route::get('/albaranes', [AlbaranController::class, 'index'])->name('albaranes.index');
         Route::get('/albaranes/crear', [AlbaranController::class, 'create'])->name('albaranes.create');
@@ -179,11 +192,14 @@ Route::middleware(['tenant.context', 'auth'])->group(function () {
             ->defaults('modulo', 'albaranes')->name('albaranes.exportar');
     });
 
-    // POS — facturas simplificadas (tickets)
-    Route::middleware('can:ver-pos')->group(function () {
-        Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
+    // POS — facturas simplificadas (tickets). "Crear ticket" con permiso propio (doc 09, Cambio 3).
+    Route::middleware('can:ver-pos-crear')->group(function () {
         Route::get('/pos/crear', [PosController::class, 'create'])->name('pos.create');
         Route::post('/pos', [PosController::class, 'store'])->name('pos.store');
+    });
+
+    Route::middleware('can:ver-pos')->group(function () {
+        Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
         Route::get('/pos/{factura}/pdf', [PosController::class, 'pdf'])->name('pos.pdf');
     });
 
@@ -191,7 +207,10 @@ Route::middleware(['tenant.context', 'auth'])->group(function () {
     Route::get('/perfil', [ProfileController::class, 'show'])->name('profile.show');
     Route::post('/perfil/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.avatar.update');
 
-    Route::middleware('can:ver-bancos')->group(function () {
+    // Bancos y cuentas bancarias se administran embebidos en Configuración → Facturación (no son
+    // vistas de menú propias); por eso se gatean con ver-configuracion, no con un permiso propio
+    // (doc 09, Cambio 4: se eliminó el permiso fantasma ver-bancos).
+    Route::middleware('can:ver-configuracion')->group(function () {
         Route::resource('bancos', BancoController::class)->only(['index', 'store', 'update', 'destroy']);
 
         Route::resource('cuentas-bancarias', CuentaBancariaController::class)->only(['index', 'store', 'update', 'destroy']);
@@ -226,6 +245,10 @@ Route::middleware(['tenant.context', 'auth'])->group(function () {
             ->name('configuracion.ia.update');
         Route::post('/configuracion/ia/probar', [ConfiguracionController::class, 'probarIa'])
             ->name('configuracion.ia.probar');
+
+        Route::resource('canales-captacion', CanalCaptacionController::class)
+            ->parameters(['canales-captacion' => 'canal'])
+            ->only(['index', 'store', 'update', 'destroy']);
     });
 
     // Asistente IA (feature 030): disponible para todo usuario autenticado del tenant.
@@ -279,10 +302,14 @@ Route::middleware(['tenant.context', 'auth'])->group(function () {
             ->only(['index', 'store', 'update', 'destroy']);
     });
 
-    Route::middleware('can:ver-campanas')->group(function () {
-        Route::get('/campanas', [CampanaController::class, 'index'])->name('campanas.index');
+    // "Nueva campaña" con permiso propio (doc 09, Cambio 3).
+    Route::middleware('can:ver-campanas-crear')->group(function () {
         Route::get('/campanas/crear', [CampanaController::class, 'create'])->name('campanas.create');
         Route::post('/campanas', [CampanaController::class, 'store'])->name('campanas.store');
+    });
+
+    Route::middleware('can:ver-campanas')->group(function () {
+        Route::get('/campanas', [CampanaController::class, 'index'])->name('campanas.index');
         Route::get('/campanas/{campana}', [CampanaController::class, 'show'])->name('campanas.show');
         Route::post('/campanas/{campana}/enviar-tanda', [CampanaController::class, 'enviarTanda'])->name('campanas.enviar-tanda');
         Route::post('/campanas/{campana}/reintentar', [CampanaController::class, 'reintentar'])->name('campanas.reintentar');
@@ -317,35 +344,57 @@ Route::middleware(['tenant.context', 'auth'])->group(function () {
 
     Route::middleware('can:ver-logs')->group(function () {
         Route::get('/logs', [LogActividadController::class, 'index'])->name('logs.index');
+
+        Route::post('/exportar/logs', [ExportacionController::class, 'exportar'])
+            ->defaults('modulo', 'logs')->name('logs.exportar');
     });
 
-    Route::get('/fichajes', [FichajeController::class, 'index'])->name('fichajes.index');
-    Route::post('/fichajes', [FichajeController::class, 'store'])->name('fichajes.store');
+    // Fichar y Mi jornada: secciones personales con permiso propio (doc 09, Cambio 5). Por defecto
+    // todo usuario las tiene (no excluidas del rol base), pero ahora son gateables por rol.
+    // Nota: /mi-jornada exige además un perfil de miembro de equipo (abort_if en el controller),
+    // requisito de negocio ADEMÁS del permiso.
+    Route::middleware('can:ver-fichar')->group(function () {
+        Route::get('/fichajes', [FichajeController::class, 'index'])->name('fichajes.index');
+        Route::post('/fichajes', [FichajeController::class, 'store'])->name('fichajes.store');
+    });
 
-    Route::get('/mi-jornada', [MiJornadaController::class, 'index'])->name('mi-jornada.index');
-    Route::get('/mi-jornada/exportar', [MiJornadaController::class, 'exportar'])->name('mi-jornada.exportar');
+    Route::middleware('can:ver-mi-jornada')->group(function () {
+        Route::get('/mi-jornada', [MiJornadaController::class, 'index'])->name('mi-jornada.index');
+        Route::get('/mi-jornada/exportar', [MiJornadaController::class, 'exportar'])->name('mi-jornada.exportar');
+    });
 
+    // Gestión de fichaje desglosada por subvista (doc 09, Cambio 1).
     Route::middleware('can:ver-jornada')->group(function () {
         Route::get('/jornada', [InformeJornadaController::class, 'index'])->name('jornada.index');
         Route::get('/jornada/exportar', [InformeJornadaController::class, 'exportar'])->name('jornada.exportar');
 
+        // Corregir un fichaje se hace desde el informe de Jornada.
+        Route::post('/fichajes/{fichaje}/corregir', [CorreccionFichajeController::class, 'store'])->name('fichajes.corregir');
+    });
+
+    Route::middleware('can:ver-miembros')->group(function () {
         Route::get('/miembros-equipo', [MiembroEquipoController::class, 'index'])->name('miembros-equipo.index');
         Route::post('/miembros-equipo', [MiembroEquipoController::class, 'store'])->name('miembros-equipo.store');
         Route::match(['put', 'patch'], '/miembros-equipo/{miembro}', [MiembroEquipoController::class, 'update'])->name('miembros-equipo.update');
         Route::delete('/miembros-equipo/{miembro}', [MiembroEquipoController::class, 'destroy'])->name('miembros-equipo.destroy');
 
-        Route::resource('horarios', HorarioController::class)->only(['index', 'store', 'update', 'destroy']);
-
+        // Asignar horarios a un miembro se hace desde su ficha.
         Route::get('/miembros-equipo/{miembro}/horarios', [AsignacionHorarioController::class, 'index'])->name('asignaciones-horario.index');
         Route::post('/miembros-equipo/{miembro}/horarios', [AsignacionHorarioController::class, 'store'])->name('asignaciones-horario.store');
         Route::delete('/asignaciones-horario/{asignacion}', [AsignacionHorarioController::class, 'destroy'])->name('asignaciones-horario.destroy');
+    });
 
-        Route::post('/fichajes/{fichaje}/corregir', [CorreccionFichajeController::class, 'store'])->name('fichajes.corregir');
+    Route::middleware('can:ver-horarios')->group(function () {
+        Route::resource('horarios', HorarioController::class)->only(['index', 'store', 'update', 'destroy']);
+    });
 
+    Route::middleware('can:ver-calendario')->group(function () {
         Route::get('/calendario', [CalendarioController::class, 'index'])->name('calendario.index');
         Route::get('/calendario/eventos', [CalendarioController::class, 'eventos'])->name('calendario.eventos');
         Route::get('/calendario/resumen', [CalendarioController::class, 'resumen'])->name('calendario.resumen');
+    });
 
+    Route::middleware('can:ver-alertas')->group(function () {
         Route::get('/alertas', [AlertaController::class, 'index'])->name('alertas.index');
         Route::patch('/alertas/{alerta}', [AlertaController::class, 'update'])->name('alertas.update');
     });

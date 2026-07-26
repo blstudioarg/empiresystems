@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Enums\UserRole;
 use App\Models\Tenant;
+use App\Support\CatalogoPermisos;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\GestionaRolesDeTenant;
 use Tests\TestCase;
@@ -25,9 +27,23 @@ class SidebarPermisosTest extends TestCase
         $this->assertStringNotContainsString('Crear factura', $html);
         $this->assertStringNotContainsString('Kardex', $html);
 
-        // Secciones personales siempre visibles.
-        $this->assertStringContainsString('Fichar', $html);
-        $this->assertStringContainsString('Mi jornada', $html);
+        // Fichar/Mi jornada ya no son universales (doc 09, Cambio 5): con solo ver-clientes
+        // (sin ver-fichar/ver-mi-jornada), el bloque Control de fichaje no aparece.
+        $this->assertStringNotContainsString('>Fichar<', $html);
+        $this->assertStringNotContainsString('>Mi jornada<', $html);
+    }
+
+    public function test_fichar_y_mi_jornada_se_muestran_con_su_permiso(): void
+    {
+        $this->sembrarPermisos();
+        $tenant = Tenant::factory()->create();
+        $usuario = $this->usuarioConRol($tenant, $this->crearRol($tenant, 'Operario', ['ver-fichar', 'ver-mi-jornada']));
+
+        $this->loginAs($usuario);
+        $html = $this->get('/perfil')->assertOk()->getContent();
+
+        $this->assertStringContainsString('>Fichar<', $html);
+        $this->assertStringContainsString('>Mi jornada<', $html);
     }
 
     public function test_grupo_sin_entradas_visibles_no_se_renderiza(): void
@@ -48,8 +64,8 @@ class SidebarPermisosTest extends TestCase
     {
         $this->sembrarPermisos();
         $tenant = Tenant::factory()->create();
-        $rol = $this->crearRol($tenant, 'Administrador', \App\Support\CatalogoPermisos::claves());
-        $usuario = $this->usuarioConRol($tenant, $rol, ['rol' => \App\Enums\UserRole::Admin]);
+        $rol = $this->crearRol($tenant, 'Administrador', CatalogoPermisos::claves());
+        $usuario = $this->usuarioConRol($tenant, $rol, ['rol' => UserRole::Admin]);
 
         $this->loginAs($usuario);
         $html = $this->get('/')->assertOk()->getContent();

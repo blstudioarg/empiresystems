@@ -104,6 +104,23 @@ class RangoFechas
         return new self($desde, $hasta, PresetRango::Personalizado);
     }
 
+    /**
+     * Mismo periodo (mismos días/mes) del ejercicio `$anios` atrás, para la comparativa entre
+     * ejercicios del informe comercial (FR-018/FR-019, feature 033). Usa `subYearsNoOverflow()`
+     * en vez de restar días para que un 29 de febrero comparado contra un año no bisiesto caiga en
+     * el 28 de febrero en lugar de desbordar al 1 de marzo. Distinto de `anterior()` (periodo
+     * inmediatamente precedente de igual duración, usado por el dashboard financiero): no lo
+     * modifica ni lo reemplaza.
+     */
+    public function mismoPeriodoEjercicioAnterior(int $anios = 1): self
+    {
+        return new self(
+            $this->desde->copy()->subYearsNoOverflow($anios),
+            $this->hasta->copy()->subYearsNoOverflow($anios),
+            PresetRango::Personalizado,
+        );
+    }
+
     public function dias(): int
     {
         return (int) $this->desde->diffInDays($this->hasta) + 1;

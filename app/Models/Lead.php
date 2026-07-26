@@ -25,8 +25,10 @@ class Lead extends Model
         'telefono',
         'estado',
         'origen',
+        'canal_captacion_id',
         'asignado_a',
         'convertido_a_cliente_id',
+        'convertido_at',
         'motivo_descarte',
         'notas',
     ];
@@ -36,6 +38,7 @@ class Lead extends Model
         return [
             'estado' => EstadoLead::class,
             'origen' => OrigenLead::class,
+            'convertido_at' => 'datetime',
         ];
     }
 
@@ -52,6 +55,11 @@ class Lead extends Model
     public function clienteConvertido(): BelongsTo
     {
         return $this->belongsTo(Cliente::class, 'convertido_a_cliente_id');
+    }
+
+    public function canalCaptacion(): BelongsTo
+    {
+        return $this->belongsTo(CanalCaptacion::class);
     }
 
     public function notasLead(): HasMany

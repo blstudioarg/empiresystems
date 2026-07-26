@@ -13,6 +13,7 @@ use App\Models\Provincia;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Support\ProvisionadorRoles;
+use App\Support\SembradorCanalesCaptacion;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -104,6 +105,8 @@ class TenantController extends Controller
             // algo falla aquí no queda tenant/usuario/rol parcial (RN-03).
             $this->provisionadorRoles->provisionarAdministrador($tenant, $admin);
             $this->provisionadorRoles->provisionarUsuarioBase($tenant);
+
+            SembradorCanalesCaptacion::sembrar($tenant->id);
         });
 
         if ($request->wantsJson()) {

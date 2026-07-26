@@ -127,6 +127,23 @@ class LogActividadListadoTest extends TestCase
         $this->assertSame('Zulema', $response->json('data.1.usuario_nombre'));
     }
 
+    public function test_totales_para_las_cards_informativas(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $user = User::factory()->admin()->create(['tenant_id' => $tenant->id]);
+
+        LogActividad::factory()->for($tenant)->create(['ocurrido_at' => now()->subDays(10)]);
+        LogActividad::factory()->for($tenant)->create(['ocurrido_at' => now()]);
+        LogActividad::factory()->fallo()->for($tenant)->create(['ocurrido_at' => now()]);
+
+        $this->autenticarSinGenerarLog($user);
+
+        $response = $this->getJson('/logs?'.http_build_query($this->datatableParams()));
+
+        $response->assertOk();
+        $response->assertJson(['totales' => ['total' => 3, 'hoy' => 2, 'fallidos' => 1]]);
+    }
+
     public function test_orden_mantiene_la_busqueda_aplicada(): void
     {
         $tenant = Tenant::factory()->create();

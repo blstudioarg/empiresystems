@@ -49,6 +49,7 @@ class LeadController extends Controller
                     'origen_label' => $lead->origen->label(),
                     'asignado_a' => $lead->asignado_a,
                     'asignado_nombre' => $lead->asignadoA?->name,
+                    'canal_captacion_id' => $lead->canal_captacion_id,
                     'created_at' => $lead->created_at?->toIso8601String(),
                 ]),
                 'totales' => [
@@ -75,6 +76,7 @@ class LeadController extends Controller
             'telefono' => $datos['telefono'] ?? null,
             'estado' => EstadoLead::Nuevo,
             'origen' => OrigenLead::Manual,
+            'canal_captacion_id' => $datos['canal_captacion_id'] ?? null,
             'asignado_a' => $datos['asignado_a'] ?? $this->asignador->asignar(tenant()->id),
             'notas' => $datos['notas'] ?? null,
         ]);
@@ -145,6 +147,7 @@ class LeadController extends Controller
             'email' => $datos['email'] ?? null,
             'telefono' => $datos['telefono'] ?? null,
             'asignado_a' => $datos['asignado_a'] ?? null,
+            'canal_captacion_id' => $datos['canal_captacion_id'] ?? null,
             'estado' => $datos['estado'] ?? $lead->estado->value,
             'motivo_descarte' => $datos['motivo_descarte'] ?? null,
             'notas' => $datos['notas'] ?? $lead->notas,

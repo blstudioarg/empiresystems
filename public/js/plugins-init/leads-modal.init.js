@@ -34,12 +34,19 @@
 			}
 		}
 
+		function canalSelect() {
+			return window.CanalCaptacionSelect && window.CanalCaptacionSelect.get('canal_captacion_id');
+		}
+
 		function resetForm() {
 			clearErrors();
 			$form[0].reset();
 			$('#lead_method').val('POST');
 			$form.attr('action', state.storeUrl);
 			$('#leadModalLabel').text('Agregar lead');
+			if (canalSelect()) {
+				canalSelect().clear();
+			}
 		}
 
 		function fillForm(data) {
@@ -51,6 +58,9 @@
 			$form.find('#email').val(data.email);
 			$form.find('#telefono').val(data.telefono);
 			$form.find('#asignado_a').val(data.asignadoA || '');
+			if (canalSelect()) {
+				canalSelect().setValue(data.canalCaptacionId);
+			}
 			$('#leadModalLabel').text('Editar lead');
 		}
 
@@ -68,6 +78,7 @@
 				email: $btn.data('email'),
 				telefono: $btn.data('telefono'),
 				asignadoA: $btn.data('asignado-a'),
+				canalCaptacionId: $btn.data('canal-captacion-id'),
 			});
 		});
 

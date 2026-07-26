@@ -15,6 +15,8 @@ test de esas áreas están marcadas ⚠️ y **deben fallar antes** de implement
 
 **Organization**: agrupadas por historia de usuario para poder entregar de forma incremental.
 
+**Revisión**: incorpora las correcciones del análisis de consistencia (G1-G6, U1-U2, I1-I3, A1).
+
 ## Format: `[ID] [P?] [Story] Description`
 
 - **[P]**: puede ejecutarse en paralelo (fichero distinto, sin dependencias pendientes)
@@ -31,9 +33,9 @@ repositorio (ver "Source Code" en [plan.md](./plan.md)).
 
 **Purpose**: preparar los cimientos compartidos sin cambiar comportamiento existente.
 
-- [ ] T001 Extraer los métodos privados `bucketsDelRango`, `bucketsDiarios` y `bucketsMensuales` de `app/Services/DashboardEstadisticas.php` a una clase nueva `app/Support/BucketsRango.php`, sin cambiar su lógica
-- [ ] T002 Actualizar `app/Services/DashboardEstadisticas.php` para consumir `App\Support\BucketsRango` y verificar que `php artisan test --filter=Dashboard` sigue en verde (refactor sin cambio de comportamiento)
-- [ ] T003 [P] Crear migración en `database/migrations/` que añada los índices `leads(tenant_id, created_at)`, `oportunidades(tenant_id, cerrada_at)` y `presupuestos(tenant_id, fecha_emision)` (data-model §3)
+- [X] T001 Extraer los métodos privados `bucketsDelRango`, `bucketsDiarios` y `bucketsMensuales` de `app/Services/DashboardEstadisticas.php` a una clase nueva `app/Support/BucketsRango.php`, sin cambiar su lógica
+- [X] T002 Actualizar `app/Services/DashboardEstadisticas.php` para consumir `App\Support\BucketsRango` y verificar que `php artisan test --filter=Dashboard` sigue en verde (refactor sin cambio de comportamiento)
+- [X] T003 [P] Crear migración en `database/migrations/` que añada los índices `leads(tenant_id, created_at)`, `oportunidades(tenant_id, cerrada_at)` y `presupuestos(tenant_id, fecha_emision)` (data-model §3)
 
 **Checkpoint**: lógica de buckets compartida y disponible; dashboard financiero intacto.
 
@@ -41,16 +43,17 @@ repositorio (ver "Source Code" en [plan.md](./plan.md)).
 
 ## Phase 2: Foundational (Blocking Prerequisites)
 
-**Purpose**: acceso, rutas y esqueleto de cálculo. Sin esto no se puede abrir la sección.
+**Purpose**: acceso, rutas, objetos de filtro y esqueleto de cálculo.
 
 **⚠️ CRITICAL**: ninguna historia puede empezar hasta completar esta fase.
 
-- [ ] T004 Añadir las claves `ver-informes-comerciales` y `ver-informes-equipo` (módulo `CRM`) a `app/Support/CatalogoPermisos.php`, incluyendo `ver-informes-equipo` en `EXCLUIDOS_USUARIO_BASE` (data-model §5)
-- [ ] T005 Ejecutar/actualizar el seeder de permisos en `database/seeders/` para registrar los dos permisos nuevos en tenants existentes
-- [ ] T006 [P] Crear `app/Http/Requests/InformeComercialFiltroRequest.php` con validación de `preset`/`desde`/`hasta`/`canal_id`/`comercial_id`/`fase`/`comparar`, replicando el patrón de `DashboardFiltroRequest` que **no lanza 422** (contrato: rango inválido cae a mes en curso + aviso)
-- [ ] T007 [P] Crear `app/Support/AlcanceInformeComercial.php` que resuelva, a partir del usuario autenticado, los bloques visibles (`ver-leads`/`ver-oportunidades`/`ver-presupuestos`) y el tipo de alcance (propio vs tenant)
-- [ ] T008 Crear `app/Services/InformeComercial.php` con el esqueleto del método `generar(RangoFechas $rango, FiltrosInforme $filtros, AlcanceInformeComercial $alcance): array` devolviendo la estructura de data-model §4 con valores vacíos
-- [ ] T009 Registrar en `routes/web.php` el grupo `can:ver-informes-comerciales` con `GET /informes-comerciales`, crear `app/Http/Controllers/InformeComercialController.php` y la vista `resources/views/informes-comerciales/index.blade.php`, denegando acceso si el usuario no tiene ninguno de los tres permisos de módulo (FR-025)
+- [X] T004 Añadir las claves `ver-informes-comerciales` y `ver-informes-equipo` (módulo `CRM`) a `app/Support/CatalogoPermisos.php`, incluyendo `ver-informes-equipo` en `EXCLUIDOS_USUARIO_BASE` (data-model §5)
+- [X] T005 Actualizar el seeder de permisos en `database/seeders/` para que registre los dos permisos nuevos y los asigne al rol base según T004; dejar constancia en `quickstart.md` de que hay que re-ejecutarlo en tenants existentes
+- [X] T006 [P] Crear `app/Support/FiltrosInforme.php` como objeto de valor inmutable con `canalId`, `comercialId`, `fase` y `comparar`, con constructor nombrado que los normaliza desde el request validado
+- [X] T007 [P] Crear `app/Http/Requests/InformeComercialFiltroRequest.php` con validación de `preset`/`desde`/`hasta`/`canal_id`/`comercial_id`/`fase`/`comparar`, replicando el patrón de `DashboardFiltroRequest` que **no lanza 422** (contrato: rango inválido cae a mes en curso + aviso)
+- [X] T008 [P] Crear `app/Support/AlcanceInformeComercial.php` que resuelva, a partir del usuario autenticado, los bloques visibles (`ver-leads`/`ver-oportunidades`/`ver-presupuestos`) y el tipo de alcance (propio vs tenant)
+- [X] T009 Crear `app/Services/InformeComercial.php` con el esqueleto de `generar(RangoFechas $rango, FiltrosInforme $filtros, AlcanceInformeComercial $alcance): array` devolviendo la estructura de data-model §4 con valores vacíos
+- [X] T010 Registrar en `routes/web.php` el grupo `can:ver-informes-comerciales` con `GET /informes-comerciales`, crear `app/Http/Controllers/InformeComercialController.php` y la vista `resources/views/informes-comerciales/index.blade.php`, denegando acceso si el usuario no tiene ninguno de los tres permisos de módulo (FR-025)
 
 **Checkpoint**: la sección abre, con permisos aplicados y estructura vacía.
 
@@ -59,41 +62,43 @@ repositorio (ver "Source Code" en [plan.md](./plan.md)).
 ## Phase 3: User Story 1 - Panel de indicadores comerciales con ratios (Priority: P1) 🎯 MVP
 
 **Goal**: convertir la actividad comercial ya capturada en indicadores y ratios de eficiencia para
-un periodo seleccionable.
+un periodo seleccionable, cerrando el ciclo hasta la factura originada en el embudo.
 
-**Independent Test**: crear en un tenant un conjunto conocido de leads, oportunidades y
-presupuestos con fechas dentro y fuera del periodo, y verificar que cada indicador y cada ratio
-coincide con el cálculo manual, que lo de fuera del periodo no cuenta y que no aparecen datos de
-otro tenant.
+**Independent Test**: crear en un tenant un conjunto conocido de leads, oportunidades, presupuestos
+y facturas convertidas, y verificar que cada indicador y cada ratio coincide con el cálculo manual,
+que lo de fuera del periodo no cuenta y que no aparecen datos de otro tenant.
 
 ### Tests for User Story 1 ⚠️
 
 > **Escribir primero, verificar que FALLAN antes de implementar** (Principio IV)
 
-- [ ] T010 [P] [US1] Test de indicadores de volumen en `tests/Feature/InformeComercialIndicadoresTest.php`: leads captados, convertidos, oportunidades creadas/ganadas/perdidas/abiertas con importe, presupuestos emitidos/aceptados con importe, sobre un dataset conocido (FR-003)
-- [ ] T011 [P] [US1] Test de criterios de fecha en `tests/Feature/InformeComercialIndicadoresTest.php`: registros justo fuera del rango no cuentan; cohorte vs evento vs instantánea según research D1 (FR-006)
-- [ ] T012 [P] [US1] Test de ratios en `tests/Feature/InformeComercialRatiosTest.php`: conversión lead→cliente, ganadas sobre cerradas, aceptación de presupuestos, importe medio y ciclos medios (FR-004)
-- [ ] T013 [P] [US1] Test de denominador cero en `tests/Feature/InformeComercialRatiosTest.php`: periodo sin actividad devuelve ratios `null`, nunca `0` ni excepción (FR-005)
-- [ ] T014 [P] [US1] Test de aislamiento multi-tenant en `tests/Feature/InformeComercialAislamientoTenantTest.php` con dos tenants con actividad; ningún indicador cruza (SC-005)
+- [X] T011 [P] [US1] Test de indicadores de volumen en `tests/Feature/InformeComercialIndicadoresTest.php`: leads captados/convertidos, oportunidades creadas/ganadas/perdidas/abiertas con importe, presupuestos emitidos/aceptados con importe (FR-003)
+- [X] T012 [P] [US1] Test de criterios de fecha en `tests/Feature/InformeComercialIndicadoresTest.php`: registros justo fuera del rango no cuentan; cohorte vs evento vs instantánea según research D1 (FR-006)
+- [X] T013 [P] [US1] Test de negocio cerrado del embudo en `tests/Feature/InformeComercialIndicadoresTest.php`: solo cuentan facturas originadas en un presupuesto del periodo; una factura de alta directa y una simplificada de POS **no** aparecen (FR-030, FR-031)
+- [X] T014 [P] [US1] Test de ratios en `tests/Feature/InformeComercialRatiosTest.php`: conversión lead→cliente, ganadas sobre cerradas, aceptación de presupuestos, conversión presupuesto→factura, importe medio y **los dos** ciclos medios (FR-004)
+- [X] T015 [P] [US1] Test de denominador cero en `tests/Feature/InformeComercialRatiosTest.php`: periodo sin actividad devuelve ratios `null`, nunca `0` ni excepción (FR-005)
+- [X] T016 [P] [US1] Test de casos límite en `tests/Feature/InformeComercialIndicadoresTest.php`: un lead/oportunidad con borrado lógico no cuenta en ningún indicador, y la actividad de un comercial dado de baja sigue visible en periodos pasados sin romper el informe (Edge Cases)
+- [X] T017 [P] [US1] Test de aislamiento multi-tenant en `tests/Feature/InformeComercialAislamientoTenantTest.php` con dos tenants con actividad; ningún indicador cruza (SC-005, FR-026)
 
 ### Implementation for User Story 1
 
-- [ ] T015 [US1] Crear migración en `database/migrations/` que añada `leads.convertido_at` (datetime nullable) (data-model §2, research D2)
-- [ ] T016 [US1] Añadir `convertido_at` a `$fillable` y al cast `datetime` en `app/Models/Lead.php`
-- [ ] T017 [US1] Poblar `convertido_at` con `now()` al convertir en `app/Services/ConversorLeadCliente.php`, junto a `convertido_a_cliente_id`
-- [ ] T018 [US1] Implementar en `app/Services/InformeComercial.php` los indicadores de leads (captados y convertidos por cohorte de `created_at`) mediante agregación SQL
-- [ ] T019 [US1] Implementar en `app/Services/InformeComercial.php` los indicadores de oportunidades: creadas por cohorte, ganadas/perdidas por `cerrada_at`, y abiertas + importe como instantánea a fecha `hasta`
-- [ ] T020 [US1] Implementar en `app/Services/InformeComercial.php` los indicadores de presupuestos por cohorte de `fecha_emision`, con importes agregados
-- [ ] T021 [US1] Implementar en `app/Services/InformeComercial.php` el cálculo de ratios y ciclos medios, devolviendo `null` cuando el denominador sea cero (FR-005)
-- [ ] T022 [US1] Implementar en `app/Services/InformeComercial.php` el desglose por fases (leads por estado, oportunidades por etapa con importe, presupuestos por estado con importe) usando `GROUP BY` (FR-007)
-- [ ] T023 [US1] Implementar en `app/Services/InformeComercial.php` la serie de evolución temporal usando `App\Support\BucketsRango` (FR-008) y el top de artículos más presupuestados por importe (FR-009)
-- [ ] T024 [US1] Renderizar los bloques en `resources/views/partials/informe-comercial-contenido.blade.php`, mostrando junto a cada indicador su criterio de fecha (FR-006) y los ratios sin datos como texto, no como 0%
-- [ ] T025 [US1] Añadir la respuesta JSON de recarga parcial en `app/Http/Controllers/InformeComercialController.php` (`html` + `graficos` + `periodo` + `aviso`) según el contrato
-- [ ] T026 [US1] Crear `public/js/plugins-init/informe-comercial.init.js` con el selector de periodo (daterangepicker) y el renderizado de gráficos con Chart.js/Morris, cargando los assets desde `resources/views/informes-comerciales/index.blade.php` con `@push('styles')` **antes** de `css/style.css`
-- [ ] T027 [US1] Añadir la entrada "Informes comerciales" al sidebar en `resources/views/partials/sidebar.blade.php`, condicionada al permiso
+- [X] T018 [US1] Crear migración en `database/migrations/` que añada `leads.convertido_at` (datetime nullable) (data-model §2, research D2)
+- [X] T019 [US1] Añadir `convertido_at` a `$fillable` y al cast `datetime` en `app/Models/Lead.php`
+- [X] T020 [US1] Poblar `convertido_at` con `now()` al convertir en `app/Services/ConversorLeadCliente.php`, junto a `convertido_a_cliente_id`
+- [X] T021 [US1] Implementar en `app/Services/InformeComercial.php` los indicadores de leads (captados y convertidos por cohorte de `created_at`) mediante agregación SQL
+- [X] T022 [US1] Implementar en `app/Services/InformeComercial.php` los indicadores de oportunidades: creadas por cohorte, ganadas/perdidas por `cerrada_at`, y abiertas + importe como instantánea a fecha `hasta`
+- [X] T023 [US1] Implementar en `app/Services/InformeComercial.php` los indicadores de presupuestos por cohorte de `fecha_emision`, con importes agregados
+- [X] T024 [US1] Implementar en `app/Services/InformeComercial.php` el negocio cerrado del embudo: presupuestos del periodo con `convertido_a_factura_id` no nulo, con recuento e importe (FR-030, FR-031, data-model §4)
+- [X] T025 [US1] Implementar en `app/Services/InformeComercial.php` el cálculo de ratios y de los dos ciclos medios, devolviendo `null` cuando el denominador sea cero (FR-004, FR-005)
+- [X] T026 [US1] Implementar en `app/Services/InformeComercial.php` el desglose por fases (leads por estado, oportunidades por etapa con importe, presupuestos por estado con importe) usando `GROUP BY` (FR-007)
+- [X] T027 [US1] Implementar en `app/Services/InformeComercial.php` la serie de evolución temporal usando `App\Support\BucketsRango` (FR-008) y el top de artículos más presupuestados por importe (FR-009)
+- [X] T028 [US1] Renderizar los bloques en `resources/views/partials/informe-comercial-contenido.blade.php`, mostrando junto a cada indicador su criterio de fecha (FR-006) y los ratios sin datos como texto, no como 0%
+- [X] T029 [US1] Añadir la respuesta JSON de recarga parcial en `app/Http/Controllers/InformeComercialController.php` (`html` + `graficos` + `periodo` + `alcance` + `aviso`) según el contrato
+- [X] T030 [US1] Crear `public/js/plugins-init/informe-comercial.init.js` con el selector de periodo (daterangepicker) y el renderizado de gráficos con Chart.js/Morris, cargando los assets desde `resources/views/informes-comerciales/index.blade.php` con `@push('styles')` **antes** de `css/style.css`
+- [X] T031 [US1] Añadir la entrada "Informes comerciales" al sidebar en `resources/views/partials/sidebar.blade.php`, condicionada al permiso
 
-**Checkpoint**: US1 funcional y demostrable por sí sola — es el MVP y ya sirve como evidencia del
-requisito 6 en sus partes de indicadores, ratios, fases y pipeline.
+**Checkpoint**: US1 funcional y demostrable por sí sola — es el MVP y ya evidencia el requisito 6 en
+indicadores, ratios, fases, pipeline y cierre del embudo.
 
 ---
 
@@ -106,24 +111,25 @@ separado y combinado, y verificar que los segmentos suman el total sin filtrar.
 
 ### Tests for User Story 2
 
-- [ ] T028 [P] [US2] Test de segmentación en `tests/Feature/InformeComercialSegmentacionTest.php`: filtro por canal, por comercial y combinado; la suma de segmentos coincide con el total (FR-015, FR-016)
-- [ ] T029 [P] [US2] Test en `tests/Feature/InformeComercialSegmentacionTest.php` de que los leads sin canal se agrupan como "Sin especificar" y no se pierden del total (FR-014)
-- [ ] T030 [P] [US2] Test de CRUD y reglas del catálogo en `tests/Feature/CanalCaptacionCrudTest.php`: nombre único por tenant, desactivación en vez de borrado si tiene leads, aislamiento entre tenants (FR-012, FR-013)
+- [X] T032 [P] [US2] Test de segmentación en `tests/Feature/InformeComercialSegmentacionTest.php`: filtro por canal, por comercial y combinado; la suma de segmentos coincide con el total (FR-015, FR-016)
+- [X] T033 [P] [US2] Test en `tests/Feature/InformeComercialSegmentacionTest.php` de que los leads sin canal se agrupan como "Sin especificar" y no se pierden del total (FR-014)
+- [X] T034 [P] [US2] Test de CRUD y reglas del catálogo en `tests/Feature/CanalCaptacionCrudTest.php`: nombre único por tenant, desactivación en vez de borrado si tiene leads, aislamiento entre tenants (FR-012, FR-013)
 
 ### Implementation for User Story 2
 
-- [ ] T031 [P] [US2] Crear migración en `database/migrations/` para la tabla `canales_captacion` (`tenant_id`, `nombre`, `activo`, `orden`, timestamps, `unique(tenant_id, nombre)`, `index(tenant_id, activo)`) (data-model §1)
-- [ ] T032 [P] [US2] Crear `app/Models/CanalCaptacion.php` con `BelongsToTenant`, `HasFactory` y la relación `leads()`
-- [ ] T033 [US2] Crear migración en `database/migrations/` que añada `leads.canal_captacion_id` (FK nullable, `nullOnDelete`) y el índice `leads(tenant_id, canal_captacion_id)` (data-model §2)
-- [ ] T034 [US2] Sembrar el catálogo por defecto (Web, Recomendación, Feria/Evento, Campaña de email, Llamada entrante, Redes sociales, Otro) en `database/seeders/` para tenants nuevos y desde la propia migración para los existentes (research D3)
-- [ ] T035 [US2] Añadir `canal_captacion_id` a `$fillable` y la relación `canalCaptacion()` en `app/Models/Lead.php`
-- [ ] T036 [US2] Crear `app/Http/Controllers/CanalCaptacionController.php` y `app/Http/Requests/StoreCanalCaptacionRequest.php` con el CRUD del catálogo, impidiendo borrar un canal con leads (lo desactiva e informa), y registrar las rutas bajo `can:ver-configuracion` en `routes/web.php`
-- [ ] T037 [US2] Añadir la pestaña de gestión de canales de captación en `resources/views/configuracion/` reutilizando el patrón de catálogos existente
-- [ ] T038 [US2] Añadir el selector de canal (solo canales activos) al alta y edición de leads en `resources/views/leads/index.blade.php` y validar en `app/Http/Requests/` que el canal pertenece al tenant
-- [ ] T039 [US2] Admitir una columna opcional de canal en la importación de leads, resolviéndola por nombre y reportando la fila sin canal —sin abortar— si el nombre es desconocido (contrato "Cambios en contratos existentes")
-- [ ] T040 [US2] Añadir la columna de canal a la exportación de leads en `app/Excel/Definiciones/DefinicionLeads.php`
-- [ ] T041 [US2] Implementar los filtros de canal, comercial y fase en `app/Services/InformeComercial.php`, tratando un `canal_id` inexistente como filtro sin resultados y un `fase` desconocido como ignorado
-- [ ] T042 [US2] Añadir los controles de filtro a `resources/views/informes-comerciales/index.blade.php` y mantenerlos al cambiar de periodo en `public/js/plugins-init/informe-comercial.init.js` (FR-017)
+- [X] T035 [P] [US2] Crear migración en `database/migrations/` para la tabla `canales_captacion` (`tenant_id`, `nombre`, `activo`, `orden`, timestamps, `unique(tenant_id, nombre)`, `index(tenant_id, activo)`) (data-model §1)
+- [X] T036 [P] [US2] Crear `app/Models/CanalCaptacion.php` con `BelongsToTenant`, `HasFactory` y la relación `leads()`
+- [X] T037 [P] [US2] Crear `database/factories/CanalCaptacionFactory.php`, forzando el `tenant_id` activo para no generar tenants huérfanos
+- [X] T038 [US2] Crear migración en `database/migrations/` que añada `leads.canal_captacion_id` (FK nullable, `nullOnDelete`) y el índice `leads(tenant_id, canal_captacion_id)` (data-model §2)
+- [X] T039 [US2] Sembrar el catálogo por defecto (Web, Recomendación, Feria/Evento, Campaña de email, Llamada entrante, Redes sociales, Otro) en `database/seeders/` para tenants nuevos y desde la propia migración para los existentes (research D3)
+- [X] T040 [US2] Añadir `canal_captacion_id` a `$fillable` y la relación `canalCaptacion()` en `app/Models/Lead.php`
+- [X] T041 [US2] Crear `app/Http/Controllers/CanalCaptacionController.php` y `app/Http/Requests/StoreCanalCaptacionRequest.php` con el CRUD del catálogo, impidiendo borrar un canal con leads (lo desactiva e informa), y registrar las rutas bajo `can:ver-configuracion` en `routes/web.php`
+- [X] T042 [US2] Añadir la pestaña de gestión de canales de captación en `resources/views/configuracion/` reutilizando el patrón de catálogos existente
+- [X] T043 [US2] Añadir el selector de canal (solo canales activos) al alta y edición de leads en `resources/views/leads/index.blade.php` y validar en `app/Http/Requests/` que el canal pertenece al tenant
+- [X] T044 [US2] Admitir una columna opcional de canal en la importación de leads, resolviéndola por nombre y reportando la fila sin canal —sin abortar— si el nombre es desconocido (contrato "Cambios en contratos existentes")
+- [X] T045 [US2] Añadir la columna de canal a la exportación de leads en `app/Excel/Definiciones/DefinicionLeads.php`
+- [X] T046 [US2] Implementar los filtros de canal, comercial y fase en `app/Services/InformeComercial.php` consumiendo `FiltrosInforme`, tratando un `canal_id` inexistente como filtro sin resultados y un `fase` desconocido como ignorado
+- [X] T047 [US2] Añadir los controles de filtro a `resources/views/informes-comerciales/index.blade.php` y mantenerlos al cambiar de periodo en `public/js/plugins-init/informe-comercial.init.js` (FR-017)
 
 **Checkpoint**: US1 + US2 funcionan de forma independiente; la segmentación por canal ya es real.
 
@@ -139,16 +145,16 @@ y variaciones, incluido el caso de ejercicio comparado vacío.
 
 ### Tests for User Story 3
 
-- [ ] T043 [P] [US3] Test de comparativa en `tests/Feature/InformeComercialComparativaTest.php`: cada indicador devuelve actual, comparado y variación sobre un dataset de dos ejercicios (FR-018)
-- [ ] T044 [P] [US3] Test en `tests/Feature/InformeComercialComparativaTest.php` de ejercicio comparado sin datos → variación `null`, sin división por cero (FR-020)
-- [ ] T045 [P] [US3] Test de años bisiestos en `tests/Unit/RangoFechasEjercicioAnteriorTest.php`: un rango con 29 de febrero comparado contra un año no bisiesto no desborda ni trunca (FR-019)
+- [X] T048 [P] [US3] Test de comparativa en `tests/Feature/InformeComercialComparativaTest.php`: cada indicador devuelve actual, comparado y variación sobre un dataset de dos ejercicios (FR-018)
+- [X] T049 [P] [US3] Test en `tests/Feature/InformeComercialComparativaTest.php` de ejercicio comparado sin datos → variación `null`, sin división por cero (FR-020)
+- [X] T050 [P] [US3] Test de años bisiestos en `tests/Unit/RangoFechasEjercicioAnteriorTest.php`: un rango con 29 de febrero comparado contra un año no bisiesto no desborda ni trunca (FR-019)
 
 ### Implementation for User Story 3
 
-- [ ] T046 [US3] Añadir `mismoPeriodoEjercicioAnterior(int $anios = 1): self` a `app/Support/RangoFechas.php` usando `subYearNoOverflow()`, **sin modificar** el método `anterior()` existente (research D5)
-- [ ] T047 [US3] Calcular el bloque `comparativa` en `app/Services/InformeComercial.php` reutilizando el mismo cálculo sobre el rango del ejercicio anterior, con variaciones `null` cuando no sean calculables
-- [ ] T048 [US3] Alinear las series temporales por índice de bucket (no por fecha absoluta) en `app/Services/InformeComercial.php` (FR-021)
-- [ ] T049 [US3] Añadir el conmutador de comparativa y el pintado de la segunda serie en `resources/views/informes-comerciales/index.blade.php` y `public/js/plugins-init/informe-comercial.init.js`
+- [X] T051 [US3] Añadir `mismoPeriodoEjercicioAnterior(int $anios = 1): self` a `app/Support/RangoFechas.php` usando `subYearNoOverflow()`, **sin modificar** el método `anterior()` existente (research D5)
+- [X] T052 [US3] Calcular el bloque `comparativa` en `app/Services/InformeComercial.php` reutilizando el mismo cálculo sobre el rango del ejercicio anterior, con variaciones `null` cuando no sean calculables
+- [X] T053 [US3] Alinear las series temporales por índice de bucket (no por fecha absoluta) en `app/Services/InformeComercial.php` (FR-021)
+- [X] T054 [US3] Añadir el conmutador de comparativa y el pintado de la segunda serie en `resources/views/informes-comerciales/index.blade.php` y `public/js/plugins-init/informe-comercial.init.js`
 
 **Checkpoint**: US1 + US2 + US3 operativas; SC-003 cubierto.
 
@@ -166,17 +172,18 @@ cada uno; el restringido solo ve lo suyo y no puede forzar el filtro por otro co
 
 > **Área de seguridad: escribir primero y verificar que FALLAN**
 
-- [ ] T050 [P] [US4] Test en `tests/Feature/InformeComercialAlcancePerfilTest.php`: usuario con `ver-informes-equipo` ve todo el tenant y dispone del filtro por comercial (FR-023)
-- [ ] T051 [P] [US4] Test en `tests/Feature/InformeComercialAlcancePerfilTest.php`: usuario sin `ver-informes-equipo` ve solo su actividad asignada (FR-023)
-- [ ] T052 [P] [US4] Test de forzado en `tests/Feature/InformeComercialAlcancePerfilTest.php`: enviar `comercial_id` ajeno no devuelve datos de otro usuario (FR-024)
-- [ ] T053 [P] [US4] Test de bloques por permiso en `tests/Feature/InformeComercialAlcancePerfilTest.php`: sin `ver-presupuestos` no aparece el bloque ni sus ratios; sin ninguno de los tres, no se accede (FR-022, FR-025)
+- [X] T055 [P] [US4] Test en `tests/Feature/InformeComercialAlcancePerfilTest.php`: usuario con `ver-informes-equipo` ve todo el tenant y dispone del filtro por comercial (FR-023)
+- [X] T056 [P] [US4] Test en `tests/Feature/InformeComercialAlcancePerfilTest.php`: usuario sin `ver-informes-equipo` ve solo su actividad asignada (FR-023)
+- [X] T057 [P] [US4] Test de forzado en `tests/Feature/InformeComercialAlcancePerfilTest.php`: enviar `comercial_id` ajeno no devuelve datos de otro usuario (FR-024)
+- [X] T058 [P] [US4] Test de bloques por permiso en `tests/Feature/InformeComercialAlcancePerfilTest.php`: sin `ver-presupuestos` no aparecen ni el bloque de presupuestos ni el de negocio cerrado del embudo ni sus ratios; sin ninguno de los tres, no se accede (FR-022, FR-025)
+- [X] T059 [P] [US4] Test en `tests/Feature/InformeComercialAlcancePerfilTest.php` de que retirar un permiso surte efecto en la siguiente petición, sin depender de datos cacheados de la anterior (Edge Cases)
 
 ### Implementation for User Story 4
 
-- [ ] T054 [US4] Completar `app/Support/AlcanceInformeComercial.php` para resolver el alcance efectivo (propio vs tenant) y descartar cualquier `comercial_id` recibido cuando el usuario no tenga `ver-informes-equipo`
-- [ ] T055 [US4] Aplicar el alcance en todas las consultas de `app/Services/InformeComercial.php`, forzando `asignado_a` sobre leads y oportunidades, y acotando presupuestos por el comercial de su oportunidad asociada (data-model §4)
-- [ ] T056 [US4] Omitir el cálculo y el envío de los bloques sin permiso en `app/Services/InformeComercial.php` y `app/Http/Controllers/InformeComercialController.php` (FR-022)
-- [ ] T057 [US4] Ocultar el filtro por comercial y los bloques no visibles en `resources/views/informes-comerciales/index.blade.php` y `resources/views/partials/informe-comercial-contenido.blade.php`
+- [X] T060 [US4] Completar `app/Support/AlcanceInformeComercial.php` para resolver el alcance efectivo (propio vs tenant) y descartar cualquier `comercial_id` recibido cuando el usuario no tenga `ver-informes-equipo`
+- [X] T061 [US4] Aplicar el alcance en todas las consultas de `app/Services/InformeComercial.php`, forzando `asignado_a` sobre leads y oportunidades, y acotando presupuestos por el comercial de su oportunidad asociada (data-model §4)
+- [X] T062 [US4] Omitir el cálculo y el envío de los bloques sin permiso en `app/Services/InformeComercial.php` y `app/Http/Controllers/InformeComercialController.php` (FR-022)
+- [X] T063 [US4] Ocultar el filtro por comercial y los bloques no visibles en `resources/views/informes-comerciales/index.blade.php` y `resources/views/partials/informe-comercial-contenido.blade.php`
 
 **Checkpoint**: SC-004 demostrable con dos usuarios del mismo tenant.
 
@@ -191,16 +198,17 @@ usuario restringido y comprobar que no se filtran datos ajenos.
 
 ### Tests for User Story 5
 
-- [ ] T058 [P] [US5] Test en `tests/Feature/InformeComercialExportacionTest.php`: el fichero refleja el mismo periodo, filtros e indicadores que la pantalla (FR-027)
-- [ ] T059 [P] [US5] Test en `tests/Feature/InformeComercialExportacionTest.php`: usuario con alcance restringido obtiene solo sus datos y sin los bloques ocultos (FR-028)
-- [ ] T060 [P] [US5] Test en `tests/Feature/InformeComercialExportacionTest.php`: periodo sin actividad produce un fichero válido con ceros (FR-029)
+- [X] T064 [P] [US5] Test en `tests/Feature/InformeComercialExportacionTest.php`: el fichero refleja el mismo periodo, filtros e indicadores que la pantalla (FR-027)
+- [X] T065 [P] [US5] Test en `tests/Feature/InformeComercialExportacionTest.php`: usuario con alcance restringido obtiene solo sus datos y sin los bloques ocultos (FR-028)
+- [X] T066 [P] [US5] Test de aislamiento multi-tenant sobre la exportación en `tests/Feature/InformeComercialExportacionTest.php`: el fichero de un tenant nunca contiene datos del otro (SC-005, FR-026)
+- [X] T067 [P] [US5] Test en `tests/Feature/InformeComercialExportacionTest.php`: periodo sin actividad produce un fichero válido con ceros (FR-029)
 
 ### Implementation for User Story 5
 
-- [ ] T061 [US5] Crear `app/Services/ExportadorInformeComercial.php` que genere un `.xlsx` multi-hoja con `maatwebsite/excel`: hoja de portada con periodo, filtros y alcance, y una hoja por bloque visible (research D7)
-- [ ] T062 [US5] Añadir la acción `exportar` a `app/Http/Controllers/InformeComercialController.php` y la ruta `POST /informes-comerciales/exportar` en `routes/web.php`, resolviendo los filtros de nuevo en servidor
-- [ ] T063 [US5] Registrar la exportación en el log de actividad vía `app/Services/RegistradorActividad.php`, añadiendo la entidad correspondiente en `app/Enums/EntidadLogActividad.php` si hiciera falta
-- [ ] T064 [US5] Añadir el botón de exportación a `resources/views/informes-comerciales/index.blade.php`, enviando los filtros activos
+- [X] T068 [US5] Crear `app/Services/ExportadorInformeComercial.php` que genere un `.xlsx` multi-hoja con `maatwebsite/excel`: hoja de portada con periodo, filtros y alcance, y una hoja por bloque visible (research D7)
+- [X] T069 [US5] Añadir la acción `exportar` a `app/Http/Controllers/InformeComercialController.php` y la ruta `POST /informes-comerciales/exportar` en `routes/web.php`, resolviendo los filtros de nuevo en servidor
+- [X] T070 [US5] Registrar la exportación en el log de actividad vía `app/Services/RegistradorActividad.php`, añadiendo la entidad correspondiente en `app/Enums/EntidadLogActividad.php` si hiciera falta
+- [X] T071 [US5] Añadir el botón de exportación a `resources/views/informes-comerciales/index.blade.php`, enviando los filtros activos
 
 **Checkpoint**: las cinco historias operativas.
 
@@ -208,15 +216,15 @@ usuario restringido y comprobar que no se filtran datos ajenos.
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [ ] T065 Verificar SC-007 sembrando un tenant con ≥5.000 leads, 1.000 oportunidades y 1.000 presupuestos y midiendo que el informe responde en <3 s; ajustar índices si no se cumple
-- [ ] T066 [P] Actualizar `docs/06-kit-digital.md` marcando el requisito 6 de la categoría Gestión de Clientes como cubierto (SC-008)
-- [ ] T067 [P] Actualizar `docs/03-modelo-datos.md` con `canales_captacion`, `leads.canal_captacion_id` y `leads.convertido_at`
-- [ ] T068 [P] Crear la guía in-app `resources/views/ayuda/informes-comerciales.blade.php` y registrarla en el mecanismo de ayuda contextual
-- [ ] T069 [P] Actualizar la guía in-app de leads en `resources/views/ayuda/leads.blade.php` con el nuevo campo de canal de captación
-- [ ] T070 [P] Crear `resources/ia/conocimiento/informes-comerciales.md` y actualizar `resources/ia/conocimiento/leads.md` con el canal de captación (FR-013 de la feature 030)
-- [ ] T071 [P] Añadir a `docs/04-front-guidelines.md` cualquier convención de UI reutilizable que haya surgido (solo si aplica)
-- [ ] T072 Ejecutar `php artisan test` completo y confirmar que ninguna suite existente se rompe, en especial `--filter=Dashboard` tras la extracción de `BucketsRango`
-- [ ] T073 Recorrer manualmente [quickstart.md](./quickstart.md) de principio a fin
+- [X] T072 Verificar SC-007 sembrando un tenant con ≥5.000 leads, 1.000 oportunidades y 1.000 presupuestos y midiendo que el informe responde en <3 s; ajustar índices si no se cumple
+- [X] T073 [P] Actualizar `docs/06-kit-digital.md` marcando el requisito 6 de la categoría Gestión de Clientes como cubierto (SC-008)
+- [X] T074 [P] Actualizar `docs/03-modelo-datos.md` con `canales_captacion`, `leads.canal_captacion_id` y `leads.convertido_at`
+- [X] T075 [P] Crear la guía in-app `resources/views/ayuda/informes-comerciales.blade.php` y registrarla en el mecanismo de ayuda contextual
+- [X] T076 [P] Actualizar la guía in-app de leads en `resources/views/ayuda/leads.blade.php` con el nuevo campo de canal de captación
+- [X] T077 [P] Crear `resources/ia/conocimiento/informes-comerciales.md` y actualizar `resources/ia/conocimiento/leads.md` con el canal de captación (FR-013 de la feature 030)
+- [X] T078 [P] Añadir a `docs/04-front-guidelines.md` cualquier convención de UI reutilizable que haya surgido (solo si aplica)
+- [X] T079 Ejecutar `php artisan test` completo y confirmar que ninguna suite existente se rompe, en especial `--filter=Dashboard` tras la extracción de `BucketsRango`
+- [X] T080 Recorrer manualmente [quickstart.md](./quickstart.md) de principio a fin
 
 ---
 
@@ -242,11 +250,11 @@ US1 y ya se tiene una feature útil y evidenciable.
 ### Parallel Opportunities
 
 - T003 puede ir en paralelo a T001-T002 (fichero distinto).
-- T006 y T007 en paralelo dentro de Foundational.
-- Todos los tests de una misma historia (T010-T014, T028-T030, T043-T045, T050-T053, T058-T060)
+- T006, T007 y T008 en paralelo dentro de Foundational.
+- Todos los tests de una misma historia (T011-T017, T032-T034, T048-T050, T055-T059, T064-T067)
   son paralelizables entre sí.
-- T031 y T032 en paralelo (migración y modelo, ficheros distintos).
-- Casi todo el Polish documental (T066-T071) es paralelizable.
+- T035, T036 y T037 en paralelo (migración, modelo y factory: ficheros distintos).
+- Casi todo el Polish documental (T073-T078) es paralelizable.
 - Con equipo: tras US1, un desarrollador puede tomar US2 (la más grande) mientras otro hace US3+US4.
 
 ---
@@ -257,8 +265,10 @@ US1 y ya se tiene una feature útil y evidenciable.
 # Escribir primero todos los tests de US1 (deben fallar):
 Task: "Test de indicadores en tests/Feature/InformeComercialIndicadoresTest.php"
 Task: "Test de criterios de fecha en tests/Feature/InformeComercialIndicadoresTest.php"
+Task: "Test de negocio cerrado del embudo en tests/Feature/InformeComercialIndicadoresTest.php"
 Task: "Test de ratios en tests/Feature/InformeComercialRatiosTest.php"
 Task: "Test de denominador cero en tests/Feature/InformeComercialRatiosTest.php"
+Task: "Test de casos límite en tests/Feature/InformeComercialIndicadoresTest.php"
 Task: "Test de aislamiento en tests/Feature/InformeComercialAislamientoTenantTest.php"
 ```
 
@@ -271,7 +281,7 @@ Task: "Test de aislamiento en tests/Feature/InformeComercialAislamientoTenantTes
 1. Phase 1: Setup
 2. Phase 2: Foundational (crítico, bloquea todo)
 3. Phase 3: US1
-4. **PARAR Y VALIDAR**: indicadores, ratios, fases y pipeline contra cálculo manual
+4. **PARAR Y VALIDAR**: indicadores, ratios, fases, pipeline y cierre del embudo contra cálculo manual
 5. Ya es evidenciable para el requisito 6 en sus partes principales
 
 ### Entrega incremental

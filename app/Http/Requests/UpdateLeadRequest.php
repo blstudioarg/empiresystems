@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Models\Lead;
 use Illuminate\Contracts\Validation\Validator as ValidatorContract;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateLeadRequest extends FormRequest
 {
@@ -24,6 +25,9 @@ class UpdateLeadRequest extends FormRequest
             'email' => ['nullable', 'email', 'max:255'],
             'telefono' => ['nullable', 'string', 'max:30'],
             'asignado_a' => ['nullable', 'integer'],
+            // Al editar se admite conservar un canal ya desactivado (data-model.md §2): solo se
+            // exige que pertenezca al tenant, no que siga activo.
+            'canal_captacion_id' => ['nullable', Rule::exists('canales_captacion', 'id')->where('tenant_id', tenant()->id)],
             'estado' => ['nullable', 'string'],
             'motivo_descarte' => ['nullable', 'string', 'max:255'],
             'notas' => ['nullable', 'string'],

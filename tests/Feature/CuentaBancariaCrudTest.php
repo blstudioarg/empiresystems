@@ -19,7 +19,7 @@ class CuentaBancariaCrudTest extends TestCase
 
     private function login(Tenant $tenant): void
     {
-        $user = User::factory()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
+        $user = User::factory()->admin()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
         $this->loginAs($user);
     }
 

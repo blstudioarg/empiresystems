@@ -9,6 +9,7 @@ use App\Excel\Definiciones\DefinicionArticulos;
 use App\Excel\Definiciones\DefinicionClientes;
 use App\Excel\Definiciones\DefinicionFacturas;
 use App\Excel\Definiciones\DefinicionLeads;
+use App\Excel\Definiciones\DefinicionLogsActividad;
 use App\Excel\Definiciones\DefinicionProveedores;
 use App\Excel\DefinicionExcel;
 use App\Excel\DefinicionExportable;
@@ -113,13 +114,15 @@ class DefinicionesExcelTest extends TestCase
         $this->assertInstanceOf(DefinicionExcel::class, $registro->resolver('albaranes'));
         $this->assertInstanceOf(DefinicionExcel::class, $registro->resolver('leads'));
         $this->assertInstanceOf(DefinicionExcel::class, $registro->resolver('proveedores'));
+        $this->assertInstanceOf(DefinicionExcel::class, $registro->resolver('logs'));
     }
 
-    public function test_facturas_albaranes_y_leads_no_implementan_la_importable(): void
+    public function test_facturas_albaranes_leads_y_logs_no_implementan_la_importable(): void
     {
         $this->assertNotInstanceOf(DefinicionImportable::class, new DefinicionFacturas);
         $this->assertNotInstanceOf(DefinicionImportable::class, new DefinicionAlbaranes);
         $this->assertNotInstanceOf(DefinicionImportable::class, new DefinicionLeads);
+        $this->assertNotInstanceOf(DefinicionImportable::class, new DefinicionLogsActividad);
     }
 
     public function test_proveedores_no_implementa_la_exportable(): void

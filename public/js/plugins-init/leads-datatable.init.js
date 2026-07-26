@@ -40,6 +40,7 @@
 							' data-email="' + escapeAttr(row.email) + '"' +
 							' data-telefono="' + escapeAttr(row.telefono) + '"' +
 							' data-asignado-a="' + escapeAttr(row.asignado_a) + '"' +
+							' data-canal-captacion-id="' + escapeAttr(row.canal_captacion_id) + '"' +
 						'>Editar</button>' +
 					'</li>' +
 					'<li><hr class="dropdown-divider"></li>' +

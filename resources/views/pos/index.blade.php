@@ -57,9 +57,11 @@
 					<div class="card">
 						<div class="card-header border-0 flex-wrap">
 							<h4 class="card-title mb-0">Facturas simplificadas</h4>
+							@can('ver-pos-crear')
 							<a href="{{ route('pos.create') }}" class="btn btn-primary">
 								+ Nuevo ticket
 							</a>
+							@endcan
 						</div>
 						<div class="card-body pt-0">
 							<div class="table-responsive">

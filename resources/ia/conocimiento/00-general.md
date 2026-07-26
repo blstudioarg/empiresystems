@@ -5,9 +5,10 @@ forma aislada: sus clientes, facturas, artículos y demás datos no se mezclan c
 
 ## Navegación
 La aplicación se organiza en secciones accesibles desde el menú lateral: Dashboard, Clientes, CRM
-(Leads, Oportunidades, Presupuestos, Albaranes), Stock (Catálogo, Kardex, Proveedores, Compras),
-Facturas, POS, Archivos, Marketing (Campañas, Plantillas), Bancos, Usuarios, Roles, Configuración y
-Logs de actividad. Cada usuario solo ve las secciones para las que tiene permiso.
+(Leads, Oportunidades, Presupuestos, Albaranes, Informes comerciales), Stock (Catálogo, Kardex,
+Proveedores, Compras), Facturas, POS, Archivos, Marketing (Campañas, Plantillas), Bancos, Usuarios,
+Roles, Configuración y Logs de actividad. Cada usuario solo ve las secciones para las que tiene
+permiso.
 
 ## Qué puede hacer el asistente
 - Explicar cómo funciona cada pantalla y proceso.

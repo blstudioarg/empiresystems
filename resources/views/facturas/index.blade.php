@@ -70,9 +70,11 @@
 									<button type="button" class="btn btn-outline-secondary btn-filtro-factura" data-filtro-factura="rectificativa">Rectificativas</button>
 								</div>
 								<button type="button" id="btn-exportar-facturas" class="btn btn-outline-secondary">Exportar</button>
+								@can('ver-facturas-crear')
 								<a href="{{ route('facturas.create') }}" class="btn btn-primary">
 									+ Nueva factura
 								</a>
+								@endcan
 							</div>
 						</div>
 						<div class="card-body pt-0">

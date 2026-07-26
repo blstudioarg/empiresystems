@@ -18,7 +18,7 @@ class FacturaCuentaBancariaSnapshotTest extends TestCase
     private function setUpTenant(): array
     {
         $tenant = Tenant::factory()->create(['regimen_impositivo' => 'iva']);
-        $user = User::factory()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
+        $user = User::factory()->admin()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
         $cliente = Cliente::factory()->create(['tenant_id' => $tenant->id]);
 
         return [$tenant, $user, $cliente];

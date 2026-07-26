@@ -37,7 +37,9 @@ class CrearFacturaBorrador extends ToolAsistente
 
     public function permisoRequerido(): string
     {
-        return 'ver-facturas';
+        // Crear-vía-IA es la acción de la vista "Crear factura" (doc 09, Cambio 2).
+        // BuscarFacturas/EditarFacturaBorrador siguen con ver-facturas.
+        return 'ver-facturas-crear';
     }
 
     public function esLectura(): bool

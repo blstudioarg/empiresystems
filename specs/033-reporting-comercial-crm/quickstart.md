@@ -13,6 +13,10 @@ php artisan migrate
 php artisan db:seed --class=PermisosSeeder   # registra los dos permisos nuevos
 ```
 
+> **Tenants existentes**: el seeder de permisos hay que **re-ejecutarlo** tras desplegar, o los
+> tenants ya creados no tendrán `ver-informes-comerciales` ni `ver-informes-equipo` y nadie podrá
+> abrir la sección. Es el mismo procedimiento que estableció la feature 027.
+
 ## Comprobación automatizada
 
 ```bash
@@ -48,6 +52,15 @@ cálculo de ratios) van test-first, según el Principio IV.
 3. Comprobar que cada indicador muestra su criterio de fecha (cohorte / evento / instantánea).
 4. Elegir un periodo sin actividad → todos los indicadores a cero y los ratios como "sin datos",
    nunca 0% ni error.
+
+### 3-bis. Negocio cerrado del embudo
+
+1. Convertir un presupuesto del periodo en factura.
+2. Crear además una factura de alta directa (sin presupuesto) y un ticket de punto de venta.
+3. Comprobar que el indicador de negocio cerrado cuenta **solo** la primera, y que la tasa de
+   conversión presupuesto → factura cuadra con el cálculo manual.
+4. Contrastar con el dashboard financiero: su total facturado será mayor, y debe serlo — mide toda
+   la facturación, no solo la del embudo.
 
 ### 4. Segmentación
 

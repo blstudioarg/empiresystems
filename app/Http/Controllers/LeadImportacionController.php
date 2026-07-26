@@ -38,6 +38,7 @@ class LeadImportacionController extends Controller
             'resumen_importacion' => [
                 'importados' => $resultado->importados,
                 'rechazadas' => $resultado->rechazadas,
+                'avisos' => $resultado->avisos,
             ],
         ]);
     }

@@ -105,7 +105,7 @@
 								<div class="text-center text-muted py-5">
 									<p class="mb-1 fw-bold">Aún no hay miembros de equipo activos.</p>
 									<p class="mb-3">Añade miembros para ver su cumplimiento en el calendario.</p>
-									<a href="{{ route('miembros-equipo.index') }}" class="btn btn-primary">Ir a Miembros</a>
+									@can('ver-miembros')<a href="{{ route('miembros-equipo.index') }}" class="btn btn-primary">Ir a Miembros</a>@endcan
 								</div>
 							@else
 								{{-- Leyenda de veredictos: mismo mapa de clases que emite el backend (D6). --}}

@@ -151,6 +151,10 @@
 										@endforeach
 									</select>
 								</div>
+								<div class="col-md-12 mb-3">
+									<label class="form-label" for="canal_captacion_id">Canal de captación</label>
+									<x-canal-captacion-select name="canal_captacion_id" id="canal_captacion_id" />
+								</div>
 								<div class="col-md-12">
 									<label class="form-label" for="notas">Notas</label>
 									<textarea class="form-control" id="notas" name="notas" rows="2"></textarea>

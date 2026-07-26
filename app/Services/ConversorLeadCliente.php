@@ -39,6 +39,7 @@ class ConversorLeadCliente
             $lead->update([
                 'estado' => EstadoLead::Convertido,
                 'convertido_a_cliente_id' => $cliente->id,
+                'convertido_at' => now(),
             ]);
 
             return $cliente;

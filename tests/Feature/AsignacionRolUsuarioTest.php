@@ -118,6 +118,8 @@ class AsignacionRolUsuarioTest extends TestCase
 
         $this->loginAs($empleado);
         $this->get('/clientes')->assertForbidden();
-        $this->get('/fichajes')->assertOk();
+        // Fichar dejó de ser universal (doc 09, Cambio 5): sin rol → 403. Solo Perfil es universal.
+        $this->get('/fichajes')->assertForbidden();
+        $this->get('/perfil')->assertOk();
     }
 }

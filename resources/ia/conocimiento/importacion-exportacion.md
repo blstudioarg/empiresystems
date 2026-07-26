@@ -1,8 +1,9 @@
 # Importación y exportación de Excel
 
-Los listados de **clientes, artículos, facturas, albaranes y leads** se pueden exportar a `.xlsx`
-desde el botón "Exportar" de cada pantalla; el fichero respeta la búsqueda/filtro que el usuario
-tenga activo en ese momento, nunca exporta el listado completo si hay un filtro aplicado.
+Los listados de **clientes, artículos, facturas, albaranes, leads y logs de actividad** se pueden
+exportar a `.xlsx` desde el botón "Exportar" de cada pantalla; el fichero respeta la
+búsqueda/filtro que el usuario tenga activo en ese momento, nunca exporta el listado completo si
+hay un filtro aplicado.
 
 Solo **clientes, artículos y proveedores** se pueden importar desde un Excel/CSV propio, con una
 previsualización obligatoria antes de confirmar (se ven cuántas filas son válidas, cuáles se

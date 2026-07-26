@@ -13,8 +13,10 @@ use Spatie\Permission\PermissionRegistrar;
 /**
  * Siembra el catálogo global de permisos (feature 027, RN-04). Idempotente: re-ejecutarlo no
  * duplica ni borra asignaciones. Tras sembrar, sincroniza el rol "Administrador" de cada tenant
- * con el catálogo completo, de modo que un permiso nuevo llegue automáticamente solo a ese rol
- * (los demás roles lo reciben opt-in por tenant).
+ * con el catálogo completo y el rol "Usuario" con `clavesUsuarioBase()` (feature 033, T005), de
+ * modo que un permiso nuevo del rol base (como `ver-informes-comerciales`) llegue automáticamente
+ * a los tenants ya existentes sin tocar los permisos que un administrador ya haya quitado a otros
+ * roles distintos de estos dos.
  */
 class PermisosSeeder extends Seeder
 {
@@ -32,11 +34,15 @@ class PermisosSeeder extends Seeder
         Tenant::all()->each(function (Tenant $tenant) use ($registrar): void {
             $registrar->setPermissionsTeamId($tenant->getTenantKey());
 
-            $rol = Role::where('tenant_id', $tenant->getTenantKey())
+            $rolAdmin = Role::where('tenant_id', $tenant->getTenantKey())
                 ->where('name', ProvisionadorRoles::ROL_ADMINISTRADOR)
                 ->first();
+            $rolAdmin?->syncPermissions(CatalogoPermisos::claves());
 
-            $rol?->syncPermissions(CatalogoPermisos::claves());
+            $rolUsuario = Role::where('tenant_id', $tenant->getTenantKey())
+                ->where('name', ProvisionadorRoles::ROL_USUARIO)
+                ->first();
+            $rolUsuario?->syncPermissions(CatalogoPermisos::clavesUsuarioBase());
         });
 
         $registrar->setPermissionsTeamId($teamAnterior);

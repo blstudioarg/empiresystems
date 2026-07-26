@@ -86,6 +86,13 @@ class DefinicionLeads implements DefinicionExportable
                 exportar: fn (Lead $l) => $l->origen->label(),
             ),
             new ColumnaExcel(
+                clave: 'canal_captacion',
+                etiqueta: 'Canal de captación',
+                obligatoria: false,
+                formato: FormatoCelda::Texto,
+                exportar: fn (Lead $l) => $l->canalCaptacion?->nombre ?? 'Sin especificar',
+            ),
+            new ColumnaExcel(
                 clave: 'asignado_a',
                 etiqueta: 'Asignado a',
                 obligatoria: false,
@@ -104,7 +111,7 @@ class DefinicionLeads implements DefinicionExportable
 
     public function consultaExportacion(array $ids): Builder
     {
-        $query = Lead::with('asignadoA')->whereIn('id', $ids);
+        $query = Lead::with(['asignadoA', 'canalCaptacion'])->whereIn('id', $ids);
 
         return $this->ordenarPorIds($query, $ids);
     }

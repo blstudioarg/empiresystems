@@ -6,6 +6,9 @@ acciones importantes y su resultado. Sirve para auditar y para entender qué pas
 		técnicos (IP, navegador, ubicación aproximada).</li>
 	<li><strong>Buscar</strong>: usá el buscador para filtrar por usuario o tipo de acción cuando
 		investigás algo puntual.</li>
+	<li><strong>Exportar</strong>: el botón "Exportar" del listado descarga a Excel los eventos que
+		coinciden con la búsqueda activa (si no hay ninguna, exporta todo el historial del
+		tenant).</li>
 </ol>
 
 <p class="ayuda-nota">Es un registro de solo lectura: no se edita ni se borra, justamente para que

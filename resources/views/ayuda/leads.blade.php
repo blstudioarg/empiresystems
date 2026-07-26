@@ -6,9 +6,14 @@ están listos se convierten en cliente.</p>
 	<li><strong>Alta</strong>: el botón “Agregar lead” pide nombre y al menos un email o
 		teléfono. Si ya existe un lead con ese email o teléfono en tu cuenta, se rechaza como
 		duplicado.</li>
+	<li><strong>Canal de captación</strong>: opcional, indica de dónde vino el lead (web, feria,
+		recomendación...). Se administra desde el propio selector (agregar/renombrar/eliminar) y
+		alimenta la segmentación de Informes comerciales; un lead sin canal se agrupa como "Sin
+		especificar".</li>
 	<li><strong>Importar</strong>: subí un CSV o Excel con columnas
-		<code>nombre, empresa, email, telefono</code>. Las filas inválidas o duplicadas se
-		reportan al final, sin bloquear la importación de las válidas.</li>
+		<code>nombre, empresa, email, telefono, canal</code> (canal es opcional). Las filas
+		inválidas o duplicadas se reportan al final, sin bloquear la importación de las válidas;
+		si el nombre de canal no existe en tu catálogo, la fila se importa igual, sin canal.</li>
 	<li><strong>Exportar</strong>: el botón "Exportar" del listado descarga a Excel los leads que
 		estás viendo (respeta el filtro activo).</li>
 	<li><strong>Asignación</strong>: si dejás “Según regla de asignación vigente”, el lead se

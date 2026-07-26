@@ -17,38 +17,57 @@ class CatalogoPermisos
      */
     private const PERMISOS = [
         ['clave' => 'ver-dashboard', 'etiqueta' => 'Dashboard', 'modulo' => 'Dashboard'],
-        ['clave' => 'ver-jornada', 'etiqueta' => 'Control de fichaje', 'modulo' => 'Control de fichaje'],
+        // Control de fichaje — granularidad por subvista (doc 09, Cambios 1 y 5). "Fichar" y "Mi
+        // jornada" son personales (por defecto todo usuario las tiene); el resto es gestión.
+        ['clave' => 'ver-fichar', 'etiqueta' => 'Fichar', 'modulo' => 'Control de fichaje'],
+        ['clave' => 'ver-mi-jornada', 'etiqueta' => 'Mi jornada', 'modulo' => 'Control de fichaje'],
+        ['clave' => 'ver-jornada', 'etiqueta' => 'Jornada', 'modulo' => 'Control de fichaje'],
+        ['clave' => 'ver-calendario', 'etiqueta' => 'Calendario', 'modulo' => 'Control de fichaje'],
+        ['clave' => 'ver-miembros', 'etiqueta' => 'Miembros', 'modulo' => 'Control de fichaje'],
+        ['clave' => 'ver-horarios', 'etiqueta' => 'Horarios', 'modulo' => 'Control de fichaje'],
+        ['clave' => 'ver-alertas', 'etiqueta' => 'Alertas', 'modulo' => 'Control de fichaje'],
         ['clave' => 'ver-clientes', 'etiqueta' => 'Clientes', 'modulo' => 'Clientes'],
         ['clave' => 'ver-leads', 'etiqueta' => 'Leads', 'modulo' => 'CRM'],
         ['clave' => 'ver-oportunidades', 'etiqueta' => 'Oportunidades', 'modulo' => 'CRM'],
         ['clave' => 'ver-presupuestos', 'etiqueta' => 'Presupuestos', 'modulo' => 'CRM'],
         ['clave' => 'ver-albaranes', 'etiqueta' => 'Albaranes', 'modulo' => 'CRM'],
+        ['clave' => 'ver-informes-comerciales', 'etiqueta' => 'Informes comerciales', 'modulo' => 'CRM'],
+        ['clave' => 'ver-informes-equipo', 'etiqueta' => 'Informes de todo el equipo', 'modulo' => 'CRM'],
         ['clave' => 'ver-articulos', 'etiqueta' => 'Catálogo', 'modulo' => 'Stock'],
         ['clave' => 'ver-stock', 'etiqueta' => 'Kardex', 'modulo' => 'Stock'],
         ['clave' => 'ver-proveedores', 'etiqueta' => 'Proveedores', 'modulo' => 'Stock'],
         ['clave' => 'ver-compras', 'etiqueta' => 'Compras', 'modulo' => 'Stock'],
         ['clave' => 'ver-facturas', 'etiqueta' => 'Facturas', 'modulo' => 'Facturas'],
+        ['clave' => 'ver-facturas-crear', 'etiqueta' => 'Crear factura', 'modulo' => 'Facturas'],
         ['clave' => 'ver-pos', 'etiqueta' => 'POS', 'modulo' => 'POS'],
+        ['clave' => 'ver-pos-crear', 'etiqueta' => 'Crear ticket', 'modulo' => 'POS'],
         ['clave' => 'ver-archivos', 'etiqueta' => 'Archivos', 'modulo' => 'Archivos'],
         ['clave' => 'ver-campanas', 'etiqueta' => 'Campañas', 'modulo' => 'Marketing'],
+        ['clave' => 'ver-campanas-crear', 'etiqueta' => 'Nueva campaña', 'modulo' => 'Marketing'],
         ['clave' => 'ver-plantillas-email', 'etiqueta' => 'Plantillas de email', 'modulo' => 'Marketing'],
         ['clave' => 'ver-usuarios', 'etiqueta' => 'Usuarios', 'modulo' => 'Usuarios'],
         ['clave' => 'ver-roles', 'etiqueta' => 'Roles', 'modulo' => 'Roles'],
         ['clave' => 'ver-configuracion', 'etiqueta' => 'Configuración', 'modulo' => 'Configuración'],
         ['clave' => 'ver-logs', 'etiqueta' => 'Logs de actividad', 'modulo' => 'Logs'],
-        ['clave' => 'ver-bancos', 'etiqueta' => 'Bancos', 'modulo' => 'Bancos'],
     ];
 
     /**
      * Permisos que NO recibe el rol "Usuario" base migrado/creado por defecto (RN-07, SC-005):
-     * gestión de fichajes, roles, usuarios, configuración y logs quedan reservados al Administrador.
+     * gestión de fichajes (Jornada/Calendario/Miembros/Horarios/Alertas), roles, usuarios,
+     * configuración, logs e informes de equipo quedan reservados al Administrador. "Fichar" y
+     * "Mi jornada" NO se excluyen: son secciones personales que todo usuario tiene por defecto.
      */
     private const EXCLUIDOS_USUARIO_BASE = [
         'ver-jornada',
+        'ver-calendario',
+        'ver-miembros',
+        'ver-horarios',
+        'ver-alertas',
         'ver-roles',
         'ver-usuarios',
         'ver-configuracion',
         'ver-logs',
+        'ver-informes-equipo',
     ];
 
     /**

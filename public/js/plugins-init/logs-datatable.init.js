@@ -5,6 +5,16 @@
 		return $('<div>').text(value === null || value === undefined ? '' : value).html();
 	}
 
+	window.updateLogsCards = function (totales) {
+		if (!totales) {
+			return;
+		}
+
+		$('[data-metric="total"]').text(totales.total);
+		$('[data-metric="hoy"]').text(totales.hoy);
+		$('[data-metric="fallidos"]').text(totales.fallidos);
+	};
+
 	var ACCION_BADGES = {
 		login: 'badge-success',
 		logout: 'badge-secondary',
@@ -44,6 +54,11 @@
 			ajax: {
 				url: window.location.href,
 				type: 'GET',
+				dataSrc: function (json) {
+					window.updateLogsCards(json.totales);
+
+					return json.data;
+				},
 			},
 			columns: [
 				{ data: 'fecha' },

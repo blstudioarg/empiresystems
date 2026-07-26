@@ -9,6 +9,7 @@ use App\Models\Articulo;
 use App\Models\Compra;
 use App\Models\Factura;
 use App\Models\Pago;
+use App\Support\BucketsRango;
 use App\Support\RangoFechas;
 use App\Support\VariacionPorcentual;
 use Carbon\Carbon;
@@ -220,60 +221,9 @@ class DashboardEstadisticas
             ->whereIn('estado', array_map(fn (EstadoFactura $e) => $e->value, self::ESTADOS_FACTURADOS));
     }
 
-    /**
-     * Divide el rango en sub-periodos para series/comparativos: un bucket por día si el rango es
-     * corto (`RangoFechas::granularidad() === 'dia'`), o un bucket por mes (recortado a los
-     * límites del rango) si es largo. Evita cientos de puntos diarios en un rango de un año.
-     *
-     * @return list<array{inicio: Carbon, fin: Carbon, etiqueta: string}>
-     */
-    private function bucketsDelRango(RangoFechas $rango): array
-    {
-        return $rango->granularidad() === 'dia'
-            ? $this->bucketsDiarios($rango)
-            : $this->bucketsMensuales($rango);
-    }
-
-    private function bucketsDiarios(RangoFechas $rango): array
-    {
-        $buckets = [];
-        $cursor = $rango->desde->copy();
-
-        while ($cursor->lte($rango->hasta)) {
-            $buckets[] = [
-                'inicio' => $cursor->copy(),
-                'fin' => $cursor->copy(),
-                'etiqueta' => $cursor->translatedFormat('d M'),
-            ];
-            $cursor->addDay();
-        }
-
-        return $buckets;
-    }
-
-    private function bucketsMensuales(RangoFechas $rango): array
-    {
-        $buckets = [];
-        $cursor = $rango->desde->copy()->startOfMonth();
-
-        while ($cursor->lte($rango->hasta)) {
-            $inicio = $cursor->copy()->max($rango->desde);
-            $fin = $cursor->copy()->endOfMonth()->min($rango->hasta);
-
-            $buckets[] = [
-                'inicio' => $inicio,
-                'fin' => $fin,
-                'etiqueta' => $cursor->translatedFormat('M Y'),
-            ];
-            $cursor->addMonthNoOverflow();
-        }
-
-        return $buckets;
-    }
-
     private function serieFacturacion(RangoFechas $rango): array
     {
-        return collect($this->bucketsDelRango($rango))
+        return collect(BucketsRango::bucketsDelRango($rango))
             ->map(function (array $bucket) {
                 $resumen = $this->resumenMensual($bucket['inicio'], $bucket['fin']);
 
@@ -287,7 +237,7 @@ class DashboardEstadisticas
 
     private function comparativo(RangoFechas $rango): array
     {
-        return collect($this->bucketsDelRango($rango))
+        return collect(BucketsRango::bucketsDelRango($rango))
             ->map(function (array $bucket) {
                 $resumen = $this->resumenMensual($bucket['inicio'], $bucket['fin']);
 

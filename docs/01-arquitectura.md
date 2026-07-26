@@ -136,6 +136,17 @@ justifica (Principio V).
 `logs_actividad`, no tiene cota natural de crecimiento por tenant. Si el listado es un catálogo de
 negocio acotado (clientes, artículos, etc.), seguir el patrón client-side ya establecido.
 
+**Pendiente a futuro (revisar si el supuesto de "acotado" deja de cumplirse):** hoy (2026-07-19)
+todos los demás listados del proyecto (`leads`, `clientes`, `facturas`, `presupuestos`, `artículos`,
+`albaranes`, `POS`, `proveedores`, `usuarios`, `campañas`, `alertas`, etc.) son client-side: el
+controlador devuelve el catálogo completo del tenant (`->get()`) y DataTables pagina/filtra/ordena
+en el navegador. Es una elección deliberada, no una carencia — pero si algún tenant real llega a
+volúmenes de miles de registros en alguna de estas tablas (sobre todo `leads`, `clientes` o
+`facturas`, las de mayor crecimiento esperado), ese listado deja de cumplir el supuesto de "acotado"
+de esta decisión y debería migrarse a server-side siguiendo el mismo patrón manual (sin Yajra) que
+`logs_actividad` (`LogActividadController` + `logs-datatable.init.js` como referencia). No migrar
+preventivamente sin evidencia de volumen real (Principio V).
+
 ---
 
 ## Decisión 8 — Leaflet vendorizado como única dependencia de mapas (024-control-horario-fichajes)

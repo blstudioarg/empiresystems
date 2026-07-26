@@ -110,7 +110,7 @@ tenant_id`), sin tablas propias. Detalle completo en `specs/027-roles-permisos-t
 
 | Tabla | Alcance | Notas |
 |-------|---------|-------|
-| `permissions` | global (SIN `tenant_id`) | catálogo de ~17 claves (`ver-facturas`, `ver-clientes`…), una por sección del menú; etiqueta/módulo se resuelven en código (`App\Support\CatalogoPermisos`), no en BD |
+| `permissions` | global (SIN `tenant_id`) | catálogo de 31 claves (`ver-facturas`, `ver-clientes`…), una por sección/subvista del menú (incluye subvistas de crear con permiso propio: `ver-facturas-crear`, `ver-pos-crear`, `ver-campanas-crear`, y el bloque de fichaje desglosado `ver-fichar`/`ver-mi-jornada`/`ver-jornada`/`ver-calendario`/`ver-miembros`/`ver-horarios`/`ver-alertas`, doc 09); etiqueta/módulo se resuelven en código (`App\Support\CatalogoPermisos`), no en BD |
 | `roles` | por tenant (`tenant_id` FK, `cascadeOnDelete`) | nombre único **dentro** del tenant, repetible entre tenants; columna propia `es_defecto` (boolean) = rol asignado a altas públicas, uno por tenant |
 | `model_has_roles` | por tenant | pivote usuario↔rol; un usuario tiene como máximo un rol (convención de la app, el esquema soporta varios) |
 | `role_has_permissions` | — | pivote rol↔permiso |
@@ -989,13 +989,33 @@ articulos ──(opcional)── presupuesto_lineas
 | estado | varchar(15) | enum `EstadoLead`: `nuevo`, `contactado`, `cualificado`, `descartado`, `convertido` |
 | origen | varchar(15) | enum `OrigenLead`: `manual`, `importacion` |
 | asignado_a | fk `users`, nullable, `nullOnDelete` | `null` = bandeja "sin asignar" |
+| canal_captacion_id | fk `canales_captacion`, nullable, `nullOnDelete` | canal comercial de procedencia (feature 033); `null` = "Sin especificar" (FR-014). Distinto de `origen` (cómo se cargó el dato) |
 | convertido_a_cliente_id | fk `clientes`, nullable, `nullOnDelete` | trazabilidad al convertir |
+| convertido_at | datetime, nullable | fecha de conversión (feature 033), la puebla exclusivamente `ConversorLeadCliente`; leads convertidos antes de la 033 quedan `NULL` |
 | motivo_descarte | varchar, nullable | |
 | timestamps, softDeletes | | |
 
-Índices: `(tenant_id, estado)`, `(tenant_id, asignado_a)`, `(tenant_id, email)`, `(tenant_id, telefono)`.
+Índices: `(tenant_id, estado)`, `(tenant_id, asignado_a)`, `(tenant_id, email)`, `(tenant_id, telefono)`,
+`(tenant_id, created_at)`, `(tenant_id, canal_captacion_id)` (los dos últimos, feature 033, para el
+informe comercial).
 Retención RGPD: leads `descartado`/no convertidos se purgan pasado `leads.retencion_dias` (comando
 `leads:purgar`, patrón `RetencionLogsTenant`/feature 021).
+
+### `canales_captacion` — catálogo por tenant del canal comercial de un lead (feature 033)
+
+| Campo | Tipo | Notas |
+|-------|------|-------|
+| id | bigint PK | |
+| tenant_id | unsignedBigInteger, indexado | `BelongsToTenant` |
+| nombre | varchar(80) | único por tenant |
+| activo | boolean, default true | desactivación en vez de borrado si tiene leads asociados (FR-013); sin `softDeletes`, el booleano alcanza |
+| orden | smallint, default 0 | orden de presentación en selectores |
+| timestamps | | |
+
+Índices: `unique(tenant_id, nombre)`, `(tenant_id, activo)`. Siembra por defecto (Web,
+Recomendación, Feria/Evento, Campaña de email, Llamada entrante, Redes sociales, Otro) al
+provisionar un tenant nuevo (`SuperAdmin\TenantController`) y, para los tenants ya existentes,
+desde la propia migración. Sin datos personales (catálogo de configuración del tenant).
 
 ### `lead_notas` — actividad comercial sobre un lead
 

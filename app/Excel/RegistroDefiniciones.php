@@ -7,6 +7,7 @@ use App\Excel\Definiciones\DefinicionArticulos;
 use App\Excel\Definiciones\DefinicionClientes;
 use App\Excel\Definiciones\DefinicionFacturas;
 use App\Excel\Definiciones\DefinicionLeads;
+use App\Excel\Definiciones\DefinicionLogsActividad;
 use App\Excel\Definiciones\DefinicionProveedores;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -28,6 +29,7 @@ class RegistroDefiniciones
         $this->registrar(new DefinicionFacturas);
         $this->registrar(new DefinicionAlbaranes);
         $this->registrar(new DefinicionLeads);
+        $this->registrar(new DefinicionLogsActividad);
     }
 
     public function registrar(DefinicionExcel $definicion): void

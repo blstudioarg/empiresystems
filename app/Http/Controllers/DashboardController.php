@@ -5,12 +5,13 @@ namespace App\Http\Controllers;
 use App\Http\Requests\DashboardFiltroRequest;
 use App\Services\DashboardEstadisticas;
 use App\Support\RangoFechas;
+use App\Support\ResolvedorLanding;
 
 class DashboardController extends Controller
 {
     private const AVISO_RANGO_INVALIDO = 'El rango de fechas indicado no es válido. Mostrando el mes en curso.';
 
-    public function index(DashboardFiltroRequest $request, DashboardEstadisticas $dashboardEstadisticas)
+    public function index(DashboardFiltroRequest $request, DashboardEstadisticas $dashboardEstadisticas, ResolvedorLanding $resolvedorLanding)
     {
         // El super admin no pertenece a ningún tenant (tenant_id null): las estadísticas de este
         // dashboard son inherentemente de tenant (facturación, IVA, etc.), así que su landing es
@@ -19,11 +20,11 @@ class DashboardController extends Controller
             return redirect()->route('super_admin.tenants.index');
         }
 
-        // Landing sin permiso de dashboard (feature 027, D11/RN-07): la ruta `/` no lleva `can:`
-        // para no dar un 403 de bienvenida; los usuarios sin `ver-dashboard` aterrizan en su
-        // sección personal garantizada.
+        // Landing sin permiso de dashboard (feature 027 D11/RN-07 + doc 09 Cambio 5): la ruta `/` no
+        // lleva `can:` para no dar un 403 de bienvenida; los usuarios sin `ver-dashboard` aterrizan
+        // en la primera sección para la que tienen permiso (Perfil como fallback universal).
         if (! $request->user()->can('ver-dashboard')) {
-            return redirect()->route('mi-jornada.index');
+            return redirect($resolvedorLanding->urlPara($request->user()));
         }
 
         $rangoInvalido = $request->huboRangoInvalido();
