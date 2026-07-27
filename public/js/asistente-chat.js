@@ -1,6 +1,8 @@
 /**
- * Widget del asistente IA (feature 030). Consume el stream SSE del endpoint POST /asistente/mensaje
- * con fetch + ReadableStream (no EventSource, porque es POST con CSRF) y renderiza el progreso.
+ * Panel lateral del asistente IA (feature 030). Se abre desde el botón de la topbar
+ * (id `asistente-toggle`, en partials/header.blade.php). Consume el stream SSE del endpoint
+ * POST /asistente/mensaje con fetch + ReadableStream (no EventSource, porque es POST con CSRF)
+ * y renderiza el progreso.
  */
 (function () {
 	'use strict';
@@ -11,7 +13,6 @@
 	const toggle = document.getElementById('asistente-toggle');
 	const panel = document.getElementById('asistente-panel');
 	const cerrar = document.getElementById('asistente-cerrar');
-	const modo = document.getElementById('asistente-modo');
 	const backdrop = document.getElementById('asistente-backdrop');
 	const nueva = document.getElementById('asistente-nueva');
 	const form = document.getElementById('asistente-form');
@@ -25,18 +26,6 @@
 
 	let enviando = false;
 
-	// --- Modo de vista (flotante | lateral), persistido por navegador ---
-	const CLAVE_MODO = 'asistente_modo';
-	if (localStorage.getItem(CLAVE_MODO) === 'drawer') {
-		root.classList.add('asistente-chat--drawer');
-	}
-	if (modo) {
-		modo.addEventListener('click', function () {
-			const esDrawer = root.classList.toggle('asistente-chat--drawer');
-			localStorage.setItem(CLAVE_MODO, esDrawer ? 'drawer' : 'float');
-		});
-	}
-
 	// --- Abrir / cerrar el panel (el estado vive en la raíz, así el backdrop lo comparte) ---
 	function estaAbierto() { return root.classList.contains('is-open'); }
 	function abrir() {
@@ -45,7 +34,7 @@
 	}
 	function cerrarPanel() { root.classList.remove('is-open'); }
 
-	toggle.addEventListener('click', () => (estaAbierto() ? cerrarPanel() : abrir()));
+	if (toggle) toggle.addEventListener('click', () => (estaAbierto() ? cerrarPanel() : abrir()));
 	if (cerrar) cerrar.addEventListener('click', cerrarPanel);
 	if (backdrop) backdrop.addEventListener('click', cerrarPanel);
 	// Cerrar con Escape cuando el panel está abierto.
