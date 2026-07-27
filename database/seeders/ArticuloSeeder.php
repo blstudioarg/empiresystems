@@ -10,7 +10,7 @@ class ArticuloSeeder extends Seeder
 {
     public function run(): void
     {
-        $tenant = Tenant::where('nombre_comercial', 'Empresa Demo SL')->first();
+        $tenant = Tenant::where('nombre_comercial', 'BL Studio')->first();
 
         if (! $tenant) {
             return;
