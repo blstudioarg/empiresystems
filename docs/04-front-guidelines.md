@@ -20,6 +20,37 @@ input, dentro de la misma columna** — no en una columna separada al lado. Refe
 </div>
 ```
 
+## Input de contraseña: ojo mostrar/ocultar (obligatorio)
+
+**Todo `<input type="password">` nuevo DEBE llevar el ojo mostrar/ocultar.** Sin excepción,
+tampoco para campos "secundarios" como confirmación de contraseña, contraseña actual, o secretos
+tipo API key/certificado. Markup:
+
+```html
+<div class="position-relative">
+	<input type="password" class="form-control" name="password" ...>
+	<span class="show-pass eye">
+		<i class="fa fa-eye-slash"></i>
+		<i class="fa fa-eye"></i>
+	</span>
+</div>
+```
+
+El toggle lo resuelve `public/js/plugins-init/password-toggle.init.js` (cargado siempre desde
+`layouts/app.blade.php` y `layouts/guest.blade.php`): delegación de eventos sobre `.show-pass`,
+busca el primer `input` dentro del `.position-relative` más cercano y alterna su `type`. Funciona
+para cualquier cantidad de inputs en la página, incluidos los inyectados dinámicamente (filas de
+un modal, formularios AJAX) — **no** usar el `handleshowPass()` de `custom.js` (vendor del
+template), que quedó hardcodeado a un único `#dz-password` y solo sirve para el password del
+login. El CSS (`.show-pass`, `.eye`, posicionamiento) ya existe global en `style.css` +
+`app-overrides.css`, no hace falta escribir nada nuevo ahí.
+
+**Deuda existente (pendiente de retrofit, no bloqueante):** a 2026-07-26 los inputs de
+`configuracion/_tab_certificado.blade.php` (`certificado_password`), `_tab_email.blade.php`
+(`smtp_password`), `_tab_ia.blade.php` (`api_key`) y `profile/show.blade.php`
+(`contrasena_actual`, `contrasena_actual_email`, `password`, `password_confirmation`) todavía no
+tienen el ojo. Cualquier feature que toque esas vistas debería agregarlo de paso.
+
 ## Logo del tenant en el nav-header: en mobile siempre el mini, nunca el full
 
 El tenant sube dos logos en `configuracion` (`logo_path` para el sidebar expandido,
@@ -345,6 +376,94 @@ está dentro de una tab": pierde buscador, paginación, orden, estado persistido
 global, y queda inconsistente con el resto de la app. Si aparece una `<table>` con `@foreach` en una
 vista nueva, es un bug de front a corregir migrándola a DataTable.
 
+**Excepción documentada (feature 036, tab Configuración → Menú)**: el editor del menú lateral
+personalizable (`configuracion/_tab_menu.blade.php`) **no** usa DataTable. La regla existe para
+listados de **registros del negocio** (clientes, facturas, cuentas bancarias…) donde buscador/
+paginación/orden por columna aportan valor; el editor de menú es una jerarquía **fija y pequeña**
+de 36 elementos de producto (no registros del tenant), y lo que hay que editar es justamente esa
+jerarquía (grupo + entradas), algo que DataTables no soporta arrastrar sin la extensión
+`RowReorder` (que además solo reordena filas planas de un mismo nivel, no una jerarquía). Patrón
+reutilizable para cualquier lista jerárquica arrastrable futura:
+
+- **jQuery UI `sortable`** (vendorizado en `public/vendor/jqueryui/`, cargado solo desde la vista
+  que lo usa vía `@push('styles')`/`@push('scripts')`, nunca global) — no `SortableJS` ni otra
+  dependencia nueva mientras el banco del template ya traiga una solución.
+- **Confinamiento por nivel por construcción, no por validación**: cada `<ul>` de un nivel
+  (entradas de un grupo) es un `sortable` **independiente**, y la lista de niveles superiores
+  (grupos) es otro `sortable` aparte — **sin `connectWith` entre ellos**. Al no estar conectados,
+  jQuery UI devuelve por sí solo cualquier fila soltada fuera de su lista de origen; el
+  confinamiento sale gratis, no hace falta comprobarlo en el submit.
+- **Asa de arrastre obligatoria** (`handle: '.algo-handle'`): la fila no es arrastrable por toda su
+  superficie, porque normalmente lleva un input de texto editable (renombrar) — sin asa, tocar el
+  input en una tablet iniciaría un arrastre en vez de enfocar el campo. Sumar una `distance` mínima
+  en las opciones del `sortable` para no confundir arrastre con scroll táctil.
+- **Grupos con hijos: contraídos por defecto**, con un botón de flecha (`.algo-toggle`, delegado
+  sobre el contenedor para sobrevivir a un repintado por JS) que alterna una clase `colapsado` en
+  el `<li>` del grupo — el CSS oculta el `<ul>` de hijos con esa clase (`display: none`), nunca con
+  JS. Reordenar los grupos entre sí no exige desplegar ninguno; solo se despliega el grupo cuyas
+  entradas se van a reordenar. Sin esto, una jerarquía con muchas entradas de segundo nivel
+  siempre desplegadas obliga a scrollear una lista larguísima para mover algo del nivel superior.
+- **Guardado por botón único, nunca por evento de arrastre**: el arrastre solo mueve el DOM; el
+  `orden` (y cualquier otro campo) se lee recién en el submit, iterando los `<li>` en su posición
+  actual (`$lista.find('> li').map(...).get()`). Nada se persiste hasta pulsar "Guardar".
+- **El servidor no confía en el orden recibido**: reconstruye la lista final a partir de su propio
+  catálogo/fuente de verdad, coloca al final los elementos ausentes de la petición y descarta
+  claves desconocidas. Ver `App\Support\MenuTenant` (feature 036) como referencia completa del
+  patrón catálogo + personalización + fusión server-side.
+
+Referencia completa: `resources/views/configuracion/_tab_menu.blade.php` +
+`public/js/plugins-init/configuracion-menu.init.js` + `public/css/configuracion-menu.css`.
+
+## "Ver" un documento (factura, presupuesto, albarán, ticket): SIEMPRE en modal, nunca otra pestaña
+
+La acción "Ver" de cualquier documento con PDF (factura, presupuesto, albarán, ticket POS) abre su
+vista previa **en un modal con un `<iframe>` dentro de la app**. Nunca `target="_blank"`, nunca una
+descarga directa, nunca navegar fuera de la pantalla actual: el usuario está trabajando sobre un
+listado o un perfil y sacarlo a otra pestaña le rompe el contexto (pierde filtros, scroll, la tab
+en la que estaba) y le deja pestañas huérfanas acumulándose.
+
+Patrón (referencia: `facturas/index.blade.php` + `facturas-datatable.init.js`,
+`presupuestos/index.blade.php`, y `clientes/show.blade.php` para el caso "perfil"):
+
+```blade
+<div class="modal fade" id="facturaPdfModal" tabindex="-1" aria-hidden="true">
+	<div class="modal-dialog modal-dialog-centered modal-xl">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title">Vista previa de la factura</h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+			</div>
+			<div class="modal-body p-0" style="height: 80vh;">
+				<iframe id="facturaPdfFrame" src="" style="width: 100%; height: 100%; border: 0;"></iframe>
+			</div>
+		</div>
+	</div>
+</div>
+```
+
+```js
+$tabla.on('click', '.btn-ver-factura', function () {
+	$('#facturaPdfFrame').attr('src', $(this).data('pdf-url'));
+	bootstrap.Modal.getOrCreateInstance($('#facturaPdfModal')[0]).show();
+});
+
+// Vaciar el src al cerrar: si no, el PDF sigue cargado en memoria y al reabrir el modal se ve
+// un instante el documento anterior antes de cargar el nuevo.
+$('#facturaPdfModal').on('hidden.bs.modal', function () {
+	$('#facturaPdfFrame').attr('src', '');
+});
+```
+
+Puntos que no se negocian: `modal-dialog-centered` (ver sección de modales), `modal-xl` +
+`height: 80vh` en el body para que el documento se lea sin scroll interno absurdo, `p-0` en el
+`modal-body` (el iframe ocupa todo), y el reset del `src` en `hidden.bs.modal`.
+
+**El enlace del "Ver" apunta a la ruta `*.pdf`, no a `*.edit`**: los `edit()` de facturas,
+presupuestos y albaranes hacen `abort(403)` cuando el documento ya no es editable (emitido,
+aceptado, entregado), así que usar `edit` como "ver" rompe justo en los documentos que más se
+consultan. Para albaranes existe además `albaranes.show` (vista propia, no PDF), que sí es una
+navegación legítima.
+
 ## CRUD simple: alta/edición en modal + AJAX (patrón por defecto)
 
 Para cualquier listado nuevo (DataTable) cuyo formulario de alta/edición sea "plano" (unos pocos
@@ -384,6 +503,29 @@ formularios con varias secciones o líneas dinámicas donde un modal quedaría a
 demasiado scroll interno — el caso ya documentado es `facturas` (emisor + cliente + fechas +
 líneas + totales). Si un CRUD nuevo empieza simple pero crece hasta ese punto, migrar a full-page
 en vez de forzar el modal.
+
+## Sub-listado editable embebido en un modal de edición (usuarios de un tenant)
+
+Cuando el modal de edición de una entidad necesita mostrar/editar una **colección de otra entidad
+relacionada** (cantidad variable, no son campos fijos de la entidad principal), no entra en el
+patrón "CRUD simple" de arriba (que asume que todos los campos viajan en `data-*` del botón
+"Editar"): una lista de longitud variable no se puede precargar como atributos de un botón.
+Referencia: sección "Usuarios del tenant" en `super_admin/tenants/_form.blade.php` +
+`super-admin-tenants-modal.init.js`.
+
+- **Segundo endpoint `GET .../{id}/<subrecurso>`** (aparte, no rompe la regla de arriba): al abrir
+  el modal en modo edición, el JS pide ese endpoint y renderiza las filas dinámicamente en un
+  `<tbody>` dentro de una sección con clase propia (p. ej. `.usuarios-tenant-field`) que arranca
+  `d-none` y se muestra recién en `fillForm()`, igual que `.admin-field` se oculta en modo edición.
+- **Guardado por fila, no por el submit del form principal**: cada fila trae sus propios inputs +
+  un botón "Guardar" que dispara su propio `$.ajax` hacia una URL de `update` **por fila** (que
+  viaja en el JSON de esa fila, patrón `update_url` igual que en cualquier DataTable), con
+  `window.withButtonLoading` en ese botón puntual y errores 422 puestos en `.invalid-feedback`
+  junto al input de esa fila — no se usa `showErrors()` del form padre porque los `name` de los
+  inputs se repiten por fila (no son únicos en el DOM).
+- **Campos sensibles que no se pueden precargar** (p. ej. una contraseña hasheada): el input
+  correspondiente arranca siempre vacío con un placeholder tipo "Dejar en blanco para no cambiar";
+  el backend solo toca ese campo si llega no-vacío.
 
 ## Select dinámico con CRUD inline (catálogos: unidades, bancos…)
 
@@ -429,6 +571,49 @@ width: 1% !important` en `.select2-container`, y `height/padding/font-size` en
 del nuevo componente **no recibe `flex:1`** y los tres botones se rompen a la línea de abajo en vez
 de quedar en línea con el select — sin ningún error en consola. Copiá también el CSS y renombrá el
 scope, no solo el Blade/JS.
+
+## Provincia y localidad: SIEMPRE selects encadenados, nunca inputs de texto
+
+**Cualquier formulario que pida provincia y/o ciudad (localidad) usa el componente
+`<x-provincia-localidad>`. Nunca un `<input type="text">`.** El catálogo (`provincias` +
+`localidades`, cargado por `ProvinciaLocalidadSeeder` desde los CSV del INE) es la única fuente de
+verdad: los inputs libres producen "Madríd", "MADRID", "Madrid (Madrid)" y hacen inservible
+cualquier agrupación por zona geográfica en informes.
+
+Uso (el componente renderiza **las dos columnas**, para meterlo dentro de un `.row` existente):
+
+```blade
+<x-provincia-localidad
+    name-provincia="cliente_provincia"
+    name-ciudad="cliente_ciudad"
+    :valor-provincia="old('cliente_provincia', $factura?->cliente_provincia)"
+    :valor-ciudad="old('cliente_ciudad', $factura?->cliente_ciudad)"
+    col="col-md-2 factura-meta-campo"
+    label-class="form-label d-block" />
+```
+
+Piezas y detalles que importan:
+
+- **Se persiste el NOMBRE, no el id** (`clientes.provincia/ciudad`, `proveedores.*`, `tenants.*`,
+  y los campos congelados `facturas.cliente_provincia/cliente_ciudad`). El id de provincia viaja
+  solo en `data-provincia-id` para poder pedir sus localidades.
+- **JS**: `public/js/components/provincia-localidad.js`, multi-instancia y auto-inicializado sobre
+  cada `select[data-provincia-select]` con su `data-localidad-target`. Expone
+  `window.ProvinciaLocalidad.get(idDeCualquieraDeLosDosSelects)` con `setValues(provincia, ciudad)`
+  y `clear()`. **Para precargar por JS hay que usar `setValues()`**: un `.val()` directo sobre el
+  select de ciudad no funciona porque sus `<option>` se cargan por AJAX (`GET /localidades`) — es
+  exactamente lo que hace `facturas-form.js` al elegir cliente.
+- **Datos heredados**: si el valor guardado no está en el catálogo (importación de Excel, registro
+  antiguo), tanto el Blade como el JS lo añaden como `<option>` extra seleccionada, para no
+  borrarlo en silencio al guardar.
+- **Ruta `localidades.index`** vive en el grupo `tenant.context + auth` **sin permiso de módulo**:
+  es un catálogo geográfico público, no dato de tenant, y lo consumen formularios de módulos
+  distintos (clientes, proveedores, facturas, tenants del super admin). No volver a encerrarla
+  bajo `can:ver-clientes`.
+- Formularios anteriores al componente (`clientes/_form`, `proveedores/_form`,
+  `super_admin/tenants/_form`) llevan el mismo par de selects escrito a mano, con la carga AJAX
+  duplicada en su `*-modal.init.js`. **Ya son selects, así que no hay bug abierto ahí**, pero
+  cualquier formulario nuevo —y cualquier retoque grande de esos tres— debe usar el componente.
 
 ## Catálogo del POS (TPV): filtros de categoría y badge de stock
 
@@ -672,6 +857,16 @@ negocio/normativa (eso vive en `docs/`). Referencia completa: `resources/views/a
 
 ## Nueva entrada de menú ⇒ nuevo permiso (obligatorio)
 
+**Desde la feature 036, el sidebar del tenant ya no está escrito a mano en
+`sidebar.blade.php`: se pinta iterando `App\Support\CatalogoMenu` (fusionado con la
+personalización del tenant por `App\Support\MenuTenant::estructura()`).** Una entrada nueva del
+menú se añade al catálogo (`CatalogoMenu::CATALOGO`, con `clave`/`etiqueta`/`icono`/`ruta`/
+`permiso`/`hijos`), **no** editando el `<li>`/`<ul>` de `sidebar.blade.php` a mano — el bucle del
+partial ya sabe pintar cualquier elemento del catálogo (grupo con o sin hijos, entrada de segundo
+nivel) sin tocar el Blade. El paso 3 de la lista de abajo queda actualizado en consecuencia. El
+Super Admin, la tarjeta de usuario, el botón de ayuda y el toggle de Dark Mode siguen fuera del
+catálogo, sin cambios.
+
 Toda sección nueva del sidebar (feature 027) necesita un **permiso propio en el catálogo global**,
 nunca reutilizar uno existente "porque ya alcanza" ni dejar la sección sin permiso (salvo el
 **perfil**, la única sección genuinamente universal, sin permiso). **Granularidad = una vista o
@@ -691,10 +886,12 @@ en este orden:
 2. **Re-correr el seeder**: `php artisan db:seed --class=PermisosSeeder` en cada entorno (deploy) —
    siembra la clave nueva y sincroniza el rol "Administrador" de **cada tenant** con el catálogo
    completo. Es el único punto donde un permiso nuevo se auto-asigna a un rol existente.
-3. **Entrada del sidebar** (`resources/views/partials/sidebar.blade.php`): envolver el `<li>` en
-   `@can('ver-{seccion}')`; si la entrada es la única del grupo, envolver también el `<li>` padre
-   (o el grupo entero en `@canany([...])` si el grupo mezcla varios permisos, ver el bloque
-   "Stock"/"Marketing"/"Usuarios" como referencia).
+3. **Entrada del catálogo del menú** (`App\Support\CatalogoMenu`): añadir el elemento (`clave`,
+   `etiqueta`, `icono` solo si es de primer nivel, `ruta`, `permiso`, `hijos`). Si es una entrada
+   nueva de un grupo ya existente, sumarla a la lista `hijos` de ese grupo — el grupo no declara
+   permiso propio, su visibilidad se deriva de que al menos un hijo sea visible (no hace falta
+   tocarlo). Si es un grupo nuevo de primer nivel, agregar el elemento completo al catálogo. El
+   bucle de `sidebar.blade.php` pinta cualquier elemento del catálogo solo; no se edita ese Blade.
 4. **Rutas** (`routes/web.php`): el grupo de rutas de esa sección lleva
    `->middleware('can:ver-{seccion}')`. Nunca dejar una ruta de gestión sin `can:` confiando en que
    el sidebar ya la esconde — el enforcement real es el middleware, ocultar en el menú es solo UX
