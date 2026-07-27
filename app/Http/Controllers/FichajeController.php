@@ -79,17 +79,7 @@ class FichajeController extends Controller
 
     private function estadoActual(int $miembroId): string
     {
-        $ultimo = Fichaje::where('miembro_equipo_id', $miembroId)
-            ->whereNull('corrige_fichaje_id')
-            ->orderByDesc('ocurrido_at')
-            ->orderByDesc('id')
-            ->first();
-
-        return match ($ultimo?->tipo) {
-            null, TipoEventoFichaje::Salida => 'cerrada',
-            TipoEventoFichaje::Entrada, TipoEventoFichaje::FinPausa => 'abierta',
-            TipoEventoFichaje::InicioPausa => 'en_pausa',
-        };
+        return $this->registroFichajes->estadoActual($miembroId);
     }
 
     /**

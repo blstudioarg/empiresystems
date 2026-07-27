@@ -206,6 +206,13 @@ Route::middleware(['tenant.context', 'auth'])->group(function () {
     // Perfil: sección personal, sin permiso (todo usuario autenticado del tenant).
     Route::get('/perfil', [ProfileController::class, 'show'])->name('profile.show');
     Route::post('/perfil/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.avatar.update');
+    Route::put('/perfil/contrasena', [ProfileController::class, 'updatePassword'])->name('profile.password.update');
+    Route::put('/perfil/nombre', [ProfileController::class, 'updateNombre'])->name('profile.nombre.update');
+    Route::post('/perfil/email', [ProfileController::class, 'solicitarCambioEmail'])->name('profile.email.solicitar');
+    Route::get('/perfil/email/confirmar/{user}', [ProfileController::class, 'confirmarCambioEmail'])
+        ->name('profile.email.confirmar');
+    Route::delete('/perfil/email/pendiente', [ProfileController::class, 'cancelarCambioEmail'])->name('profile.email.cancelar');
+    Route::post('/perfil/email/pendiente/reenviar', [ProfileController::class, 'reenviarVerificacionEmail'])->name('profile.email.reenviar');
 
     // Bancos y cuentas bancarias se administran embebidos en Configuración → Facturación (no son
     // vistas de menú propias); por eso se gatean con ver-configuracion, no con un permiso propio

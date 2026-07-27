@@ -81,6 +81,13 @@ tenant puede aprobar o rechazar desde `/usuarios`, lo que ajusta `activo` en con
 de correspondencia estado↔activo en `specs/006-registro-usuarios/data-model.md`). Índice
 `(tenant_id, estado)`.
 
+Cambio de email propio (feature 034, autoservicio desde `/perfil`): `pending_email` (string,
+nullable) + `pending_email_token` (string(64), nullable) + `pending_email_expires_at` (timestamp,
+nullable) — estado transitorio de una única solicitud de cambio de correo en curso por usuario,
+verificada por enlace firmado temporal (24h). Se limpian al confirmar/cancelar/reenviar; no es un
+ledger de eventos, así que no requiere purga programada (ver Constitution Check de
+`specs/034-perfil-usuario-ampliado/plan.md`).
+
 Segunda vía de alta (sin flujo de aprobación): al crear un tenant, el super admin indica el
 email y la contraseña de un administrador inicial en el mismo formulario; ese `User` se crea
 junto con el tenant, ya con `rol=admin`, `estado=aprobado`, `activo=true` (evita el problema

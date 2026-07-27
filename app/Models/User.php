@@ -34,6 +34,9 @@ class User extends Authenticatable
         'estado',
         'aprobado_por',
         'aprobado_en',
+        'pending_email',
+        'pending_email_token',
+        'pending_email_expires_at',
     ];
 
     /**
@@ -60,6 +63,7 @@ class User extends Authenticatable
             'activo' => 'boolean',
             'estado' => EstadoUsuario::class,
             'aprobado_en' => 'datetime',
+            'pending_email_expires_at' => 'datetime',
         ];
     }
 

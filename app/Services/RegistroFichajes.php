@@ -114,23 +114,32 @@ class RegistroFichajes
     }
 
     /**
-     * Deriva el estado de jornada (cerrada/abierta/en_pausa) a partir del último evento real
-     * (excluye correcciones, que reescriben hechos pasados, no el estado en vivo) y valida que
-     * el tipo solicitado sea coherente (FR-006).
+     * Deriva el estado de jornada (cerrada/abierta/en_pausa) a partir del último evento real del
+     * miembro (excluye correcciones, que reescriben hechos pasados, no el estado en vivo). Fuente
+     * de verdad única, reutilizada por `FichajeController` y `ProfileController` para no duplicar
+     * esta lógica (data-model.md, feature 034).
      */
-    private function validarSecuencia(MiembroEquipo $miembro, TipoEventoFichaje $tipo): void
+    public function estadoActual(int $miembroId): string
     {
-        $ultimo = Fichaje::where('miembro_equipo_id', $miembro->id)
+        $ultimo = Fichaje::where('miembro_equipo_id', $miembroId)
             ->whereNull('corrige_fichaje_id')
             ->orderByDesc('ocurrido_at')
             ->orderByDesc('id')
             ->first();
 
-        $estado = match ($ultimo?->tipo) {
+        return match ($ultimo?->tipo) {
             null, TipoEventoFichaje::Salida => 'cerrada',
             TipoEventoFichaje::Entrada, TipoEventoFichaje::FinPausa => 'abierta',
             TipoEventoFichaje::InicioPausa => 'en_pausa',
         };
+    }
+
+    /**
+     * Valida que el tipo solicitado sea coherente con el estado actual de la jornada (FR-006).
+     */
+    private function validarSecuencia(MiembroEquipo $miembro, TipoEventoFichaje $tipo): void
+    {
+        $estado = $this->estadoActual($miembro->id);
 
         $valido = match ($tipo) {
             TipoEventoFichaje::Entrada => $estado === 'cerrada',
