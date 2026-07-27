@@ -65,9 +65,13 @@ Route::middleware(['tenant.context', 'auth'])->group(function () {
 
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
 
+    // Catálogo geográfico compartido (no es dato de tenant): lo consumen los selects
+    // encadenados provincia→localidad de clientes, proveedores, facturas y tenants.
+    Route::get('/localidades', [LocalidadController::class, 'index'])->name('localidades.index');
+
     Route::middleware('can:ver-clientes')->group(function () {
         Route::resource('clientes', ClienteController::class)->only(['index', 'store', 'update', 'destroy']);
-        Route::get('/localidades', [LocalidadController::class, 'index'])->name('localidades.index');
+        Route::get('/clientes/{cliente}', [ClienteController::class, 'show'])->name('clientes.show');
 
         Route::post('/exportar/clientes', [ExportacionController::class, 'exportar'])
             ->defaults('modulo', 'clientes')->name('clientes.exportar');

@@ -4,6 +4,10 @@ que cargás datos, el papel de la derecha se actualiza igual que saldrá en el P
 <ol>
 	<li><strong>Cliente y fechas</strong>: elegí el cliente en el membrete y ajustá la fecha de la
 		factura.</li>
+	<li><strong>Datos del cliente en esta factura</strong>: se precargan al elegirlo y quedan
+		congelados en la factura (editarlos no toca su ficha). La <strong>provincia</strong> y la
+		<strong>ciudad</strong> son desplegables: elegí primero la provincia y la lista de ciudades
+		se filtra sola.</li>
 	<li><strong>Agregar líneas</strong>: desde el catálogo de la izquierda tocás un artículo y se
 		suma como línea. Usá “+ Línea libre” para un concepto suelto sin artículo del catálogo.</li>
 	<li><strong>Cantidades e importes</strong>: editá cantidad, precio y descuento en cada línea;

@@ -16,3 +16,10 @@ tu cartera desde un Excel/CSV, con previsualización antes de confirmar.</p>
 
 <p class="ayuda-nota">Un cliente no se puede eliminar si ya tiene facturas asociadas; en ese
 	caso solo podés editarlo.</p>
+
+<p>Desde <strong>Ver perfil</strong> (menú Acciones) se abre una ficha completa del cliente
+	organizada en pestañas: datos generales, resumen financiero (total facturado, pendiente de
+	cobro, facturas vencidas y ticket medio), facturas, presupuestos, albaranes, oportunidades y
+	una línea de tiempo con su actividad reciente. Cada pestaña solo aparece si tenés permiso para
+	ver ese módulo, y desde ahí también podés crear una factura, presupuesto, albarán u oportunidad
+	nueva ya con el cliente preseleccionado.</p>

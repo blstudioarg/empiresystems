@@ -158,6 +158,20 @@ class FacturaCrudTest extends TestCase
         $this->assertNotSoftDeleted($factura);
     }
 
+    public function test_create_precarga_el_cliente_pasado_por_query_string(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $user = User::factory()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
+        $cliente = Cliente::factory()->create(['tenant_id' => $tenant->id]);
+
+        $this->loginAs($user);
+
+        $response = $this->get("/facturas/crear?cliente_id={$cliente->id}");
+
+        $response->assertOk();
+        $response->assertViewHas('clientePreseleccionado', fn ($c) => $c->id === $cliente->id);
+    }
+
     public function test_edit_precarga_los_datos_de_la_factura(): void
     {
         $tenant = Tenant::factory()->create();
@@ -171,5 +185,23 @@ class FacturaCrudTest extends TestCase
 
         $response->assertOk();
         $response->assertViewHas('factura', fn ($f) => $f->id === $factura->id);
+    }
+
+    public function test_el_editor_usa_selects_encadenados_de_provincia_y_localidad(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $user = User::factory()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
+
+        $this->loginAs($user);
+
+        $response = $this->get('/facturas/crear');
+
+        $response->assertOk();
+        // Selects encadenados (docs/04-front-guidelines.md, «Provincia y localidad»),
+        // no inputs de texto libre.
+        $response->assertSee('data-provincia-select', escape: false);
+        $response->assertSee('data-localidad-target="cliente_ciudad"', escape: false);
+        $response->assertDontSee('<input type="text" name="cliente_provincia"', escape: false);
+        $response->assertDontSee('<input type="text" name="cliente_ciudad"', escape: false);
     }
 }

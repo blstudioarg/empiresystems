@@ -358,7 +358,7 @@
 											data-ciudad="{{ $cliente->ciudad }}"
 											data-provincia="{{ $cliente->provincia }}"
 											data-pais="{{ $cliente->pais }}"
-											@selected(old('cliente_id', $factura?->cliente_id) == $cliente->id)>
+											@selected(old('cliente_id', $factura?->cliente_id ?? optional($clientePreseleccionado)->id) == $cliente->id)>
 											{{ $cliente->razon_social ?: $cliente->nombre }}
 										</option>
 									@endforeach
@@ -450,18 +450,14 @@
 									value="{{ old('cliente_cp', $factura?->cliente_cp) }}">
 								<div class="invalid-feedback" data-error-for="cliente_cp"></div>
 							</div>
-							<div class="col-md-2 factura-meta-campo">
-								<label for="cliente_ciudad" class="form-label d-block">Ciudad</label>
-								<input type="text" name="cliente_ciudad" id="cliente_ciudad" class="form-control"
-									value="{{ old('cliente_ciudad', $factura?->cliente_ciudad) }}">
-								<div class="invalid-feedback" data-error-for="cliente_ciudad"></div>
-							</div>
-							<div class="col-md-2 factura-meta-campo">
-								<label for="cliente_provincia" class="form-label d-block">Provincia</label>
-								<input type="text" name="cliente_provincia" id="cliente_provincia" class="form-control"
-									value="{{ old('cliente_provincia', $factura?->cliente_provincia) }}">
-								<div class="invalid-feedback" data-error-for="cliente_provincia"></div>
-							</div>
+							{{-- Provincia → Ciudad encadenadas (docs/04-front-guidelines.md, «Provincia y localidad»). --}}
+							<x-provincia-localidad
+								name-provincia="cliente_provincia"
+								name-ciudad="cliente_ciudad"
+								:valor-provincia="old('cliente_provincia', $factura?->cliente_provincia)"
+								:valor-ciudad="old('cliente_ciudad', $factura?->cliente_ciudad)"
+								label-class="form-label d-block"
+								col="col-md-2 factura-meta-campo" />
 							<div class="col-md-2 factura-meta-campo">
 								<label for="cliente_pais" class="form-label d-block">País</label>
 								<input type="text" name="cliente_pais" id="cliente_pais" maxlength="2" class="form-control"

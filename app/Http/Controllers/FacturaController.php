@@ -141,10 +141,15 @@ class FacturaController extends Controller
         return view('facturas.index');
     }
 
-    public function create(): View
+    public function create(Request $request): View
     {
+        $clientePreseleccionado = $request->query('cliente_id')
+            ? Cliente::find($request->query('cliente_id'))
+            : null;
+
         return view('facturas.create', [
             'factura' => null,
+            'clientePreseleccionado' => $clientePreseleccionado,
             'clientes' => Cliente::orderBy('nombre')->get(),
             'cuentasBancarias' => CuentaBancaria::where('activa', true)->with('banco')->orderBy('alias')->get(),
             'diasVencimiento' => VencimientoFactura::diasPorDefecto(),

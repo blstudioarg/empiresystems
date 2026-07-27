@@ -26,6 +26,7 @@
 					'Acciones' +
 				'</button>' +
 				'<ul class="dropdown-menu dropdown-menu-end">' +
+					'<li><a class="dropdown-item" href="' + escapeAttr(row.perfil_url) + '">Ver perfil</a></li>' +
 					'<li>' +
 						'<button type="button" class="dropdown-item btn-edit-cliente" data-bs-toggle="modal" data-bs-target="#clienteModal"' +
 							' data-id="' + escapeAttr(row.id) + '"' +

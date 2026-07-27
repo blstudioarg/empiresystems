@@ -57,14 +57,20 @@
 			cliente_nif: 'nif',
 			cliente_direccion: 'direccion',
 			cliente_cp: 'cp',
-			cliente_ciudad: 'ciudad',
-			cliente_provincia: 'provincia',
 			cliente_pais: 'pais',
 		};
 
 		$.each(campos, function (idCampo, dataAttr) {
 			$('#' + idCampo).val($option.data(dataAttr) || '');
 		});
+
+		// Provincia/ciudad son selects encadenados: la ciudad depende de una carga AJAX,
+		// así que no se puede setear con .val() directo.
+		var geo = window.ProvinciaLocalidad && window.ProvinciaLocalidad.get('cliente_provincia');
+
+		if (geo) {
+			geo.setValues($option.data('provincia'), $option.data('ciudad'));
+		}
 	}
 
 	function recalcularPreview() {
