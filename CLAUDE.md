@@ -6,9 +6,33 @@ SaaS de facturación para España (multi-tenant). Ver `docs/00-vision.md` para l
 del producto y `docs/01-arquitectura.md`, `docs/02-facturacion-espana.md`, `docs/03-modelo-datos.md`
 para las decisiones técnicas, normativa y modelo de datos.
 
-Antes de crear o tocar cualquier vista/componente de front, leer `docs/04-front-guidelines.md`
-(convenciones de UI recurrentes: layout de previews de imagen, notificaciones, etc.). Si durante
-el trabajo surge una decisión de UI que valga la pena repetir en el futuro, añadirla ahí.
+## REGLA DE ORO: leer la documentación ANTES de escribir el spec, no al implementar
+
+**Esta es la regla número uno del proyecto y se incumplió al menos una vez (feature 035, perfil de
+cliente): se generó el spec/plan/tasks y se implementó una vista con `<table>` planas + `@foreach`
+y con "Ver factura" abriendo una pestaña nueva, violando dos convenciones que YA estaban escritas
+en `docs/04-front-guidelines.md` ("Listados: SIEMPRE DataTable, nunca una `<table>` plana" y el
+patrón de vista previa de PDF en modal). El problema no fue que faltara la regla: fue no leerla.**
+
+Por tanto, **antes de escribir una sola línea de spec, plan, tasks o código**, hay que leer de
+verdad (con la herramienta de lectura, no de memoria) la documentación que aplique al área tocada:
+
+- `docs/04-front-guidelines.md` — **obligatorio** si la feature toca cualquier vista, listado,
+  formulario, modal, tabla, gráfico o componente visual. No alcanza con abrirlo al implementar: las
+  convenciones (DataTable, modal de alta/edición, dropdown de acciones, previews en modal, overrides
+  de CSS por vista) **condicionan el propio spec y el desglose de tareas**. Un plan que no las
+  refleja produce trabajo que hay que rehacer entero.
+- `docs/00-vision.md`, `01-arquitectura.md`, `02-facturacion-espana.md`, `03-modelo-datos.md` —
+  para alcance, decisiones técnicas, normativa y modelo de datos.
+- `.specify/memory/constitution.md` — reglas no negociables.
+
+Si al leer la doc aparece una convención que aplica, **citarla explícitamente en el plan/tasks**
+(qué sección, qué exige), para que quede trazable que se tuvo en cuenta. Si algo del código
+existente contradice la doc, es la doc la que manda salvo que el usuario diga lo contrario.
+
+Y si durante el trabajo surge una decisión de UI/arquitectura que valga la pena repetir en el
+futuro, **añadirla a la doc correspondiente en el mismo cambio** (ver "Documentación al día en TODO
+cambio" más abajo). Una convención que existe solo en el código y no en la doc se vuelve a violar.
 
 Además, para cualquier tarea de diseño de front (nueva vista, rediseño, decisión estética,
 layout, paleta, tipografía, componente visual), usar las skills de diseño instaladas a nivel de
@@ -49,11 +73,24 @@ Todo feature nuevo entra por el flujo de spec-kit, en este orden:
 2. `/speckit-clarify` (opcional pero recomendado si hay ambigüedad) — antes de planificar.
 3. `/speckit-plan` — plan de implementación técnico.
 4. `/speckit-tasks` — desglose en tareas accionables.
-5. `/speckit-analyze` (opcional) — chequeo de consistencia entre spec/plan/tasks antes de implementar.
+5. `/speckit-analyze` — chequeo de consistencia entre spec/plan/tasks antes de implementar.
 6. `/speckit-implement` — ejecutar las tareas.
 
 No implementar código de negocio nuevo directo, sin pasar por spec → plan → tasks, salvo que el
 usuario pida explícitamente saltarse el flujo para algo trivial (fix menor, config, etc.).
+
+**Cuando el usuario pide "un spec" (o "hazme el spec de X"), sin más precisión, el alcance por
+defecto es correr los pasos 1 a 5 inclusive (`/speckit-specify` → `/speckit-clarify` si hay
+ambigüedad → `/speckit-plan` → `/speckit-tasks` → `/speckit-analyze`), NO detenerse antes.** El
+paso 6 (`/speckit-implement`) queda para cuando el usuario lo pida explícitamente por separado —
+"un spec" no incluye implementar.
+
+Además, `/speckit-analyze` no es un paso informativo que se corre y se reporta: si detecta
+inconsistencias, ambigüedades o huecos entre spec/plan/tasks, hay que **corregirlos ahí mismo**
+(editar spec.md/plan.md/tasks.md según corresponda) y volver a correr el análisis hasta que quede
+limpio, antes de dar la tarea por terminada. El criterio de "spec listo" es que quede en estado
+**realmente implementable sin retrabajo**: no alcanza con generar los artefactos, hay que dejarlos
+sin issues pendientes de `/speckit-analyze`.
 
 ### Al cerrar un spec/feature
 
@@ -110,6 +147,35 @@ tocaste una vista con guía, la guía entra en el mismo cambio, no "después".
 
 ## Notas
 
+- **Accesos de desarrollo: siempre en `ACCESOS.local.md`.** Las credenciales para entrar a la app
+  en local (superadmin, tenant "Empire Demo" y su admin) están documentadas en
+  `ACCESOS.local.md` (raíz del repo, gitignored) y duplicadas en `.env` bajo las claves
+  `ACCESO_PERSONAL_*`. Son reproducibles vía `php artisan db:seed --class=AccesoPersonalSeeder`
+  (idempotente: crea lo que falte tras un reset de BD, nunca pisa una contraseña de un usuario que
+  ya existe). Antes de decir "no sé la contraseña" o resetear algo a ciegas, **leer ese archivo
+  primero** — casi seguro ya está resuelto ahí. Si alguna vez se cambia una contraseña a mano desde
+  la app (lo cual no debería hacer falta casi nunca, dado que borrar/resetear registros está
+  prohibido por regla — ver el punto siguiente), **anotar el cambio en `ACCESOS.local.md` y en
+  `.env` en el mismo momento**, no después: el seeder no lo va a detectar ni sincronizar solo.
+- **Nunca perder datos de desarrollo/demo (registros con imágenes u otro valor de presentación).**
+  El `DatabaseSeeder` está intencionalmente vacío (ver su docblock) y `AccesoPersonalSeeder` es
+  idempotente (`firstOrCreate`) precisamente para que el acceso de desarrollo sobreviva a un
+  `migrate:fresh`. Pero eso **no** cubre el resto de datos de demo: clientes, artículos, facturas,
+  etc. cargados a mano o vía otros seeders, muchos con imágenes/logos/adjuntos subidos manualmente
+  que ningún factory puede regenerar (el factory no sabe qué imagen "quedaba bien" para la demo).
+  Por tanto:
+  - **Nunca ejecutar `migrate:fresh`, `migrate:refresh`, `db:wipe`, o cualquier comando que
+    trunque/dropee tablas, sin pedir confirmación explícita antes** (esto ya aplica por la política
+    general de acciones destructivas, pero aquí el costo es mayor: se pierden registros con valor
+    de presentación que no hay forma automática de recrear).
+  - Antes de correr una migración nueva en desarrollo, si hay dudas de que pueda implicar un
+    reset (o de que una migración con `down()` destructivo vaya a ejecutarse), avisar y confirmar.
+  - Si en algún momento se identifican registros de demo "showcase" (con imagen/logo específico)
+    que valga la pena poder recrear tras una pérdida, la solución correcta es sumarlos a un seeder
+    idempotente (patrón `AccesoPersonalSeeder`: `firstOrCreate` + imagen versionada en el propio
+    repo, no solo en `storage/`), no evitar las migraciones.
+  - Si de todos modos se pierden datos (reset accidental, rollback, etc.), decirlo de inmediato en
+    vez de seguir como si no hubiera pasado nada.
 - **Herramientas de navegador (MCP): confirmación + elección deliberada.** Hay tres disponibles:
   Playwright (`mcp__playwright__*`), Chrome DevTools (`mcp__chrome-devtools__*`) y Oculo
   (`mcp__oculo__*`). Reglas:
