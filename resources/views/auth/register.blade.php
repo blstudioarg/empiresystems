@@ -110,7 +110,13 @@
 							</div>
 							<div class="mb-4">
 								<label class="mb-1">Confirmar contraseña<span class="text-danger"> *</span></label>
-								<input type="password" name="password_confirmation" class="form-control">
+								<div class="position-relative">
+									<input type="password" name="password_confirmation" class="form-control">
+									<span class="show-pass eye">
+										<i class="fa fa-eye-slash"></i>
+										<i class="fa fa-eye"></i>
+									</span>
+								</div>
 							</div>
 							<div class="text-center mb-4 d-grid">
 								<button type="submit" class="btn btn-primary">Solicitar acceso</button>

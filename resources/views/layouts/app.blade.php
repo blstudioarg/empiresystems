@@ -59,6 +59,7 @@
 	<script src="{{ asset('js/toastr-config.js') }}"></script>
 	<script src="{{ asset('js/button-loading.js') }}"></script>
 	<script src="{{ asset('js/confirm-delete.js') }}"></script>
+	<script src="{{ asset('js/plugins-init/password-toggle.init.js') }}"></script>
 
 	{{-- Player de Lordicon (cuenta propia): renderiza <lord-icon> a partir de los JSON
 	     descargados con `php artisan lordicon:get` y cacheados en public/icons/lordicon/. --}}

@@ -34,6 +34,7 @@
 	<script src="{{ asset('vendor/global/global.min.js') }}"></script>
 	<script src="{{ asset('vendor/bootstrap-select/dist/js/bootstrap-select.min.js') }}"></script>
 	<script src="{{ asset('js/custom.js') }}"></script>
+	<script src="{{ asset('js/plugins-init/password-toggle.init.js') }}"></script>
 
 	@stack('scripts')
 </body>
