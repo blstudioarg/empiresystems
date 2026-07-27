@@ -88,7 +88,36 @@
 	</div>
 	<div class="admin-field col-md-6">
 		<label for="admin_password" class="form-label">Contraseña del administrador</label>
-		<input type="password" name="admin_password" id="admin_password" class="form-control" autocomplete="new-password">
+		<div class="position-relative">
+			<input type="password" name="admin_password" id="admin_password" class="form-control" autocomplete="new-password">
+			<span class="show-pass eye">
+				<i class="fa fa-eye-slash"></i>
+				<i class="fa fa-eye"></i>
+			</span>
+		</div>
 		<div class="invalid-feedback" data-error-for="admin_password"></div>
+	</div>
+
+	<div class="usuarios-tenant-field col-12 d-none">
+		<hr>
+		<h6 class="mb-3">Usuarios del tenant</h6>
+		<div class="table-responsive">
+			<table class="table table-sm align-middle">
+				<thead>
+					<tr>
+						<th>Nombre</th>
+						<th>Rol</th>
+						<th>Email de acceso</th>
+						<th>Nueva contraseña</th>
+						<th></th>
+					</tr>
+				</thead>
+				<tbody id="usuarios-tenant-body">
+					<tr>
+						<td colspan="5" class="text-center text-muted">Cargando usuarios...</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
 	</div>
 </div>

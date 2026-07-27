@@ -6,11 +6,16 @@ use App\Enums\EstadoFactura;
 use App\Enums\EstadoUsuario;
 use App\Enums\UserRole;
 use App\Models\Factura;
+use App\Models\LogActividad;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Support\CatalogoPermisos;
+use App\Support\ProvisionadorRoles;
 use Database\Seeders\PermisosSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 class TenantCrudTest extends TestCase
@@ -213,18 +218,18 @@ class TenantCrudTest extends TestCase
         $tenant = Tenant::where('nombre_comercial', 'Nuevo Tenant SL')->first();
         $admin = User::where('tenant_id', $tenant->id)->where('email', 'admin@nuevo-tenant.test')->first();
 
-        $registrar = app(\Spatie\Permission\PermissionRegistrar::class);
+        $registrar = app(PermissionRegistrar::class);
         $registrar->setPermissionsTeamId($tenant->getTenantKey());
 
-        $rolAdmin = \Spatie\Permission\Models\Role::where('tenant_id', $tenant->getTenantKey())
-            ->where('name', \App\Support\ProvisionadorRoles::ROL_ADMINISTRADOR)->first();
+        $rolAdmin = Role::where('tenant_id', $tenant->getTenantKey())
+            ->where('name', ProvisionadorRoles::ROL_ADMINISTRADOR)->first();
 
         $this->assertNotNull($rolAdmin);
         $this->assertCount(count(CatalogoPermisos::claves()), $rolAdmin->permissions);
         $this->assertTrue($admin->fresh()->hasRole($rolAdmin));
 
-        $rolUsuario = \Spatie\Permission\Models\Role::where('tenant_id', $tenant->getTenantKey())
-            ->where('name', \App\Support\ProvisionadorRoles::ROL_USUARIO)->first();
+        $rolUsuario = Role::where('tenant_id', $tenant->getTenantKey())
+            ->where('name', ProvisionadorRoles::ROL_USUARIO)->first();
         $this->assertNotNull($rolUsuario);
         $this->assertTrue((bool) $rolUsuario->es_defecto);
     }
@@ -233,7 +238,7 @@ class TenantCrudTest extends TestCase
     {
         $this->actingAsSuperAdmin();
 
-        \Spatie\Permission\Models\Role::creating(function () {
+        Role::creating(function () {
             throw new \RuntimeException('Fallo simulado al provisionar roles.');
         });
 
@@ -554,5 +559,180 @@ class TenantCrudTest extends TestCase
 
         $this->assertDatabaseMissing('tenants', ['id' => $tenant->id]);
         $this->assertDatabaseMissing('domains', ['domain' => $dominio]);
+    }
+
+    public function test_super_admin_ve_solo_los_usuarios_del_tenant_editado(): void
+    {
+        $tenantA = Tenant::factory()->create();
+        $tenantB = Tenant::factory()->create();
+        $usuarioA = User::factory()->create(['tenant_id' => $tenantA->id, 'name' => 'Usuario A']);
+        User::factory()->create(['tenant_id' => $tenantB->id, 'name' => 'Usuario B']);
+
+        $this->actingAsSuperAdmin();
+
+        $response = $this->getJson("http://localhost/super_admin/tenants/{$tenantA->id}/usuarios");
+
+        $response->assertOk();
+        $response->assertJsonCount(1, 'data');
+        $response->assertJsonFragment(['id' => $usuarioA->id, 'name' => 'Usuario A']);
+    }
+
+    public function test_usuario_de_tenant_no_puede_ver_usuarios_de_ningun_tenant(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $user = User::factory()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
+
+        $this->post("http://{$this->domainFor($tenant)}/login", [
+            'email' => $user->email,
+            'password' => 'secret123',
+        ]);
+
+        $response = $this->getJson("http://localhost/super_admin/tenants/{$tenant->id}/usuarios");
+
+        $response->assertForbidden();
+    }
+
+    public function test_super_admin_puede_editar_el_email_de_un_usuario_del_tenant(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $usuario = User::factory()->create(['tenant_id' => $tenant->id, 'email' => 'viejo@ejemplo.com']);
+
+        $this->actingAsSuperAdmin();
+
+        $response = $this->putJson("http://localhost/super_admin/tenants/{$tenant->id}/usuarios/{$usuario->id}", [
+            'email' => 'nuevo@ejemplo.com',
+            'password' => '',
+        ]);
+
+        $response->assertOk();
+        $this->assertEquals('nuevo@ejemplo.com', $usuario->fresh()->email);
+    }
+
+    public function test_super_admin_puede_resetear_la_contrasena_de_un_usuario_del_tenant(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $usuario = User::factory()->create(['tenant_id' => $tenant->id, 'password' => Hash::make('vieja-clave')]);
+        $dominio = $this->domainFor($tenant);
+
+        $this->actingAsSuperAdmin();
+
+        $this->putJson("http://localhost/super_admin/tenants/{$tenant->id}/usuarios/{$usuario->id}", [
+            'email' => $usuario->email,
+            'password' => 'nueva-clave-123',
+        ])->assertOk();
+
+        $this->post('http://localhost/logout');
+
+        $response = $this->post("http://{$dominio}/login", [
+            'email' => $usuario->email,
+            'password' => 'nueva-clave-123',
+        ]);
+
+        $this->assertAuthenticatedAs($usuario->fresh());
+        $response->assertRedirect('/');
+    }
+
+    public function test_dejar_la_contrasena_vacia_no_modifica_la_contrasena_existente(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $usuario = User::factory()->create(['tenant_id' => $tenant->id, 'password' => Hash::make('clave-original')]);
+        $hashOriginal = $usuario->password;
+
+        $this->actingAsSuperAdmin();
+
+        $this->putJson("http://localhost/super_admin/tenants/{$tenant->id}/usuarios/{$usuario->id}", [
+            'email' => $usuario->email,
+            'password' => '',
+        ])->assertOk();
+
+        $this->assertEquals($hashOriginal, $usuario->fresh()->password);
+    }
+
+    public function test_email_ya_usado_por_otro_usuario_falla_la_validacion(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $usuario = User::factory()->create(['tenant_id' => $tenant->id]);
+        $otro = User::factory()->create(['email' => 'ocupado@ejemplo.com']);
+
+        $this->actingAsSuperAdmin();
+
+        $response = $this->putJson("http://localhost/super_admin/tenants/{$tenant->id}/usuarios/{$usuario->id}", [
+            'email' => $otro->email,
+            'password' => '',
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors('email');
+    }
+
+    public function test_contrasena_nueva_demasiado_corta_falla_la_validacion(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $usuario = User::factory()->create(['tenant_id' => $tenant->id]);
+
+        $this->actingAsSuperAdmin();
+
+        $response = $this->putJson("http://localhost/super_admin/tenants/{$tenant->id}/usuarios/{$usuario->id}", [
+            'email' => $usuario->email,
+            'password' => 'corta',
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors('password');
+    }
+
+    public function test_editar_usuario_de_otro_tenant_devuelve_404(): void
+    {
+        $tenantA = Tenant::factory()->create();
+        $tenantB = Tenant::factory()->create();
+        $usuarioDeB = User::factory()->create(['tenant_id' => $tenantB->id]);
+
+        $this->actingAsSuperAdmin();
+
+        $response = $this->putJson("http://localhost/super_admin/tenants/{$tenantA->id}/usuarios/{$usuarioDeB->id}", [
+            'email' => 'nuevo@ejemplo.com',
+            'password' => '',
+        ]);
+
+        $response->assertNotFound();
+    }
+
+    public function test_edicion_de_usuario_queda_registrada_en_el_log_de_actividad(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $usuario = User::factory()->create(['tenant_id' => $tenant->id, 'email' => 'viejo@ejemplo.com']);
+        $superAdmin = $this->actingAsSuperAdmin();
+
+        $this->putJson("http://localhost/super_admin/tenants/{$tenant->id}/usuarios/{$usuario->id}", [
+            'email' => 'nuevo@ejemplo.com',
+            'password' => 'nueva-clave-123',
+        ])->assertOk();
+
+        $this->assertDatabaseHas('logs_actividad', [
+            'tenant_id' => $tenant->id,
+            'usuario_id' => $superAdmin->id,
+            'accion' => 'modificacion',
+            'entidad_tipo' => 'usuario',
+            'entidad_id' => $usuario->id,
+        ]);
+
+        $log = LogActividad::where('entidad_id', $usuario->id)->first();
+        $this->assertStringContainsString('email', $log->descripcion);
+        $this->assertStringContainsString('contraseña', $log->descripcion);
+    }
+
+    public function test_no_hacer_cambios_no_genera_entrada_en_el_log(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $usuario = User::factory()->create(['tenant_id' => $tenant->id]);
+
+        $this->actingAsSuperAdmin();
+
+        $this->putJson("http://localhost/super_admin/tenants/{$tenant->id}/usuarios/{$usuario->id}", [
+            'email' => $usuario->email,
+            'password' => '',
+        ])->assertOk();
+
+        $this->assertDatabaseMissing('logs_actividad', ['entidad_id' => $usuario->id]);
     }
 }

@@ -34,6 +34,7 @@
 					'<li>' +
 						'<button type="button" class="dropdown-item btn-edit-tenant" data-bs-toggle="modal" data-bs-target="#tenantModal"' +
 							' data-update-url="' + escapeAttr(row.update_url) + '"' +
+							' data-usuarios-url="' + escapeAttr(row.usuarios_url) + '"' +
 							' data-dominio="' + escapeAttr(row.dominio) + '"' +
 							' data-nombre-comercial="' + escapeAttr(row.nombre_comercial) + '"' +
 							' data-razon-social="' + escapeAttr(row.razon_social) + '"' +

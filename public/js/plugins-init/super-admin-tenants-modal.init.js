@@ -86,6 +86,116 @@
 		var $adminFields = $form.find('.admin-field');
 		var $adminEmail = $form.find('#admin_email');
 		var $adminPassword = $form.find('#admin_password');
+		var $usuariosSection = $form.find('.usuarios-tenant-field');
+		var $usuariosBody = $form.find('#usuarios-tenant-body');
+
+		function escapeHtml(value) {
+			return $('<div>').text(value === null || value === undefined ? '' : value).html();
+		}
+
+		function renderUsuariosError(message) {
+			$usuariosBody.html('<tr><td colspan="5" class="text-center text-danger">' + escapeHtml(message) + '</td></tr>');
+		}
+
+		function renderUsuarios(usuarios) {
+			if (!usuarios.length) {
+				$usuariosBody.html('<tr><td colspan="5" class="text-center text-muted">Este tenant todavía no tiene usuarios.</td></tr>');
+				return;
+			}
+
+			var rows = usuarios.map(function (usuario) {
+				return (
+					'<tr data-usuario-row data-update-url="' + escapeHtml(usuario.update_url) + '">' +
+						'<td>' + escapeHtml(usuario.name) + '</td>' +
+						'<td>' + escapeHtml(usuario.rol) + '</td>' +
+						'<td>' +
+							'<input type="email" class="form-control form-control-sm" data-usuario-email value="' + escapeHtml(usuario.email) + '">' +
+							'<div class="invalid-feedback d-block" data-usuario-error-email></div>' +
+						'</td>' +
+						'<td>' +
+							'<div class="position-relative">' +
+								'<input type="password" class="form-control form-control-sm" data-usuario-password placeholder="Dejar en blanco para no cambiar" autocomplete="new-password">' +
+								'<span class="show-pass eye"><i class="fa fa-eye-slash"></i><i class="fa fa-eye"></i></span>' +
+							'</div>' +
+							'<div class="invalid-feedback d-block" data-usuario-error-password></div>' +
+						'</td>' +
+						'<td>' +
+							'<button type="button" class="btn btn-sm btn-outline-primary" data-usuario-guardar>Guardar</button>' +
+						'</td>' +
+					'</tr>'
+				);
+			});
+
+			$usuariosBody.html(rows.join(''));
+		}
+
+		function cargarUsuarios(usuariosUrl) {
+			if (!usuariosUrl) {
+				renderUsuariosError('No se pudo determinar la URL de usuarios de este tenant.');
+				return;
+			}
+
+			$usuariosBody.html('<tr><td colspan="5" class="text-center text-muted">Cargando usuarios...</td></tr>');
+
+			$.ajax({ url: usuariosUrl, method: 'GET', dataType: 'json', headers: { Accept: 'application/json' } })
+				.done(function (response) {
+					renderUsuarios(response.data || []);
+				})
+				.fail(function () {
+					renderUsuariosError('No se pudieron cargar los usuarios de este tenant.');
+				});
+		}
+
+		$usuariosBody.on('click', '[data-usuario-guardar]', function () {
+			var $btn = $(this);
+			var $row = $btn.closest('tr');
+			var updateUrl = $row.data('update-url');
+			var $emailInput = $row.find('[data-usuario-email]');
+			var $passwordInput = $row.find('[data-usuario-password]');
+			var $emailError = $row.find('[data-usuario-error-email]');
+			var $passwordError = $row.find('[data-usuario-error-password]');
+
+			$emailInput.removeClass('is-invalid');
+			$passwordInput.removeClass('is-invalid');
+			$emailError.text('');
+			$passwordError.text('');
+
+			window.withButtonLoading($btn, function () {
+				return $.ajax({
+					url: updateUrl,
+					method: 'POST',
+					data: {
+						_method: 'PUT',
+						_token: $('meta[name="csrf-token"]').attr('content') || $form.find('input[name="_token"]').val(),
+						email: $emailInput.val(),
+						password: $passwordInput.val(),
+					},
+					dataType: 'json',
+					headers: { Accept: 'application/json' },
+				});
+			})
+				.done(function (response) {
+					$passwordInput.val('');
+					showAlert('success', response.message || 'Usuario actualizado correctamente.');
+				})
+				.fail(function (xhr) {
+					if (xhr.status === 422) {
+						var errors = (xhr.responseJSON && xhr.responseJSON.errors) || {};
+
+						if (errors.email) {
+							$emailInput.addClass('is-invalid');
+							$emailError.text(errors.email[0]);
+						}
+
+						if (errors.password) {
+							$passwordInput.addClass('is-invalid');
+							$passwordError.text(errors.password[0]);
+						}
+					} else {
+						showAlert('danger', 'Ocurrió un error inesperado. Inténtalo de nuevo.');
+					}
+				});
+		});
 
 		function resetForm() {
 			clearErrors();
@@ -96,6 +206,8 @@
 			$adminFields.removeClass('d-none');
 			$adminEmail.prop('required', true);
 			$adminPassword.prop('required', true);
+			$usuariosSection.addClass('d-none');
+			$usuariosBody.html('');
 			$('#tenantModalLabel').text('Agregar tenant');
 		}
 
@@ -116,10 +228,13 @@
 			$form.find('#regimen_impositivo').val(data.regimenImpositivo);
 			$form.find('#email').val(data.email);
 			$form.find('#activo').prop('checked', data.activo === '1');
-			// Editar un tenant no crea ni modifica su administrador (research.md D5).
+			// Editar un tenant no crea ni modifica su administrador inicial (research.md D5); los
+			// usuarios ya existentes del tenant se gestionan aparte, en la sección de abajo.
 			$adminFields.addClass('d-none');
 			$adminEmail.prop('required', false).val('');
 			$adminPassword.prop('required', false).val('');
+			$usuariosSection.removeClass('d-none');
+			cargarUsuarios(data.usuariosUrl);
 			$('#tenantModalLabel').text('Editar tenant');
 		}
 
@@ -144,6 +259,7 @@
 				regimenImpositivo: $btn.data('regimen-impositivo'),
 				email: $btn.data('email'),
 				activo: String($btn.data('activo')),
+				usuariosUrl: $btn.data('usuarios-url'),
 			});
 		});
 

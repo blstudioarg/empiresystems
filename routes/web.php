@@ -417,4 +417,6 @@ Route::middleware(['tenant.context', 'auth'])->group(function () {
 
 Route::middleware(['tenant.context', 'auth', 'super_admin'])->prefix('super_admin')->name('super_admin.')->group(function () {
     Route::resource('tenants', SuperAdminTenantController::class)->only(['index', 'store', 'update', 'destroy']);
+    Route::get('tenants/{tenant}/usuarios', [SuperAdminTenantController::class, 'usuarios'])->name('tenants.usuarios');
+    Route::put('tenants/{tenant}/usuarios/{usuario}', [SuperAdminTenantController::class, 'actualizarUsuario'])->name('tenants.usuarios.update');
 });

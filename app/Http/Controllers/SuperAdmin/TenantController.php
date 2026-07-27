@@ -2,13 +2,18 @@
 
 namespace App\Http\Controllers\SuperAdmin;
 
+use App\Enums\AccionLogActividad;
+use App\Enums\EntidadLogActividad;
 use App\Enums\EstadoFactura;
 use App\Enums\EstadoUsuario;
+use App\Enums\ResultadoLogActividad;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\SuperAdmin\ActualizarUsuarioTenantRequest;
 use App\Http\Requests\SuperAdmin\StoreTenantRequest;
 use App\Http\Requests\SuperAdmin\UpdateTenantRequest;
 use App\Models\Factura;
+use App\Models\LogActividad;
 use App\Models\Provincia;
 use App\Models\Tenant;
 use App\Models\User;
@@ -53,6 +58,7 @@ class TenantController extends Controller
                     'activo' => $tenant->activo,
                     'update_url' => route('super_admin.tenants.update', $tenant),
                     'delete_url' => route('super_admin.tenants.destroy', $tenant),
+                    'usuarios_url' => route('super_admin.tenants.usuarios', $tenant),
                 ])->values(),
                 'totales' => [
                     'total' => $tenants->count(),
@@ -149,6 +155,76 @@ class TenantController extends Controller
         }
 
         return redirect()->route('super_admin.tenants.index')->with('success', 'Tenant actualizado correctamente.');
+    }
+
+    /**
+     * Listado de usuarios de un tenant, para la sección "Usuarios" del modal de edición.
+     */
+    public function usuarios(Tenant $tenant): JsonResponse
+    {
+        $usuarios = User::where('tenant_id', $tenant->id)
+            ->orderBy('name')
+            ->get(['id', 'name', 'email', 'rol', 'estado', 'activo'])
+            ->map(fn (User $usuario) => [
+                'id' => $usuario->id,
+                'name' => $usuario->name,
+                'email' => $usuario->email,
+                'rol' => $usuario->rol,
+                'estado' => $usuario->estado,
+                'activo' => $usuario->activo,
+                'update_url' => route('super_admin.tenants.usuarios.update', ['tenant' => $tenant->id, 'usuario' => $usuario->id]),
+            ]);
+
+        return response()->json(['data' => $usuarios->values()]);
+    }
+
+    /**
+     * Edita el email de acceso y, opcionalmente, resetea la contraseña de un usuario del tenant.
+     * No expone ni permite ver la contraseña actual (irreversible por diseño). Cada cambio queda
+     * en `logs_actividad` (RGPD/LOPDGDD, constitución Principio II): el actor es el Super Admin,
+     * pero el registro se asocia al tenant del usuario afectado, no al del actor (que no tiene).
+     */
+    public function actualizarUsuario(ActualizarUsuarioTenantRequest $request, Tenant $tenant, int $usuario): JsonResponse
+    {
+        $usuarioModelo = User::where('tenant_id', $tenant->id)->findOrFail($usuario);
+        $datos = $request->validated();
+
+        $emailAnterior = $usuarioModelo->email;
+        $emailCambio = $datos['email'] !== $emailAnterior;
+        $passwordCambio = ! empty($datos['password']);
+
+        if (! $emailCambio && ! $passwordCambio) {
+            return response()->json(['message' => 'No hay cambios que guardar.']);
+        }
+
+        $usuarioModelo->email = $datos['email'];
+
+        if ($passwordCambio) {
+            $usuarioModelo->password = Hash::make($datos['password']);
+        }
+
+        $usuarioModelo->save();
+
+        $cambios = array_filter([
+            $emailCambio ? "email ({$emailAnterior} → {$datos['email']})" : null,
+            $passwordCambio ? 'contraseña' : null,
+        ]);
+
+        LogActividad::create([
+            'tenant_id' => $tenant->id,
+            'usuario_id' => $request->user()->id,
+            'usuario_nombre' => $request->user()->name,
+            'accion' => AccionLogActividad::Modificacion,
+            'resultado' => ResultadoLogActividad::Exito,
+            'ip_origen' => $request->ip(),
+            'user_agent' => substr((string) $request->userAgent(), 0, 255),
+            'entidad_tipo' => EntidadLogActividad::Usuario,
+            'entidad_id' => $usuarioModelo->id,
+            'descripcion' => 'Super Admin modificó '.implode(' y ', $cambios)." del usuario {$usuarioModelo->name}.",
+            'ocurrido_at' => now(),
+        ]);
+
+        return response()->json(['message' => 'Usuario actualizado correctamente.']);
     }
 
     public function destroy(Request $request, Tenant $tenant): RedirectResponse|JsonResponse
