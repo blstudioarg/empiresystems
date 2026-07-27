@@ -1,0 +1,110 @@
+/* Editor jerárquico arrastrable del menú lateral (feature 036, tab Configuración → Menú).
+   Excepción documentada a "Listados: SIEMPRE DataTable" (docs/04-front-guidelines.md): esto no es
+   un listado de registros, es un editor de una jerarquía fija de 36 elementos. */
+
+.menu-editor-lista,
+.menu-editor-hijos {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.menu-editor-grupo {
+	margin-bottom: .75rem;
+}
+
+.menu-editor-hijos {
+	margin-top: .5rem;
+	padding-left: 2.25rem;
+	border-left: 2px solid var(--rgba-primary-1, rgba(29, 105, 214, .1));
+}
+
+.menu-editor-hijo {
+	margin-bottom: .5rem;
+}
+
+.menu-editor-hijo:last-child {
+	margin-bottom: 0;
+}
+
+.menu-editor-fila {
+	display: flex;
+	align-items: flex-start;
+	gap: .75rem;
+	background: var(--bs-card-bg, #fff);
+	border: 1px solid #e4e6ef;
+	border-radius: .5rem;
+	padding: .5rem .75rem;
+}
+
+.menu-editor-handle {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 1.75rem;
+	height: 1.75rem;
+	margin-top: .125rem;
+	border-radius: .375rem;
+	color: #6f767e;
+	cursor: grab;
+	flex-shrink: 0;
+}
+
+.menu-editor-handle:active {
+	cursor: grabbing;
+}
+
+/* Grupos contraídos por defecto (ver configuracion-menu.init.js): solo sus entradas quedan
+   ocultas, el propio grupo y su input de nombre siguen visibles y arrastrables. */
+.menu-editor-toggle {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 1.75rem;
+	height: 1.75rem;
+	margin-top: .125rem;
+	border: none;
+	background: transparent;
+	border-radius: .375rem;
+	color: #6f767e;
+	flex-shrink: 0;
+	cursor: pointer;
+}
+
+.menu-editor-toggle:hover {
+	background: rgba(0, 0, 0, .05);
+}
+
+.menu-editor-toggle i {
+	transition: transform .15s ease;
+}
+
+.menu-editor-grupo:not(.colapsado) > .menu-editor-fila .menu-editor-toggle i {
+	transform: rotate(90deg);
+}
+
+.menu-editor-grupo.colapsado > .menu-editor-hijos {
+	display: none;
+}
+
+.menu-editor-campo {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.menu-editor-campo .form-text {
+	margin-top: .25rem;
+}
+
+/* Placeholder que deja jQuery UI sortable en el hueco mientras se arrastra una fila. */
+.menu-editor-placeholder {
+	border: 1.5px dashed var(--primary, #1D69D6);
+	border-radius: .5rem;
+	background: var(--rgba-primary-1, rgba(29, 105, 214, .08));
+	margin-bottom: .5rem;
+}
+
+.menu-editor-grupo .ui-sortable-helper .menu-editor-fila,
+.menu-editor-hijo.ui-sortable-helper .menu-editor-fila {
+	box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .12);
+}

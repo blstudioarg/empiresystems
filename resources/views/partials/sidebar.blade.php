@@ -48,20 +48,11 @@
 							</ul>
 						</li>
 					@else
-						{{-- Inicio: solo si el rol tiene acceso al dashboard (doc 09, Cambio 5). Quien no lo
-						     tiene ni siquiera ve "Inicio"; su landing lo resuelve ResolvedorLanding. --}}
-						@can('ver-dashboard')
-						<li><a href="{{ route('dashboard') }}">
-								<div class="menu-icon">
-									<x-lordicon icon="home" size="30" trigger="hover" />
-								</div>
-								<span class="nav-text ms-2">Inicio</span>
-							</a>
-						</li>
-						@endcan
-						{{-- Control de fichaje: cada subvista con su permiso (doc 09, Cambios 1 y 5). Fichar y
-						     Mi jornada son personales (por defecto todos las tienen); el resto es gestión. --}}
-						@canany(['ver-fichar', 'ver-mi-jornada', 'ver-jornada', 'ver-calendario', 'ver-miembros', 'ver-horarios', 'ver-alertas'])
+						{{-- Menú dirigido por catálogo (feature 036): sidebar.blade.php ya no declara el menú
+						     del tenant a mano. Una entrada nueva se añade a App\Support\CatalogoMenu, no acá —
+						     ver docs/04-front-guidelines.md, "Nueva entrada de menú ⇒ nuevo permiso". La
+						     personalización (nombre/orden) la resuelve MenuTenant::estructura(); la
+						     visibilidad por permiso se sigue evaluando acá, igual que antes. --}}
 						@php
 							$__alertasNuevas = auth()->user()->can('ver-alertas')
 								? \App\Models\Alerta::where('tenant_id', tenant()->getTenantKey())
@@ -69,138 +60,58 @@
 									->count()
 								: 0;
 						@endphp
-						<li><a class="has-arrow " href="javascript:void(0);" aria-expanded="false">
-								<div class="menu-icon nav-icon-badge-wrap">
-									<x-lordicon icon="wired-outline-1846-employee-working-hover-working" size="30" trigger="hover" />
-									@if ($__alertasNuevas > 0)
-										<span class="nav-icon-badge">{{ $__alertasNuevas > 9 ? '9+' : $__alertasNuevas }}</span>
-									@endif
-								</div>
-								<span class="nav-text ms-2">Control de fichaje</span>
-							</a>
-							<ul aria-expanded="false">
-								@can('ver-fichar')<li><a href="{{ route('fichajes.index') }}">Fichar</a></li>@endcan
-								@can('ver-mi-jornada')<li><a href="{{ route('mi-jornada.index') }}">Mi jornada</a></li>@endcan
-								@can('ver-jornada')<li><a href="{{ route('jornada.index') }}">Jornada</a></li>@endcan
-								@can('ver-calendario')<li><a href="{{ route('calendario.index') }}">Calendario</a></li>@endcan
-								@can('ver-miembros')<li><a href="{{ route('miembros-equipo.index') }}">Miembros</a></li>@endcan
-								@can('ver-horarios')<li><a href="{{ route('horarios.index') }}">Horarios</a></li>@endcan
-								@can('ver-alertas')
-									<li><a href="{{ route('alertas.index') }}" class="nav-link-badge-wrap">
-										Alertas
-										@if ($__alertasNuevas > 0)
-											<span class="nav-inline-badge">{{ $__alertasNuevas > 9 ? '9+' : $__alertasNuevas }}</span>
-										@endif
-									</a></li>
-								@endcan
-							</ul>
-						</li>
-						@endcanany
-						@can('ver-clientes')
-						<li><a class="has-arrow " href="javascript:void(0);" aria-expanded="false">
-								<div class="menu-icon">
-									<x-lordicon icon="empresa" size="30" trigger="hover" />
-								</div>
-								<span class="nav-text ms-2">Clientes</span>
-							</a>
-							<ul aria-expanded="false">
-								<li><a href="{{ route('clientes.index') }}">Cartera de clientes</a></li>
-							</ul>
-						</li>
-						@endcan
-						@canany(['ver-leads', 'ver-oportunidades', 'ver-presupuestos', 'ver-albaranes', 'ver-informes-comerciales'])
-						<li><a class="has-arrow " href="javascript:void(0);" aria-expanded="false">
-								<div class="menu-icon">
-									<x-lordicon icon="wired-outline-456-handshake-deal-hover-pinch" size="30" trigger="hover" />
-								</div>
-								<span class="nav-text ms-2">CRM</span>
-							</a>
-							<ul aria-expanded="false">
-								@can('ver-leads')<li><a href="{{ route('leads.index') }}">Leads</a></li>@endcan
-								@can('ver-oportunidades')<li><a href="{{ route('oportunidades.index') }}">Oportunidades</a></li>@endcan
-								@can('ver-presupuestos')<li><a href="{{ route('presupuestos.index') }}">Presupuestos</a></li>@endcan
-									@can('ver-albaranes')<li><a href="{{ route('albaranes.index') }}">Albaranes</a></li>@endcan
-								@can('ver-informes-comerciales')<li><a href="{{ route('informes-comerciales.index') }}">Informes comerciales</a></li>@endcan
-							</ul>
-						</li>
-						@endcanany
-						@canany(['ver-articulos', 'ver-stock', 'ver-proveedores', 'ver-compras'])
-						<li><a class="has-arrow " href="javascript:void(0);" aria-expanded="false">
-								<div class="menu-icon">
-									<x-lordicon icon="box" size="30" trigger="hover" />
-								</div>
-								<span class="nav-text ms-2">Stock</span>
-							</a>
-							<ul aria-expanded="false">
-								@can('ver-articulos')<li><a href="{{ route('articulos.index') }}">Catálogo</a></li>@endcan
-								@can('ver-stock')<li><a href="{{ route('stock.index') }}">Kardex</a></li>@endcan
-								@can('ver-proveedores')<li><a href="{{ route('proveedores.index') }}">Proveedores</a></li>@endcan
-								@can('ver-compras')<li><a href="{{ route('compras.index') }}">Compras</a></li>@endcan
-							</ul>
-						</li>
-						@endcanany
-						@canany(['ver-facturas', 'ver-facturas-crear'])
-						<li><a class="has-arrow " href="javascript:void(0);" aria-expanded="false">
-								<div class="menu-icon">
-									<x-lordicon icon="invoice" size="30" trigger="hover" />
-								</div>
-								<span class="nav-text ms-2">Facturas</span>
-							</a>
-							<ul aria-expanded="false">
-								@can('ver-facturas')<li><a href="{{ route('facturas.index') }}">Facturas</a></li>@endcan
-								@can('ver-facturas-crear')<li><a href="{{ route('facturas.create') }}">Crear factura</a></li>@endcan
-							</ul>
-						</li>
-						@endcanany
-						@canany(['ver-pos', 'ver-pos-crear'])
-						<li><a class="has-arrow " href="javascript:void(0);" aria-expanded="false">
-								<div class="menu-icon">
-									<x-lordicon icon="ticket" size="30" trigger="hover" />
-								</div>
-								<span class="nav-text ms-2">POS</span>
-							</a>
-							<ul aria-expanded="false">
-								@can('ver-pos')<li><a href="{{ route('pos.index') }}">Facturas simplificadas</a></li>@endcan
-								@can('ver-pos-crear')<li><a href="{{ route('pos.create') }}">Crear ticket</a></li>@endcan
-							</ul>
-						</li>
-						@endcanany
-						@can('ver-archivos')
-						<li><a href="{{ route('archivos.index') }}">
-								<div class="menu-icon">
-									<x-lordicon icon="system-regular-49-upload-file" size="30" trigger="hover" />
-								</div>
-								<span class="nav-text ms-2">Archivos</span>
-							</a>
-						</li>
-						@endcan
-						@canany(['ver-campanas', 'ver-campanas-crear', 'ver-plantillas-email'])
-						<li><a class="has-arrow " href="javascript:void(0);" aria-expanded="false">
-								<div class="menu-icon">
-									<x-lordicon icon="system-regular-1-share" size="30" trigger="hover" />
-								</div>
-								<span class="nav-text ms-2">Marketing</span>
-							</a>
-							<ul aria-expanded="false">
-								@can('ver-campanas')<li><a href="{{ route('campanas.index') }}">Campañas</a></li>@endcan
-								@can('ver-campanas-crear')<li><a href="{{ route('campanas.create') }}">Nueva campaña</a></li>@endcan
-								@can('ver-plantillas-email')<li><a href="{{ route('plantillas-email.index') }}">Plantillas de email</a></li>@endcan
-							</ul>
-						</li>
-						@endcanany
-						@canany(['ver-usuarios', 'ver-roles'])
-						<li><a class="has-arrow " href="javascript:void(0);" aria-expanded="false">
-								<div class="menu-icon">
-									<x-lordicon icon="person" size="30" trigger="hover" />
-								</div>
-								<span class="nav-text ms-2">Usuarios</span>
-							</a>
-							<ul aria-expanded="false">
-								@can('ver-usuarios')<li><a href="{{ route('usuarios.index') }}">Usuarios</a></li>@endcan
-								@can('ver-roles')@if (\Illuminate\Support\Facades\Route::has('roles.index'))<li><a href="{{ route('roles.index') }}">Roles</a></li>@endif @endcan
-							</ul>
-						</li>
-						@endcanany
+						@foreach (\App\Support\MenuTenant::estructura(tenant()->getTenantKey()) as $__grupo)
+							@if (empty($__grupo['hijos']))
+								{{-- Grupo sin hijos: enlace directo (caso "Inicio"/"Archivos", D6.1) --}}
+								@if ($__grupo['ruta'] && \Illuminate\Support\Facades\Route::has($__grupo['ruta']) && (! $__grupo['permiso'] || auth()->user()->can($__grupo['permiso'])))
+									<li><a href="{{ route($__grupo['ruta']) }}">
+											<div class="menu-icon">
+												<x-lordicon icon="{{ $__grupo['icono'] }}" size="30" trigger="hover" />
+											</div>
+											<span class="nav-text ms-2">{{ $__grupo['etiqueta'] }}</span>
+										</a>
+									</li>
+								@endif
+							@else
+								@php
+									$__hijosVisibles = collect($__grupo['hijos'])->filter(function ($hijo) {
+										return $hijo['ruta']
+											&& \Illuminate\Support\Facades\Route::has($hijo['ruta'])
+											&& (! $hijo['permiso'] || auth()->user()->can($hijo['permiso']));
+									})->values();
+								@endphp
+								{{-- Grupo con hijos: visible si al menos un hijo sobrevive al filtro de permiso
+								     (equivalente al @canany de antes, derivado del catálogo — research.md D2) --}}
+								@if ($__hijosVisibles->isNotEmpty())
+									<li><a class="has-arrow " href="javascript:void(0);" aria-expanded="false">
+											<div class="menu-icon @if ($__grupo['clave'] === 'control-fichaje') nav-icon-badge-wrap @endif">
+												<x-lordicon icon="{{ $__grupo['icono'] }}" size="30" trigger="hover" />
+												@if ($__grupo['clave'] === 'control-fichaje' && $__alertasNuevas > 0)
+													<span class="nav-icon-badge">{{ $__alertasNuevas > 9 ? '9+' : $__alertasNuevas }}</span>
+												@endif
+											</div>
+											<span class="nav-text ms-2">{{ $__grupo['etiqueta'] }}</span>
+										</a>
+										<ul aria-expanded="false">
+											@foreach ($__hijosVisibles as $__hijo)
+												{{-- Badge de alertas condicionado a la CLAVE, nunca a la etiqueta
+												     personalizada (D6.2): renombrar "Alertas" no debe ocultarlo. --}}
+												@if ($__hijo['clave'] === 'alertas')
+													<li><a href="{{ route($__hijo['ruta']) }}" class="nav-link-badge-wrap">
+															{{ $__hijo['etiqueta'] }}
+															@if ($__alertasNuevas > 0)
+																<span class="nav-inline-badge">{{ $__alertasNuevas > 9 ? '9+' : $__alertasNuevas }}</span>
+															@endif
+														</a></li>
+												@else
+													<li><a href="{{ route($__hijo['ruta']) }}">{{ $__hijo['etiqueta'] }}</a></li>
+												@endif
+											@endforeach
+										</ul>
+									</li>
+								@endif
+							@endif
+						@endforeach
 					@endif
 				</ul>
 				<div class="help-desk pb-3">

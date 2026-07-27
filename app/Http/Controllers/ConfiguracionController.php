@@ -7,6 +7,7 @@ use App\Enums\EntidadLogActividad;
 use App\Enums\EntornoVerifactu;
 use App\Exceptions\CertificadoInvalidoException;
 use App\Exceptions\EmailNoConfiguradoException;
+use App\Http\Requests\ActualizarMenuRequest;
 use App\Http\Requests\UpdateAparienciaRequest;
 use App\Http\Requests\UpdateEmailRequest;
 use App\Mail\EmailPrueba;
@@ -22,6 +23,7 @@ use App\Support\ConfigFichajes;
 use App\Support\ConfigTenant;
 use App\Support\EmailTenant;
 use App\Support\IaTenant;
+use App\Support\MenuTenant;
 use App\Support\RetencionGeoTenant;
 use App\Support\RetencionMiembroTenant;
 use App\Support\TopeSimplificada;
@@ -89,6 +91,7 @@ class ConfiguracionController extends Controller
                 'entorno' => VerifactuTenant::entorno($tenantId)->value,
                 'cadena_iniciada' => VerifactuTenant::cadenaIniciada($tenantId),
             ],
+            'menuEstructura' => MenuTenant::estructura($tenantId),
         ]);
     }
 
@@ -616,6 +619,47 @@ class ConfiguracionController extends Controller
         }
 
         return redirect()->route('configuracion.show')->with('success', 'Configuración de archivos guardada correctamente.');
+    }
+
+    public function updateMenu(ActualizarMenuRequest $request): JsonResponse
+    {
+        $tenantId = tenant()->getTenantKey();
+        $datos = $request->validated();
+
+        MenuTenant::guardar($tenantId, $datos['etiquetas'] ?? [], $datos['orden'] ?? []);
+
+        $this->registradorActividad->registrar(
+            auth()->user(),
+            AccionLogActividad::Modificacion,
+            EntidadLogActividad::Configuracion,
+            null,
+            'Actualizó la personalización del menú lateral',
+        );
+
+        return response()->json(['message' => 'Menú guardado correctamente.']);
+    }
+
+    /**
+     * Idempotente (FR-016): restaurar un tenant que nunca personalizó nada responde 200 sin error.
+     */
+    public function restaurarMenu(): JsonResponse
+    {
+        $tenantId = tenant()->getTenantKey();
+
+        MenuTenant::restaurar($tenantId);
+
+        $this->registradorActividad->registrar(
+            auth()->user(),
+            AccionLogActividad::Modificacion,
+            EntidadLogActividad::Configuracion,
+            null,
+            'Restauró el menú lateral a los valores por defecto',
+        );
+
+        return response()->json([
+            'message' => 'Menú restaurado a los valores por defecto.',
+            'estructura' => MenuTenant::estructura($tenantId),
+        ]);
     }
 
     private function borrarLogo($tenant, string $campo): void

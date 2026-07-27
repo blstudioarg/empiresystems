@@ -81,6 +81,13 @@
 								Verifactu
 							</button>
 						</li>
+						<li class="nav-item" role="presentation">
+							<button class="nav-link" id="tab-menu-btn" data-bs-toggle="tab"
+								data-bs-target="#tab-menu" type="button" role="tab"
+								aria-controls="tab-menu" aria-selected="false">
+								Menú
+							</button>
+						</li>
 					</ul>
 					<div class="tab-content pt-4" id="configuracion-tabs-content">
 						<div class="tab-pane fade show active" id="tab-general" role="tabpanel"
@@ -122,6 +129,10 @@
 						<div class="tab-pane fade" id="tab-verifactu" role="tabpanel"
 							aria-labelledby="tab-verifactu-btn">
 							@include('configuracion._tab_verifactu')
+						</div>
+						<div class="tab-pane fade" id="tab-menu" role="tabpanel"
+							aria-labelledby="tab-menu-btn">
+							@include('configuracion._tab_menu')
 						</div>
 					</div>
 				</div>

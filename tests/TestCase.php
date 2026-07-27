@@ -4,6 +4,7 @@ namespace Tests;
 
 use App\Models\Tenant;
 use App\Models\User;
+use App\Support\MenuTenant;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Support\Facades\Http;
 
@@ -18,6 +19,14 @@ abstract class TestCase extends BaseTestCase
         // termina pegándole a la API real (lento y flaky en CI). Cada test que sí necesite una
         // respuesta debe declararla explícitamente con Http::fake([...]).
         Http::preventStrayRequests();
+
+        // MenuTenant memoiza `estructura()` por tenant_id en una propiedad estática (pensada para
+        // durar un único request real, un proceso PHP por request). RefreshDatabase hace rollback
+        // por test pero no resetea el autoincrement de SQLite, así que un tenant_id puede
+        // reutilizarse entre tests: sin este reset, el segundo test leería la estructura cacheada
+        // del tenant del test anterior. Arrancar "en frío" en cada test replica el proceso nuevo
+        // real y evita ese arrastre.
+        (new \ReflectionProperty(MenuTenant::class, 'memo'))->setValue(null, []);
     }
 
     /**

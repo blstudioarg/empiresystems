@@ -245,6 +245,10 @@ Route::middleware(['tenant.context', 'auth'])->group(function () {
             ->name('configuracion.ia.update');
         Route::post('/configuracion/ia/probar', [ConfiguracionController::class, 'probarIa'])
             ->name('configuracion.ia.probar');
+        Route::match(['put', 'patch'], '/configuracion/menu', [ConfiguracionController::class, 'updateMenu'])
+            ->name('configuracion.menu.update');
+        Route::delete('/configuracion/menu', [ConfiguracionController::class, 'restaurarMenu'])
+            ->name('configuracion.menu.restaurar');
 
         Route::resource('canales-captacion', CanalCaptacionController::class)
             ->parameters(['canales-captacion' => 'canal'])

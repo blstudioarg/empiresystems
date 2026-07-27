@@ -655,6 +655,7 @@ Almacén clave-valor por tenant para parámetros ajustables sin tocar código (t
 | `leads.asignacion_comerciales` | crm | `[]` (json de ids de `users`) — comerciales del reparto round-robin |
 | `leads.asignacion_ultimo_indice` | crm | `0` — puntero interno del round-robin (`App\Services\AsignadorLeads`, bloqueo transaccional); no editable en UI |
 | `presupuesto.dias_validez` | crm | `30` (default en `ConfigCrm::DEFAULT_DIAS_VALIDEZ_PRESUPUESTO`) — validez por defecto de un presupuesto nuevo |
+| `menu.personalizacion` | menu | `tipo: json` (feature 036) — `{"etiquetas": {clave: nombre}, "orden": {nivel: [claves]}}`, solo lo que difiere del catálogo (`App\Support\CatalogoMenu`); ausencia de la fila = tenant sin personalizar. Resuelto/fusionado por `App\Support\MenuTenant::estructura()`, consumido por `partials/sidebar.blade.php`. Sin migración ni tabla nueva |
 
 > **Zona horaria (convención transversal).** Todos los timestamps se **guardan y calculan en UTC**
 > (`config('app.timezone')`, Principio III: hora de servidor). `general.zona_horaria` **no** cambia
