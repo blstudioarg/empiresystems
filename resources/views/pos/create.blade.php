@@ -5,50 +5,67 @@
 @push('styles')
 	<style>
 		/* ── POS TPV: pensado tablet-first (landscape), 3 zonas: catálogo · ticket · botonera.
-		   Se apila en tablet vertical/móvil. El "verde dinero" (--pos-money) marca el total y el
-		   botón Cobrar; el primario del tenant marca filtros/acciones. */
+		   El "verde dinero" (--pos-money) marca el total y el botón Cobrar; el primario del tenant
+		   marca filtros/acciones.
+
+		   El reparto horizontal y el apilado en pantallas chicas los hace el GRID DE BOOTSTRAP
+		   (`.row` + `col-xl-7`/`col-xl-5`), igual que el panel de catálogo de facturas
+		   (`col-lg-3`/`col-lg-9`, ver docs/04-front-guidelines.md "Vista full-page de creación con
+		   preview en vivo"). No reimplementar el reparto con flex/porcentajes a mano: `.row` y
+		   `.card` ya vienen calibrados juntos globalmente (gutter 1rem ↔ card margin-bottom 1rem,
+		   ver "Gap entre .row y margin-bottom de .card" en esa misma guía), y salirse de esa
+		   calibración obliga a pelearla a `!important`. Los breakpoints tampoco se escriben a mano:
+		   `col-xl-*` ya apila por debajo de 1200px. */
 		.pos-wrap {
-			display: flex; gap: 1rem; align-items: flex-start;
 			--pos-primary: var(--primary, #1d69d6);
 			--pos-money: #16a34a; --pos-money-2: #22c55e;
 		}
 
-		/* Catálogo: mismo alto completo que la columna de cobro (llega hasta abajo aunque haya
-		   pocos productos); la grilla scrollea sola por dentro si desborda. El .card global de
-		   NexaDash trae height:calc(100% - 1rem) + margin-bottom pensados para grillas de cards,
-		   aquí los pisamos. */
-		.pos-catalogo.card {
-			flex: 1 1 56%; min-width: 320px; margin-bottom: 0;
-			position: sticky; top: 6rem;
-			/* !important para ganarle al `.card { height: calc(100% - 1rem) !important }` de
-			   app-overrides.css: sin esto la card toma el 100% de .pos-wrap (sin alto fijo) y
-			   crece con el contenido en vez de quedar fija con scroll interno en la grilla. */
-			height: calc(100vh - 7rem) !important;
-			display: flex; flex-direction: column;
+		/* Geometría vertical: ÚNICA fuente de verdad para las dos columnas (por eso van juntas en
+		   la misma regla — separadas, los valores se desincronizan y las columnas se desalinean).
+		   Medido en el navegador, no estimado: el header fijo mide 4rem (64px) y el
+		   .container-fluid añade 1rem de padding-top ⇒ el contenido arranca en 5rem. Dejando 1rem
+		   de aire abajo, el alto disponible es calc(100vh - 6rem). Ojo: el sticky `top` DEBE
+		   coincidir con esa posición natural en el flujo; si es mayor, la columna que tenga holgura
+		   se descuelga hacia abajo y las dos dejan de alinearse. */
+		@media (min-width: 1200px) {
+			/* Va `.pos-catalogo.card` y NO `.pos-catalogo` a secas: este <style> lo inyecta
+			   @stack('styles') ANTES de css/style.css, así que a igual especificidad gana
+			   style.css — que trae `.card { position: relative }`. Con 0,1,0 el sticky se pierde
+			   y el `top` pasa a leerse como desplazamiento relativo: la card se descuelga 5rem. */
+			.pos-catalogo.card,
+			.pos-cobro {
+				position: sticky; top: 5rem; height: calc(100vh - 6rem);
+			}
+			/* Acá sí hace falta !important (y no basta la especificidad): app-overrides.css trae
+			   `.card { height: calc(100% - 1rem) !important }`. Sin esto la card crece con el
+			   contenido en vez de quedar fija con scroll interno en la grilla. */
+			.pos-catalogo.card { height: calc(100vh - 6rem) !important; }
+			.pos-grid { overflow-y: auto; }
 		}
+		@media (max-width: 1199.98px) {
+			.pos-lineas-scroll { max-height: 48vh; }
+		}
+
+		.pos-catalogo.card { margin-bottom: 0 !important; display: flex; flex-direction: column; }
 		.pos-catalogo .card-body { display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto; }
-		/* Columna de cobro: alto completo del viewport (menos el header fijo de 5rem + 1rem arriba
-		   y 1rem abajo). El ticket llena el espacio y la botonera queda pegada al fondo siempre,
-		   aunque el ticket esté vacío; al desbordar de líneas, scrollea solo la lista interna. */
-		.pos-cobro {
-			flex: 1 1 40%; min-width: 344px; display: flex; flex-direction: column;  align-items: stretch;
-			position: sticky; top: 6rem; height: calc(100vh - 7rem);
-		}
-		.pos-ticket.card { flex: 1 1 auto; min-width: 0; min-height: 0; height: auto; margin-bottom: 0; display: flex; flex-direction: column; }
+
+		/* El ticket llena el espacio y la botonera queda pegada al fondo siempre, aunque el ticket
+		   esté vacío; al desbordar de líneas, scrollea solo la lista interna. La separación entre
+		   el ticket y la botonera la da el `gap` del contenedor, no un margin-bottom en la card:
+		   ese margen lo fija `.card { margin-bottom: 1rem !important }` de app-overrides.css y
+		   habría que pelearlo a !important. 1rem = mismo ritmo que el gutter global de `.row`. */
+		.pos-cobro { display: flex; flex-direction: column; align-items: stretch; gap: 1rem; }
+		/* !important en height/margin-bottom por el mismo `.card` global de app-overrides.css: sin
+		   esto la card queda con un alto fijo que no puede crecer dentro del flex column de
+		   .pos-cobro, dejándola corta y con un hueco antes de la botonera. */
+		.pos-ticket.card { flex: 1 1 auto; min-width: 0; min-height: 0; height: auto !important; margin-bottom: 0 !important; display: flex; flex-direction: column; }
 		.pos-botonera { display: flex; flex-direction: row; gap: .6rem; align-items: stretch; }
 		.pos-botonera .pos-total-card,
 		.pos-botonera .pos-bkey,
 		.pos-botonera .pos-cobrar { flex: 1 1 0; min-width: 0; }
 
-		@media (max-width: 1199.98px) {
-			.pos-wrap { flex-direction: column; }
-			.pos-catalogo.card, .pos-cobro { width: 100%; flex-basis: auto; min-width: 0; }
-			.pos-catalogo.card, .pos-cobro { position: static; height: auto; }
-			.pos-grid { overflow: visible; }
-			.pos-lineas-scroll { max-height: 48vh; }
-		}
 		@media (max-width: 575.98px) {
-			.pos-cobro { flex-direction: column; }
 			.pos-botonera { flex-wrap: wrap; }
 			.pos-botonera .pos-total-card { flex: 1 1 100%; }
 			.pos-botonera .pos-bkey,
@@ -104,9 +121,11 @@
 		.pos-filtro.active .badge-count { background: rgba(255,255,255,.25); color: #fff; }
 		.pos-articulo.filtrado-oculto { display: none !important; }
 
+		/* `overflow-y: auto` NO va acá sino en el media query de ≥1200px: solo con la columna de
+		   alto fijo tiene sentido que la grilla scrollee por dentro. Apilado, fluye con la página. */
 		.pos-grid {
 			display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: .75rem;
-			flex: 1 1 auto; min-height: 0; overflow-y: auto; align-content: start;
+			flex: 1 1 auto; min-height: 0; align-content: start;
 		}
 		.pos-articulo {
 			position: relative; border: 1px solid var(--bs-border-color, #ebebeb); border-radius: 1.1rem; background: #fff;
@@ -381,9 +400,10 @@
 @section('content')
 	<div class="content-body">
 		<div class="container-fluid">
-			<div class="pos-wrap">
+			<div class="row pos-wrap">
 
 				{{-- ── Zona 1: catálogo ── --}}
+				<div class="col-xl-7">
 				<section class="pos-catalogo card">
 					<div class="card-body">
 						<div class="pos-search-wrap">
@@ -446,8 +466,10 @@
 						<p class="pos-empty-catalogo d-none" id="pos-empty-catalogo">No hay artículos que coincidan con la búsqueda.</p>
 					</div>
 				</section>
+				</div>
 
 				{{-- ── Zonas 2 y 3: ticket + botonera (columna de cobro sticky) ── --}}
+				<div class="col-xl-5">
 				<div class="pos-cobro">
 
 					<section class="pos-ticket card">
@@ -507,6 +529,7 @@
 						</button>
 					</aside>
 
+				</div>
 				</div>
 
 			</div>
