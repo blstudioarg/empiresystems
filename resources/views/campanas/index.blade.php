@@ -28,7 +28,7 @@
 									<h3 class="mb-0" data-metric="total">0</h3>
 								</div>
 								<div>
-									<x-lordicon icon="system-regular-1-share" size="50" trigger="hover" target=".card" />
+									<x-lordicon icon="wired-outline-1027-megaphone-media-hover-pinch" size="50" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>

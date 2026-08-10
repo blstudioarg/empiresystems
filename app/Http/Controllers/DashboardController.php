@@ -13,12 +13,8 @@ class DashboardController extends Controller
 
     public function index(DashboardFiltroRequest $request, DashboardEstadisticas $dashboardEstadisticas, ResolvedorLanding $resolvedorLanding)
     {
-        // El super admin no pertenece a ningún tenant (tenant_id null): las estadísticas de este
-        // dashboard son inherentemente de tenant (facturación, IVA, etc.), así que su landing es
-        // el panel de gestión de tenants, no este dashboard.
-        if ($request->user()->isSuperAdmin()) {
-            return redirect()->route('super_admin.tenants.index');
-        }
+        // El Super Admin ya no llega aquí: BloquearSuperAdminAreaTenant (037-super-admin-panel-aislado)
+        // lo intercepta antes, en el grupo de rutas, y lo manda a super_admin.home.
 
         // Landing sin permiso de dashboard (feature 027 D11/RN-07 + doc 09 Cambio 5): la ruta `/` no
         // lleva `can:` para no dar un 403 de bienvenida; los usuarios sin `ver-dashboard` aterrizan

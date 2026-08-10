@@ -49,6 +49,40 @@ class ConfiguracionAparienciaTest extends TestCase
         ]);
     }
 
+    /**
+     * La cabecera de las DataTables se pinta con --primary y el texto con --primary-contraste.
+     * Como el primario lo elige el tenant, el contraste no puede ser blanco fijo: sobre una marca
+     * clara (amarillo, lima, celeste) el texto blanco queda ilegible.
+     */
+    public function test_primary_contraste_se_adapta_a_la_luminancia_del_color_primario(): void
+    {
+        $tenant = Tenant::factory()->create();
+
+        Configuracion::updateOrCreate(
+            ['tenant_id' => $tenant->id, 'clave' => 'apariencia.color_primario'],
+            ['valor' => '#1D69D6', 'tipo' => 'string', 'grupo' => 'apariencia'],
+        );
+        \App\Support\AparienciaTenant::invalidarCache($tenant->id);
+
+        $this->assertStringContainsString(
+            '--primary-contraste: #FFFFFF',
+            \App\Support\AparienciaTenant::variablesCss($tenant->id),
+            'Un primario oscuro debe dar texto blanco.',
+        );
+
+        Configuracion::updateOrCreate(
+            ['tenant_id' => $tenant->id, 'clave' => 'apariencia.color_primario'],
+            ['valor' => '#FFD400', 'tipo' => 'string', 'grupo' => 'apariencia'],
+        );
+        \App\Support\AparienciaTenant::invalidarCache($tenant->id);
+
+        $this->assertStringContainsString(
+            '--primary-contraste: #1F2937',
+            \App\Support\AparienciaTenant::variablesCss($tenant->id),
+            'Un primario claro debe dar texto oscuro.',
+        );
+    }
+
     public function test_un_color_con_formato_invalido_devuelve_error_de_validacion_y_no_persiste(): void
     {
         $tenant = Tenant::factory()->create();

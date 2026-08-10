@@ -120,6 +120,7 @@ class AparienciaTenant
         if ($valores['color_primario']) {
             $declaraciones[] = "--primary: {$valores['color_primario']} !important;";
             $declaraciones[] = '--primary-hover: '.self::oscurecer($valores['color_primario']).' !important;';
+            $declaraciones[] = '--primary-contraste: '.self::contraste($valores['color_primario']).' !important;';
 
             foreach (range(1, 9) as $decima) {
                 $alpha = $decima / 10;
@@ -171,6 +172,31 @@ class AparienciaTenant
             hexdec(substr($hex, 2, 2)),
             hexdec(substr($hex, 4, 2)),
         ];
+    }
+
+    /**
+     * Color de texto legible sobre $hex: blanco sobre colores oscuros, gris muy oscuro sobre
+     * colores claros.
+     *
+     * Hace falta porque el color primario lo elige el tenant y puede ser cualquiera: dar por
+     * sentado "fondo primario => letra blanca" deja ilegible cualquier marca con un amarillo,
+     * lima o celeste claro. Se usa luminancia relativa de WCAG (sRGB linealizado) con el umbral
+     * habitual de 0.179, que es el punto donde el contraste contra blanco y contra negro se
+     * cruzan.
+     */
+    private static function contraste(string $hex): string
+    {
+        [$r, $g, $b] = self::hexARgb($hex);
+
+        $canal = static function (int $valor): float {
+            $c = $valor / 255;
+
+            return $c <= 0.03928 ? $c / 12.92 : (($c + 0.055) / 1.055) ** 2.4;
+        };
+
+        $luminancia = 0.2126 * $canal($r) + 0.7152 * $canal($g) + 0.0722 * $canal($b);
+
+        return $luminancia > 0.179 ? '#1F2937' : '#FFFFFF';
     }
 
     private static function oscurecer(string $hex, float $factor = 0.85): string

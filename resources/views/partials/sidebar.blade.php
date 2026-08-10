@@ -37,6 +37,13 @@
 				</div>
 				<ul class="metismenu" id="menu">
 					@if (auth()->user()->isSuperAdmin())
+						<li><a href="{{ route('super_admin.home') }}">
+								<div class="menu-icon">
+									<x-lordicon icon="home" size="30" trigger="hover" />
+								</div>
+								<span class="nav-text ms-2">Inicio</span>
+							</a>
+						</li>
 						<li><a class="has-arrow " href="javascript:void(0);" aria-expanded="false">
 								<div class="menu-icon">
 									<x-lordicon icon="empresa" size="30" trigger="hover" />

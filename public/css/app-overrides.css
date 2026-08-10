@@ -195,16 +195,20 @@
 	padding: 1.5rem 1rem 1rem;
 }
 
+/* 96px (antes 80px). El tamaño vive en dos sitios que hay que mover juntos: el
+   contenedor .sidebar-user-avatar y la propia <img>; si se toca solo uno, el botón
+   de "cambiar foto" (posicionado contra el contenedor) queda fuera del círculo.
+   La variante mini/colapsada conserva su 3rem más abajo, a propósito. */
 .sidebar-user-avatar {
 	position: relative;
 	display: inline-block;
-	width: 80px;
-	height: 80px;
+	width: 96px;
+	height: 96px;
 }
 
 .sidebar-user-avatar img {
-	width: 80px;
-	height: 80px;
+	width: 96px;
+	height: 96px;
 	border-radius: 50%;
 	object-fit: cover;
 	border: 3px solid var(--rgba-primary-1, #fff);
@@ -214,8 +218,8 @@
 	position: absolute;
 	right: 0;
 	bottom: 0;
-	width: 26px;
-	height: 26px;
+	width: 28px;
+	height: 28px;
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -778,4 +782,366 @@
 
 [data-theme-version="dark"] .ayuda-body strong {
 	color: #f0f2f5;
+}
+
+/* ==========================================================================
+   Cards informativas de métricas — "rail de acento"
+   --------------------------------------------------------------------------
+   Se aplican solas a cualquier .card que contenga un [data-metric] (selector
+   :has()), así que no hay que tocar el markup de las ~20 vistas que ya usan
+   el patrón. El color del rail lo decide la clase de color del propio número
+   (.text-success / .text-danger); sin clase de color usa el primario del
+   tenant. Ver docs/04-front-guidelines.md, "Icono flotante en cards
+   informativas (métricas)".
+   ========================================================================== */
+
+.card:has([data-metric]) {
+	--metric-accent: var(--primary);
+	--metric-accent-soft: var(--rgba-primary-1);
+	position: relative;
+	overflow: hidden;
+	transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1),
+		box-shadow 200ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.card:has([data-metric].text-success) {
+	--metric-accent: var(--bs-success);
+	--metric-accent-soft: rgba(var(--bs-success-rgb), 0.08);
+}
+
+.card:has([data-metric].text-danger) {
+	--metric-accent: var(--bs-danger);
+	--metric-accent-soft: rgba(var(--bs-danger-rgb), 0.08);
+}
+
+/* Rail izquierdo. Se dibuja a ancho final y se comprime con scaleX para que
+   el hover anime solo transform (sin layout ni paint). */
+.card:has([data-metric])::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: 0;
+	width: 5px;
+	background: var(--metric-accent);
+	transform: scaleX(0.6);
+	transform-origin: left center;
+	transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1);
+	pointer-events: none;
+	z-index: 1;
+}
+
+/* Tinte lateral del mismo acento, apagado en reposo. */
+.card:has([data-metric])::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(90deg, var(--metric-accent-soft), transparent 60%);
+	opacity: 0;
+	transition: opacity 200ms cubic-bezier(0.23, 1, 0.32, 1);
+	pointer-events: none;
+}
+
+.card:has([data-metric]) .card-body {
+	position: relative;
+	z-index: 1;
+}
+
+/* El número no debe "bailar" mientras cuenta: cifras de ancho fijo. */
+[data-metric] {
+	font-variant-numeric: tabular-nums;
+	font-feature-settings: 'tnum' 1;
+}
+
+@media (hover: hover) and (pointer: fine) {
+	.card:has([data-metric]):hover {
+		transform: translateY(-2px);
+		box-shadow: 0 12px 24px -12px rgba(16, 24, 40, 0.18);
+	}
+
+	.card:has([data-metric]):hover::before {
+		transform: scaleX(1);
+	}
+
+	.card:has([data-metric]):hover::after {
+		opacity: 1;
+	}
+}
+
+/* Entrada escalonada de la fila de métricas. */
+.card:has([data-metric]) {
+	animation: metricCardIn 420ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+.row > *:nth-child(1) .card:has([data-metric]) { animation-delay: 0ms; }
+.row > *:nth-child(2) .card:has([data-metric]) { animation-delay: 60ms; }
+.row > *:nth-child(3) .card:has([data-metric]) { animation-delay: 120ms; }
+.row > *:nth-child(4) .card:has([data-metric]) { animation-delay: 180ms; }
+.row > *:nth-child(5) .card:has([data-metric]) { animation-delay: 240ms; }
+.row > *:nth-child(6) .card:has([data-metric]) { animation-delay: 300ms; }
+
+@keyframes metricCardIn {
+	from {
+		opacity: 0;
+		transform: translateY(8px);
+	}
+
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+[data-theme-version="dark"] .card:has([data-metric]):hover {
+	box-shadow: 0 12px 24px -12px rgba(0, 0, 0, 0.5);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.card:has([data-metric]) {
+		animation: none;
+	}
+
+	.card:has([data-metric]):hover {
+		transform: none;
+	}
+
+	.card:has([data-metric])::before {
+		transform: scaleX(1);
+	}
+}
+
+/* ==========================================================================
+   Fondo de la app y elevación de las superficies
+   --------------------------------------------------------------------------
+   El template deja el body en #FCFCFC (casi blanco), o sea que las cards —que
+   son #fff— no se despegan del fondo y su sombra no se lee. Bajamos el fondo a
+   un gris azulado y subimos la sombra de todo lo que "flota" encima: cards,
+   sidebar y cabecera.
+
+   Las sombras van en dos capas (una corta y cerrada para el contacto, otra
+   larga y difusa para la elevación): una sola capa grande se ve como una
+   mancha gris, dos capas se leen como profundidad real.
+   ========================================================================== */
+
+body:not([data-theme-version="dark"]) {
+	background-color: #f3f5f8;
+}
+
+body:not([data-theme-version="dark"]) .card {
+	box-shadow: 0 1px 2px 0 rgba(16, 24, 40, 0.04),
+		0 8px 24px -6px rgba(16, 24, 40, 0.10);
+}
+
+body:not([data-theme-version="dark"]) .deznav {
+	/* Sombra proyectada hacia la derecha: el sidebar se apoya sobre el contenido. */
+	box-shadow: 4px 0 24px -6px rgba(16, 24, 40, 0.10),
+		1px 0 2px 0 rgba(16, 24, 40, 0.04);
+}
+
+body:not([data-theme-version="dark"]) .header {
+	box-shadow: 0 1px 2px 0 rgba(16, 24, 40, 0.04),
+		0 6px 18px -8px rgba(16, 24, 40, 0.10);
+}
+
+/* El hover de las cards de métricas tiene que seguir leyéndose por encima de
+   la nueva sombra en reposo (ver bloque "Cards informativas de métricas"). */
+@media (hover: hover) and (pointer: fine) {
+	body:not([data-theme-version="dark"]) .card:has([data-metric]):hover {
+		box-shadow: 0 2px 4px 0 rgba(16, 24, 40, 0.05),
+			0 16px 32px -8px rgba(16, 24, 40, 0.18);
+	}
+}
+
+/* ==========================================================================
+   Cabecera de las DataTables en color de marca
+   --------------------------------------------------------------------------
+   El <thead> de los listados va con el primario del tenant y texto de
+   contraste. Solo se pinta `table.dataTable`, no `.table` a secas: las tablas
+   embebidas en documentos (líneas de factura, presupuestos, POS) tienen que
+   seguir leyéndose como papel, no como listado.
+
+   El color del texto sale de --primary-contraste, que calcula
+   AparienciaTenant::contraste() por luminancia WCAG: blanco sobre marcas
+   oscuras, gris oscuro sobre marcas claras. Dar por sentado "letra blanca"
+   dejaría ilegible cualquier tenant con un amarillo o un celeste claro. El
+   fallback #FFFFFF cubre el primario por defecto del template (#1D69D6).
+   ========================================================================== */
+
+/* Especificidad: style.css declara `table.dataTable > thead > tr > th` (0,1,4) con
+   `background-color: transparent`. Una regla `table.dataTable thead th` (0,1,3) pierde
+   aunque cargue después — el fondo quedaba transparente mientras el color sí se
+   aplicaba, o sea letra blanca sobre card blanca. Hay que igualar la forma del
+   selector, no subir el peso con !important. */
+table.dataTable > thead > tr > th,
+table.dataTable > thead > tr > td {
+	background-color: var(--primary);
+	color: var(--primary-contraste, #FFFFFF);
+	border-bottom: 0;
+	border-top: 0;
+	border-color: transparent;
+}
+
+/* Las esquinas superiores acompañan el radio de la card que contiene la tabla:
+   sin esto la banda de color se ve como un bloque pegado. */
+table.dataTable > thead > tr > th:first-child,
+table.dataTable > thead > tr > td:first-child {
+	border-top-left-radius: 0.375rem;
+}
+
+table.dataTable > thead > tr > th:last-child,
+table.dataTable > thead > tr > td:last-child {
+	border-top-right-radius: 0.375rem;
+}
+
+/* Las flechas de orden son iconos de fuente: heredan currentColor, así que ya
+   salen del color de contraste. Solo hay que subirles la opacidad, pensada
+   para gris sobre blanco. */
+table.dataTable thead > tr > th.sorting::after,
+table.dataTable thead > tr > th.sorting_asc::after,
+table.dataTable thead > tr > th.sorting_desc::after {
+	opacity: 0.65;
+}
+
+table.dataTable thead > tr > th.sorting_asc::after,
+table.dataTable thead > tr > th.sorting_desc::after {
+	opacity: 1;
+}
+
+@media (hover: hover) and (pointer: fine) {
+	table.dataTable thead > tr > th.sorting:hover::after {
+		opacity: 1;
+	}
+}
+
+[data-theme-version="dark"] table.dataTable > thead > tr > th,
+[data-theme-version="dark"] table.dataTable > thead > tr > td {
+	background-color: var(--primary);
+	color: var(--primary-contraste, #FFFFFF);
+}
+
+/* ==========================================================================
+   Badge "light" secundario — corrección de contraste
+   --------------------------------------------------------------------------
+   En style.css toda la familia `.light.badge-*` sigue el mismo patrón: fondo
+   pálido teñido + texto en el color saturado (success = #cefff6 sobre #01BD9B,
+   danger = #fbe7e7 sobre #E55555, etc.). `secondary` es la única excepción y
+   está mal: fondo gris medio (#868999) con texto casi negro (#1F2025). Queda
+   turbio e ilegible, sobre todo en una celda de DataTable.
+
+   Se alinea con el resto de la familia: fondo gris muy claro, texto oscuro.
+   Afecta a los tres usos actuales — "Simple" (POS/facturas simplificadas),
+   "Inactivo" (horarios) y "Baja" (miembros del equipo).
+   ========================================================================== */
+
+.light.badge-secondary {
+	background-color: #ECEDF0;
+	border-color: #ECEDF0;
+	color: #33363F;
+}
+
+/* ==========================================================================
+   Contorno de los campos de formulario
+   --------------------------------------------------------------------------
+   El template deja `.form-control` en blanco con borde #E9ECEF: 1.2:1 de
+   contraste contra el fondo blanco de la card o del modal, o sea que el campo
+   prácticamente no tiene contorno y el formulario se lee como texto suelto.
+
+   Se sube el borde a #CBD2DD (~1.9:1) y se le da al foco un anillo del color
+   de marca. Se corrige el campo, no el fondo del modal: los formularios viven
+   tanto en modales como en cards, y tintar solo el modal arreglaría la mitad
+   del problema mientras aplana la jerarquía de elevación (body = suelo,
+   card/modal = superficie levantada).
+
+   Nota honesta sobre el número: la WCAG 1.4.11 pide 3:1 para el contorno de un
+   control, y eso exigiría un borde ~#949494, que se ve pesado y sucio en un
+   formulario largo. #CBD2DD es el valor que usan la mayoría de los design
+   systems. Si alguna vez se audita accesibilidad en serio, este es el punto a
+   revisar, y está identificado a propósito.
+   ========================================================================== */
+
+.form-control,
+.form-select {
+	border-color: #CBD2DD;
+}
+
+.form-control:hover,
+.form-select:hover {
+	border-color: #B4BDCC;
+}
+
+/* El template pone `box-shadow: none` en :hover/:focus/.active con la misma
+   especificidad, así que el anillo hay que declararlo acá para que gane por
+   orden de cascada. */
+.form-control:focus,
+.form-select:focus {
+	border-color: var(--primary);
+	box-shadow: 0 0 0 3px var(--rgba-primary-2, rgba(29, 105, 214, 0.2));
+}
+
+/* Deshabilitado: el borde baja de intensidad para que el campo se lea como no
+   editable sin depender solo del color de fondo. */
+.form-control:disabled,
+.form-control[readonly],
+.form-select:disabled {
+	border-color: #E4E7EC;
+}
+
+/* ==========================================================================
+   PRUEBA (2026-08-10) — cards de métricas con el ícono a la izquierda
+   --------------------------------------------------------------------------
+   Layout alternativo pedido para evaluar: ícono primero (en una placa
+   redondeada con el tinte del acento), y a la derecha el número grande con la
+   etiqueta debajo.
+
+   Se hace 100% por CSS sobre el markup que ya existe (`.d-flex` con el bloque
+   de texto y el del ícono): `row-reverse` invierte el orden visual sin tocar
+   ninguna de las ~20 vistas, y `column-reverse` sube el número por encima de
+   la etiqueta. Para volver atrás alcanza con borrar este bloque entero — no
+   hay nada que revertir en las vistas ni en el JS.
+
+   El contenedor del ícono se estiliza acá, sin usar `.icon-box bg-primary-light`
+   del template (ver "Icono flotante en cards informativas"): esas clases traen
+   2.5rem fijos con !important y recortarían el <lord-icon> de 50px.
+   ========================================================================== */
+
+.card:has([data-metric]) .card-body > .d-flex {
+	flex-direction: row-reverse;
+	gap: 1rem;
+}
+
+/* Placa del ícono. El tinte es el mismo acento semántico del rail, así que la
+   card sigue leyéndose como una sola pieza. */
+.card:has([data-metric]) .card-body > .d-flex > div:last-child {
+	flex: 0 0 auto;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 4.5rem;
+	height: 4.5rem;
+	border-radius: 1rem;
+	background-color: var(--metric-accent-soft);
+}
+
+/* Número arriba, etiqueta debajo. */
+/* `flex: 1 1 auto` en vez de pelear el `justify-content-between` de la vista: esa
+   utilidad de Bootstrap lleva !important, así que no se puede sobreescribir sin otro
+   !important. Haciendo crecer el bloque de texto no queda espacio libre que repartir
+   y los dos elementos terminan pegados, que es el efecto buscado. */
+.card:has([data-metric]) .card-body > .d-flex > div:first-child {
+	display: flex;
+	flex: 1 1 auto;
+	flex-direction: column-reverse;
+	align-items: flex-start;
+	min-width: 0;
+}
+
+.card:has([data-metric]) .card-body > .d-flex > div:first-child h6 {
+	margin-bottom: 0;
+	font-weight: 400;
+	color: var(--text-gray, #6c757d);
+}
+
+.card:has([data-metric]) .card-body > .d-flex > div:first-child h3 {
+	margin-bottom: 0.125rem;
+	line-height: 1.15;
 }

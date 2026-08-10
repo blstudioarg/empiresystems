@@ -157,6 +157,26 @@ tocaste una vista con guía, la guía entra en el mismo cambio, no "después".
   la app (lo cual no debería hacer falta casi nunca, dado que borrar/resetear registros está
   prohibido por regla — ver el punto siguiente), **anotar el cambio en `ACCESOS.local.md` y en
   `.env` en el mismo momento**, no después: el seeder no lo va a detectar ni sincronizar solo.
+- **Accesos del servidor de producción: siempre en `ftp.txt`.** Es la hoja por defecto para TODO
+  lo del hosting de producción (`empiresass.gestionley.com`) — no solo FTP pese al nombre: FTP,
+  base de datos, SSH y accesos de la app en sí (super admin, y a futuro tenants), todo vive ahí.
+  Está en la raíz del repo, gitignored. Antes de preguntar por el host, el usuario, la contraseña
+  del hosting o el login del super admin de producción, **leer ese archivo primero**. Ahí están
+  también las notas de verificación (qué dato estaba mal, por qué `FTP_SECURE=false`, que el rol
+  de super admin se asigna por el campo `rol`/`UserRole` y no por Spatie `assignRole`, etc.). Es
+  el equivalente de `ACCESOS.local.md` pero para producción, no para el entorno local — no
+  confundir los dos. Si alguna credencial cambia, anotarlo en `ftp.txt` en el mismo momento.
+  - El acceso se usa vía el servidor MCP `ftp` (paquete npm `mcp-server-ftp`), registrado en
+    scope **`local`** (vive en `~/.claude.json` bajo la ruta del proyecto), **no en `.mcp.json`**,
+    que sí se commitea: las credenciales no deben entrar al repo. Instrucciones de reconfiguración
+    en el propio `ftp.txt`.
+  - **Ese hosting es producción compartida, no un entorno de pruebas.** El usuario FTP entra en la
+    raíz de la cuenta cPanel y desde ahí se ven `public_html`, `mail`, `logs` y decenas de carpetas
+    de subdominios de **clientes reales**. Aplica la política de acciones destructivas con especial
+    dureza: nunca borrar ni sobrescribir nada por FTP sin confirmación explícita, y trabajar
+    siempre dentro de la carpeta del subdominio que corresponda.
+  - El MCP habla FTP/FTPS, **no SFTP**. Y subir archivos por FTP no es un deploy de Laravel: no
+    corre `composer install`, ni migraciones, ni `artisan config:cache`.
 - **Nunca perder datos de desarrollo/demo (registros con imágenes u otro valor de presentación).**
   El `DatabaseSeeder` está intencionalmente vacío (ver su docblock) y `AccesoPersonalSeeder` es
   idempotente (`firstOrCreate`) precisamente para que el acceso de desarrollo sobreviva a un

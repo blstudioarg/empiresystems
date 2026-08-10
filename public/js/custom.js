@@ -375,16 +375,10 @@ var NexaDash = function(){
 		});
 	}
 	
-	var handleshowPass = function(){
-		jQuery('.show-pass').on('click',function(){
-			jQuery(this).toggleClass('active');
-			if(jQuery('#dz-password').attr('type') == 'password'){
-				jQuery('#dz-password').attr('type','text');
-			}else if(jQuery('#dz-password').attr('type') == 'text'){
-				jQuery('#dz-password').attr('type','password');
-			}
-		});
-	}
+	// El toggle de mostrar/ocultar contraseña (.show-pass) vive en
+	// public/js/plugins-init/password-toggle.init.js — genérico para cualquier
+	// input, no solo #dz-password. No reintroducir un handler acá: duplicar el
+	// listener en el mismo click hace que el ícono y el input se destogleen entre sí.
 
 	
 	var heartBlast = function (){
@@ -776,7 +770,6 @@ var NexaDash = function(){
 			handleBtnNumber();
 			handleDzChatUser();
 			handleDzFullScreen();
-			handleshowPass();
 			heartBlast();
 			handleDzLoadMore();
 			handleLightgallery();

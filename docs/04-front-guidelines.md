@@ -155,6 +155,78 @@ Corregido en `_form.blade.php` (clientes y artículos): las columnas de formular
 `mb-3`, el espaciado vertical lo da el gutter de `.row` solo. Si una vista nueva se ve con
 demasiado aire entre filas, buscar `mb-3`/`mt-3` sueltos en columnas de ese `.row` y sacarlos.
 
+## Fondo de la app y elevación de las superficies
+
+El template deja el `body` en `#FCFCFC`, casi blanco: como las `.card` son `#fff`, no se despegan
+del fondo y su sombra (`0 5px 15px rgba(17,17,17,.05)`) directamente no se lee. En
+`app-overrides.css` el fondo pasa a **`#f3f5f8`** (gris azulado) y se sube la elevación de todo lo
+que flota encima: `.card`, `.deznav` (sidebar) y `.header`.
+
+Dos reglas al tocar esto:
+
+- **Las sombras van en dos capas**, no en una: una corta y cerrada para el contacto
+  (`0 1px 2px rgba(16,24,40,.04)`) y otra larga y difusa para la elevación
+  (`0 8px 24px -6px rgba(16,24,40,.10)`). Una sola capa grande se ve como una mancha gris; dos
+  capas se leen como profundidad. La del sidebar además se proyecta hacia la derecha
+  (`4px 0 24px -6px`), porque se apoya sobre el contenido, no sobre el usuario.
+- **Todo va bajo `body:not([data-theme-version="dark"])`**, para no pisar el theming oscuro del
+  template (el atributo lo escribe `dzSettings` en `<body>`). Aunque el toggle de dark mode esté
+  oculto hoy, el mecanismo sigue vivo y no hay que romperlo por el camino.
+
+Si se agrega una superficie nueva que flote sobre el fondo (un panel fijo, una barra lateral
+secundaria), darle la misma escala de sombra en vez de inventar una: la coherencia de la
+elevación es lo que hace que la interfaz se lea como un plano ordenado.
+
+## Badges de estado: `.badge.light.badge-*`
+
+Para marcar estados en un listado se usa la familia `badge light badge-<color>` del template. Todas
+siguen el mismo patrón: **fondo pálido teñido + texto en el color saturado** (success `#cefff6`
+sobre `#01BD9B`, danger `#fbe7e7` sobre `#E55555`, etc.).
+
+`secondary` venía roto en `style.css`: fondo gris medio (`#868999`) con texto casi negro
+(`#1F2025`). Turbio e ilegible dentro de una celda de DataTable. Corregido en `app-overrides.css`
+a `#ECEDF0` sobre `#33363F` (contraste ~10:1), alineado con el resto de la familia. Afecta a
+"Simple" (facturas simplificadas/POS), "Inactivo" (horarios) y "Baja" (miembros del equipo).
+
+**Regla general: nunca un fondo gris medio con texto oscuro.** Si hace falta un badge de estado
+nuevo, usar una de las variantes existentes en vez de inventar colores; y si se inventa, comprobar
+el contraste antes (mínimo 4.5:1 para texto normal). Vale lo mismo que para la cabecera de las
+DataTables: el contraste no se supone, se calcula.
+
+## Cabecera de las DataTables en color de marca
+
+El `<thead>` de los listados va con fondo `var(--primary)` y texto `var(--primary-contraste)`.
+Dos decisiones que hay que respetar:
+
+- **Solo se pinta `table.dataTable`, no `.table` a secas.** Las tablas embebidas en documentos
+  (líneas de factura, presupuestos, ticket de POS) tienen que seguir leyéndose como papel; una
+  banda de color de marca ahí compite con el documento y lo ensucia. Si una vista nueva necesita
+  la cabecera de color, que sea una DataTable de verdad (que es lo que manda la regla de
+  "Listados: SIEMPRE DataTable").
+- **El color del texto nunca se hardcodea a blanco.** El primario lo elige cada tenant desde
+  Configuración → Apariencia, así que puede ser un amarillo, un lima o un celeste claro, y ahí el
+  blanco queda ilegible. `AparienciaTenant::contraste()` calcula la luminancia relativa (WCAG,
+  sRGB linealizado, umbral 0.179) y emite `--primary-contraste` con `#FFFFFF` o `#1F2937` según
+  corresponda. La CSS lo consume con fallback (`var(--primary-contraste, #FFFFFF)`), que cubre el
+  primario por defecto del template (`#1D69D6`). Cubierto por
+  `ConfiguracionAparienciaTest::test_primary_contraste_se_adapta_a_la_luminancia_del_color_primario`.
+
+Las flechas de orden son iconos de fuente y heredan `currentColor`, así que salen del color de
+contraste solas; lo único que se ajusta es la opacidad (pensada originalmente para gris sobre
+blanco): 0.65 en reposo, 1 en la columna ordenada y en hover.
+
+**El selector tiene que ser `table.dataTable > thead > tr > th`, con los `>`.** `style.css`
+declara esa misma forma (0,1,4) con `background-color: transparent`; una regla
+`table.dataTable thead th` (0,1,3) pierde por especificidad aunque `app-overrides.css` cargue
+después. El síntoma es engañoso: el `color` sí se aplica (esa propiedad la gana por otro lado) y
+el `background-color` no, o sea **letra blanca sobre card blanca — la cabecera desaparece**. Pasó
+en la primera versión de esta regla. La solución es igualar la forma del selector, nunca meter
+`!important` (que es lo que empieza la guerra de `!important` contra `!important` que ya se
+documentó más arriba para `.icon-box`).
+
+**Si hace falta otro elemento con fondo primario y texto encima, usar `--primary-contraste`**, no
+`#fff`. Es la única forma de que la marca del tenant no rompa la legibilidad.
+
 ## Icono flotante en cards informativas (métricas)
 
 En las cards de métricas (ej. "Total de clientes", "Clientes empresa" en `clientes/index.blade.php`
@@ -170,6 +242,36 @@ Se corrigió puntualmente antes agregando un override CSS por vista para anular 
 el `height`/`width` fijo. La solución correcta es no poner esas clases desde el principio: dejar
 el `<div>` contenedor limpio y que el tamaño del ícono lo controle solo `size="50"` del
 `<x-lordicon>`.
+
+### Rail de acento y conteo animado (automáticos, no hay que hacer nada)
+
+El tratamiento visual de estas cards vive en `public/css/app-overrides.css` (bloque "Cards
+informativas de métricas") y se engancha con `:has()` a **cualquier `.card` que contenga un
+elemento `[data-metric]`**. No hay que agregar clases a la vista: basta con seguir el markup de
+arriba y poner `data-metric="<clave>"` en el `<h3>` del valor.
+
+Lo que aporta:
+
+- **Rail izquierdo de 5px** con el color del acento, comprimido a `scaleX(.6)` en reposo y a
+  `scaleX(1)` en hover (se anima solo `transform`, nunca `width`).
+- **Lift de la card** (`translateY(-2px)` + sombra) y un tinte lateral del mismo acento, ambos
+  detrás de `@media (hover: hover) and (pointer: fine)` para que el táctil no los dispare al tocar.
+- **Entrada escalonada** de la fila (`metricCardIn`, 60ms de delay entre columnas vía
+  `.row > *:nth-child(n)`).
+- Todo anulado bajo `prefers-reduced-motion: reduce`.
+
+**El color del acento lo decide la clase de color del propio número**, no una clase de la card:
+`text-success` → verde, `text-danger` → rojo, sin clase → primario del tenant (`--primary`, así
+que respeta la apariencia configurada). Es decir, el rail codifica el estado del dato en vez de
+decorar; si una métrica nueva tiene que verse "en alerta", se le pone `text-danger` al `<h3>` y el
+rail acompaña solo.
+
+El conteo animado del número lo hace `public/js/metric-cards.js` (cargado siempre desde
+`layouts/app.blade.php`). Usa un `MutationObserver` sobre cada `[data-metric]`, así que funciona
+igual para valores renderizados en servidor (animan 0 → valor al cargar) y para los que escribe un
+`*.init.js` con `$('[data-metric="x"]').text(n)` tras el ajax de totales — **no hay que tocar los
+`.init.js`**. Solo anima enteros (con o sin separador de miles); importes, porcentajes y `MB` se
+escriben directo, porque animar un formato así muestra cifras intermedias sin sentido.
 
 ## Colores de los lordicon
 
@@ -343,6 +445,37 @@ propio, alcanza con que su `onConfirm` haga `return $.ajax(...)`.
 automático on-change sin botón explícito (`configuracion-apariencia.init.js`); la barra de progreso
 propia de DataTables (`processing: true`, ya maneja su propio feedback).
 
+## CSRF en peticiones AJAX sin formulario
+
+**No hay `$.ajaxSetup` global en el proyecto**: cada petición AJAX se hace cargo de su propio token
+CSRF. Hay dos formas válidas, y hay que elegir según de dónde salgan los datos:
+
+- **Petición que envía un form serializado** (`data: $form.serialize()`): el token ya viaja en el
+  body porque el `<form>` lleva `@csrf`. No hace falta nada más. Es el caso de casi todos los
+  `*-modal.init.js`, `calendario.init.js`, `stock-ajuste.init.js`, etc.
+- **Petición sin body de formulario** — acciones de botón tipo "confirmar"/"anular"/"cambiar
+  estado", que hacen `POST`/`PUT`/`PATCH`/`DELETE` a una URL sin serializar ningún form: **hay que
+  mandar el header explícitamente**, leyéndolo del `<meta name="csrf-token">` que `layouts/app.blade.php`
+  ya renderiza siempre:
+
+  ```js
+  $.ajax({
+  	url: url,
+  	method: 'POST',
+  	dataType: 'json',
+  	headers: {
+  		Accept: 'application/json',
+  		'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+  	},
+  });
+  ```
+
+Olvidar el header en el segundo caso da un **419 con `{"message": "CSRF token mismatch."}`**, que
+al pasar por el `.fail()` se muestra como un toast de error con ese texto literal — parece un
+problema de sesión caducada pero no lo es. Si aparece ese toast en una acción de botón, sospechar
+primero de esto (ocurrió en `compras-show.init.js`: el handler de estado B2B sí mandaba el header y
+la función compartida de Confirmar/Anular no).
+
 ## Notificaciones
 
 Siempre toastr (`window.showToast(type, message)` / flash de sesión), nunca alerts Bootstrap
@@ -413,6 +546,20 @@ reutilizable para cualquier lista jerárquica arrastrable futura:
 
 Referencia completa: `resources/views/configuracion/_tab_menu.blade.php` +
 `public/js/plugins-init/configuracion-menu.init.js` + `public/css/configuracion-menu.css`.
+
+**Excepción documentada (feature 037, widgets de resumen de dashboard/panel)**: los bloques de un
+**dashboard u home de panel** que muestran un top-N fijo derivado de agregados del servidor —
+"Últimas facturas emitidas"/"Top 5 clientes" en `partials/dashboard-contenido.blade.php`, o
+"Últimos tenants creados"/"Ranking por tamaño"/"Requieren atención" en
+`super_admin/panel/index.blade.php`— usan `<table class="table table-borderless mb-0">` + `@foreach`,
+no DataTable. La regla de DataTable existe para **listados de un módulo** (la vista `index` de un
+recurso, donde el usuario busca/pagina/ordena su propio conjunto completo de registros); un widget
+de dashboard no es eso: es una foto de tamaño fijo (5, 8, top-N) calculada por el servidor en cada
+carga, sin paginación ni búsqueda propia, con un enlace de salida al listado real del módulo si hace
+falta operar. Aplicar DataTable ahí sería forzar buscador/paginación sobre una lista que nunca va a
+tener más de N filas por diseño. Si un widget de este tipo empieza a necesitar buscar/paginar/
+ordenar por columna, es señal de que dejó de ser un resumen y pasó a ser un listado — en ese momento
+migra a DataTable con su propia vista `index`, no antes.
 
 ## "Ver" un documento (factura, presupuesto, albarán, ticket): SIEMPRE en modal, nunca otra pestaña
 

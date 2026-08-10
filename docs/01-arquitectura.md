@@ -73,6 +73,25 @@ del scope de tenant (excepción explícita del Principio I de la constitución):
 `tenants`/`domains` en contexto central, con filtrado explícito por `tenant_id` cuando necesita
 mirar datos de un tenant concreto (p. ej. comprobar facturas emitidas antes de permitir el borrado).
 
+**Ampliación (037-super-admin-panel-aislado) — aislamiento del panel central frente al área de
+tenant.** El Super Admin autenticado en el dominio central podía, hasta esta feature, navegar
+igualmente a cualquier pantalla del área de tenant (`/clientes`, `/facturas`, `/configuracion`…):
+esas rutas responden con `Gate::before` (`AppServiceProvider.php`) aprobando cualquier `can:` del
+Super Admin, así que la pantalla se abría sin contexto de tenant, con listados vacíos o datos sin
+dueño claro. Se cierra con un middleware nuevo `BloquearSuperAdminAreaTenant` (alias
+`sin_super_admin`), colgado del **grupo** de rutas del área de tenant en `routes/web.php`
+(`['tenant.context', 'auth', 'sin_super_admin']`) y no de cada sección: cualquier ruta que se añada
+a ese grupo en el futuro nace bloqueada sin que nadie tenga que acordarse. `Gate::before` **no se
+toca** (sigue siendo el bypass de permisos deseado para el propio panel de Super Admin, cubierto por
+`SuperAdminBypassTest`): lo que faltaba era una regla de **contexto** ("este usuario no tiene
+tenant"), no de permiso, y por eso vive en el middleware, con una allowlist mínima (`logout`,
+`profile.*`, `localidades.index`). Los intentos bloqueados se registran en el **log de aplicación**
+de Laravel (`Log::warning('super_admin.acceso_area_tenant_bloqueado', …)`), no en `logs_actividad`:
+esa tabla tiene `tenant_id` `NOT NULL` y es de negocio (visible por cada tenant en `/logs`), y un
+intento del Super Admin no pertenece a ningún tenant — meterlo ahí exigiría una migración
+destructiva y contaminaría el histórico que ve un cliente. Detalle completo y alternativas
+descartadas en `specs/037-super-admin-panel-aislado/research.md` (D1–D8).
+
 ---
 
 ## Decisión 5 — Envío de facturas por email: SMTP por tenant, envío síncrono (017-envio-facturas-email)

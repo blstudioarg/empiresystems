@@ -128,7 +128,7 @@
 									<h3 class="mb-0" data-metric="archivos">{{ $totales['archivos'] }}</h3>
 								</div>
 								<div>
-									<x-lordicon icon="system-regular-49-upload-file" size="50" trigger="hover" target=".card" />
+									<x-lordicon icon="wired-outline-89-document-plus-hover-swipe" size="50" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>

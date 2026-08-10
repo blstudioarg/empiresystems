@@ -81,11 +81,11 @@ class CatalogoMenu
             ],
         ],
         [
-            'clave' => 'archivos', 'etiqueta' => 'Archivos', 'icono' => 'system-regular-49-upload-file',
+            'clave' => 'archivos', 'etiqueta' => 'Archivos', 'icono' => 'wired-outline-89-document-plus-hover-swipe',
             'ruta' => 'archivos.index', 'permiso' => 'ver-archivos', 'hijos' => [],
         ],
         [
-            'clave' => 'marketing', 'etiqueta' => 'Marketing', 'icono' => 'system-regular-1-share',
+            'clave' => 'marketing', 'etiqueta' => 'Marketing', 'icono' => 'wired-outline-1027-megaphone-media-hover-pinch',
             'ruta' => null, 'permiso' => null,
             'hijos' => [
                 ['clave' => 'campanas', 'etiqueta' => 'Campañas', 'icono' => null, 'ruta' => 'campanas.index', 'permiso' => 'ver-campanas', 'hijos' => []],

@@ -44,6 +44,7 @@ use App\Http\Controllers\PresupuestoController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProveedorController;
 use App\Http\Controllers\RolController;
+use App\Http\Controllers\SuperAdmin\PanelController as SuperAdminPanelController;
 use App\Http\Controllers\SuperAdmin\TenantController as SuperAdminTenantController;
 use App\Http\Controllers\UnidadController;
 use App\Http\Controllers\UsuarioController;
@@ -60,7 +61,7 @@ Route::middleware(['tenant.context', 'guest'])->group(function () {
         ->name('register.store');
 });
 
-Route::middleware(['tenant.context', 'auth'])->group(function () {
+Route::middleware(['tenant.context', 'auth', 'sin_super_admin'])->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
@@ -416,6 +417,8 @@ Route::middleware(['tenant.context', 'auth'])->group(function () {
 });
 
 Route::middleware(['tenant.context', 'auth', 'super_admin'])->prefix('super_admin')->name('super_admin.')->group(function () {
+    Route::get('/', [SuperAdminPanelController::class, 'index'])->name('home');
+
     Route::resource('tenants', SuperAdminTenantController::class)->only(['index', 'store', 'update', 'destroy']);
     Route::get('tenants/{tenant}/usuarios', [SuperAdminTenantController::class, 'usuarios'])->name('tenants.usuarios');
     Route::put('tenants/{tenant}/usuarios/{usuario}', [SuperAdminTenantController::class, 'actualizarUsuario'])->name('tenants.usuarios.update');

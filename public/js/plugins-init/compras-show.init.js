@@ -60,7 +60,10 @@
 			url: url,
 			method: 'POST',
 			dataType: 'json',
-			headers: { Accept: 'application/json' },
+			headers: {
+				Accept: 'application/json',
+				'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+			},
 		})
 			.done(function (response) {
 				window.showToast('success', response.message || 'Operación realizada correctamente.');

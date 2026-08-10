@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\BloquearSuperAdminAreaTenant;
 use App\Http\Middleware\EnsureSuperAdmin;
 use App\Http\Middleware\SetTenantContext;
 use Illuminate\Console\Scheduling\Schedule;
@@ -50,6 +51,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'tenant.context' => SetTenantContext::class,
             'super_admin' => EnsureSuperAdmin::class,
+            'sin_super_admin' => BloquearSuperAdminAreaTenant::class,
         ]);
 
         // SetTenantContext debe resolver el tenant por Host ANTES que auth/guest: si no, el
