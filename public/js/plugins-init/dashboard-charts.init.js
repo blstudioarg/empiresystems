@@ -94,8 +94,17 @@
 		});
 	}
 
+	function bindCardsInformativas() {
+		document.querySelectorAll('.dashboard-card-clickable').forEach(function (card) {
+			card.addEventListener('click', function () {
+				window.location.href = card.dataset.href;
+			});
+		});
+	}
+
 	renderizarCharts();
 	bindFilasFacturasRecientes();
+	bindCardsInformativas();
 
 	// --- Filtro de rango: recarga por AJAX (sin recargar la página) ---
 
@@ -151,6 +160,7 @@
 		}).done(function (respuesta) {
 			destruirCharts();
 			$contenido.html(respuesta.html);
+			bindCardsInformativas();
 			window.dashboardData = respuesta.graficos;
 			renderizarCharts();
 			bindFilasFacturasRecientes();

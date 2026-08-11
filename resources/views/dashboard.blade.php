@@ -26,6 +26,36 @@
 			pointer-events: none;
 			transition: opacity 150ms ease-out;
 		}
+
+		/* Cards informativas que llevan a la vista que representan (ver
+		   bindCardsInformativas en dashboard-charts.init.js). El propio icono
+		   lordicon dentro de la card sigue reaccionando a su :hover normal. */
+		.dashboard-card-clickable {
+			cursor: pointer;
+		}
+
+		/* Prueba: entrada escalonada de las cards del dashboard al cargar/filtrar,
+		   reutilizando el keyframe `metricCardIn` ya definido en app-overrides.css
+		   para las cards de métricas (docs/04-front-guidelines.md). Delay por
+		   columna dentro de cada fila, no por posición global en la página.
+
+		   Gateada con la clase `.dashboard-anim` (añadida por JS, ver script más
+		   abajo): si se dispara sola al pintar el DOM, para cuando `custom.js`
+		   retira el preloader (800ms tras el evento `load`, ver handlePreloader
+		   en public/js/custom.js) la animación ya terminó detrás del overlay y
+		   nunca se llega a ver en la primera carga. En los refrescos por AJAX del
+		   filtro no hay preloader de por medio, así que las cards nuevas animan
+		   igual apenas se insertan (la clase ya quedó puesta desde la carga inicial). */
+		@media (prefers-reduced-motion: no-preference) {
+			#dashboard-contenido.dashboard-anim .card {
+				animation: metricCardIn 420ms cubic-bezier(0.23, 1, 0.32, 1) both;
+			}
+
+			#dashboard-contenido.dashboard-anim .row > *:nth-child(1) .card { animation-delay: 0ms; }
+			#dashboard-contenido.dashboard-anim .row > *:nth-child(2) .card { animation-delay: 60ms; }
+			#dashboard-contenido.dashboard-anim .row > *:nth-child(3) .card { animation-delay: 120ms; }
+			#dashboard-contenido.dashboard-anim .row > *:nth-child(4) .card { animation-delay: 180ms; }
+		}
 	</style>
 @endpush
 
@@ -39,6 +69,18 @@
 		window.dashboardData = @json($datosGraficos);
 	</script>
 	<script src="{{ asset('js/plugins-init/dashboard-charts.init.js') }}"></script>
+	<script>
+		// Sincroniza la entrada animada de las cards con la desaparición del
+		// preloader (mismo delay que handlePreloader en public/js/custom.js),
+		// para que no corra oculta detrás del overlay. Una vez añadida, la
+		// clase queda puesta y las cards que llegan por AJAX al filtrar
+		// animan directo, sin este delay.
+		jQuery(window).on('load', function () {
+			setTimeout(function () {
+				jQuery('#dashboard-contenido').addClass('dashboard-anim');
+			}, 800);
+		});
+	</script>
 @endpush
 
 @section('content')
