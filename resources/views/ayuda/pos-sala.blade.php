@@ -22,3 +22,14 @@ quede una cuenta olvidada sin cobrar, no un error.</p>
 
 <p class="ayuda-nota">Mover una cuenta a otra mesa o juntar dos cuentas se hace desde la propia
 cuenta, en el chip de mesa que aparece en la cabecera del ticket.</p>
+
+<p><strong>Editar el plano de la sala</strong> (solo con permiso de Configuración): el botón
+<em>Editar plano</em> activa el lienzo de la zona seleccionada, donde cada mesa se arrastra por su
+asa (el círculo con la flecha) a una celda libre distinta. Tocar una mesa (sin arrastrarla) abre un
+panel para cambiar su forma (redonda, cuadrada, rectangular, barra) y su tamaño. Nada se guarda
+hasta pulsar <em>Guardar plano</em>: recargar la página o cambiar de zona sin guardar descarta los
+cambios pendientes.</p>
+
+<p class="ayuda-nota">Si sueltas una mesa exactamente sobre otra, la mesa que ya estaba ahí se
+reubica sola en la celda libre más cercana — nunca se pierde ni queda oculta. Si la zona no tiene
+ninguna celda libre, el movimiento se cancela con un aviso.</p>

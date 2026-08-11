@@ -46,6 +46,7 @@ use App\Http\Controllers\Pos\ArticuloOpcionController as PosArticuloOpcionContro
 use App\Http\Controllers\Pos\CuentaController as PosCuentaController;
 use App\Http\Controllers\Pos\OpcionController as PosOpcionController;
 use App\Http\Controllers\Pos\OpcionGrupoController as PosOpcionGrupoController;
+use App\Http\Controllers\Pos\PlanoSalaController;
 use App\Http\Controllers\Pos\SalaController as PosSalaController;
 use App\Http\Controllers\PosController;
 use App\Http\Controllers\PresupuestoController;
@@ -224,6 +225,14 @@ Route::middleware(['tenant.context', 'auth', 'sin_super_admin'])->group(function
         Route::post('/pos/cuentas/{cuenta}/transferir', [PosCuentaController::class, 'transferir'])->name('pos.cuentas.transferir');
         Route::post('/pos/cuentas/{cuenta}/unir', [PosCuentaController::class, 'unir'])->name('pos.cuentas.unir');
         Route::post('/pos/cuentas/{cuenta}/cobrar', [PosCuentaController::class, 'cobrar'])->name('pos.cuentas.cobrar');
+    });
+
+    // Guardado del plano de sala (feature 039): además de `ver-pos-sala` (para ver la sala), exige
+    // `ver-configuracion` (D6, research.md) — solo quien administra el POS puede reordenar el
+    // salón, aunque cualquier camarero con acceso a Sala siga viendo el plano en solo lectura.
+    Route::middleware(['can:ver-configuracion', 'modulo.hosteleria'])->group(function () {
+        Route::match(['put', 'patch'], '/pos/sala/zonas/{zona}/plano', [PlanoSalaController::class, 'update'])
+            ->name('pos.sala.plano.update');
     });
 
     // Opciones de artículo: su propia capacidad dentro del módulo, para que un bar que solo

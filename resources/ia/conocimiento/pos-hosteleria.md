@@ -18,6 +18,22 @@ Una **cuenta abierta** no es un ticket ni una factura en borrador: es su propia 
 número asignado, que no aparece en ningún listado de facturas hasta que se cobra. Se puede
 guardar, recuperar y anular sin que eso consuma numeración de facturación.
 
+### Plano de sala arrastrable
+
+Quien tiene permiso de Configuración puede pulsar **Editar plano** en la Sala para reordenar las
+mesas de la zona activa arrastrándolas sobre una rejilla fija (8 columnas × 6 filas por zona).
+Tocar una mesa (sin arrastrarla) abre un selector para cambiar su **forma** (redonda, cuadrada,
+rectangular, barra) y su **tamaño** (pequeña, mediana, grande) — propiedades puramente visuales del
+mobiliario, sin efecto en el funcionamiento de la cuenta. Nada se persiste hasta pulsar **Guardar
+plano**: cambiar de zona o salir sin guardar descarta los cambios pendientes.
+
+Si se suelta una mesa sobre una celda ya ocupada, la mesa que estaba ahí se reubica sola en la
+celda libre más cercana (nunca se pierde ni queda oculta); si la zona no tiene ninguna celda libre,
+el movimiento se cancela con un aviso. Cada zona tiene su propio plano, independiente de las demás.
+El guardado usa el mismo mecanismo de bloqueo optimista que las cuentas abiertas: si dos personas
+editan el plano de la misma zona a la vez, la segunda en guardar recibe un aviso para recargar en
+vez de pisar los cambios de la primera.
+
 ## Opciones de artículo (modificadores)
 
 Desde POS → Opciones de artículo se definen **grupos** (p. ej. "Punto de cocción") con reglas de

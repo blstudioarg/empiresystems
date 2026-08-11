@@ -1221,6 +1221,18 @@ nombre es libre) y mesa (FK a una única zona). **El estado libre/ocupada de una
 almacena**: se deriva de si existe una `pos_cuentas` en estado `abierta` con ese `mesa_id`, mismo
 criterio que ya sigue `stock_actual` como caché de lectura del kardex.
 
+**Plano de sala arrastrable (feature 039)**: `pos_zonas` gana `version` (int, default 1) —
+bloqueo optimista del guardado del plano, mismo patrón que `pos_cuentas.version`, se incrementa en
+cada `PUT /pos/sala/zonas/{zona}/plano`. `pos_mesas` gana `fila`/`columna` (unsigned tinyint,
+nullable, rejilla fija de 8 columnas × 6 filas por zona) y `forma`
+(`redonda`/`cuadrada`/`rectangular`/`barra`, default `cuadrada`) / `tamano`
+(`pequena`/`mediana`/`grande`, default `mediana`). `UNIQUE (tenant_id, zona_id, fila, columna)`
+garantiza ausencia de solapamiento por construcción; al eliminar una mesa (soft delete),
+`fila`/`columna` se ponen a `null` en la fila borrada para que el `UNIQUE` no siga "ocupando" esa
+celda y una mesa nueva pueda reutilizarla. Una mesa creada cuando la rejilla de su zona ya está
+completa (48 mesas) queda sin posición (`fila`/`columna` `null`) hasta que se libere una celda; el
+plano la excluye del lienzo mientras tanto.
+
 ### `pos_cuentas` — la cuenta abierta
 
 El corazón del módulo. **No es una factura en borrador**: no tiene `numero` ni `serie_id` (nunca

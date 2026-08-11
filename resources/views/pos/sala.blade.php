@@ -3,6 +3,7 @@
 @section('title', 'POS · Sala')
 
 @push('styles')
+	<link rel="stylesheet" href="{{ asset('vendor/jqueryui/css/jquery-ui.min.css') }}">
 	<style>
 		/* ── Sala: pensada tablet-first, misma familia visual que el catálogo del POS.
 		   Las pestañas de zona REUTILIZAN `.pos-filtro` del TPV (52px de alto, badge de conteo,
@@ -72,6 +73,83 @@
 		@media (prefers-reduced-motion: reduce) {
 			.pos-mesa { transition: none; }
 		}
+
+		/* ── Plano arrastrable (feature 039): rejilla fija de 8×6 celdas por zona. Se posiciona
+		   con `position: absolute` (no CSS grid) porque jQuery UI `draggable` con `grid: [w,h]`
+		   calcula en píxeles: mover a CSS grid perdería el snap directo a celda. */
+		.pos-plano-wrap { display: none; }
+		.pos-plano-wrap.activo { display: block; }
+
+		.pos-plano-toolbar { display: flex; justify-content: space-between; align-items: center; gap: .6rem; flex-wrap: wrap; margin-bottom: .8rem; }
+		.pos-plano-hint { font-size: .82rem; color: #8b93a1; }
+
+		.pos-plano-canvas-scroll { position: relative; overflow-x: auto; padding-bottom: .5rem; }
+		.pos-plano-canvas {
+			position: relative;
+			width: calc(var(--plano-cols) * (var(--plano-cell) + var(--plano-gap)) - var(--plano-gap));
+			height: calc(var(--plano-rows) * (var(--plano-cell) + var(--plano-gap)) - var(--plano-gap));
+			background-color: #f7f8fb;
+			background-image: radial-gradient(circle, #cfd5e0 1.5px, transparent 1.5px);
+			background-size: calc(var(--plano-cell) + var(--plano-gap)) calc(var(--plano-cell) + var(--plano-gap));
+			background-position: calc(var(--plano-cell) / 2) calc(var(--plano-cell) / 2);
+			border-radius: .9rem;
+			border: 1.5px dashed #d7dbe3;
+		}
+
+		.plano-mesa {
+			position: absolute;
+			display: flex; flex-direction: column; align-items: center; justify-content: center;
+			background: #fff; border: 2px solid var(--bs-border-color, #e2e5ea);
+			box-shadow: 0 3px 8px rgba(20,30,60,.08);
+			cursor: default; user-select: none; -webkit-tap-highlight-color: transparent;
+			transition: box-shadow .15s ease, border-color .15s ease;
+			font-size: .78rem; font-weight: 700; color: #2b2f36; text-align: center; padding: .2rem;
+		}
+		.plano-mesa.libre { border-color: #d7dbe3; }
+		.plano-mesa.ocupada { border-color: var(--pos-money, #16a34a); }
+		.plano-mesa.olvidada { border-color: var(--pos-warn, #d97706); background: #fffaf2; }
+		.plano-mesa .plano-mesa-nombre { pointer-events: none; }
+		.plano-mesa .plano-mesa-handle {
+			position: absolute; top: -.5rem; right: -.5rem; width: 1.6rem; height: 1.6rem;
+			border-radius: 50%; background: var(--pos-primary, #1d69d6); color: #fff;
+			display: flex; align-items: center; justify-content: center; font-size: .7rem;
+			cursor: grab; box-shadow: 0 2px 6px rgba(0,0,0,.2);
+		}
+		.plano-mesa .plano-mesa-handle:active { cursor: grabbing; }
+		.plano-mesa.ui-draggable-dragging { box-shadow: 0 10px 26px rgba(20,30,60,.22); z-index: 20; }
+
+		.plano-mesa.forma-redonda { border-radius: 50%; }
+		.plano-mesa.forma-cuadrada { border-radius: .6rem; }
+		.plano-mesa.forma-rectangular { border-radius: .5rem; }
+		.plano-mesa.forma-barra { border-radius: 1.4rem; }
+
+		/* Marcas de sillas alrededor del borde: puntos pequeños generados en JS como spans. */
+		.plano-mesa .silla {
+			position: absolute; width: .4rem; height: .4rem; border-radius: 50%;
+			background: #b7bdc9;
+		}
+		.plano-mesa.ocupada .silla { background: rgba(22,163,74,.45); }
+		.plano-mesa.olvidada .silla { background: rgba(217,119,6,.45); }
+
+		#pos-plano-fuera-rejilla { margin-top: .8rem; }
+
+		/* Popover de forma/tamaño (T018): un único panel compartido, posicionado junto a la mesa
+		   tocada. Patrón propio (no Bootstrap dropdown) porque se reposiciona dinámicamente sobre
+		   un elemento con `position: absolute` dentro de un contenedor con scroll horizontal. */
+		.plano-popover {
+			position: absolute; z-index: 30; background: #fff; border-radius: .8rem;
+			box-shadow: 0 10px 30px rgba(16,24,40,.18); border: 1px solid #e6e6e6;
+			padding: .7rem; display: none; width: 15rem;
+		}
+		.plano-popover.abierto { display: block; }
+		.plano-popover .plano-popover-titulo { font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: #9aa0a6; margin-bottom: .35rem; }
+		.plano-popover .plano-popover-opciones { display: flex; gap: .4rem; flex-wrap: wrap; margin-bottom: .7rem; }
+		.plano-popover .plano-popover-opciones:last-child { margin-bottom: 0; }
+		.plano-popover .btn-check + .btn { min-height: 36px; }
+
+		@media (prefers-reduced-motion: reduce) {
+			.plano-mesa { transition: none; }
+		}
 	</style>
 @endpush
 
@@ -85,6 +163,14 @@
 						<button type="button" class="btn btn-light" id="pos-sala-refrescar">
 							<i class="fas fa-rotate"></i> Actualizar
 						</button>
+						@can('ver-configuracion')
+							<button type="button" class="btn btn-outline-primary" id="pos-plano-toggle">
+								<i class="fas fa-arrows-up-down-left-right"></i> Editar plano
+							</button>
+							<button type="button" class="btn btn-success d-none" id="pos-plano-guardar" data-loading-text="Guardando...">
+								<i class="fas fa-save"></i> Guardar plano
+							</button>
+						@endcan
 						<a href="{{ route('pos.create') }}" class="btn btn-primary">
 							<i class="fas fa-plus"></i> Venta directa
 						</a>
@@ -100,6 +186,23 @@
 					<p class="pos-sala-vacia d-none" id="pos-sala-vacia">
 						Todavía no hay mesas configuradas. Créalas en <strong>Configuración → POS</strong>.
 					</p>
+
+					<div class="pos-plano-wrap" id="pos-plano-wrap">
+						<div class="pos-plano-toolbar">
+							<span class="pos-plano-hint">Arrastra las mesas por el asa <i class="fas fa-arrows-up-down-left-right"></i> para reordenarlas. Toca una mesa para cambiar su forma y tamaño.</span>
+						</div>
+						<div class="pos-plano-canvas-scroll">
+							<div class="pos-plano-canvas" id="pos-plano-canvas"></div>
+
+							<div class="plano-popover" id="plano-popover">
+								<div class="plano-popover-titulo">Forma</div>
+								<div class="plano-popover-opciones" id="plano-popover-formas"></div>
+								<div class="plano-popover-titulo">Tamaño</div>
+								<div class="plano-popover-opciones" id="plano-popover-tamanos"></div>
+							</div>
+						</div>
+						<p class="text-muted small" id="pos-plano-fuera-rejilla"></p>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -117,6 +220,12 @@
 			estadoUrl: @json(route('pos.sala')),
 			umbralOlvidadaMin: {{ $umbralOlvidadaMin }},
 		};
+		window.posPlanoState = {
+			puedeEditar: @json(auth()->user()?->can('ver-configuracion') ?? false),
+			guardarUrlTemplate: @json(route('pos.sala.plano.update', ['zona' => '__ZONA__'])),
+		};
 	</script>
+	<script src="{{ asset('vendor/jqueryui/js/jquery-ui.min.js') }}"></script>
 	<script src="{{ asset('js/plugins-init/pos-sala.init.js') }}"></script>
+	<script src="{{ asset('js/plugins-init/pos-sala-plano.init.js') }}"></script>
 @endpush

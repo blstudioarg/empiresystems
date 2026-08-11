@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\PosCuenta;
 use App\Models\PosMesa;
 use App\Models\PosZona;
+use App\Support\PosPlanoCeldas;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -49,7 +50,19 @@ class PosMesaController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $mesa = PosMesa::create($this->validar($request) + ['tenant_id' => tenant()->getTenantKey()]);
+        $datos = $this->validar($request);
+
+        // Toda mesa nueva aparece en una posición libre por defecto, nunca superpuesta a una
+        // mesa existente (FR-014, feature 039). Si la rejilla de la zona ya está completa (48
+        // mesas), la mesa se crea sin posición: el plano la deja fuera del lienzo hasta que se
+        // libere una celda.
+        $celda = PosPlanoCeldas::primeraCeldaLibre((int) $datos['zona_id']);
+
+        $mesa = PosMesa::create($datos + [
+            'tenant_id' => tenant()->getTenantKey(),
+            'fila' => $celda['fila'] ?? null,
+            'columna' => $celda['columna'] ?? null,
+        ]);
 
         return response()->json(['message' => 'Mesa creada.', 'id' => $mesa->id], 201);
     }
@@ -78,6 +91,10 @@ class PosMesaController extends Controller
             ], 422);
         }
 
+        // Libera la celda antes de la baja lógica: la fila/columna quedan `null` en la fila
+        // borrada, así el UNIQUE (tenant_id, zona_id, fila, columna) no la sigue "ocupando" y una
+        // mesa nueva puede reutilizarla (FR-015, feature 039).
+        $modelo->update(['fila' => null, 'columna' => null]);
         $modelo->delete();
 
         return response()->json(['message' => 'Mesa eliminada.']);

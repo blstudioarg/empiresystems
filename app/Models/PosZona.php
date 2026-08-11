@@ -29,6 +29,7 @@ class PosZona extends Model
         'nombre',
         'suplemento_porcentaje',
         'orden',
+        'version',
     ];
 
     protected function casts(): array
@@ -36,6 +37,7 @@ class PosZona extends Model
         return [
             'suplemento_porcentaje' => 'decimal:2',
             'orden' => 'integer',
+            'version' => 'integer',
         ];
     }
 

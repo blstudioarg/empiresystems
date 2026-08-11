@@ -28,11 +28,21 @@ class PosMesa extends Model
         'zona_id',
         'nombre',
         'orden',
+        'fila',
+        'columna',
+        'forma',
+        'tamano',
     ];
 
     protected function casts(): array
     {
-        return ['orden' => 'integer'];
+        return [
+            'orden' => 'integer',
+            'fila' => 'integer',
+            'columna' => 'integer',
+            'forma' => 'string',
+            'tamano' => 'string',
+        ];
     }
 
     public function tenant(): BelongsTo

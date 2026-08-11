@@ -69,6 +69,10 @@ class SalaController extends Controller
                     'abierta_hace_min' => null,
                     'olvidada' => false,
                     'abrir_url' => route('pos.create'),
+                    'fila' => $mesa->fila,
+                    'columna' => $mesa->columna,
+                    'forma' => $mesa->forma,
+                    'tamano' => $mesa->tamano,
                 ];
             }
 
@@ -86,6 +90,10 @@ class SalaController extends Controller
                 'abierta_hace_min' => $minutos,
                 'olvidada' => $minutos >= $umbral,
                 'abrir_url' => route('pos.create', ['cuenta' => $cuenta->id]),
+                'fila' => $mesa->fila,
+                'columna' => $mesa->columna,
+                'forma' => $mesa->forma,
+                'tamano' => $mesa->tamano,
             ];
         })->values();
 
@@ -95,6 +103,7 @@ class SalaController extends Controller
                 'nombre' => $zona->nombre,
                 'suplemento' => $suplementoActivo ? number_format((float) $zona->suplemento_porcentaje, 2, '.', '') : '0.00',
                 'total_mesas' => $mesas->where('zona_id', $zona->id)->count(),
+                'version' => (int) $zona->version,
             ])->values(),
             'mesas' => $mesasPayload,
             'umbral_olvidada_min' => $umbral,

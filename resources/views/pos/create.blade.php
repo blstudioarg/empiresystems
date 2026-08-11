@@ -60,17 +60,21 @@
 		   esto la card queda con un alto fijo que no puede crecer dentro del flex column de
 		   .pos-cobro, dejándola corta y con un hueco antes de la botonera. */
 		.pos-ticket.card { flex: 1 1 auto; min-width: 0; min-height: 0; height: auto !important; margin-bottom: 0 !important; display: flex; flex-direction: column; }
-		.pos-botonera { display: flex; flex-direction: row; gap: .6rem; align-items: stretch; }
-		.pos-botonera .pos-total-card,
-		.pos-botonera .pos-bkey,
-		.pos-botonera .pos-cobrar { flex: 1 1 0; min-width: 0; }
-
-		@media (max-width: 575.98px) {
-			.pos-botonera { flex-wrap: wrap; }
-			.pos-botonera .pos-total-card { flex: 1 1 100%; }
-			.pos-botonera .pos-bkey,
-			.pos-botonera .pos-cobrar { flex: 1 1 40%; }
+		/* Botonera: Total y Cobrar SIEMPRE al costado (par simétrico, misma altura, mismo peso
+		   visual — son las dos acciones de cierre del ticket), y la franja de acciones
+		   intermedias (Cliente / Guardar / Aparcadas, o solo Cliente sin el módulo de
+		   hostelería) debajo, ocupando el ancho completo. Grid en vez de flex-wrap: con flex el
+		   orden de aparición en el DOM (total, [mid], cobrar) obligaba a que "cobrar" quedara
+		   pegado al medio en vez de emparejado con "total". */
+		.pos-botonera {
+			display: grid; grid-template-columns: 1fr 1fr;
+			grid-template-areas: "total cobrar" "mid mid";
+			gap: .6rem;
 		}
+		.pos-botonera .pos-total-card { grid-area: total; }
+		.pos-botonera .pos-cobrar { grid-area: cobrar; }
+		.pos-botonera .pos-bkey-grid,
+		.pos-botonera > .pos-bkey { grid-area: mid; }
 
 		/* ── Catálogo ──────────────────────────────────────────────── */
 		.pos-search-wrap { position: relative; }
@@ -231,8 +235,8 @@
 		/* ── Botonera ──────────────────────────────────────────────── */
 		.pos-total-card {
 			background: linear-gradient(135deg, var(--pos-money), var(--pos-money-2)); color: #fff; border-radius: 1.1rem;
-			padding: 1rem .9rem; text-align: center; box-shadow: 0 8px 20px rgba(22,163,74,.28);
-			display: flex; flex-direction: column; gap: .1rem;
+			padding: 1rem .9rem; min-height: 92px; text-align: center; box-shadow: 0 8px 20px rgba(22,163,74,.28);
+			display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .1rem;
 			border: none; cursor: pointer; font: inherit;
 			transition: box-shadow .18s ease, transform .08s ease;
 		}
@@ -276,12 +280,18 @@
 
 		.pos-cobrar {
 			border: none; border-radius: 1.1rem; padding: 1.1rem .5rem; min-height: 92px;
-			background: linear-gradient(135deg, var(--pos-money), var(--pos-money-2)); color: #fff; font-weight: 800;
-			font-size: 1.2rem; letter-spacing: .02em; cursor: pointer; box-shadow: 0 10px 24px rgba(22,163,74,.35);
-			display: flex; align-items: center; justify-content: center; gap: .5rem;
+			/* Primario del tenant, no el verde dinero: "Cobrar" abre el modal de cobro (todavía no
+			   cobró nada), el verde queda reservado para el total y para "Emitir ticket". */
+			background: linear-gradient(135deg, var(--pos-primary), color-mix(in srgb, var(--pos-primary) 70%, #fff));
+			color: #fff; font-weight: 800;
+			/* Emparejado con .pos-total-card (mismo alto, mismo peso): al pasar de un cuarto a la
+			   mitad del ancho de la botonera, letra e ícono chicos quedaban perdidos en el
+			   espacio nuevo. */
+			font-size: 1.6rem; letter-spacing: .02em; cursor: pointer; box-shadow: 0 10px 24px rgba(29,105,214,.35);
+			display: flex; align-items: center; justify-content: center; gap: .6rem;
 			transition: transform .08s ease, box-shadow .18s ease, background .18s ease;
 		}
-		.pos-cobrar:hover:not(:disabled) { box-shadow: 0 14px 30px rgba(22,163,74,.45); }
+		.pos-cobrar:hover:not(:disabled) { box-shadow: 0 14px 30px rgba(29,105,214,.45); }
 		.pos-cobrar:active:not(:disabled) { transform: scale(.97); }
 		.pos-cobrar:disabled { background: #c9ccd1; box-shadow: none; cursor: not-allowed; }
 
@@ -419,6 +429,17 @@
 		}
 		.pos-cobro-modal .pos-cobro-emitir:active:not(:disabled) { transform: scale(.98); }
 		.pos-cobro-modal .pos-cobro-emitir:disabled { background: #c9ccd1; color: #fff !important; box-shadow: none; }
+
+		/* "Añadir al ticket" (modal de opciones): mismo tamaño táctil que "Emitir ticket", pero en
+		   el primario de marca en vez del verde dinero — no es una acción de cobro. */
+		.pos-opciones-modal .pos-cobro-emitir {
+			min-height: 68px; font-size: 1.45rem !important; font-weight: 800; padding: 1rem !important; border-radius: 14px !important;
+			background: var(--pos-primary); border: none; color: #fff !important;
+			letter-spacing: .01em; box-shadow: 0 10px 24px rgba(29,105,214,.28);
+			transition: transform .08s var(--ease-out), box-shadow .18s var(--ease-out), background .18s var(--ease-out);
+		}
+		.pos-opciones-modal .pos-cobro-emitir:active:not(:disabled) { transform: scale(.98); }
+		.pos-opciones-modal .pos-cobro-emitir:disabled { background: #c9ccd1; color: #fff !important; box-shadow: none; }
 
 		@media (prefers-reduced-motion: reduce) {
 			.pos-cobro-tender { animation: none; }
@@ -605,11 +626,11 @@
 									<span class="pos-bkey-label" id="pos-cliente-btn-label">Cliente</span>
 								</button>
 								<button type="button" class="pos-bkey" id="pos-guardar-cuenta">
-									<i class="fas fa-floppy-disk"></i>
+									<x-lordicon icon="system-regular-49-upload-file" size="22" trigger="hover" target="#pos-guardar-cuenta" />
 									<span class="pos-bkey-label">Guardar</span>
 								</button>
 								<button type="button" class="pos-bkey" id="pos-aparcadas-btn">
-									<i class="fas fa-th-large"></i>
+									<x-lordicon icon="wired-outline-690-avatar-man-waiter-hover-pinch" size="22" trigger="hover" target="#pos-aparcadas-btn" />
 									<span class="pos-bkey-label">Aparcadas</span>
 								</button>
 							</div>
@@ -622,7 +643,7 @@
 
 						<button type="button" class="pos-cobrar" id="pos-cobrar" disabled
 							data-bs-toggle="modal" data-bs-target="#posCobroModal">
-							<x-lordicon icon="euro" size="24" trigger="hover" target="#pos-cobrar" colors="primary:#ffffff,secondary:#ffffff" />
+							<x-lordicon icon="euro" size="32" trigger="hover" target="#pos-cobrar" colors="primary:#ffffff,secondary:#ffffff" />
 							<span>Cobrar</span>
 						</button>
 					</aside>

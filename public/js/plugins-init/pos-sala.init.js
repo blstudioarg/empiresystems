@@ -95,8 +95,10 @@
 			.then(function (r) { return r.json(); })
 			.then(function (json) {
 				datos = json;
+				window.posSalaData = datos;
 				pintarZonas();
 				pintarMesas();
+				document.dispatchEvent(new CustomEvent('pos-sala:actualizado', { detail: datos }));
 			})
 			.catch(function () {
 				window.showToast('error', 'No se pudo cargar el estado de la sala.');
@@ -109,7 +111,11 @@
 		zonaActiva = btn.getAttribute('data-zona') || '';
 		pintarZonas();
 		pintarMesas();
+		document.dispatchEvent(new CustomEvent('pos-sala:zona-cambiada', { detail: { zonaId: zonaActiva } }));
 	});
+
+	// El init del plano (feature 039) necesita saber qué zona está activa sin duplicar el estado.
+	window.posSalaZonaActiva = function () { return zonaActiva; };
 
 	$mesas.addEventListener('click', function (e) {
 		var btn = e.target.closest('.pos-mesa');
