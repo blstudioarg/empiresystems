@@ -33,3 +33,12 @@ cambios pendientes.</p>
 <p class="ayuda-nota">Si sueltas una mesa exactamente sobre otra, la mesa que ya estaba ahí se
 reubica sola en la celda libre más cercana — nunca se pierde ni queda oculta. Si la zona no tiene
 ninguna celda libre, el movimiento se cancela con un aviso.</p>
+
+<p>A la derecha del lienzo, en modo edición, hay un panel para <strong>gestionar zonas y
+mesas</strong> sin salir de la Sala: crear (botón «+»), renombrar (tocar el nombre y escribir) y
+eliminar (papelera, con confirmación). Es el mismo CRUD de <em>Configuración → POS</em>, solo que
+más rápido de usar desde una tablet mientras se arma el plano.</p>
+
+<p class="ayuda-nota">Cambiar de pestaña de zona ya no descarta el arrastre pendiente de la zona
+anterior: cada zona conserva su propio plano sin guardar mientras dure el modo edición. Solo se
+pierde si se sale de «Editar plano» sin guardar, o se recarga la página.</p>

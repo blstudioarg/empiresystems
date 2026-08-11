@@ -88,6 +88,21 @@
 		}).join('');
 	}
 
+	function pintarCards() {
+		var libres = 0, ocupadas = 0, olvidadas = 0;
+
+		datos.mesas.forEach(function (mesa) {
+			if (mesa.estado === 'libre') { libres++; }
+			else if (mesa.olvidada) { olvidadas++; }
+			else { ocupadas++; }
+		});
+
+		$('[data-metric="total"]').text(datos.mesas.length);
+		$('[data-metric="libres"]').text(libres);
+		$('[data-metric="ocupadas"]').text(ocupadas);
+		$('[data-metric="olvidadas"]').text(olvidadas);
+	}
+
 	function cargar() {
 		return fetch(state.estadoUrl, {
 			headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
@@ -98,6 +113,7 @@
 				window.posSalaData = datos;
 				pintarZonas();
 				pintarMesas();
+				pintarCards();
 				document.dispatchEvent(new CustomEvent('pos-sala:actualizado', { detail: datos }));
 			})
 			.catch(function () {

@@ -133,6 +133,44 @@
 
 		#pos-plano-fuera-rejilla { margin-top: .8rem; }
 
+		/* ── Panel de gestión de zonas/mesas, a la derecha del lienzo. Pensado tablet-friendly:
+		   filas altas (min-height 52px, como .pos-filtro), texto editable inline en vez de un
+		   modal aparte, sin inputs chicos que fallen al primer toque. */
+		.pos-plano-body { display: flex; gap: 1rem; align-items: flex-start; }
+		.pos-plano-body-izq { flex: 1 1 auto; min-width: 0; }
+		.pos-plano-gestion {
+			flex: 0 0 17rem; width: 17rem; display: flex; flex-direction: column; gap: 1rem;
+		}
+		.pos-plano-gestion-seccion {
+			background: #fff; border: 1.5px solid #e6e6e6; border-radius: .9rem; padding: .8rem;
+		}
+		.pos-plano-gestion-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: .6rem; }
+		.btn-icon-cuadrado { width: 2.25rem; height: 2.25rem; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
+
+		.pos-plano-gestion-lista { display: flex; flex-direction: column; gap: .4rem; max-height: 15rem; overflow-y: auto; }
+		.plano-gestion-item {
+			display: flex; align-items: center; gap: .4rem; min-height: 52px;
+			border: 1.5px solid #e6e6e6; border-radius: .7rem; padding: 0 .3rem 0 .7rem;
+		}
+		.plano-gestion-item.activa { border-color: var(--pos-primary, #1d69d6); background: #f5f8ff; }
+		.plano-gestion-item input {
+			flex: 1 1 auto; min-width: 0; border: none; background: transparent; font-weight: 650;
+			font-size: .92rem; padding: .4rem 0;
+		}
+		.plano-gestion-item input:focus { outline: none; background: #fff; }
+		.plano-gestion-item .plano-gestion-meta { font-size: .74rem; color: #9aa0a6; white-space: nowrap; }
+		.plano-gestion-item .btn-eliminar {
+			width: 2.1rem; height: 2.1rem; flex: 0 0 auto; border: none; background: transparent;
+			color: #c33; display: inline-flex; align-items: center; justify-content: center; border-radius: .5rem;
+		}
+		.plano-gestion-item .btn-eliminar:hover { background: #fbe7e7; }
+		.plano-gestion-vacio { font-size: .82rem; color: #9aa0a6; padding: .5rem .2rem; }
+
+		@media (max-width: 61.9375rem) {
+			.pos-plano-body { flex-direction: column; }
+			.pos-plano-gestion { width: 100%; flex-basis: auto; }
+		}
+
 		/* Popover de forma/tamaño (T018): un único panel compartido, posicionado junto a la mesa
 		   tocada. Patrón propio (no Bootstrap dropdown) porque se reposiciona dinámicamente sobre
 		   un elemento con `position: absolute` dentro de un contenedor con scroll horizontal. */
@@ -156,6 +194,69 @@
 @section('content')
 	<div class="content-body">
 		<div class="container-fluid pos-sala">
+			<div class="row" id="pos-sala-cards">
+				<div class="col-xl-3 col-sm-6">
+					<div class="card same-card">
+						<div class="card-body">
+							<div class="d-flex justify-content-between align-items-center">
+								<div>
+									<h6 class="mb-1">Total de mesas</h6>
+									<h3 class="mb-0" data-metric="total">0</h3>
+								</div>
+								<div>
+									<x-lordicon icon="home" size="50" trigger="hover" target=".card" />
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="col-xl-3 col-sm-6">
+					<div class="card same-card">
+						<div class="card-body">
+							<div class="d-flex justify-content-between align-items-center">
+								<div>
+									<h6 class="mb-1">Libres</h6>
+									<h3 class="mb-0" data-metric="libres">0</h3>
+								</div>
+								<div>
+									<x-lordicon icon="box" size="50" trigger="hover" target=".card" />
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="col-xl-3 col-sm-6">
+					<div class="card same-card">
+						<div class="card-body">
+							<div class="d-flex justify-content-between align-items-center">
+								<div>
+									<h6 class="mb-1">Ocupadas</h6>
+									<h3 class="mb-0 text-success" data-metric="ocupadas">0</h3>
+								</div>
+								<div>
+									<x-lordicon icon="people" size="50" trigger="hover" target=".card" />
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="col-xl-3 col-sm-6">
+					<div class="card same-card">
+						<div class="card-body">
+							<div class="d-flex justify-content-between align-items-center">
+								<div>
+									<h6 class="mb-1">Olvidadas</h6>
+									<h3 class="mb-0 text-danger" data-metric="olvidadas">0</h3>
+								</div>
+								<div>
+									<x-lordicon icon="wired-outline-3627-mail-open-warning-hover-pinch" size="50" trigger="hover" target=".card" />
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
 			<div class="card">
 				<div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
 					<h4 class="card-title mb-0">Sala</h4>
@@ -191,17 +292,43 @@
 						<div class="pos-plano-toolbar">
 							<span class="pos-plano-hint">Arrastra las mesas por el asa <i class="fas fa-arrows-up-down-left-right"></i> para reordenarlas. Toca una mesa para cambiar su forma y tamaño.</span>
 						</div>
-						<div class="pos-plano-canvas-scroll">
-							<div class="pos-plano-canvas" id="pos-plano-canvas"></div>
+						<div class="pos-plano-body">
+							<div class="pos-plano-body-izq">
+								<div class="pos-plano-canvas-scroll">
+									<div class="pos-plano-canvas" id="pos-plano-canvas"></div>
 
-							<div class="plano-popover" id="plano-popover">
-								<div class="plano-popover-titulo">Forma</div>
-								<div class="plano-popover-opciones" id="plano-popover-formas"></div>
-								<div class="plano-popover-titulo">Tamaño</div>
-								<div class="plano-popover-opciones" id="plano-popover-tamanos"></div>
+									<div class="plano-popover" id="plano-popover">
+										<div class="plano-popover-titulo">Forma</div>
+										<div class="plano-popover-opciones" id="plano-popover-formas"></div>
+										<div class="plano-popover-titulo">Tamaño</div>
+										<div class="plano-popover-opciones" id="plano-popover-tamanos"></div>
+									</div>
+								</div>
+								<p class="text-muted small" id="pos-plano-fuera-rejilla"></p>
 							</div>
+
+							<aside class="pos-plano-gestion">
+								<div class="pos-plano-gestion-seccion">
+									<div class="pos-plano-gestion-header">
+										<h6 class="mb-0">Zonas</h6>
+										<button type="button" class="btn btn-light btn-icon-cuadrado" id="pos-plano-zona-nueva" title="Nueva zona">
+											<i class="fas fa-plus"></i>
+										</button>
+									</div>
+									<div class="pos-plano-gestion-lista" id="pos-plano-zonas-lista"></div>
+								</div>
+
+								<div class="pos-plano-gestion-seccion">
+									<div class="pos-plano-gestion-header">
+										<h6 class="mb-0">Mesas</h6>
+										<button type="button" class="btn btn-light btn-icon-cuadrado" id="pos-plano-mesa-nueva" title="Nueva mesa">
+											<i class="fas fa-plus"></i>
+										</button>
+									</div>
+									<div class="pos-plano-gestion-lista" id="pos-plano-mesas-lista"></div>
+								</div>
+							</aside>
 						</div>
-						<p class="text-muted small" id="pos-plano-fuera-rejilla"></p>
 					</div>
 				</div>
 			</div>
@@ -224,8 +351,19 @@
 			puedeEditar: @json(auth()->user()?->can('ver-configuracion') ?? false),
 			guardarUrlTemplate: @json(route('pos.sala.plano.update', ['zona' => '__ZONA__'])),
 		};
+		window.posPlanoGestionState = {
+			zonasIndexUrl: @json(route('configuracion.pos.zonas.index')),
+			zonasStoreUrl: @json(route('configuracion.pos.zonas.store')),
+			zonaUpdateUrlTemplate: @json(route('configuracion.pos.zonas.update', ['zona' => '__ZONA__'])),
+			zonaDestroyUrlTemplate: @json(route('configuracion.pos.zonas.destroy', ['zona' => '__ZONA__'])),
+			mesasIndexUrl: @json(route('configuracion.pos.mesas.index')),
+			mesasStoreUrl: @json(route('configuracion.pos.mesas.store')),
+			mesaUpdateUrlTemplate: @json(route('configuracion.pos.mesas.update', ['mesa' => '__MESA__'])),
+			mesaDestroyUrlTemplate: @json(route('configuracion.pos.mesas.destroy', ['mesa' => '__MESA__'])),
+		};
 	</script>
 	<script src="{{ asset('vendor/jqueryui/js/jquery-ui.min.js') }}"></script>
 	<script src="{{ asset('js/plugins-init/pos-sala.init.js') }}"></script>
 	<script src="{{ asset('js/plugins-init/pos-sala-plano.init.js') }}"></script>
+	<script src="{{ asset('js/plugins-init/pos-sala-plano-gestion.init.js') }}"></script>
 @endpush

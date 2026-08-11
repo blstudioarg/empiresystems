@@ -29,10 +29,16 @@ plano**: cambiar de zona o salir sin guardar descarta los cambios pendientes.
 
 Si se suelta una mesa sobre una celda ya ocupada, la mesa que estaba ahí se reubica sola en la
 celda libre más cercana (nunca se pierde ni queda oculta); si la zona no tiene ninguna celda libre,
-el movimiento se cancela con un aviso. Cada zona tiene su propio plano, independiente de las demás.
-El guardado usa el mismo mecanismo de bloqueo optimista que las cuentas abiertas: si dos personas
-editan el plano de la misma zona a la vez, la segunda en guardar recibe un aviso para recargar en
-vez de pisar los cambios de la primera.
+el movimiento se cancela con un aviso. Cada zona tiene su propio plano, independiente de las demás,
+y cambiar de pestaña de zona sin guardar **no** descarta el arrastre pendiente de la zona anterior
+(se conserva en memoria mientras dure el modo edición; se pierde solo al salir de "Editar plano"
+sin guardar, o al recargar la página). El guardado usa el mismo mecanismo de bloqueo optimista que
+las cuentas abiertas: si dos personas editan el plano de la misma zona a la vez, la segunda en
+guardar recibe un aviso para recargar en vez de pisar los cambios de la primera.
+
+En modo edición, un panel a la derecha del lienzo permite **crear, renombrar y eliminar zonas y
+mesas** sin salir de la Sala (mismo CRUD que Configuración → POS, con la misma restricción: una
+zona con mesas o una mesa con cuenta abierta no se pueden eliminar).
 
 ## Opciones de artículo (modificadores)
 

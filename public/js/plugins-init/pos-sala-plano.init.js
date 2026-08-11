@@ -56,6 +56,13 @@
 	var pendiente = []; // [{id, fila, columna, forma, tamano, estado, olvidada}]
 	var mesaSeleccionada = null; // id de la mesa con el popover abierto
 
+	// Estado pendiente POR ZONA: cambiar de pestaña sin guardar ya NO descarta el arrastre de la
+	// zona anterior (a pedido del usuario) — solo se descarta al salir del modo edición por
+	// completo o al recargar la página. `pendiente` siempre apunta al array de la zona activa
+	// (mismo objeto guardado aquí), así que mutarlo ya deja el cambio reflejado en el mapa.
+	var pendientePorZona = {};
+	var versionPorZona = {};
+
 	function escapeHtml(s) {
 		var d = document.createElement('div');
 		d.textContent = s == null ? '' : s;
@@ -95,6 +102,22 @@
 		return tamano === 'pequena' ? 0.68 : (tamano === 'grande' ? 1 : 0.85);
 	}
 
+	/**
+	 * Ancho/alto en px según forma y tamaño. `rectangular`/`barra` desbordan el ancho de su
+	 * propia celda hacia las vecinas (decorativo: la celda que ocupan a efectos de colisión sigue
+	 * siendo una sola, `fila`/`columna`), para que se vean realmente alargadas y no un cuadrado
+	 * con puntos distintos alrededor.
+	 */
+	function dimensiones(forma, tamano) {
+		var escala = tamanoEscala(tamano);
+		var base = CELL * escala;
+
+		if (forma === 'barra') { return { width: Math.round(base * 1.9), height: Math.round(base * 0.55) }; }
+		if (forma === 'rectangular') { return { width: Math.round(base * 1.35), height: Math.round(base * 0.8) }; }
+
+		return { width: Math.round(base), height: Math.round(base) };
+	}
+
 	function sillasParaForma(forma) {
 		// Puntos alrededor del perímetro, en porcentaje del tamaño del elemento.
 		if (forma === 'barra') {
@@ -113,9 +136,9 @@
 
 	function renderMesaHtml(mesa) {
 		var pos = posicionPx(mesa.fila, mesa.columna);
-		var escala = tamanoEscala(mesa.tamano);
-		var size = Math.round(CELL * escala);
-		var offset = Math.round((CELL - size) / 2);
+		var dim = dimensiones(mesa.forma, mesa.tamano);
+		var offsetX = Math.round((CELL - dim.width) / 2);
+		var offsetY = Math.round((CELL - dim.height) / 2);
 		var clase = mesa.estado === 'libre' ? 'libre' : (mesa.olvidada ? 'olvidada' : 'ocupada');
 
 		var sillasHtml = sillasParaForma(mesa.forma).map(function (p) {
@@ -123,7 +146,7 @@
 		}).join('');
 
 		return '<div class="plano-mesa ' + clase + ' forma-' + mesa.forma + '" data-mesa-id="' + mesa.id + '"' +
-			' style="left:' + (pos.left + offset) + 'px;top:' + (pos.top + offset) + 'px;width:' + size + 'px;height:' + size + 'px;">' +
+			' style="left:' + (pos.left + offsetX) + 'px;top:' + (pos.top + offsetY) + 'px;width:' + dim.width + 'px;height:' + dim.height + 'px;">' +
 			sillasHtml +
 			'<span class="plano-mesa-nombre">' + escapeHtml(mesa.nombre) + '</span>' +
 			'<span class="plano-mesa-handle" title="Arrastrar"><i class="fas fa-arrows-up-down-left-right"></i></span>' +
@@ -157,9 +180,11 @@
 
 		var left = parseInt(el.style.left, 10) || 0;
 		var top = parseInt(el.style.top, 10) || 0;
-		var offset = Math.round((CELL - Math.round(CELL * tamanoEscala(mesa.tamano))) / 2);
-		var columna = Math.round((left - offset) / STEP);
-		var fila = Math.round((top - offset) / STEP);
+		var dim = dimensiones(mesa.forma, mesa.tamano);
+		var offsetX = Math.round((CELL - dim.width) / 2);
+		var offsetY = Math.round((CELL - dim.height) / 2);
+		var columna = Math.round((left - offsetX) / STEP);
+		var fila = Math.round((top - offsetY) / STEP);
 		columna = Math.max(0, Math.min(COLS - 1, columna));
 		fila = Math.max(0, Math.min(ROWS - 1, fila));
 
@@ -245,21 +270,39 @@
 		cerrarPopover();
 	});
 
-	function cargarZona(id) {
+	/**
+	 * Carga la zona `id` en el lienzo. Si ya había edición pendiente de esa zona en esta misma
+	 * sesión de edición (el usuario había arrastrado algo y cambió de pestaña sin guardar), se
+	 * recupera tal cual estaba — no se vuelve a derivar desde el servidor. `forzar: true` invalida
+	 * ese caché (se usa tras un 409, cuando lo que hay en memoria ya sabemos que está obsoleto).
+	 */
+	function cargarZona(id, forzar) {
 		cerrarPopover();
 		zonaId = id;
 
 		var datos = window.posSalaData || { zonas: [], mesas: [] };
-		var zona = datos.zonas.filter(function (z) { return String(z.id) === String(id); })[0];
-		versionZona = zona ? zona.version : 1;
-
 		var mesasZona = datos.mesas.filter(function (m) { return String(m.zona_id) === String(id); });
 
-		pendiente = mesasZona
-			.filter(function (m) { return m.fila !== null && m.columna !== null; })
-			.map(function (m) {
-				return { id: m.id, nombre: m.nombre, fila: m.fila, columna: m.columna, forma: m.forma, tamano: m.tamano, estado: m.estado, olvidada: m.olvidada };
-			});
+		if (forzar) {
+			delete pendientePorZona[id];
+			delete versionPorZona[id];
+		}
+
+		if (pendientePorZona[id]) {
+			pendiente = pendientePorZona[id];
+			versionZona = versionPorZona[id];
+		} else {
+			var zona = datos.zonas.filter(function (z) { return String(z.id) === String(id); })[0];
+			versionZona = zona ? zona.version : 1;
+			versionPorZona[id] = versionZona;
+
+			pendiente = mesasZona
+				.filter(function (m) { return m.fila !== null && m.columna !== null; })
+				.map(function (m) {
+					return { id: m.id, nombre: m.nombre, fila: m.fila, columna: m.columna, forma: m.forma, tamano: m.tamano, estado: m.estado, olvidada: m.olvidada };
+				});
+			pendientePorZona[id] = pendiente;
+		}
 
 		var fuera = mesasZona.length - pendiente.length;
 		$fueraRejilla.textContent = fuera > 0
@@ -271,6 +314,11 @@
 
 	function activarEdicion() {
 		if (editando) { return; }
+
+		// Sesión de edición nueva: el caché de zonas pendientes es de la sesión anterior (ya
+		// guardada o descartada al salir), no debe arrastrarse a esta.
+		pendientePorZona = {};
+		versionPorZona = {};
 
 		var zid = window.posSalaZonaActiva ? window.posSalaZonaActiva() : '';
 		if (!zid) {
@@ -296,6 +344,8 @@
 	function desactivarEdicion() {
 		editando = false;
 		cerrarPopover();
+		pendientePorZona = {};
+		versionPorZona = {};
 		$toggle.classList.remove('d-none');
 		$guardar.classList.add('d-none');
 		$mesasLectura.classList.remove('d-none-plano', 'd-none');
@@ -305,8 +355,8 @@
 	$toggle.addEventListener('click', activarEdicion);
 
 	document.addEventListener('pos-sala:zona-cambiada', function (e) {
-		// FR-009: los cambios pendientes sin guardar se descartan al salir del modo edición de
-		// una zona — cambiar de pestaña siempre recarga desde el último estado guardado.
+		// Cambiar de pestaña de zona YA NO descarta lo pendiente: `cargarZona` recupera el estado
+		// en memoria de esa zona si lo había, y solo deriva de `posSalaData` la primera vez.
 		if (editando) { cargarZona(e.detail.zonaId); }
 	});
 
@@ -355,7 +405,10 @@
 					// Recarga el plano vigente de esta zona en vez de dejar al usuario reintentar
 					// a ciegas contra un `version` que ya sabemos desactualizado.
 					document.getElementById('pos-sala-refrescar').click();
-					setTimeout(function () { if (editando) { cargarZona(zonaId); } }, 400);
+					// `forzar: true` invalida el caché en memoria de esta zona: lo que había ahí ya
+					// sabemos que quedó obsoleto (409), así que se re-deriva del estado recién
+					// refrescado en vez de mostrar de nuevo lo que acaba de fallar.
+					setTimeout(function () { if (editando) { cargarZona(zonaId, true); } }, 400);
 					return;
 				}
 
@@ -363,4 +416,41 @@
 				window.showToast('danger', msg);
 			});
 	});
+
+	/**
+	 * API mínima para `pos-sala-plano-gestion.init.js` (panel de zonas/mesas): permite que el CRUD
+	 * de zonas/mesas actualice el lienzo en memoria SIN pisar posiciones que el usuario ya arrastró
+	 * y todavía no guardó (a diferencia de un `cargarZona(id, true)`, que sí las descarta).
+	 */
+	window.PosPlano = {
+		estaEditando: function () { return editando; },
+		zonaActiva: function () { return zonaId; },
+		/** Añade una mesa recién creada (con posición asignada por el servidor) al lienzo si su zona está activa. */
+		agregarMesa: function (zid, mesa) {
+			if (!pendientePorZona[zid] || mesa.fila === null || mesa.columna === null) { return; }
+			pendientePorZona[zid].push({
+				id: mesa.id, nombre: mesa.nombre, fila: mesa.fila, columna: mesa.columna,
+				forma: mesa.forma || 'cuadrada', tamano: mesa.tamano || 'mediana', estado: 'libre', olvidada: false,
+			});
+			if (zid === zonaId) { pintarCanvas(); }
+		},
+		/** Refleja un renombrado sin tocar la posición pendiente de esa mesa. */
+		renombrarMesa: function (zid, id, nombre) {
+			var lista = pendientePorZona[zid];
+			var mesa = lista && lista.filter(function (m) { return String(m.id) === String(id); })[0];
+			if (mesa) { mesa.nombre = nombre; }
+			if (zid === zonaId) { pintarCanvas(); }
+		},
+		/** Quita una mesa eliminada (su celda ya quedó libre en servidor). */
+		quitarMesa: function (zid, id) {
+			if (pendientePorZona[zid]) {
+				pendientePorZona[zid] = pendientePorZona[zid].filter(function (m) { return String(m.id) !== String(id); });
+				// `.filter()` crea un array nuevo: si es la zona activa, `pendiente` (variable de
+				// módulo que usa `pintarCanvas`) tiene que apuntar a ese array nuevo, si no queda
+				// pintando la lista vieja con la mesa borrada todavía adentro.
+				if (zid === zonaId) { pendiente = pendientePorZona[zid]; }
+			}
+			if (zid === zonaId) { pintarCanvas(); }
+		},
+	};
 })();
