@@ -227,6 +227,18 @@ documentó más arriba para `.icon-box`).
 **Si hace falta otro elemento con fondo primario y texto encima, usar `--primary-contraste`**, no
 `#fff`. Es la única forma de que la marca del tenant no rompa la legibilidad.
 
+## Placa de ícono (`.icono-placa`)
+
+Contenedor reutilizable para un `<x-lordicon>`: cuadrado redondeado (4rem, radio 1rem) con el
+tinte del color de marca (`--rgba-primary-1`). Definido en `app-overrides.css`.
+
+Se usa cuando el ícono tiene que anclar un bloque de información a su izquierda —cabecera del
+perfil de cliente, cards de métricas— en vez de flotar suelto. Para el ícono suelto a la derecha
+de una métrica sigue valiendo la regla de la sección siguiente (contenedor sin clases).
+
+**No usar `.icon-box bg-primary-light` del template para esto**: trae 2.5rem fijos con
+`!important` y recorta el `<lord-icon>`. Es exactamente el error ya documentado abajo.
+
 ## Icono flotante en cards informativas (métricas)
 
 En las cards de métricas (ej. "Total de clientes", "Clientes empresa" en `clientes/index.blade.php`
@@ -1216,3 +1228,71 @@ nueva: se apila un `<div class="mt-1">` con su propio `<span class="badge light 
 mismo `render()` de la columna de estado, condicionado a que el dato exista (`if (row.algo) { ... }`).
 Mantiene la tabla legible sin ensanchar el layout con columnas casi siempre vacías. Ver
 `renderEstado()` en `public/js/plugins-init/facturas-datatable.init.js`.
+
+## Partición de un archivo JS grande en módulos con estado compartido (feature 038)
+
+Cuando un archivo JS de una pantalla concreta (no un componente reutilizable) crece hasta el punto
+de que conflictos y bugs de estado compartido se disparan (referencia: `pos-form.js` llegó a 735
+líneas antes de partirse), el patrón es un **orquestador ligero + módulos registrados**, no un
+bundler ni un sistema de módulos ES nuevo (Principio V: sin build step).
+
+- El archivo original queda como **orquestador**: crea un objeto de estado compartido en
+  `window` (p. ej. `window.PosApp`), expone helpers comunes (formateo, escapado HTML) y un
+  `registrar(nombre, factory)` que los módulos usan para inscribirse.
+- Cada módulo nuevo es un archivo aparte que llama a `PosApp.registrar('nombre', function
+  (PosApp) { ... return { init, ...api-pública }; })`. El `factory` **construye** el módulo pero
+  no lo inicializa todavía.
+- El orquestador arranca en dos pasadas tras `DOMContentLoaded`: primero construye todos los
+  módulos registrados (deja su API disponible en `PosApp.modulos.<nombre>`), después llama a
+  `init()` de cada uno. Así un módulo puede usar la API de otro (`PosApp.modulos.ticket.render()`)
+  sin que el orden de los `<script>` en la vista importe.
+- El estado que varios módulos necesitan mutar (p. ej. el array de líneas del ticket) vive en el
+  orquestador y se **muta en el sitio** (`push`/`splice`/`length = 0`), nunca se reasigna: si un
+  módulo hiciera `PosApp.lineas = []`, los demás módulos seguirían apuntando al array viejo.
+- Los `<script>` se registran en la vista en el orden: orquestador primero, módulos después, en
+  cualquier orden entre ellos (ver `resources/views/pos/create.blade.php`). Ningún módulo asume
+  que otro ya se inicializó — si necesita algo de otro módulo, lo pide en su propio `init()`, no
+  en tiempo de carga del archivo.
+
+Referencia completa: `public/js/pos-form.js` (orquestador) + `pos-catalogo.js`, `pos-ticket.js`,
+`pos-cobro.js`, `pos-cuenta.js`, `pos-opciones.js` (módulos).
+
+## Tarjeta de mesa y sus tres estados (Sala del POS, feature 038)
+
+Grid de tarjetas (`.pos-mesa`, `resources/views/pos/sala.blade.php`) donde el **borde** comunica
+el estado de un vistazo, sin tener que leer el texto interior: gris = libre, verde = ocupada,
+ámbar = "olvidada" (lleva tiempo sin que nadie añada nada). El servidor decide `olvidada`
+comparando con el umbral configurado (`ConfigPos::mesaOlvidadaMin`); **la vista nunca hace
+aritmética de fechas** — si lo hiciera, dependería del reloj de cada tablet y dos dispositivos
+mostrarían cosas distintas para la misma mesa.
+
+Las pestañas de filtro por zona de la Sala **reutilizan `.pos-filtro`** del catálogo del TPV (52px
+de alto, badge de conteo, activo con el primario del tenant) — no se diseña un selector nuevo para
+lo mismo; ver "Catálogo del POS (TPV)" más abajo.
+
+## Modal de selección de opciones de artículo (feature 038)
+
+Al tocar un artículo del catálogo del POS marcado con opciones (`data-tiene-opciones="1"`), se
+abre un modal de selección en vez de añadirse directo al ticket — un artículo **sin** opciones
+sigue añadiéndose en un solo toque, sin modal (criterio de rendimiento SC-004, para no penalizar
+al grueso del catálogo que no usa modificadores). El modal reutiliza la familia visual `.pos-metodo`
+del modal de cobro (tarjetas grandes táctiles, radio si el grupo permite 1 selección, checkbox si
+permite varias) y sigue "Modales: siempre centrados verticalmente". Las reglas de grupo
+(obligatorio, mín./máx.) se validan en JS para feedback inmediato y **se revalidan siempre en
+servidor** al guardar la cuenta (Principio III) — el cliente nunca es la única barrera.
+
+## Franja central de la botonera del POS: mini-grid con el módulo de hostelería (feature 038)
+
+La botonera de tres franjas del POS (`Total` · franja central · `Cobrar`) no cambia de estructura
+al activar el módulo de hostelería: la franja central pasa de un único botón "Cliente" a un
+mini-grid de 3 acciones (`.pos-bkey-grid`, grid `1fr 1fr 1fr`) — Cliente / Guardar / Aparcadas —
+conservando el mismo `min-height` táctil que `.pos-bkey` y ocupando el mismo hueco flex de la
+botonera. El contexto de mesa (chip con el pendiente y accesos a anular/transferir) vive aparte,
+en el `card-header` del ticket, no en la botonera.
+
+## Suplemento de zona y contexto de cuenta: nunca un aumento silencioso (feature 038)
+
+Cualquier importe que suba el precio sin que el artículo lo explique por sí solo (el suplemento de
+zona, en este caso) tiene que verse **antes** de cobrar, no solo en el total final: en el `.pos-foot`
+del ticket (`+X% zona`) y en la cabecera del modal de cobro junto con la mesa (FR-064), para que
+nunca sea una sorpresa al pagar.

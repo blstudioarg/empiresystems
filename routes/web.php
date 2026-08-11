@@ -17,6 +17,9 @@ use App\Http\Controllers\CategoriaArticuloController;
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\CompraController;
 use App\Http\Controllers\CompraFacturaeController;
+use App\Http\Controllers\Configuracion\PosConfiguracionController;
+use App\Http\Controllers\Configuracion\PosMesaController;
+use App\Http\Controllers\Configuracion\PosZonaController;
 use App\Http\Controllers\ConfiguracionController;
 use App\Http\Controllers\CorreccionFichajeController;
 use App\Http\Controllers\CuentaBancariaController;
@@ -39,6 +42,11 @@ use App\Http\Controllers\MovimientoStockController;
 use App\Http\Controllers\OportunidadController;
 use App\Http\Controllers\PagoController;
 use App\Http\Controllers\PlantillaEmailController;
+use App\Http\Controllers\Pos\ArticuloOpcionController as PosArticuloOpcionController;
+use App\Http\Controllers\Pos\CuentaController as PosCuentaController;
+use App\Http\Controllers\Pos\OpcionController as PosOpcionController;
+use App\Http\Controllers\Pos\OpcionGrupoController as PosOpcionGrupoController;
+use App\Http\Controllers\Pos\SalaController as PosSalaController;
 use App\Http\Controllers\PosController;
 use App\Http\Controllers\PresupuestoController;
 use App\Http\Controllers\ProfileController;
@@ -203,6 +211,47 @@ Route::middleware(['tenant.context', 'auth', 'sin_super_admin'])->group(function
         Route::post('/pos', [PosController::class, 'store'])->name('pos.store');
     });
 
+    // POS — módulo de hostelería (feature 038). DOS capas de acceso obligatorias en todas estas
+    // rutas: el permiso del usuario Y el módulo activo en el tenant (research.md D6). Tener el
+    // permiso con el módulo apagado da 404/403, no acceso.
+    Route::middleware(['can:ver-pos-sala', 'modulo.hosteleria'])->group(function () {
+        Route::get('/pos/sala', [PosSalaController::class, 'index'])->name('pos.sala');
+
+        Route::post('/pos/cuentas', [PosCuentaController::class, 'store'])->name('pos.cuentas.store');
+        Route::get('/pos/cuentas/{cuenta}', [PosCuentaController::class, 'show'])->name('pos.cuentas.show');
+        Route::put('/pos/cuentas/{cuenta}', [PosCuentaController::class, 'update'])->name('pos.cuentas.update');
+        Route::post('/pos/cuentas/{cuenta}/anular', [PosCuentaController::class, 'anular'])->name('pos.cuentas.anular');
+        Route::post('/pos/cuentas/{cuenta}/transferir', [PosCuentaController::class, 'transferir'])->name('pos.cuentas.transferir');
+        Route::post('/pos/cuentas/{cuenta}/unir', [PosCuentaController::class, 'unir'])->name('pos.cuentas.unir');
+        Route::post('/pos/cuentas/{cuenta}/cobrar', [PosCuentaController::class, 'cobrar'])->name('pos.cuentas.cobrar');
+    });
+
+    // Opciones de artículo: su propia capacidad dentro del módulo, para que un bar que solo
+    // quiere mesas no cargue con un recetario que no usa (FR-004).
+    Route::middleware(['can:ver-pos-opciones', 'modulo.hosteleria:opciones'])->group(function () {
+        // Los grupos van ANTES que `/pos/opciones/{opcion}`: si no, "grupos" se leería como el id
+        // de una opción y el listado de grupos daría 404.
+        Route::get('/pos/opciones/grupos', [PosOpcionGrupoController::class, 'index'])->name('pos.opcion-grupos.index');
+        Route::post('/pos/opciones/grupos', [PosOpcionGrupoController::class, 'store'])->name('pos.opcion-grupos.store');
+        Route::put('/pos/opciones/grupos/{grupo}', [PosOpcionGrupoController::class, 'update'])->name('pos.opcion-grupos.update');
+        Route::delete('/pos/opciones/grupos/{grupo}', [PosOpcionGrupoController::class, 'destroy'])->name('pos.opcion-grupos.destroy');
+
+        Route::get('/pos/opciones', [PosOpcionController::class, 'index'])->name('pos.opciones.index');
+        Route::post('/pos/opciones', [PosOpcionController::class, 'store'])->name('pos.opciones.store');
+        Route::put('/pos/opciones/{opcion}', [PosOpcionController::class, 'update'])->name('pos.opciones.update');
+        Route::delete('/pos/opciones/{opcion}', [PosOpcionController::class, 'destroy'])->name('pos.opciones.destroy');
+
+        Route::get('/articulos/{articulo}/opciones', [PosArticuloOpcionController::class, 'index'])->name('articulos.opciones.index');
+        Route::put('/articulos/{articulo}/opciones', [PosArticuloOpcionController::class, 'sync'])->name('articulos.opciones.sync');
+    });
+
+    // Opciones de un artículo para el modal del TPV: lo consume el camarero al comandar, así que
+    // se gatea con `ver-pos-crear` y no con el permiso de administrar el recetario.
+    Route::middleware(['can:ver-pos-crear', 'modulo.hosteleria:opciones'])->group(function () {
+        Route::get('/pos/articulos/{articulo}/opciones', [PosController::class, 'opcionesArticulo'])
+            ->name('pos.articulo-opciones');
+    });
+
     Route::middleware('can:ver-pos')->group(function () {
         Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
         Route::get('/pos/{factura}/pdf', [PosController::class, 'pdf'])->name('pos.pdf');
@@ -249,6 +298,20 @@ Route::middleware(['tenant.context', 'auth', 'sin_super_admin'])->group(function
             ->name('configuracion.certificado.verificar-vies');
         Route::match(['put', 'patch'], '/configuracion/fichajes', [ConfiguracionController::class, 'updateFichajes'])
             ->name('configuracion.fichajes.update');
+
+        // Configuración del módulo de hostelería del POS (feature 038). A propósito **sin** el
+        // middleware `modulo.hosteleria`: si lo llevara, apagar el módulo dejaría al
+        // administrador sin forma de volver a encenderlo.
+        Route::match(['put', 'patch'], '/configuracion/pos', [PosConfiguracionController::class, 'update'])
+            ->name('configuracion.pos.update');
+        Route::get('/configuracion/pos/zonas', [PosZonaController::class, 'index'])->name('configuracion.pos.zonas.index');
+        Route::post('/configuracion/pos/zonas', [PosZonaController::class, 'store'])->name('configuracion.pos.zonas.store');
+        Route::put('/configuracion/pos/zonas/{zona}', [PosZonaController::class, 'update'])->name('configuracion.pos.zonas.update');
+        Route::delete('/configuracion/pos/zonas/{zona}', [PosZonaController::class, 'destroy'])->name('configuracion.pos.zonas.destroy');
+        Route::get('/configuracion/pos/mesas', [PosMesaController::class, 'index'])->name('configuracion.pos.mesas.index');
+        Route::post('/configuracion/pos/mesas', [PosMesaController::class, 'store'])->name('configuracion.pos.mesas.store');
+        Route::put('/configuracion/pos/mesas/{mesa}', [PosMesaController::class, 'update'])->name('configuracion.pos.mesas.update');
+        Route::delete('/configuracion/pos/mesas/{mesa}', [PosMesaController::class, 'destroy'])->name('configuracion.pos.mesas.destroy');
         Route::match(['put', 'patch'], '/configuracion/general', [ConfiguracionController::class, 'updateGeneral'])
             ->name('configuracion.general.update');
         Route::match(['put', 'patch'], '/configuracion/crm', [ConfiguracionController::class, 'updateCrm'])

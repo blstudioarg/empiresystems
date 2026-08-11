@@ -231,3 +231,36 @@ Widget de chat flotante (área tenant) conectado a la API de OpenAI (Chat Comple
   la navegación, muere con la sesión, truncado en servidor. Sin tablas nuevas.
 - **Base de conocimiento modular** en `resources/ia/conocimiento/*.md` (un archivo por módulo);
   `ConocimientoAsistente` los ensambla en el system prompt. Añadir feature = añadir archivo (SC-007).
+
+## Decisión 10 — Módulo opcional por tenant: flags + middleware, sin fila sembrada (038-pos-mesas-opciones)
+
+Patrón reutilizable para convertir una feature grande en algo que **un tenant activa cuando
+quiere**, sin afectar a nadie más hasta que lo haga. Introducido para el módulo de hostelería del
+POS (mesas, cuentas abiertas, opciones de artículo), pero el patrón en sí no es específico de esa
+feature.
+
+- **Flags clave/valor en `configuraciones`**, sin tabla nueva ni migración de datos — mismo patrón
+  ya usado por `ConfigFichajes`. Los defaults viven en código (`App\Support\ConfigPos`), no en
+  filas sembradas: la **ausencia** de la clave es "apagado", lo que hace que el módulo nazca
+  desactivado en todo tenant existente sin tocar una sola fila de `configuraciones`.
+- **Dos capas de control de acceso, independientes**: el permiso del usuario (spatie, patrón ya
+  establecido) y un middleware nuevo que comprueba el estado del módulo en el tenant
+  (`App\Http\Middleware\ModuloHosteleriaActivo`, patrón de
+  `BloquearSuperAdminAreaTenant`). Confundir las dos —por ejemplo, "apagar el módulo" quitando
+  permisos a los roles— es frágil y deja rastro sucio en la gestión de roles del tenant. Con
+  el módulo apagado, tener el permiso no basta: la ruta responde 403/404 igual.
+- **El filtro del menú es solo UX**, no el enforcement real: `CatalogoMenu` declara qué entradas
+  pertenecen a un módulo opcional (`modulo` en la definición) y `MenuTenant::estructura()` las
+  poda antes de fusionar la personalización, además del filtro por permiso ya existente. El
+  middleware sigue siendo quien corta el acceso de verdad si alguien entra por URL directa.
+- **Apagar el módulo nunca borra datos**: solo oculta. Las tablas propias del módulo (con su
+  prefijo, ver `docs/03-modelo-datos.md`) sobreviven intactas a un apagado/encendido, precisamente
+  porque el estado vive en flags separados de los datos.
+- **Las rutas de configuración del propio módulo NO llevan el middleware de módulo activo**: si lo
+  llevaran, apagarlo dejaría al administrador sin forma de volver a encenderlo. Solo llevan el
+  permiso de gestión (`can:ver-configuracion`).
+- **Reutilizar el motor de cálculo existente sin tocarlo**: cuando el módulo opcional necesita
+  producir el mismo tipo de documento fiscal que ya emite el sistema (en este caso, un ticket),
+  un servicio nuevo traduce sus propios datos al contrato que el servicio de emisión ya espera
+  (`CobradorCuenta` → `RegistroTicket`), en vez de duplicar la lógica de cálculo/numeración/
+  Verifactu en un segundo camino. Ver `docs/03-modelo-datos.md` para el detalle de las tablas.

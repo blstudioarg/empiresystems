@@ -41,6 +41,11 @@ class CatalogoPermisos
         ['clave' => 'ver-facturas-crear', 'etiqueta' => 'Crear factura', 'modulo' => 'Facturas'],
         ['clave' => 'ver-pos', 'etiqueta' => 'POS', 'modulo' => 'POS'],
         ['clave' => 'ver-pos-crear', 'etiqueta' => 'Crear ticket', 'modulo' => 'POS'],
+        // Módulo de hostelería (feature 038). Tener el permiso NO basta: las rutas llevan además
+        // el middleware `modulo.hosteleria`, porque permiso de usuario y módulo activo en el
+        // tenant son cosas distintas (research.md D6).
+        ['clave' => 'ver-pos-sala', 'etiqueta' => 'Sala', 'modulo' => 'POS'],
+        ['clave' => 'ver-pos-opciones', 'etiqueta' => 'Opciones de artículo', 'modulo' => 'POS'],
         ['clave' => 'ver-archivos', 'etiqueta' => 'Archivos', 'modulo' => 'Archivos'],
         ['clave' => 'ver-campanas', 'etiqueta' => 'Campañas', 'modulo' => 'Marketing'],
         ['clave' => 'ver-campanas-crear', 'etiqueta' => 'Nueva campaña', 'modulo' => 'Marketing'],

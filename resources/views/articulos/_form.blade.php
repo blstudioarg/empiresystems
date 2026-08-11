@@ -92,3 +92,59 @@
 		</div>
 	@endif
 </div>
+
+@if (($opcionesActivas ?? false))
+	{{-- Sub-listado editable embebido en el modal de edición (feature 038, US3): la lista de
+	     opciones asignadas no cabe en data-* de un botón, así que se pide/guarda por un endpoint
+	     aparte (App\Http\Controllers\Pos\ArticuloOpcionController). Solo tiene sentido en
+	     edición: un artículo recién creado todavía no tiene id al que asignarle nada.
+
+	     Panel propio (`.pos-opts`), no una sección más del formulario: el tinte y el borde en el
+	     color de marca lo separan visualmente de los campos de arriba, y los chips de grupo
+	     reutilizan el lenguaje visual de `.pos-filtro` (Sala/catálogo del POS) en vez de inventar
+	     un tag nuevo — mismo sistema, no una pantalla aparte. --}}
+	<div class="pos-articulo-opciones-field pos-opts" hidden
+		data-index-url-template="{{ route('articulos.opciones.index', ['articulo' => '__ID__']) }}"
+		data-sync-url-template="{{ route('articulos.opciones.sync', ['articulo' => '__ID__']) }}">
+		<div class="pos-opts-head">
+			<span class="pos-opts-icon"><i class="fas fa-sliders"></i></span>
+			<div>
+				<h6 class="pos-opts-title">Opciones de artículo</h6>
+				<p class="pos-opts-sub">Grupos y opciones que se ofrecen al comandar este plato en el POS. El precio es propio de este artículo.</p>
+			</div>
+		</div>
+
+		<div class="pos-opts-section">
+			<div class="pos-opts-section-label">Grupos asignados</div>
+			{{-- Sin selector: el grupo se asigna solo al agregar su primera opción y se retira
+			     solo al quitar la última (ver pos-articulo-opciones.init.js). Tags de solo
+			     lectura, reflejo del estado de "Opciones y precio" de abajo. --}}
+			<div id="pos-articulo-grupos-lista" class="pos-opts-chips"></div>
+		</div>
+
+		<div class="pos-opts-section">
+			<div class="pos-opts-section-label">Opciones y precio</div>
+			<div id="pos-articulo-opciones-lista" class="pos-opts-list"></div>
+			<div class="pos-opts-add pos-opts-add-opcion">
+				<select id="pos-articulo-opcion-add" class="pos-opts-select">
+					<option value="">+ Añadir opción…</option>
+				</select>
+				<label class="pos-opts-price-input">
+					<input type="number" step="0.01" min="0" id="pos-articulo-opcion-precio-add" placeholder="0,00">
+					<span>€</span>
+				</label>
+				<button type="button" class="pos-opts-btn-add" id="pos-articulo-opcion-add-btn" aria-label="Añadir opción" title="Añadir opción">
+					<i class="fas fa-plus"></i>
+				</button>
+			</div>
+		</div>
+
+		<div class="pos-opts-footer">
+			<button type="button" class="btn btn-primary pos-opts-save" id="pos-articulo-opciones-guardar">
+				<i class="fas fa-check"></i> Guardar opciones
+			</button>
+			<span class="pos-opts-footer-hint">Se guardan aparte del resto del formulario.</span>
+		</div>
+		<div class="invalid-feedback d-block" data-error-for="opciones"></div>
+	</div>
+@endif

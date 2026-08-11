@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('title', 'POS · Crear ticket')
 
@@ -194,6 +194,10 @@
 		.pos-linea .concepto { flex: 1 1 auto; min-width: 0; }
 		.pos-linea .concepto .nombre-linea { font-weight: 600; font-size: 1rem; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 		.pos-linea .concepto small { color: #9aa0a6; }
+		/* Detalle de opciones elegidas (feature 038, FR-044): en su propio renglón bajo el
+		   precio/tipo, no pegado al lado — dos <small> inline consecutivos, sin esto, quedan en la
+		   misma línea. */
+		.pos-linea .concepto .pos-linea-opciones { display: block; }
 		.pos-linea .importe { font-weight: 700; font-size: 1rem; flex: none; white-space: nowrap; }
 		.pos-linea .linea-controls { display: flex; align-items: center; justify-content: space-between; }
 		.pos-linea .qty-group { display: flex; align-items: center; gap: .75rem; }
@@ -248,6 +252,28 @@
 		.pos-bkey:hover { background: #f5f8ff; border-color: var(--pos-primary); }
 		.pos-bkey.active { background: var(--pos-primary); border-color: var(--pos-primary); color: #fff; box-shadow: 0 6px 16px rgba(29,105,214,.25); }
 
+		/* Franja central del módulo de hostelería: 3 acciones en vez de 1, conservando la altura
+		   táctil de .pos-bkey (mismo min-height, misma familia visual) y ocupando el mismo hueco
+		   flex de la botonera (FR-059: no se rompen las tres franjas). */
+		.pos-bkey-grid {
+			flex: 1 1 0; min-width: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: .4rem;
+		}
+		.pos-bkey-grid .pos-bkey { min-height: 78px; padding: .6rem .3rem; font-size: .72rem; }
+
+		/* Chip de contexto de mesa en el header del ticket (FR-060). */
+		.pos-mesa-chip {
+			display: inline-flex; align-items: center; gap: .4rem; background: var(--pos-primary); color: #fff;
+			border-radius: 1rem; padding: .2rem .3rem .2rem .65rem; font-size: .78rem; font-weight: 700;
+		}
+		.pos-mesa-chip small { font-weight: 800; font-variant-numeric: tabular-nums; }
+		.pos-mesa-chip-anular {
+			border: none; background: rgba(255,255,255,.22); color: #fff; width: 20px; height: 20px;
+			border-radius: 50%; line-height: 1; font-size: .95rem; display: inline-flex; align-items: center;
+			justify-content: center; padding: 0; -webkit-tap-highlight-color: transparent;
+			transition: background .12s ease;
+		}
+		.pos-mesa-chip-anular:hover { background: rgba(255,255,255,.35); }
+
 		.pos-cobrar {
 			border: none; border-radius: 1.1rem; padding: 1.1rem .5rem; min-height: 92px;
 			background: linear-gradient(135deg, var(--pos-money), var(--pos-money-2)); color: #fff; font-weight: 800;
@@ -277,6 +303,13 @@
 			--ease-out: cubic-bezier(.23, 1, .32, 1);
 		}
 		.pos-cobro-modal .modal-body { padding: 1.1rem 1.15rem; }
+		/* Contexto de mesa en el título del modal de cobro (FR-064). */
+		.pos-cobro-mesa-ctx {
+			display: inline-flex; align-items: center; gap: .3rem; margin-left: .5rem;
+			font-size: .72rem; font-weight: 700; color: var(--pos-primary);
+			background: color-mix(in srgb, var(--pos-primary) 10%, #fff);
+			border-radius: 1rem; padding: .15rem .6rem; vertical-align: middle;
+		}
 
 		/* Total + restante en una tira: el total (verde) manda, el restante informa cuánto falta. */
 		.pos-cobro-cab { display: flex; gap: .7rem; margin-bottom: 1rem; }
@@ -347,6 +380,20 @@
 			font-size: 1.7rem; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -.01em; color: #16a34a;
 		}
 		.pos-keypad-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .55rem; }
+
+		/* Entregado/Devolver (FR-063): ayuda de caja sobre el teclado, solo en efectivo. */
+		.pos-keypad-cambio {
+			display: flex; align-items: center; gap: .6rem; margin-top: .7rem; padding: .6rem .75rem;
+			background: #f5f6f8; border: 1px solid var(--bs-border-color, #e6e6e6); border-radius: .85rem;
+		}
+		.pos-keypad-cambio-lbl { font-size: .78rem; font-weight: 700; color: #6b7280; margin: 0; }
+		.pos-keypad-entregado {
+			width: 90px; border: 1px solid var(--bs-border-color, #e6e6e6); border-radius: .6rem;
+			padding: .35rem .5rem; font-weight: 700; font-variant-numeric: tabular-nums; text-align: right;
+		}
+		.pos-keypad-devolver { margin-left: auto; text-align: right; display: flex; flex-direction: column; gap: 0; }
+		.pos-keypad-devolver span { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #6b7280; }
+		.pos-keypad-devolver strong { font-size: 1.1rem; color: #16a34a; font-variant-numeric: tabular-nums; }
 		.pos-key {
 			min-height: 60px; border-radius: 14px; border: 1px solid var(--bs-border-color, #e6e6e6); background: #fff;
 			font-size: 1.5rem; font-weight: 700; color: #2b2f36; cursor: pointer; -webkit-tap-highlight-color: transparent;
@@ -377,6 +424,20 @@
 			.pos-cobro-tender { animation: none; }
 			.pos-metodo, .pos-key, .pos-cobro-emitir, .pos-cobro-tender .quitar { transition: none; }
 		}
+
+		/* ── Modal de opciones (feature 038, US4) — reutiliza la familia .pos-metodo ──────── */
+		.pos-opciones-modal {
+			--pos-primary: var(--primary, #1d69d6);
+			--pos-money: #16a34a; --pos-money-2: #22c55e;
+		}
+		.pos-opciones-grupo { margin-bottom: 1.1rem; }
+		.pos-opciones-grupo:last-child { margin-bottom: 0; }
+		.pos-opciones-grupo-titulo { display: flex; align-items: center; gap: .5rem; font-weight: 700; margin-bottom: .5rem; }
+		.pos-opciones-grupo-titulo .req { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #c0392b; background: #fdecea; border-radius: 1rem; padding: .1rem .5rem; }
+		.pos-opciones-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .55rem; }
+		.pos-opciones-grid .pos-metodo { min-height: 56px; }
+		.pos-opciones-grid .pos-metodo .precio { margin-left: auto; font-weight: 700; font-size: .82rem; color: #9aa0a6; }
+		.pos-opciones-grid .pos-metodo.activo .precio { color: rgba(255,255,255,.85); }
 
 		/* ── Modal de éxito al emitir ──────────────────────────────── */
 		.pos-exito-icono { margin: .25rem 0 .5rem; }
@@ -444,7 +505,8 @@
 									data-unidad="{{ $articulo->unidad }}"
 									data-categoria="{{ $articulo->categoria_id }}"
 									data-tipo-impositivo="{{ (float) $articulo->tipo_impositivo }}"
-									data-tipo-articulo="{{ $articulo->tipo->value }}">
+									data-tipo-articulo="{{ $articulo->tipo->value }}"
+									data-tiene-opciones="{{ ($articulo->tiene_opciones ?? false) ? '1' : '0' }}">
 									@if ($sinStock)
 										<span class="pos-art-badge sin-stock">Sin stock</span>
 									@elseif ($bajoStock)
@@ -477,6 +539,17 @@
 							<span class="titulo">
 								<h4 class="card-title mb-0">Ticket</h4>
 								<span class="pos-ticket-count d-none" id="pos-ticket-count">0</span>
+								{{-- Contexto de mesa (FR-060): solo visible con el módulo de hostelería activo
+								     y una mesa de por medio; venta directa no la muestra nunca. --}}
+								@if ($hosteleriaActiva ?? false)
+									<span class="pos-mesa-chip d-none" id="pos-mesa-chip">
+										<i class="fas fa-utensils"></i>
+										<span id="pos-mesa-chip-label"></span>
+										<small id="pos-mesa-chip-pendiente" class="d-none"></small>
+										<button type="button" class="pos-mesa-chip-anular d-none" id="pos-mesa-chip-mover" title="Transferir o unir con otra mesa" aria-label="Transferir o unir con otra mesa">⇄</button>
+										<button type="button" class="pos-mesa-chip-anular d-none" id="pos-anular-cuenta" title="Anular cuenta" aria-label="Anular cuenta">×</button>
+									</span>
+								@endif
 							</span>
 							<button type="button" class="pos-vaciar d-none" id="pos-vaciar" title="Vaciar ticket" aria-label="Vaciar ticket">
 								<x-lordicon icon="wired-outline-185-trash-bin-hover-empty" size="22" trigger="hover" />
@@ -495,6 +568,11 @@
 
 							<div class="pos-foot" id="pos-foot">
 								<span id="pos-foot-count">0 artículos</span> · {{ $regimen['label'] }} incluido
+								{{-- Suplemento de zona vigente (FR-051/US7, escenario 2): visible para que
+								     nunca sea un aumento silencioso del importe. --}}
+								@if ($suplementoZonaActivo ?? false)
+									<span id="pos-suplemento-zona" class="d-none"></span>
+								@endif
 							</div>
 
 							<div class="alert alert-danger pos-tope-alert" id="pos-tope-alert">
@@ -517,10 +595,30 @@
 							<span class="pos-total-sub">{{ $regimen['label'] }} incluido</span>
 						</button>
 
-						<button type="button" class="pos-bkey" id="pos-cliente-btn" data-bs-toggle="modal" data-bs-target="#posReceptorModal">
-							<x-lordicon icon="person" size="26" trigger="hover" target="#pos-cliente-btn" />
-							<span class="pos-bkey-label" id="pos-cliente-btn-label">Cliente</span>
-						</button>
+						{{-- Franja central: con el módulo de hostelería activo se convierte en un mini-grid
+						     de 3 acciones (Cliente / Guardar / Aparcadas), conservando la altura táctil de
+						     .pos-bkey; sin el módulo, sigue siendo el único botón Cliente de siempre. --}}
+						@if ($hosteleriaActiva ?? false)
+							<div class="pos-bkey-grid">
+								<button type="button" class="pos-bkey" id="pos-cliente-btn" data-bs-toggle="modal" data-bs-target="#posReceptorModal">
+									<x-lordicon icon="person" size="22" trigger="hover" target="#pos-cliente-btn" />
+									<span class="pos-bkey-label" id="pos-cliente-btn-label">Cliente</span>
+								</button>
+								<button type="button" class="pos-bkey" id="pos-guardar-cuenta">
+									<i class="fas fa-floppy-disk"></i>
+									<span class="pos-bkey-label">Guardar</span>
+								</button>
+								<button type="button" class="pos-bkey" id="pos-aparcadas-btn">
+									<i class="fas fa-th-large"></i>
+									<span class="pos-bkey-label">Aparcadas</span>
+								</button>
+							</div>
+						@else
+							<button type="button" class="pos-bkey" id="pos-cliente-btn" data-bs-toggle="modal" data-bs-target="#posReceptorModal">
+								<x-lordicon icon="person" size="26" trigger="hover" target="#pos-cliente-btn" />
+								<span class="pos-bkey-label" id="pos-cliente-btn-label">Cliente</span>
+							</button>
+						@endif
 
 						<button type="button" class="pos-cobrar" id="pos-cobrar" disabled
 							data-bs-toggle="modal" data-bs-target="#posCobroModal">
@@ -576,7 +674,14 @@
 		<div class="modal-dialog modal-dialog-centered">
 			<div class="modal-content">
 				<div class="modal-header">
-					<h5 class="modal-title" id="posCobroModalLabel">Cobrar</h5>
+					<h5 class="modal-title" id="posCobroModalLabel">
+						Cobrar
+						{{-- Contexto de mesa en el modal de cobro (FR-064): para no cobrar la mesa
+						     equivocada cuando hay varias cuentas abiertas a la vez. --}}
+						@if ($hosteleriaActiva ?? false)
+							<span class="pos-cobro-mesa-ctx d-none" id="pos-cobro-mesa-ctx"></span>
+						@endif
+					</h5>
 					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
 				</div>
 				<div class="modal-body">
@@ -631,6 +736,18 @@
 							<button type="button" class="pos-key" data-key="0">0</button>
 							<button type="button" class="pos-key wide" data-key="del" aria-label="Borrar">⌫</button>
 						</div>
+
+						{{-- Entregado/Devolver (FR-063): solo en efectivo, sobre el teclado ya existente.
+						     Es ayuda de caja: no altera el importe cobrado ni figura en el documento. --}}
+						<div class="pos-keypad-cambio d-none" id="pos-keypad-cambio">
+							<label class="pos-keypad-cambio-lbl" for="pos-keypad-entregado">Entregado</label>
+							<input type="text" inputmode="decimal" class="pos-keypad-entregado" id="pos-keypad-entregado" placeholder="0,00">
+							<div class="pos-keypad-devolver">
+								<span>Devolver</span>
+								<strong id="pos-keypad-devolver-val">0,00 €</strong>
+							</div>
+						</div>
+
 						<div class="pos-keypad-acciones">
 							<button type="button" class="btn btn-light" id="pos-keypad-cancelar">Cancelar</button>
 							<button type="button" class="btn pos-keypad-anadir" id="pos-keypad-anadir">Añadir pago</button>
@@ -648,6 +765,46 @@
 
 	{{-- Metadatos de métodos de pago para el JS (etiqueta + icono por valor). --}}
 	<script type="application/json" id="pos-metodos-data">@json($metodosPago)</script>
+
+	@if ($hosteleriaActiva ?? false)
+		{{-- Transferir/unir cuenta (feature 038, US6): lista de mesas libres/ocupadas de la sala,
+		     con confirmación antes de mover. --}}
+		<div class="modal fade" id="posMoverModal" tabindex="-1" aria-labelledby="posMoverModalLabel" aria-hidden="true">
+			<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title" id="posMoverModalLabel">Transferir o unir</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+					</div>
+					<div class="modal-body">
+						<p class="text-muted small mb-3">Elige la mesa de destino. Si ya tiene una cuenta abierta, se te ofrecerá unirlas.</p>
+						<div id="pos-mover-lista" class="list-group"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+	@endif
+
+	@if ($opcionesActivas ?? false)
+		{{-- Selección de opciones de un artículo (feature 038, US4): tarjetas grandes táctiles,
+		     misma familia visual que `.pos-metodo` del modal de cobro, centrado vertical. --}}
+		<div class="modal fade pos-opciones-modal" id="posOpcionesModal" tabindex="-1" aria-labelledby="posOpcionesModalLabel" aria-hidden="true">
+			<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title" id="posOpcionesModalLabel">Opciones</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+					</div>
+					<div class="modal-body" id="pos-opciones-grupos"></div>
+					<div class="modal-footer">
+						<button type="button" class="btn pos-cobro-emitir w-100" id="pos-opciones-confirmar" disabled>
+							Añadir al ticket
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	@endif
 
 	{{-- Éxito al emitir: OK + mensaje + acciones grandes (táctil). Sin PDF embebido. --}}
 	<div class="modal fade" id="posExitoModal" tabindex="-1" aria-labelledby="posExitoModalLabel" aria-hidden="true" data-bs-backdrop="static">
@@ -745,7 +902,30 @@
 			pdfUrlTemplate: @json(route('pos.pdf', ['factura' => '__ID__', 'formato' => 'ticket'])),
 			tope: {{ $topeAplicable }},
 			regimen: @json($regimen),
+			@if ($hosteleriaActiva ?? false)
+			salaUrl: @json($salaUrlPayload),
+			cuenta: @json($cuentaPayload),
+			mesaPreseleccionada: @json($mesaPreseleccionadaPayload),
+			@endif
 		};
+
+		// Precarga las líneas de la cuenta abierta (si venimos de "retomar" desde la Sala), en el
+		// mismo formato que arma el ticket al añadir un artículo (pos-ticket.js).
+		@if ($lineasPrecargadasPayload)
+			window.posState.lineasPrecargadas = @json($lineasPrecargadasPayload);
+		@endif
 	</script>
+	{{-- Orden obligatorio: `pos-form.js` crea `window.PosApp` (estado compartido + registro de
+	     módulos); los demás se registran contra él. La inicialización real ocurre en
+	     DOMContentLoaded y en dos pasadas, así que entre los tres módulos el orden no importa. --}}
 	<script src="{{ asset('js/pos-form.js') }}"></script>
+	<script src="{{ asset('js/pos-ticket.js') }}"></script>
+	<script src="{{ asset('js/pos-catalogo.js') }}"></script>
+	<script src="{{ asset('js/pos-cobro.js') }}"></script>
+	@if ($hosteleriaActiva ?? false)
+		<script src="{{ asset('js/pos-cuenta.js') }}"></script>
+	@endif
+	@if ($opcionesActivas ?? false)
+		<script src="{{ asset('js/pos-opciones.js') }}"></script>
+	@endif
 @endpush

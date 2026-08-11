@@ -10,13 +10,17 @@ use App\Http\Requests\StoreTicketRequest;
 use App\Models\Articulo;
 use App\Models\Cliente;
 use App\Models\Factura;
+use App\Models\PosCuenta;
+use App\Models\PosMesa;
 use App\Services\RegistroTicket;
+use App\Support\ConfigPos;
 use App\Support\TiposImpositivos;
 use App\Support\TopeSimplificada;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -71,13 +75,33 @@ class PosController extends Controller
         return view('pos.index');
     }
 
-    public function create(): View
+    public function create(Request $request): View
     {
+        $tenantId = (int) tenant()->getTenantKey();
+        $hosteleria = ConfigPos::hosteleriaActivo($tenantId);
+        $opcionesActivas = ConfigPos::opcionesActivo($tenantId);
+
         // Solo productos: un ticket de TPV no factura servicios (regla de negocio).
         $articulos = Articulo::where('tipo', TipoArticulo::Producto)
             ->with('categoria:id,nombre')
             ->orderBy('nombre')
             ->get();
+
+        // Qué artículos abren modal de opciones, resuelto de una vez con el índice
+        // `pos_articulo_opcion(articulo_id)` — SC-004 exige que un artículo SIN opciones se añada
+        // en un solo toque, así que no puede haber una consulta por toque. Con la capacidad
+        // apagada el conjunto queda vacío y `tiene_opciones` es siempre false.
+        $conOpciones = $opcionesActivas
+            ? DB::table('pos_articulo_opcion')
+                ->where('tenant_id', $tenantId)
+                ->distinct()
+                ->pluck('articulo_id')
+                ->all()
+            : [];
+
+        $articulos->each(function (Articulo $articulo) use ($conOpciones) {
+            $articulo->tiene_opciones = in_array($articulo->id, $conOpciones, true);
+        });
 
         // Filtros del catálogo: solo categorías que tienen al menos un producto (con su conteo),
         // ordenadas por nombre. Se renderizan como botones grandes tablet-first.
@@ -92,13 +116,105 @@ class PosController extends Controller
             ->sortBy('nombre')
             ->values();
 
+        // `?cuenta={id}` precarga una cuenta abierta; `?mesa={id}` viene de tocar una mesa libre
+        // en la sala (la cuenta se crea recién al guardar la primera línea, para no dejar cuentas
+        // vacías por cada toque). Resolución manual bajo TenantScope, nunca binding implícito.
+        $cuenta = null;
+        if ($hosteleria && $request->filled('cuenta')) {
+            $cuenta = PosCuenta::query()
+                ->with('lineas.opciones', 'mesa.zona')
+                ->where('estado', PosCuenta::ESTADO_ABIERTA)
+                ->find($request->query('cuenta'));
+        }
+
+        $mesa = null;
+        if ($hosteleria && $cuenta === null && $request->filled('mesa')) {
+            $mesa = PosMesa::query()->with('zona')->find($request->query('mesa'));
+        }
+
+        $mesaPreseleccionada = $mesa ?? $cuenta?->mesa;
+
         return view('pos.create', [
             'articulos' => $articulos,
             'categorias' => $categorias,
             'clientes' => Cliente::orderBy('nombre')->get(),
             'topeAplicable' => $this->tope->topePara(),
             'regimen' => TiposImpositivos::payloadVista(tenant()->regimen_impositivo),
+            'hosteleriaActiva' => $hosteleria,
+            'opcionesActivas' => $opcionesActivas,
+            'cobroDivididoActivo' => ConfigPos::cobroDivididoActivo($tenantId),
+            'suplementoZonaActivo' => ConfigPos::suplementoZonaActivo($tenantId),
+            'cuentaPrecargada' => $cuenta,
+            'mesaPreseleccionada' => $mesaPreseleccionada,
+            // Payloads ya en forma de array plano para el `@json(...)` de la vista: construir
+            // arrays con arrow functions dentro de un directivo Blade confunde su extractor de
+            // argumentos (corta en el primer `)` que encuentra), así que se arman aquí.
+            'salaUrlPayload' => $hosteleria ? route('pos.sala') : null,
+            'cuentaPayload' => $cuenta ? [
+                'id' => $cuenta->id,
+                'version' => $cuenta->version,
+                'mesa_id' => $cuenta->mesa_id,
+                'mesa_nombre' => $cuenta->mesa?->nombre,
+                'pendiente' => number_format($cuenta->pendiente(), 2, '.', ''),
+                'zona_suplemento' => ConfigPos::suplementoZonaActivo($tenantId)
+                    ? number_format((float) ($cuenta->mesa?->zona?->suplemento_porcentaje ?? 0), 2, '.', '')
+                    : '0.00',
+            ] : null,
+            'mesaPreseleccionadaPayload' => $mesaPreseleccionada ? [
+                'id' => $mesaPreseleccionada->id,
+                'nombre' => $mesaPreseleccionada->nombre,
+            ] : null,
+            'lineasPrecargadasPayload' => $cuenta ? $cuenta->lineas->map(fn ($l) => [
+                'cuenta_linea_id' => $l->id,
+                'articulo_id' => $l->articulo_id,
+                'concepto' => $l->concepto,
+                'unidad' => $l->unidad,
+                // Precio unitario efectivo (base + suplemento de opciones), igual que arma
+                // `pos-ticket.js` al añadir un artículo con opciones desde el modal.
+                'precio' => $l->precioEfectivo(),
+                'tipo' => (float) $l->tipo_impositivo,
+                'cantidad' => (float) $l->cantidad,
+                'opciones' => $l->opciones->map(fn ($o) => [
+                    'opcion_id' => $o->opcion_id,
+                    'nombre' => $o->nombre,
+                    'precio' => (float) $o->precio,
+                ])->values(),
+            ])->values() : null,
         ]);
+    }
+
+    /**
+     * Opciones aplicables a un artículo, para el modal de selección del TPV (FR-042/FR-043). Se
+     * pide solo al tocar un artículo marcado con `tiene_opciones`, nunca en cada toque.
+     */
+    public function opcionesArticulo(string $articulo): JsonResponse
+    {
+        $tenantId = (int) tenant()->getTenantKey();
+
+        if (! ConfigPos::opcionesActivo($tenantId)) {
+            return response()->json(['grupos' => []]);
+        }
+
+        $modelo = Articulo::query()->with(['posGrupos', 'posOpciones.grupo'])->findOrFail($articulo);
+
+        $porGrupo = $modelo->posOpciones->groupBy('grupo_id');
+
+        $grupos = $modelo->posGrupos->map(fn ($grupo) => [
+            'grupo_id' => $grupo->id,
+            'nombre' => $grupo->nombre,
+            'obligatorio' => (bool) $grupo->obligatorio,
+            'min_selecciones' => (int) $grupo->min_selecciones,
+            'max_selecciones' => $grupo->max_selecciones !== null ? (int) $grupo->max_selecciones : null,
+            'opciones' => ($porGrupo->get($grupo->id) ?? collect())->map(fn ($opcion) => [
+                'opcion_id' => $opcion->id,
+                'nombre' => $opcion->nombre,
+                // Precio del pivot: el de ESTE artículo (FR-039). Es informativo para la interfaz;
+                // el importe real lo vuelve a calcular el servidor al guardar y al cobrar.
+                'precio' => (float) $opcion->pivot->precio,
+            ])->values(),
+        ])->filter(fn ($grupo) => $grupo['opciones']->isNotEmpty())->values();
+
+        return response()->json(['grupos' => $grupos]);
     }
 
     public function store(StoreTicketRequest $request): RedirectResponse|JsonResponse

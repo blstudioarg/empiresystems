@@ -15,6 +15,13 @@ namespace App\Support;
 class CatalogoMenu
 {
     /**
+     * Marca de "entrada perteneciente a un módulo opcional del tenant". Una entrada con esta
+     * clave solo se muestra si el módulo está activo, además de pasar el filtro por permiso
+     * (feature 038, FR-056). La ausencia de `modulo` significa "siempre disponible".
+     */
+    public const MODULO_HOSTELERIA = 'pos_hosteleria';
+
+    /**
      * @var list<array{clave: string, etiqueta: string, icono: ?string, ruta: ?string, permiso: ?string, hijos: list<array{clave: string, etiqueta: string, icono: null, ruta: string, permiso: ?string, hijos: array{}}>}>
      */
     private const CATALOGO = [
@@ -78,6 +85,11 @@ class CatalogoMenu
             'hijos' => [
                 ['clave' => 'pos-listado', 'etiqueta' => 'Facturas simplificadas', 'icono' => null, 'ruta' => 'pos.index', 'permiso' => 'ver-pos', 'hijos' => []],
                 ['clave' => 'pos-crear', 'etiqueta' => 'Crear ticket', 'icono' => null, 'ruta' => 'pos.create', 'permiso' => 'ver-pos-crear', 'hijos' => []],
+                // Módulo de hostelería (feature 038): además del permiso, estas dos entradas solo
+                // se muestran si el tenant tiene el módulo activo — ver `modulo` y
+                // {@see MenuTenant::estructura()}. El enforcement real es el middleware.
+                ['clave' => 'pos-sala', 'etiqueta' => 'Sala', 'icono' => null, 'ruta' => 'pos.sala', 'permiso' => 'ver-pos-sala', 'modulo' => self::MODULO_HOSTELERIA, 'hijos' => []],
+                ['clave' => 'pos-opciones', 'etiqueta' => 'Opciones de artículo', 'icono' => null, 'ruta' => 'pos.opciones.index', 'permiso' => 'ver-pos-opciones', 'modulo' => self::MODULO_HOSTELERIA, 'hijos' => []],
             ],
         ],
         [

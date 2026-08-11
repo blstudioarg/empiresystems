@@ -1183,3 +1183,88 @@ stock ya se movió al confirmar cada albarán como entregado.
   `asistente.conversacion`), no persistido en BD. Formato Chat Completions de OpenAI (roles user/assistant/tool, con
   tool_calls) + una acción pendiente opcional (máx. 1). Se destruye con la sesión (RGPD:
   efímero por diseño, sin retención adicional).
+
+## POS con mesas y opciones — módulo de hostelería (feature 038)
+
+Diez tablas nuevas, todas con prefijo **`pos_`**. La desviación respecto al resto del esquema
+(que no usa prefijos: `facturas`, `compras`, `leads`) es deliberada, por dos motivos:
+
+1. **Colisión semántica real**: el proyecto ya tiene `cuentas_bancarias`; una tabla `cuentas` a
+   secas, en un sistema de facturación, es una fuente de confusión en cada lectura futura del
+   código.
+2. **Es un módulo desactivable de punta a punta**: agrupar sus tablas bajo un prefijo hace
+   evidente de un vistazo qué parte del esquema pertenece al módulo opcional, algo que importa al
+   diagnosticar un tenant que lo tiene apagado.
+
+Configuración del módulo: **sin tabla nueva**, mismo patrón clave/valor en `configuraciones`
+(grupo `pos`) que `ConfigFichajes`, leído vía `App\Support\ConfigPos`. Claves:
+`pos.hosteleria_activo` (interruptor maestro), `pos.opciones_activo`, `pos.cobro_dividido_activo`,
+`pos.suplemento_zona_activo`, `pos.mesa_olvidada_min` (default 45). La ausencia de fila equivale a
+"apagado": ningún tenant existente se ve afectado sin migración de datos.
+
+```
+tenants ──< pos_zonas ──< pos_mesas
+                              │
+                              └──< pos_cuentas ──< pos_cuenta_lineas ──< pos_cuenta_linea_opciones
+                                       │
+                                       └──< pos_cobros ──> facturas   (1 cuenta → N documentos)
+
+tenants ──< pos_opcion_grupos ──< pos_opciones ──(opcional)──> articulos   (artículo vinculado)
+articulos >──< pos_opcion_grupos          vía pos_articulo_grupo
+articulos >──< pos_opciones               vía pos_articulo_opcion (precio propio)
+```
+
+### `pos_zonas` y `pos_mesas`
+
+Zona de sala (`suplemento_porcentaje` default 0, sin significado alguno para el sistema — el
+nombre es libre) y mesa (FK a una única zona). **El estado libre/ocupada de una mesa no se
+almacena**: se deriva de si existe una `pos_cuentas` en estado `abierta` con ese `mesa_id`, mismo
+criterio que ya sigue `stock_actual` como caché de lectura del kardex.
+
+### `pos_cuentas` — la cuenta abierta
+
+El corazón del módulo. **No es una factura en borrador**: no tiene `numero` ni `serie_id` (nunca
+puede reservar numeración), no tiene `total` (el pendiente se calcula desde las líneas, nunca se
+cachea), y no aparece en el listado de tickets ni genera registro Verifactu hasta que se cobra.
+Estados: `abierta` → `cerrada` (al saldarse la última unidad) o `abierta` → `anulada`; ninguna
+transición sale de un estado terminal. `version` (int, bloqueo optimista) detecta ediciones
+concurrentes de dos dispositivos sobre la misma mesa: la escritura con versión obsoleta recibe 409.
+
+### `pos_cuenta_lineas`
+
+Concepto, precio y tipo impositivo **congelados** al añadir (sobreviven a cambios/borrado del
+artículo). `cantidad_saldada` (decimal, default 0) existe desde esta primera migración aunque el
+cobro parcial se entregó en un incremento posterior: añadirla después habría obligado a migrar
+datos reales y revalidar toda la numeración. Invariante: `0 ≤ cantidad_saldada ≤ cantidad`. El
+suplemento de zona **no** se congela aquí (se aplica al cobrar, con el valor y la zona vigentes).
+
+### `pos_cuenta_linea_opciones`
+
+Opciones concretas elegidas para una línea, con `nombre`/`precio`/`articulo_vinculado_id`
+congelados: una cuenta abierta durante días sigue siendo cobrable aunque el recetario cambie por
+debajo.
+
+### `pos_cobros` y `pos_cobro_lineas`
+
+Cada emisión sobre una cuenta (una si se cobra entera, varias si se divide). La relación
+cuenta→factura vive en `pos_cobros.factura_id` (del lado nuevo, no como columna en `facturas`: el
+esquema de facturación no se toca si se puede evitar). `zona_suplemento_aplicado` congela el % de
+zona vigente en ese cobro. `pos_cobro_lineas.cantidad` es el detalle de qué unidades saldó cada
+cobro; el invariante crítico es que su suma por línea coincida siempre con `cantidad_saldada`.
+
+### `pos_opcion_grupos`, `pos_opciones` y sus pivots
+
+Recetario reutilizable de modificadores (punto de cocción, guarniciones, extras). `pos_opciones`
+tiene `precio_defecto` como punto de partida y un `articulo_vinculado_id` opcional (opción que
+descuenta stock de otro artículo del catálogo **sin generar línea propia** en el documento). **Dos
+pivots, no uno**: `pos_articulo_grupo` asigna el grupo a un artículo; `pos_articulo_opcion` fija el
+**precio propio de esa opción para ese artículo concreto** — es lo que permite que "Extra queso"
+cueste 1,50 € en un plato y 0,50 € en otro sin tocar `precio_defecto`.
+
+### Impacto en tablas existentes
+
+Ninguno. Cero columnas nuevas en `facturas`, `factura_lineas`, `movimientos_stock` ni `articulos`.
+El cobro reutiliza `App\Services\RegistroTicket`/`EmisorFacturas` sin modificar su contrato: un
+servicio nuevo, `App\Services\CobradorCuenta`, traduce "estas unidades de esta cuenta" al array de
+líneas que esos servicios ya esperan. Numeración, inmutabilidad y encadenamiento Verifactu se
+heredan intactos.

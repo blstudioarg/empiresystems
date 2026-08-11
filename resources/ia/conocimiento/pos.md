@@ -24,3 +24,13 @@ Este desglose es **interno** (control de caja): se consulta en el listado de tic
 "Dividido" cuando hay más de un método— pero **no aparece en el PDF** del ticket que recibe el
 cliente, y no interviene en el módulo de cobros de facturas ni en los KPIs del dashboard. Si no se
 especifica reparto, el ticket se registra como cobrado íntegro en efectivo.
+
+En efectivo se puede teclear lo "entregado" y la pantalla calcula el "devolver" (cambio): es solo
+una ayuda de caja, no cambia el importe cobrado ni figura en el ticket.
+
+## Módulo de hostelería (mesas, opciones de artículo)
+
+El POS tiene un módulo opcional para bares y restaurantes —mesas, cuentas abiertas, opciones de
+plato, cobro por partes— que cada tenant activa (o no) desde Configuración → POS. Está
+**desactivado por defecto**: si el tenant no lo activó, todo lo de esta sección no existe para él y
+el POS funciona exactamente como se describe arriba. Ver `pos-hosteleria.md` para el detalle.

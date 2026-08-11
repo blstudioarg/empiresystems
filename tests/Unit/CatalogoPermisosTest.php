@@ -7,9 +7,10 @@ use PHPUnit\Framework\TestCase;
 
 class CatalogoPermisosTest extends TestCase
 {
-    public function test_expone_las_31_claves_del_catalogo(): void
+    public function test_expone_las_33_claves_del_catalogo(): void
     {
-        $this->assertCount(31, CatalogoPermisos::claves());
+        // 31 + `ver-pos-sala` y `ver-pos-opciones` del módulo de hostelería (feature 038).
+        $this->assertCount(33, CatalogoPermisos::claves());
     }
 
     public function test_no_hay_claves_duplicadas(): void
@@ -99,6 +100,10 @@ class CatalogoPermisosTest extends TestCase
         $this->assertContains('ver-facturas-crear', $base);
         $this->assertContains('ver-pos-crear', $base);
         $this->assertContains('ver-campanas-crear', $base);
-        $this->assertCount(21, $base);
+        // Sala y Opciones sí entran en el rol base: son operativa de sala, no gestión. Que un
+        // usuario base las tenga no le da acceso si el tenant no activó el módulo (FR-003).
+        $this->assertContains('ver-pos-sala', $base);
+        $this->assertContains('ver-pos-opciones', $base);
+        $this->assertCount(23, $base);
     }
 }

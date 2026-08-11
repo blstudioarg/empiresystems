@@ -32,7 +32,14 @@
 			{{-- Cabecera del cliente --}}
 			<div class="card profile-overview">
 				<div class="card-header border-0 flex-wrap">
-					<div>
+					<div class="d-flex align-items-center gap-3">
+						{{-- Placa con el ícono del tipo de cliente, mismo tratamiento que las cards de
+						     métricas (ver docs/04-front-guidelines.md, "Placa de ícono"). --}}
+						<div class="icono-placa">
+							<x-lordicon icon="{{ $cliente->tipo === \App\Enums\TipoCliente::Empresa ? 'empresa' : 'person' }}"
+								size="44" trigger="hover" target=".profile-overview" />
+						</div>
+						<div>
 						<h4 class="card-title mb-1">{{ $cliente->razon_social ?: $cliente->nombre }}</h4>
 						<ul class="d-flex flex-wrap fs-6 align-items-center mb-0">
 							<li class="me-3 d-inline-flex align-items-center">
@@ -54,6 +61,7 @@
 								</li>
 							@endif
 						</ul>
+						</div>
 					</div>
 					<div class="d-flex gap-2 align-items-center flex-wrap">
 						<a href="{{ route('clientes.index') }}" class="btn btn-outline-secondary">Volver</a>

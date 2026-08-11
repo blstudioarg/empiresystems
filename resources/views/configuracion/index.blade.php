@@ -61,6 +61,13 @@
 							</button>
 						</li>
 						<li class="nav-item" role="presentation">
+							<button class="nav-link" id="tab-pos-btn" data-bs-toggle="tab"
+								data-bs-target="#tab-pos" type="button" role="tab"
+								aria-controls="tab-pos" aria-selected="false">
+								POS
+							</button>
+						</li>
+						<li class="nav-item" role="presentation">
 							<button class="nav-link" id="tab-ia-btn" data-bs-toggle="tab"
 								data-bs-target="#tab-ia" type="button" role="tab"
 								aria-controls="tab-ia" aria-selected="false">
@@ -117,6 +124,10 @@
 						<div class="tab-pane fade" id="tab-fichajes" role="tabpanel"
 							aria-labelledby="tab-fichajes-btn">
 							@include('configuracion._tab_fichajes')
+						</div>
+						<div class="tab-pane fade" id="tab-pos" role="tabpanel"
+							aria-labelledby="tab-pos-btn">
+							@include('configuracion._tab_pos')
 						</div>
 						<div class="tab-pane fade" id="tab-ia" role="tabpanel"
 							aria-labelledby="tab-ia-btn">

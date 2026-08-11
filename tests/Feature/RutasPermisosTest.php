@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Tenant;
+use App\Support\ConfigPos;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\GestionaRolesDeTenant;
 use Tests\TestCase;
@@ -38,6 +39,11 @@ class RutasPermisosTest extends TestCase
             'ver-facturas-crear' => '/facturas/crear',
             'ver-pos' => '/pos',
             'ver-pos-crear' => '/pos/crear',
+            // Módulo de hostelería (feature 038). Estas dos rutas llevan además el middleware
+            // `modulo.hosteleria`, así que el test activa el módulo en el tenant antes del bucle;
+            // el caso "permiso sí, módulo apagado" se cubre en ModuloApagadoTest.
+            'ver-pos-sala' => '/pos/sala',
+            'ver-pos-opciones' => '/pos/opciones',
             'ver-archivos' => '/archivos',
             'ver-campanas' => '/campanas',
             'ver-campanas-crear' => '/campanas/crear',
@@ -51,6 +57,9 @@ class RutasPermisosTest extends TestCase
     {
         $this->sembrarPermisos();
         $tenant = Tenant::factory()->create();
+        // Las rutas del módulo de hostelería solo existen con el módulo activo; aquí se prueba el
+        // eje "permiso", no el eje "módulo" (feature 038, research.md D6).
+        ConfigPos::guardar($tenant->id, ['hosteleria_activo' => true, 'opciones_activo' => true]);
 
         foreach ($this->mapaRutas() as $permiso => $ruta) {
             $rol = $this->crearRol($tenant, "Rol {$permiso}", [$permiso]);

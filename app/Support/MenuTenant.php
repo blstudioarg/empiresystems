@@ -32,7 +32,45 @@ class MenuTenant
 
         $personalizacion = self::personalizacionGuardada($tenantId);
 
-        return self::$memo[$tenantId] = self::fusionar(CatalogoMenu::catalogo(), $personalizacion, '_raiz');
+        $catalogo = self::podarModulosInactivos(CatalogoMenu::catalogo(), $tenantId);
+
+        return self::$memo[$tenantId] = self::fusionar($catalogo, $personalizacion, '_raiz');
+    }
+
+    /**
+     * Retira del catálogo las entradas de módulos opcionales que el tenant no tiene activos
+     * (feature 038, FR-056), *antes* de fusionar la personalización. Se hace aquí y no en el
+     * sidebar para que ninguna vista tenga que acordarse de la regla.
+     *
+     * Es solo UX: el enforcement real de acceso lo hace el middleware del módulo
+     * ({@see \App\Http\Middleware\ModuloHosteleriaActivo}).
+     *
+     * @param  list<array<string, mixed>>  $elementos
+     * @return list<array<string, mixed>>
+     */
+    private static function podarModulosInactivos(array $elementos, int $tenantId): array
+    {
+        $activo = [
+            CatalogoMenu::MODULO_HOSTELERIA => fn () => ConfigPos::hosteleriaActivo($tenantId),
+        ];
+
+        $podados = [];
+
+        foreach ($elementos as $elemento) {
+            $modulo = $elemento['modulo'] ?? null;
+
+            if ($modulo !== null && ! (($activo[$modulo] ?? fn () => false)())) {
+                continue;
+            }
+
+            if (! empty($elemento['hijos'])) {
+                $elemento['hijos'] = self::podarModulosInactivos($elemento['hijos'], $tenantId);
+            }
+
+            $podados[] = $elemento;
+        }
+
+        return $podados;
     }
 
     /**

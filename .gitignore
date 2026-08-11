@@ -33,3 +33,6 @@ tutoriales-video/node_modules/
 
 # Credenciales FTP de despliegue (no versionar)
 /ftp.txt
+
+# Hoja portable de acceso al hosting gestionley.com (credenciales en claro)
+/ACCESO-FTP-GESTIONLEY.md

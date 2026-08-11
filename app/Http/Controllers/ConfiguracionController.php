@@ -26,6 +26,7 @@ use App\Support\IaTenant;
 use App\Support\MenuTenant;
 use App\Support\RetencionGeoTenant;
 use App\Support\RetencionMiembroTenant;
+use App\Support\ConfigPos;
 use App\Support\TopeSimplificada;
 use App\Support\VerificadorVies;
 use App\Support\VerifactuTenant;
@@ -73,6 +74,9 @@ class ConfiguracionController extends Controller
                 'tolerancia_retraso_min' => ConfigFichajes::toleranciaRetrasoMin($tenantId),
                 'tolerancia_exceso_min' => ConfigFichajes::toleranciaExcesoMin($tenantId),
             ],
+            // Módulo de hostelería del POS (feature 038). Las capacidades se devuelven crudas: la
+            // pestaña tiene que poder mostrar cómo quedarán al reactivar el módulo (FR-007).
+            'posConfig' => ConfigPos::todo($tenantId),
             'generalConfig' => [
                 'zona_horaria' => ConfigTenant::zonaHoraria($tenantId),
             ],

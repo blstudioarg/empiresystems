@@ -27,7 +27,8 @@ class CatalogoMenuTest extends TestCase
         }
 
         $this->assertSame(array_unique($claves), $claves, 'Las claves del catálogo deben ser únicas (INV-1).');
-        $this->assertCount(36, $claves, 'El catálogo debe tener 36 elementos (10 grupos + 26 entradas, SC-002).');
+        // 36 (SC-002) + 2: `pos-sala` y `pos-opciones` del módulo de hostelería (feature 038).
+        $this->assertCount(38, $claves, 'El catálogo debe tener 38 elementos (10 grupos + 28 entradas).');
     }
 
     public function test_toda_ruta_declarada_existe(): void
@@ -74,7 +75,7 @@ class CatalogoMenuTest extends TestCase
     {
         $planos = CatalogoMenu::planos();
 
-        $this->assertCount(36, $planos);
+        $this->assertCount(38, $planos);
         $this->assertArrayHasKey('clientes', $planos);
         $this->assertArrayHasKey('cartera-clientes', $planos);
         $this->assertTrue(CatalogoMenu::existe('facturas-crear'));

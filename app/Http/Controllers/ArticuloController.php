@@ -38,11 +38,15 @@ class ArticuloController extends Controller
                     'unidad' => $articulo->unidad,
                     'categoria_id' => $articulo->categoria_id,
                     'categoria_nombre' => $articulo->categoria?->nombre,
-                    'precio' => $articulo->precio,
-                    'tipo_impositivo' => $articulo->tipo_impositivo,
+                    // Cast a float (no al string del cast `decimal:4` de Eloquent): un
+                    // `json_encode` de número real serializa "40" en vez de "40.0000", así que el
+                    // modal de edición no rellena estos campos con ceros de relleno que nadie
+                    // tecleó. Precisión intacta si el valor sí los usa (9.995 sigue siendo 9.995).
+                    'precio' => (float) $articulo->precio,
+                    'tipo_impositivo' => (float) $articulo->tipo_impositivo,
                     'gestion_stock' => $articulo->gestion_stock,
-                    'stock_actual' => $articulo->stock_actual,
-                    'stock_minimo' => $articulo->stock_minimo,
+                    'stock_actual' => $articulo->stock_actual !== null ? (float) $articulo->stock_actual : null,
+                    'stock_minimo' => $articulo->stock_minimo !== null ? (float) $articulo->stock_minimo : null,
                     'aplica_recargo_equivalencia' => $articulo->aplica_recargo_equivalencia,
                     'activo' => $articulo->activo,
                     'update_url' => route('articulos.update', $articulo),
@@ -56,7 +60,11 @@ class ArticuloController extends Controller
             ]);
         }
 
-        return view('articulos.index');
+        return view('articulos.index', [
+            // Sub-listado de opciones de artículo (feature 038, US3): solo se ofrece si el
+            // tenant tiene la capacidad activa, para no exponer un módulo apagado.
+            'opcionesActivas' => \App\Support\ConfigPos::opcionesActivo((int) tenant()->getTenantKey()),
+        ]);
     }
 
     public function store(StoreArticuloRequest $request): RedirectResponse|JsonResponse

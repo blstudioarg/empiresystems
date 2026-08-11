@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\BloquearSuperAdminAreaTenant;
 use App\Http\Middleware\EnsureSuperAdmin;
+use App\Http\Middleware\ModuloHosteleriaActivo;
 use App\Http\Middleware\SetTenantContext;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
@@ -52,6 +53,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'tenant.context' => SetTenantContext::class,
             'super_admin' => EnsureSuperAdmin::class,
             'sin_super_admin' => BloquearSuperAdminAreaTenant::class,
+            // Módulo de hostelería del POS (feature 038): segunda capa de acceso, independiente
+            // del permiso del usuario. Acepta una capacidad opcional
+            // (`modulo.hosteleria:opciones`).
+            'modulo.hosteleria' => ModuloHosteleriaActivo::class,
         ]);
 
         // SetTenantContext debe resolver el tenant por Host ANTES que auth/guest: si no, el

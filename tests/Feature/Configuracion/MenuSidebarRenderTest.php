@@ -42,11 +42,12 @@ class MenuSidebarRenderTest extends TestCase
     /**
      * Recorre todo el catálogo (elementos con ruta propia, incluidos los grupos sin hijos) y
      * comprueba que su `href` aparece en el menú si y solo si el permiso declarado está entre los
-     * del rol (o no declara permiso).
+     * del rol (o no declara permiso) **y**, si pertenece a un módulo opcional (feature 038), ese
+     * módulo está activo en el tenant — el menú filtra por las dos cosas (FR-056).
      *
      * @param  list<string>  $permisosRol
      */
-    private function assertMenuCoincideConPermisos(User $usuario, array $permisosRol): void
+    private function assertMenuCoincideConPermisos(User $usuario, array $permisosRol, bool $moduloHosteleriaActivo = false): void
     {
         $this->loginAs($usuario);
         $menu = $this->extraerMenu($this->get('/perfil')->assertOk()->getContent());
@@ -56,7 +57,8 @@ class MenuSidebarRenderTest extends TestCase
                 continue; // grupo derivado, sin ruta propia: su visibilidad se prueba vía sus hijos
             }
 
-            $visible = $elemento['permiso'] === null || in_array($elemento['permiso'], $permisosRol, true);
+            $visible = ($elemento['permiso'] === null || in_array($elemento['permiso'], $permisosRol, true))
+                && (($elemento['modulo'] ?? null) !== CatalogoMenu::MODULO_HOSTELERIA || $moduloHosteleriaActivo);
             $href = 'href="'.route($elemento['ruta']).'"';
 
             if ($visible) {
@@ -71,11 +73,14 @@ class MenuSidebarRenderTest extends TestCase
     {
         $this->sembrarPermisos();
         $tenant = Tenant::factory()->create();
+        // Módulo de hostelería activo (feature 038): con "todo el catálogo" también se espera ver
+        // Sala y Opciones de artículo, que además del permiso exigen el módulo encendido.
+        \App\Support\ConfigPos::guardar($tenant->id, ['hosteleria_activo' => true]);
         $permisos = CatalogoPermisos::claves();
         $rol = $this->crearRol($tenant, 'Administrador', $permisos);
         $usuario = $this->usuarioConRol($tenant, $rol, ['rol' => UserRole::Admin]);
 
-        $this->assertMenuCoincideConPermisos($usuario, $permisos);
+        $this->assertMenuCoincideConPermisos($usuario, $permisos, moduloHosteleriaActivo: true);
     }
 
     public function test_rol_acotado_sin_ver_facturas_no_ve_facturas_pero_ve_el_resto(): void
