@@ -36,8 +36,9 @@ ninguna celda libre, el movimiento se cancela con un aviso.</p>
 
 <p>A la derecha del lienzo, en modo edición, hay un panel para <strong>gestionar zonas y
 mesas</strong> sin salir de la Sala: crear (botón «+»), renombrar (tocar el nombre y escribir) y
-eliminar (papelera, con confirmación). Es el mismo CRUD de <em>Configuración → POS</em>, solo que
-más rápido de usar desde una tablet mientras se arma el plano.</p>
+eliminar (papelera, con confirmación). Es el <strong>único sitio</strong> donde se crean y editan
+zonas y mesas: <em>Configuración → POS</em> ya solo guarda los ajustes del módulo (interruptor
+maestro, suplemento por zona, etc.), no el listado de sala.</p>
 
 <p class="ayuda-nota">Cambiar de pestaña de zona ya no descarta el arrastre pendiente de la zona
 anterior: cada zona conserva su propio plano sin guardar mientras dure el modo edición. Solo se

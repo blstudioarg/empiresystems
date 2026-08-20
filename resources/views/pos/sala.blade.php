@@ -285,7 +285,7 @@
 					<div class="pos-mesas-grid" id="pos-sala-mesas"></div>
 
 					<p class="pos-sala-vacia d-none" id="pos-sala-vacia">
-						Todavía no hay mesas configuradas. Créalas en <strong>Configuración → POS</strong>.
+						Todavía no hay mesas configuradas. Créalas con el botón <strong>Editar plano</strong> de arriba.
 					</p>
 
 					<div class="pos-plano-wrap" id="pos-plano-wrap">

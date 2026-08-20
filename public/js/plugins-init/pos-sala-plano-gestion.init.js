@@ -68,7 +68,7 @@
 
 		$zonasLista.innerHTML = zonas.map(function (z) {
 			return '<div class="plano-gestion-item' + (String(z.id) === String(activa) ? ' activa' : '') + '" data-zona-id="' + z.id + '">' +
-				'<input type="text" value="' + escapeHtml(z.nombre) + '" data-original="' + escapeHtml(z.nombre) + '"' +
+				'<input type="text" name="zona_nombre_' + z.id + '" autocomplete="off" value="' + escapeHtml(z.nombre) + '" data-original="' + escapeHtml(z.nombre) + '"' +
 				' data-update-url="' + z.update_url + '" aria-label="Nombre de la zona">' +
 				'<span class="plano-gestion-meta">' + z.mesas + '</span>' +
 				'<button type="button" class="btn-eliminar" data-delete-url="' + z.delete_url + '"' +
@@ -85,11 +85,19 @@
 		var input = e.target.closest('input');
 		if (!input) { return; }
 
+		// La fila de alta (creada por el botón "+") no tiene `data-update-url`: su propio
+		// listener `blur` (más abajo) ya maneja el POST. Sin este filtro, este handler delegado
+		// también dispara al salir de ese input y termina haciendo un PUT a `null` — que jQuery
+		// resuelve contra la URL de la página actual, dando un 405 encubierto (bug real,
+		// encontrado en pruebas manuales tras mover el alta de zonas a este panel).
+		var updateUrl = input.getAttribute('data-update-url');
+		if (!updateUrl) { return; }
+
 		var nuevo = input.value.trim();
 		var original = input.getAttribute('data-original');
 		if (!nuevo || nuevo === original) { input.value = original; return; }
 
-		ajaxJson(input.getAttribute('data-update-url'), 'PUT', { nombre: nuevo })
+		ajaxJson(updateUrl, 'PUT', { nombre: nuevo })
 			.done(function () {
 				input.setAttribute('data-original', nuevo);
 				window.showToast('success', 'Zona actualizada.');
@@ -124,7 +132,10 @@
 	$zonaNuevaBtn.addEventListener('click', function () {
 		var fila = document.createElement('div');
 		fila.className = 'plano-gestion-item';
-		fila.innerHTML = '<input type="text" placeholder="Nombre de la zona…" aria-label="Nombre de la nueva zona">';
+		// `autocomplete="off"` + `name` únicos: sin esto Chrome guarda y sugiere el nombre de la
+		// última zona creada en este input sin `name` (hallado en pruebas manuales), y un Tab
+		// puede aceptar la sugerencia y disparar un alta fantasma con un nombre que nadie tipeó.
+		fila.innerHTML = '<input type="text" name="zona_nueva_nombre" autocomplete="off" placeholder="Nombre de la zona…" aria-label="Nombre de la nueva zona">';
 		$zonasLista.prepend(fila);
 
 		var $input = fila.querySelector('input');
@@ -157,7 +168,7 @@
 
 		$mesasLista.innerHTML = mesas.map(function (m) {
 			return '<div class="plano-gestion-item" data-mesa-id="' + m.id + '">' +
-				'<input type="text" value="' + escapeHtml(m.nombre) + '" data-original="' + escapeHtml(m.nombre) + '"' +
+				'<input type="text" name="mesa_nombre_' + m.id + '" autocomplete="off" value="' + escapeHtml(m.nombre) + '" data-original="' + escapeHtml(m.nombre) + '"' +
 				' data-update-url="' + m.update_url + '" data-zona-id="' + m.zona_id + '" aria-label="Nombre de la mesa">' +
 				(m.ocupada ? '<span class="plano-gestion-meta">Ocupada</span>' : '') +
 				'<button type="button" class="btn-eliminar" data-delete-url="' + m.delete_url + '"' +
@@ -177,6 +188,11 @@
 		var input = e.target.closest('input');
 		if (!input) { return; }
 
+		// Misma razón que en la lista de zonas: la fila de alta no tiene `data-update-url` y ya
+		// se maneja con su propio `blur` más abajo.
+		var updateUrl = input.getAttribute('data-update-url');
+		if (!updateUrl) { return; }
+
 		var nuevo = input.value.trim();
 		var original = input.getAttribute('data-original');
 		if (!nuevo || nuevo === original) { input.value = original; return; }
@@ -184,7 +200,7 @@
 		var zonaId = input.getAttribute('data-zona-id');
 		var mesaId = input.closest('.plano-gestion-item').getAttribute('data-mesa-id');
 
-		ajaxJson(input.getAttribute('data-update-url'), 'PUT', { zona_id: zonaId, nombre: nuevo })
+		ajaxJson(updateUrl, 'PUT', { zona_id: zonaId, nombre: nuevo })
 			.done(function () {
 				input.setAttribute('data-original', nuevo);
 				window.showToast('success', 'Mesa actualizada.');
@@ -228,7 +244,7 @@
 
 		var fila = document.createElement('div');
 		fila.className = 'plano-gestion-item';
-		fila.innerHTML = '<input type="text" placeholder="Nombre de la mesa…" aria-label="Nombre de la nueva mesa">';
+		fila.innerHTML = '<input type="text" name="mesa_nueva_nombre" autocomplete="off" placeholder="Nombre de la mesa…" aria-label="Nombre de la nueva mesa">';
 		$mesasLista.prepend(fila);
 
 		var $input = fila.querySelector('input');

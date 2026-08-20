@@ -323,14 +323,15 @@
 		var zid = window.posSalaZonaActiva ? window.posSalaZonaActiva() : '';
 		if (!zid) {
 			var datos = window.posSalaData || { zonas: [] };
-			if (datos.zonas.length === 0) {
-				window.showToast('warning', 'No hay zonas configuradas todavía.');
-				return;
+			if (datos.zonas.length > 0) {
+				zid = datos.zonas[0].id;
+				// Selecciona la pestaña de esa zona para que quede consistente con la vista de lectura.
+				var btn = $zonasTabs.querySelector('.pos-filtro[data-zona="' + zid + '"]');
+				if (btn) { btn.click(); }
 			}
-			zid = datos.zonas[0].id;
-			// Selecciona la pestaña de esa zona para que quede consistente con la vista de lectura.
-			var btn = $zonasTabs.querySelector('.pos-filtro[data-zona="' + zid + '"]');
-			if (btn) { btn.click(); }
+			// Sin zonas todavía: se entra igual al modo edición con el lienzo vacío, para que el
+			// panel de gestión (a la derecha) permita crear la primera desde acá — es el único
+			// lugar donde se crean zonas/mesas desde que se sacó el CRUD de Configuración → POS.
 		}
 
 		editando = true;
