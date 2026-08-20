@@ -20,7 +20,6 @@
 	var FORMAS = [
 		{ valor: 'redonda', etiqueta: 'Redonda' },
 		{ valor: 'cuadrada', etiqueta: 'Cuadrada' },
-		{ valor: 'rectangular', etiqueta: 'Rectangular' },
 		{ valor: 'barra', etiqueta: 'Barra' },
 	];
 
@@ -189,7 +188,11 @@
 			return '<span class="silla" style="left:' + p[0] + '%;top:' + p[1] + '%;transform:translate(-50%,-50%);"></span>';
 		}).join('');
 
-		return '<div class="plano-mesa ' + clase + ' forma-' + mesa.forma + '" data-mesa-id="' + mesa.id + '"' +
+		// `estirada` sustituye a la antigua forma `rectangular`: el borde se redondea menos en cuanto
+		// la mesa deja de ser un cuadrado, sin que el usuario tenga que elegir nada.
+		var estirada = mesa.ancho !== mesa.alto ? ' estirada' : '';
+
+		return '<div class="plano-mesa ' + clase + ' forma-' + mesa.forma + estirada + '" data-mesa-id="' + mesa.id + '"' +
 			' style="left:' + caja.left + 'px;top:' + caja.top + 'px;width:' + caja.width + 'px;height:' + caja.height + 'px;">' +
 			sillasHtml +
 			'<span class="plano-mesa-nombre">' + escapeHtml(mesa.nombre) + '</span>' +

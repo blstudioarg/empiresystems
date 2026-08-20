@@ -125,12 +125,17 @@
 		.plano-mesa .ui-resizable-handle { touch-action: none; background: none; }
 		.plano-mesa .ui-resizable-n,
 		.plano-mesa .ui-resizable-s { left: 0; right: 0; width: auto; height: 16px; cursor: ns-resize; }
-		.plano-mesa .ui-resizable-n { top: -8px; }
 		.plano-mesa .ui-resizable-s { bottom: -8px; }
 		.plano-mesa .ui-resizable-e,
 		.plano-mesa .ui-resizable-w { top: 0; bottom: 0; height: auto; width: 16px; cursor: ew-resize; }
-		.plano-mesa .ui-resizable-e { right: -8px; }
 		.plano-mesa .ui-resizable-w { left: -8px; }
+		/* Las asas `n` y `e` se APARTAN de la esquina superior derecha, donde vive el asa circular
+		   de arrastre (25.6px que sobresalen 8px arriba y a la derecha). No basta con darle a esa
+		   un z-index mayor: `@stack('styles')` se carga antes de `css/style.css`, así que un
+		   z-index de ahí gana por cascada y el asa de resize se queda el gesto — la mesa se
+		   agranda en vez de moverse. Separarlas físicamente no depende de la cascada. */
+		.plano-mesa .ui-resizable-n { top: -8px; right: 22px; }
+		.plano-mesa .ui-resizable-e { right: -8px; top: 22px; }
 		.plano-mesa .ui-resizable-se,
 		.plano-mesa .ui-resizable-sw,
 		.plano-mesa .ui-resizable-nw { width: 18px; height: 18px; z-index: 12; }
@@ -156,7 +161,10 @@
 
 		.plano-mesa.forma-redonda { border-radius: 50%; }
 		.plano-mesa.forma-cuadrada { border-radius: .6rem; }
-		.plano-mesa.forma-rectangular { border-radius: .5rem; }
+		/* Sustituye a la antigua forma `rectangular`: una mesa cuadrada que se estira redondea menos
+		   el borde, sin que haya que elegirlo en ningún selector. La redonda estirada se convierte
+		   en elipse (el 50% ya lo hace solo) y la barra conserva su radio grande. */
+		.plano-mesa.forma-cuadrada.estirada { border-radius: .5rem; }
 		.plano-mesa.forma-barra { border-radius: 1.4rem; }
 
 		/* Marcas de sillas alrededor del borde: puntos pequeños generados en JS como spans. */

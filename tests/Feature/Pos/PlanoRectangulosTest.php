@@ -56,7 +56,7 @@ class PlanoRectangulosTest extends TestCase
 
         $this->putJson("/pos/sala/zonas/{$zona->id}/plano", [
             'version' => 1,
-            'mesas' => [$this->mesaPayload($mesa, 2, 3, 2, 1, 'rectangular')],
+            'mesas' => [$this->mesaPayload($mesa, 2, 3, 2, 1, 'cuadrada')],
         ])->assertOk()->assertJson(['version' => 2]);
 
         $this->assertDatabaseHas('pos_mesas', [

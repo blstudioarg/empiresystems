@@ -29,7 +29,7 @@ class PlanoSalaController extends Controller
             'mesas.*.id' => ['required', 'integer'],
             'mesas.*.fila' => ['required', 'integer'],
             'mesas.*.columna' => ['required', 'integer'],
-            'mesas.*.forma' => ['required', 'string', 'in:redonda,cuadrada,rectangular,barra'],
+            'mesas.*.forma' => ['required', 'string', 'in:redonda,cuadrada,barra'],
             'mesas.*.ancho_celdas' => ['required', 'integer', 'min:1', 'max:'.PosPlanoCeldas::COLUMNAS],
             'mesas.*.alto_celdas' => ['required', 'integer', 'min:1', 'max:'.PosPlanoCeldas::FILAS],
         ]);

@@ -1225,7 +1225,8 @@ criterio que ya sigue `stock_actual` como caché de lectura del kardex.
 bloqueo optimista del guardado del plano, mismo patrón que `pos_cuentas.version`, se incrementa en
 cada `PUT /pos/sala/zonas/{zona}/plano`. `pos_mesas` gana `fila`/`columna` (unsigned tinyint,
 nullable, rejilla fija de 8 columnas × 6 filas por zona) y `forma`
-(`redonda`/`cuadrada`/`rectangular`/`barra`, default `cuadrada`).
+(`redonda`/`cuadrada`/`rectangular`/`barra`, default `cuadrada`; `rectangular` se retiró después,
+ver más abajo).
 `UNIQUE (tenant_id, zona_id, fila, columna)` garantiza que dos mesas no comparten **celda de
 origen**; al eliminar una mesa (soft delete),
 `fila`/`columna` se ponen a `null` en la fila borrada para que el `UNIQUE` no siga "ocupando" esa
@@ -1254,6 +1255,13 @@ Los planos existentes se convirtieron en la propia migración con `App\Support\P
 deriva la ocupación de `forma` (`rectangular`→2×1, `barra`→3×1, resto 1×1) y luego reduce el ancho
 de quien no quepa, en orden determinista (`fila`, `columna`, `id`), reservando antes todas las
 celdas de origen para que ninguna mesa desaparezca. `tamano` no interviene en el mapeo.
+
+**Retirada de `rectangular`**: una vez que el tamaño se da estirando la mesa, `rectangular` no era
+más que una `cuadrada` más ancha (mismo reparto de sillas, casi el mismo borde), así que el enum
+`forma` queda en `redonda`/`cuadrada`/`barra` y las mesas que lo usaban pasaron a `cuadrada` **sin
+cambiar su ocupación en celdas** — siguen midiendo lo mismo, solo cambia la etiqueta. El aspecto
+alargado lo decide ahora la geometría (`ancho_celdas != alto_celdas`), no un atributo. `barra`
+permanece porque sus sillas van solo en el lado largo y eso no se deduce del tamaño.
 
 ### `pos_cuentas` — la cuenta abierta
 

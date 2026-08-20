@@ -29,7 +29,8 @@ cuenta, en el chip de mesa que aparece en la cabecera del ticket.</p>
 <strong>agranda o encoge</strong> arrastrando cualquiera de sus bordes o esquinas. La mesa crece de
 celda en celda: una mesa grande ocupa varias celdas de la rejilla y dibuja más sillas alrededor.
 Tocar una mesa (sin arrastrarla) abre un panel para cambiar su forma (redonda, cuadrada,
-rectangular, barra). Nada se guarda hasta pulsar <em>Guardar plano</em>: recargar la página o salir
+barra). No hay una forma «rectangular»: una mesa rectangular es sencillamente una cuadrada
+estirada. Nada se guarda hasta pulsar <em>Guardar plano</em>: recargar la página o salir
 del modo edición sin guardar descarta los cambios pendientes.</p>
 
 <p class="ayuda-nota">Al agrandar, el borde <strong>se detiene solo</strong> cuando choca con otra

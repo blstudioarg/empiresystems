@@ -30,10 +30,12 @@ mesas de la zona activa arrastrándolas sobre una rejilla fija (8 columnas × 6 
 
 Cada mesa **ocupa un rectángulo de celdas** de esa rejilla: su celda de origen más el ancho y el
 alto en celdas que se le hayan dado. Se redimensiona **arrastrando su borde o su esquina**, y el
-tamaño encaja siempre en celdas enteras. La **forma** (redonda, cuadrada, rectangular, barra) se
-cambia tocando la mesa y ya solo decide su aspecto y cómo se reparten las sillas dibujadas
-alrededor, no el espacio que reserva: una barra puede ser de una sola celda y una mesa cuadrada de
-3×2. Ya **no existe** el antiguo atributo de tamaño «pequeña / mediana / grande». El número de
+tamaño encaja siempre en celdas enteras. La **forma** (redonda, cuadrada, barra) se cambia
+tocando la mesa y ya solo decide su aspecto y cómo se reparten las sillas dibujadas alrededor, no
+el espacio que reserva: una barra puede ser de una sola celda y una mesa cuadrada de 3×2. **No
+existe una forma «rectangular»**: una mesa rectangular es una cuadrada estirada, y su borde se
+redondea menos en cuanto deja de ser un cuadrado. La `barra` sí se conserva como forma propia
+porque sus sillas van solo en el lado largo, y eso no se puede deducir del tamaño. Ya **no existe** el antiguo atributo de tamaño «pequeña / mediana / grande». El número de
 sillas dibujadas crece con la mesa, como señal visual; no es la capacidad de comensales como dato
 de negocio. Nada se persiste hasta pulsar **Guardar plano**: cambiar de zona o salir sin guardar
 descarta los cambios pendientes.
