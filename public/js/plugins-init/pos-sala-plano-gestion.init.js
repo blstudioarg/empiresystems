@@ -85,11 +85,11 @@
 		var input = e.target.closest('input');
 		if (!input) { return; }
 
-		// La fila de alta (creada por el botón "+") no tiene `data-update-url`: su propio
-		// listener `blur` (más abajo) ya maneja el POST. Sin este filtro, este handler delegado
-		// también dispara al salir de ese input y termina haciendo un PUT a `null` — que jQuery
-		// resuelve contra la URL de la página actual, dando un 405 encubierto (bug real,
-		// encontrado en pruebas manuales tras mover el alta de zonas a este panel).
+		// La fila de alta (creada por el botón "+") no tiene `data-update-url`: su alta la confirma
+		// el usuario con el check, no este handler. Sin este filtro, el handler delegado también
+		// dispara al salir de ese input y termina haciendo un PUT a `null` — que jQuery resuelve
+		// contra la URL de la página actual, dando un 405 encubierto (bug real, encontrado en
+		// pruebas manuales tras mover el alta de zonas a este panel).
 		var updateUrl = input.getAttribute('data-update-url');
 		if (!updateUrl) { return; }
 
@@ -129,33 +129,85 @@
 		});
 	});
 
-	$zonaNuevaBtn.addEventListener('click', function () {
+	/**
+	 * Fila de alta con confirmación explícita: input + botón de check + botón de cancelar.
+	 *
+	 * Antes el alta se disparaba en el `blur` del input —había que escribir el nombre y sacar el
+	 * foco—, un gesto que nadie adivina y que además creaba registros al salir del input sin
+	 * querer. Ahora **perder el foco no crea nada**: el alta ocurre solo si el usuario la confirma
+	 * (check o Enter), y Escape o la X la descartan.
+	 *
+	 * `autocomplete="off"` + `name` únicos siguen siendo necesarios: sin eso Chrome sugiere el
+	 * nombre de la última zona/mesa creada en un input sin `name` (hallado en pruebas manuales) y
+	 * un Tab puede aceptar la sugerencia.
+	 *
+	 * @param alConfirmar function(nombre, alFallar) — `alFallar()` devuelve la fila a estado
+	 *        editable conservando lo escrito, para poder corregir un nombre repetido sin volver a
+	 *        teclearlo entero.
+	 */
+	function filaDeAlta(campo, placeholder, etiqueta, alConfirmar) {
 		var fila = document.createElement('div');
-		fila.className = 'plano-gestion-item';
-		// `autocomplete="off"` + `name` únicos: sin esto Chrome guarda y sugiere el nombre de la
-		// última zona creada en este input sin `name` (hallado en pruebas manuales), y un Tab
-		// puede aceptar la sugerencia y disparar un alta fantasma con un nombre que nadie tipeó.
-		fila.innerHTML = '<input type="text" name="zona_nueva_nombre" autocomplete="off" placeholder="Nombre de la zona…" aria-label="Nombre de la nueva zona">';
-		$zonasLista.prepend(fila);
+		fila.className = 'plano-gestion-item plano-gestion-alta';
+		fila.innerHTML = '<input type="text" name="' + campo + '" autocomplete="off" placeholder="' +
+			placeholder + '" aria-label="' + etiqueta + '">' +
+			'<button type="button" class="btn-confirmar" title="Crear" aria-label="Crear" disabled>' +
+			'<i class="fas fa-check"></i></button>' +
+			'<button type="button" class="btn-cancelar-alta" title="Cancelar" aria-label="Cancelar">' +
+			'<i class="fas fa-xmark"></i></button>';
 
 		var $input = fila.querySelector('input');
-		$input.focus();
+		var $ok = fila.querySelector('.btn-confirmar');
+		var enviando = false;
 
-		$input.addEventListener('blur', function () {
+		function sincronizar() { $ok.disabled = $input.value.trim() === ''; }
+
+		function confirmar() {
 			var nombre = $input.value.trim();
-			if (!nombre) { fila.remove(); return; }
+			// El guard de `enviando` evita el alta doble cuando el Enter y el clic en el check
+			// llegan casi a la vez.
+			if (!nombre || enviando) { return; }
 
-			ajaxJson(state.zonasStoreUrl, 'POST', { nombre: nombre })
-				.done(function () {
-					window.showToast('success', 'Zona creada.');
-					cargarZonasPanel();
-					document.getElementById('pos-sala-refrescar').click();
-				})
-				.fail(function (xhr) {
-					fila.remove();
-					window.showToast('danger', mensajeError(xhr, 'No se pudo crear la zona.'));
-				});
-		}, { once: true });
+			enviando = true;
+			$ok.disabled = true;
+			$input.readOnly = true;
+
+			alConfirmar(nombre, function alFallar() {
+				enviando = false;
+				$input.readOnly = false;
+				sincronizar();
+				$input.focus();
+			});
+		}
+
+		$input.addEventListener('input', sincronizar);
+		$input.addEventListener('keydown', function (e) {
+			if (e.key === 'Enter') { e.preventDefault(); confirmar(); }
+			if (e.key === 'Escape') { e.preventDefault(); fila.remove(); }
+		});
+		$ok.addEventListener('click', confirmar);
+		fila.querySelector('.btn-cancelar-alta').addEventListener('click', function () { fila.remove(); });
+
+		return { fila: fila, input: $input };
+	}
+
+	$zonaNuevaBtn.addEventListener('click', function () {
+		var alta = filaDeAlta('zona_nueva_nombre', 'Nombre de la zona…', 'Nombre de la nueva zona',
+			function (nombre, alFallar) {
+				ajaxJson(state.zonasStoreUrl, 'POST', { nombre: nombre })
+					.done(function () {
+						window.showToast('success', 'Zona creada.');
+						// Repinta la lista entera, así que la fila de alta desaparece sola.
+						cargarZonasPanel();
+						document.getElementById('pos-sala-refrescar').click();
+					})
+					.fail(function (xhr) {
+						window.showToast('danger', mensajeError(xhr, 'No se pudo crear la zona.'));
+						alFallar();
+					});
+			});
+
+		$zonasLista.prepend(alta.fila);
+		alta.input.focus();
 	});
 
 	// ────────────────────────────── Mesas (de la zona activa) ──────────────────────────────
@@ -188,8 +240,8 @@
 		var input = e.target.closest('input');
 		if (!input) { return; }
 
-		// Misma razón que en la lista de zonas: la fila de alta no tiene `data-update-url` y ya
-		// se maneja con su propio `blur` más abajo.
+		// Misma razón que en la lista de zonas: la fila de alta no tiene `data-update-url` y su
+		// alta se confirma con el check, no aquí.
 		var updateUrl = input.getAttribute('data-update-url');
 		if (!updateUrl) { return; }
 
@@ -242,38 +294,31 @@
 			return;
 		}
 
-		var fila = document.createElement('div');
-		fila.className = 'plano-gestion-item';
-		fila.innerHTML = '<input type="text" name="mesa_nueva_nombre" autocomplete="off" placeholder="Nombre de la mesa…" aria-label="Nombre de la nueva mesa">';
-		$mesasLista.prepend(fila);
+		var alta = filaDeAlta('mesa_nueva_nombre', 'Nombre de la mesa…', 'Nombre de la nueva mesa',
+			function (nombre, alFallar) {
+				ajaxJson(state.mesasStoreUrl, 'POST', { zona_id: zid, nombre: nombre })
+					.done(function (respuesta) {
+						window.showToast('success', 'Mesa creada.');
+						cargarMesasPanel();
 
-		var $input = fila.querySelector('input');
-		$input.focus();
-
-		$input.addEventListener('blur', function () {
-			var nombre = $input.value.trim();
-			if (!nombre) { fila.remove(); return; }
-
-			ajaxJson(state.mesasStoreUrl, 'POST', { zona_id: zid, nombre: nombre })
-				.done(function (respuesta) {
-					window.showToast('success', 'Mesa creada.');
-					cargarMesasPanel();
-
-					// La posición (fila/columna) la asigna el servidor (FR-014): se toma del
-					// estado completo de la sala (mismo refresco que ya usa "Actualizar") en vez
-					// de pisar las posiciones que el usuario ya arrastró en esta sesión.
-					document.addEventListener('pos-sala:actualizado', function alReactualizar(e) {
-						document.removeEventListener('pos-sala:actualizado', alReactualizar);
-						var mesaNueva = e.detail.mesas.filter(function (m) { return String(m.id) === String(respuesta.id); })[0];
-						if (mesaNueva) { window.PosPlano.agregarMesa(zid, mesaNueva); }
+						// La posición (fila/columna) la asigna el servidor (FR-014): se toma del
+						// estado completo de la sala (mismo refresco que ya usa "Actualizar") en vez
+						// de pisar las posiciones que el usuario ya arrastró en esta sesión.
+						document.addEventListener('pos-sala:actualizado', function alReactualizar(e) {
+							document.removeEventListener('pos-sala:actualizado', alReactualizar);
+							var mesaNueva = e.detail.mesas.filter(function (m) { return String(m.id) === String(respuesta.id); })[0];
+							if (mesaNueva) { window.PosPlano.agregarMesa(zid, mesaNueva); }
+						});
+						document.getElementById('pos-sala-refrescar').click();
+					})
+					.fail(function (xhr) {
+						window.showToast('danger', mensajeError(xhr, 'No se pudo crear la mesa.'));
+						alFallar();
 					});
-					document.getElementById('pos-sala-refrescar').click();
-				})
-				.fail(function (xhr) {
-					fila.remove();
-					window.showToast('danger', mensajeError(xhr, 'No se pudo crear la mesa.'));
-				});
-		}, { once: true });
+			});
+
+		$mesasLista.prepend(alta.fila);
+		alta.input.focus();
 	});
 
 	// ────────────────────────────── Orquestación ──────────────────────────────

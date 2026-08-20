@@ -250,6 +250,27 @@
 		if (!mesa) { return; }
 
 		var ultimoValido = null;
+		var rectInicial = null;
+
+		/**
+		 * Ejes que el asa agarrada tiene derecho a mover. Un asa de lado (`e`, `w`, `n`, `s`) toca
+		 * UN eje; solo las esquinas tocan los dos.
+		 *
+		 * Sin esto, cualquier ruido en las medidas que devuelve el widget (bordes, padding,
+		 * `box-sizing`, el redondeo del propio `grid`) podía colarse en el eje que el gesto ni
+		 * siquiera estaba tocando: arrastrar el lado derecho de una mesa de 1×1 la dejaba en 2×2 en
+		 * vez de 2×1. El eje del gesto es una restricción real, no una heurística, así que se
+		 * aplica antes de cualquier otro cálculo.
+		 */
+		function ejesDelAsa() {
+			var inst = $(el).resizable('instance') || $(el).data('ui-resizable');
+			var axis = (inst && inst.axis) || '';
+
+			return {
+				x: axis.indexOf('e') !== -1 || axis.indexOf('w') !== -1,
+				y: axis.indexOf('n') !== -1 || axis.indexOf('s') !== -1,
+			};
+		}
 
 		$(el).resizable({
 			handles: 'n,e,s,w,nw,se,sw',
@@ -260,11 +281,17 @@
 			start: function () {
 				cerrarPopover();
 				ultimoValido = { fila: mesa.fila, columna: mesa.columna, ancho: mesa.ancho, alto: mesa.alto };
+				rectInicial = { fila: mesa.fila, columna: mesa.columna, ancho: mesa.ancho, alto: mesa.alto };
 			},
 			resize: function (e, ui) {
 				// `ui.position`/`ui.size` son las MISMAS referencias que el widget vuelca al DOM
 				// justo después de este callback, así que mutarlas basta para detener el borde.
 				var cand = aCeldas(ui.position, ui.size);
+
+				// El eje que el asa no toca se congela en el valor con el que empezó el gesto.
+				var ejes = ejesDelAsa();
+				if (!ejes.x) { cand.columna = rectInicial.columna; cand.ancho = rectInicial.ancho; }
+				if (!ejes.y) { cand.fila = rectInicial.fila; cand.alto = rectInicial.alto; }
 
 				// Clamp POR EJE (FR-004): al arrastrar una esquina el candidato puede ser inválido
 				// en horizontal y válido en vertical; revertir el rectángulo entero bloquearía

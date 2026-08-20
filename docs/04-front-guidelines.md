@@ -1311,3 +1311,26 @@ llenaría la pantalla de avisos. El toast queda para el resultado de una acción
 un movimiento cancelado al soltar).
 
 Ejemplo vivo: `.plano-mesa.plano-mesa-bloqueada` en `resources/views/pos/sala.blade.php`.
+
+## Alta inline en un listado: confirmación explícita, nunca por `blur`
+
+Cuando una lista permite crear un registro con una fila nueva editable (el patrón del panel de
+zonas/mesas de la Sala), el alta **no** se dispara al perder el foco del input. Perder el foco es
+un accidente —un Tab, un clic en cualquier sitio, el navegador autocompletando—, no una decisión, y
+usarlo como confirmación crea registros que nadie pidió. Además es un gesto invisible: nadie adivina
+que hay que "escribir y salir del campo" para que algo se guarde.
+
+La fila de alta lleva **un check para confirmar y una X para descartar**:
+
+- El check nace `disabled` y se habilita en cuanto hay contenido, para que no se confirme en vacío.
+- **Enter** confirma y **Escape** descarta, porque las manos ya están en el teclado.
+- Perder el foco no hace nada: la fila sigue ahí hasta que se resuelva.
+- Si el alta falla en servidor (un nombre repetido, por ejemplo), la fila **conserva lo escrito** y
+  vuelve a ser editable, en vez de desaparecer y obligar a teclearlo todo otra vez.
+- Un guard de "enviando" evita el alta doble cuando Enter y el clic en el check llegan casi a la vez.
+
+**Renombrar sí puede guardarse al salir del campo**: ahí el registro ya existe, el valor anterior es
+conocido y el cambio es reversible escribiendo de nuevo. Crear y editar no corren el mismo riesgo, y
+por eso no siguen la misma regla.
+
+Ejemplo vivo: `filaDeAlta()` en `public/js/plugins-init/pos-sala-plano-gestion.init.js`.

@@ -42,8 +42,9 @@ en el hueco libre más cercano donde quepa entera — nunca se pierde ni queda o
 espacio suficiente para ella, el movimiento se cancela con un aviso.</p>
 
 <p>A la derecha del lienzo, en modo edición, hay un panel para <strong>gestionar zonas y
-mesas</strong> sin salir de la Sala: crear (botón «+»), renombrar (tocar el nombre y escribir) y
-eliminar (papelera, con confirmación). Es el <strong>único sitio</strong> donde se crean y editan
+mesas</strong> sin salir de la Sala: crear (botón «+», escribir el nombre y confirmar con el
+<strong>check verde</strong> o pulsando Enter; la X o Escape descartan), renombrar (tocar el nombre,
+escribir y salir del campo) y eliminar (papelera, con confirmación). Es el <strong>único sitio</strong> donde se crean y editan
 zonas y mesas: <em>Configuración → POS</em> ya solo guarda los ajustes del módulo (interruptor
 maestro, suplemento por zona, etc.), no el listado de sala.</p>
 

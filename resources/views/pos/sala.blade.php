@@ -136,12 +136,17 @@
 		   agranda en vez de moverse. Separarlas físicamente no depende de la cascada. */
 		.plano-mesa .ui-resizable-n { top: -8px; right: 22px; }
 		.plano-mesa .ui-resizable-e { right: -8px; top: 22px; }
+		/* Las esquinas van por encima de los lados (redimensionan los dos ejes a la vez), así que
+		   cuanto más grandes, más lado se comen. En una mesa de 1×1 (96px) unas esquinas de 18px
+		   se llevaban 36px de los 96 del borde —más de un tercio— y era facilísimo agarrar la
+		   esquina creyendo agarrar el lado, con lo que la mesa crecía en ambos ejes. A 12px el
+		   lado queda despejado y siguen siendo agarrables. */
 		.plano-mesa .ui-resizable-se,
 		.plano-mesa .ui-resizable-sw,
-		.plano-mesa .ui-resizable-nw { width: 18px; height: 18px; z-index: 12; }
-		.plano-mesa .ui-resizable-se { right: -9px; bottom: -9px; cursor: nwse-resize; }
-		.plano-mesa .ui-resizable-sw { left: -9px; bottom: -9px; cursor: nesw-resize; }
-		.plano-mesa .ui-resizable-nw { top: -9px; left: -9px; cursor: nwse-resize; }
+		.plano-mesa .ui-resizable-nw { width: 12px; height: 12px; z-index: 12; }
+		.plano-mesa .ui-resizable-se { right: -6px; bottom: -6px; cursor: nwse-resize; }
+		.plano-mesa .ui-resizable-sw { left: -6px; bottom: -6px; cursor: nesw-resize; }
+		.plano-mesa .ui-resizable-nw { top: -6px; left: -6px; cursor: nwse-resize; }
 		/* El asa circular de arrastre vive sobre la esquina `ne`; por eso el widget renuncia a esa
 		   asa (siete en vez de ocho) y esta queda por encima de todas. */
 		.plano-mesa .plano-mesa-handle { z-index: 16; }
@@ -208,6 +213,21 @@
 			color: #c33; display: inline-flex; align-items: center; justify-content: center; border-radius: .5rem;
 		}
 		.plano-gestion-item .btn-eliminar:hover { background: #fbe7e7; }
+
+		/* Fila de alta: el registro se crea al confirmar con el check (o Enter), nunca al perder
+		   el foco. El check nace deshabilitado y se habilita en cuanto hay un nombre escrito, para
+		   que no se pueda confirmar en vacío. */
+		.plano-gestion-item.plano-gestion-alta { border-color: var(--pos-primary, #1d69d6); background: #f5f8ff; }
+		.plano-gestion-item .btn-confirmar,
+		.plano-gestion-item .btn-cancelar-alta {
+			width: 2.1rem; height: 2.1rem; flex: 0 0 auto; border: none; background: transparent;
+			display: inline-flex; align-items: center; justify-content: center; border-radius: .5rem;
+		}
+		.plano-gestion-item .btn-confirmar { color: var(--pos-money, #16a34a); }
+		.plano-gestion-item .btn-confirmar:hover:not(:disabled) { background: #e6f6ec; }
+		.plano-gestion-item .btn-confirmar:disabled { color: #c4c8ce; cursor: not-allowed; }
+		.plano-gestion-item .btn-cancelar-alta { color: #9aa0a6; }
+		.plano-gestion-item .btn-cancelar-alta:hover { background: #eef0f3; }
 		.plano-gestion-vacio { font-size: .82rem; color: #9aa0a6; padding: .5rem .2rem; }
 
 		@media (max-width: 61.9375rem) {

@@ -56,7 +56,10 @@ las cuentas abiertas: si dos personas editan el plano de la misma zona a la vez,
 guardar recibe un aviso para recargar en vez de pisar los cambios de la primera.
 
 En modo edición, un panel a la derecha del lienzo permite **crear, renombrar y eliminar zonas y
-mesas** sin salir de la Sala. Es el único sitio donde se dan de alta o se editan: Configuración →
+mesas** sin salir de la Sala. El alta se confirma de forma explícita: se pulsa «+», se escribe
+el nombre y se confirma con el botón de **check** (o con Enter); la X o Escape la descartan, y
+salir del campo sin confirmar **no** crea nada. Renombrar, en cambio, sí se guarda al salir del
+campo. Es el único sitio donde se dan de alta o se editan: Configuración →
 POS ya solo contiene los ajustes del módulo (interruptor maestro, suplemento por zona, etc.), no el
 listado de zonas y mesas. Restricciones: una zona con mesas o una mesa con cuenta abierta no se
 pueden eliminar.
