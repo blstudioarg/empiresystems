@@ -276,8 +276,19 @@
 			handles: 'n,e,s,w,nw,se,sw',
 			grid: [STEP, STEP],
 			containment: '#pos-plano-canvas',
-			minWidth: CELL,
-			minHeight: CELL,
+			// NO poner aquí el tamaño de una celda, por tentador que sea. El plugin `grid` de
+			// jQuery UI, cuando el tamaño resultante queda por debajo del mínimo, **le suma un
+			// paso de rejilla entero** en vez de recortarlo al mínimo (`y && (f += u)` en
+			// jquery-ui.min.js). Con `minHeight: CELL` bastaba un subpíxel —el escalado de
+			// pantalla de Windows, el zoom del navegador— para que el alto de una celda saliera
+			// 95.99, se considerara "por debajo del mínimo" y rebotara al tamaño anterior: era
+			// imposible bajar de 2 celdas a 1, mientras que de 3 a 2 funcionaba, porque esa rama
+			// solo puede dispararse al acercarse al mínimo.
+			// El mínimo real de una celda lo garantizamos nosotros: `aCeldas()` nunca devuelve
+			// menos de 1 y `rectanguloValido()` rechaza cualquier rectángulo menor, y como en cada
+			// `resize` reescribimos `ui.size` con el rectángulo elegido, el DOM tampoco baja de ahí.
+			minWidth: 1,
+			minHeight: 1,
 			start: function () {
 				cerrarPopover();
 				ultimoValido = { fila: mesa.fila, columna: mesa.columna, ancho: mesa.ancho, alto: mesa.alto };
