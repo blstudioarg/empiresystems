@@ -118,6 +118,42 @@
 		.plano-mesa .plano-mesa-handle:active { cursor: grabbing; }
 		.plano-mesa.ui-draggable-dragging { box-shadow: 0 10px 26px rgba(20,30,60,.22); z-index: 20; }
 
+		/* Asas de redimensionado (feature 040, D6): 16 px de agarre para acertar el borde con el
+		   dedo al primer intento en tablet, sin invadir el interior de una celda de 96 px. Solo
+		   existen en modo edición porque el widget solo se activa ahí. `touch-action: none` es
+		   imprescindible: sin él el navegador se queda el gesto como scroll de la página. */
+		.plano-mesa .ui-resizable-handle { touch-action: none; background: none; }
+		.plano-mesa .ui-resizable-n,
+		.plano-mesa .ui-resizable-s { left: 0; right: 0; width: auto; height: 16px; cursor: ns-resize; }
+		.plano-mesa .ui-resizable-n { top: -8px; }
+		.plano-mesa .ui-resizable-s { bottom: -8px; }
+		.plano-mesa .ui-resizable-e,
+		.plano-mesa .ui-resizable-w { top: 0; bottom: 0; height: auto; width: 16px; cursor: ew-resize; }
+		.plano-mesa .ui-resizable-e { right: -8px; }
+		.plano-mesa .ui-resizable-w { left: -8px; }
+		.plano-mesa .ui-resizable-se,
+		.plano-mesa .ui-resizable-sw,
+		.plano-mesa .ui-resizable-nw { width: 18px; height: 18px; z-index: 12; }
+		.plano-mesa .ui-resizable-se { right: -9px; bottom: -9px; cursor: nwse-resize; }
+		.plano-mesa .ui-resizable-sw { left: -9px; bottom: -9px; cursor: nesw-resize; }
+		.plano-mesa .ui-resizable-nw { top: -9px; left: -9px; cursor: nwse-resize; }
+		/* El asa circular de arrastre vive sobre la esquina `ne`; por eso el widget renuncia a esa
+		   asa (siete en vez de ocho) y esta queda por encima de todas. */
+		.plano-mesa .plano-mesa-handle { z-index: 16; }
+
+		/* Bloqueo al crecer (feature 040, D7/FR-009): sombra exterior + micro-desplazamiento de
+		   rechazo. NUNCA color de borde: está reservado para el estado libre/ocupada/olvidada, y
+		   teñirlo haría parecer que la mesa cambió de estado mientras se arrastra. */
+		.plano-mesa.plano-mesa-bloqueada {
+			box-shadow: 0 0 0 3px rgba(220,53,69,.35), 0 6px 18px rgba(20,30,60,.18);
+			animation: plano-mesa-rechazo .2s ease;
+		}
+		@keyframes plano-mesa-rechazo {
+			0%, 100% { transform: translateX(0); }
+			30% { transform: translateX(-3px); }
+			70% { transform: translateX(3px); }
+		}
+
 		.plano-mesa.forma-redonda { border-radius: 50%; }
 		.plano-mesa.forma-cuadrada { border-radius: .6rem; }
 		.plano-mesa.forma-rectangular { border-radius: .5rem; }
@@ -187,6 +223,7 @@
 
 		@media (prefers-reduced-motion: reduce) {
 			.plano-mesa { transition: none; }
+			.plano-mesa.plano-mesa-bloqueada { animation: none; }
 		}
 	</style>
 @endpush
@@ -300,8 +337,6 @@
 									<div class="plano-popover" id="plano-popover">
 										<div class="plano-popover-titulo">Forma</div>
 										<div class="plano-popover-opciones" id="plano-popover-formas"></div>
-										<div class="plano-popover-titulo">Tamaño</div>
-										<div class="plano-popover-opciones" id="plano-popover-tamanos"></div>
 									</div>
 								</div>
 								<p class="text-muted small" id="pos-plano-fuera-rejilla"></p>

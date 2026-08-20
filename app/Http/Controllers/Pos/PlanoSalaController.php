@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Pos;
 
 use App\Http\Controllers\Controller;
 use App\Models\PosZona;
+use App\Support\PosPlanoCeldas;
 use App\Support\PosPlanoReacomodo;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -29,7 +30,8 @@ class PlanoSalaController extends Controller
             'mesas.*.fila' => ['required', 'integer'],
             'mesas.*.columna' => ['required', 'integer'],
             'mesas.*.forma' => ['required', 'string', 'in:redonda,cuadrada,rectangular,barra'],
-            'mesas.*.tamano' => ['required', 'string', 'in:pequena,mediana,grande'],
+            'mesas.*.ancho_celdas' => ['required', 'integer', 'min:1', 'max:'.PosPlanoCeldas::COLUMNAS],
+            'mesas.*.alto_celdas' => ['required', 'integer', 'min:1', 'max:'.PosPlanoCeldas::FILAS],
         ]);
 
         if ((int) $datos['version'] !== (int) $modelo->version) {
@@ -46,7 +48,8 @@ class PlanoSalaController extends Controller
                     'fila' => $item['fila'],
                     'columna' => $item['columna'],
                     'forma' => $item['forma'],
-                    'tamano' => $item['tamano'],
+                    'ancho_celdas' => $item['ancho_celdas'],
+                    'alto_celdas' => $item['alto_celdas'],
                 ]);
             }
 

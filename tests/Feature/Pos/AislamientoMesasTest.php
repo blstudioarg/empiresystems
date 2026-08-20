@@ -81,4 +81,42 @@ class AislamientoMesasTest extends TestCase
         $this->postJson('/pos/cuentas', ['mesa_id' => $mesaB->id])->assertStatus(422);
         $this->assertDatabaseCount('pos_cuentas', 0);
     }
+
+    /**
+     * Feature 040 — la geometría de las mesas (`ancho_celdas`/`alto_celdas`) no se escapa del
+     * tenant: ni se lee desde la sala del otro, ni se puede redimensionar por id directo.
+     */
+    public function test_no_se_puede_redimensionar_ni_leer_la_geometria_de_una_mesa_de_otro_tenant(): void
+    {
+        $this->sembrarPermisos();
+        [$tenantA] = $this->tenantConSala('Sala A');
+        [$tenantB] = $this->tenantConSala('Sala B');
+
+        // El editor de plano exige además `ver-configuracion`: sin él la respuesta sería un 403 que
+        // taparía lo que este test quiere comprobar (que la zona ajena ni siquiera existe para A).
+        $rolA = $this->crearRol($tenantA, 'Encargado A', ['ver-configuracion', 'ver-pos-sala', 'ver-pos-crear']);
+        $userA = $this->usuarioConRol($tenantA, $rolA);
+
+        $zonaB = PosZona::factory()->create(['tenant_id' => $tenantB->id, 'version' => 1]);
+        $mesaB = PosMesa::factory()->create([
+            'tenant_id' => $tenantB->id, 'zona_id' => $zonaB->id,
+            'fila' => 0, 'columna' => 0, 'ancho_celdas' => 1, 'alto_celdas' => 1,
+        ]);
+
+        $this->loginAs($userA);
+
+        $this->putJson("/pos/sala/zonas/{$zonaB->id}/plano", [
+            'version' => 1,
+            'mesas' => [[
+                'id' => $mesaB->id, 'fila' => 0, 'columna' => 0,
+                'ancho_celdas' => 3, 'alto_celdas' => 2, 'forma' => 'barra',
+            ]],
+        ])->assertNotFound();
+
+        $this->assertDatabaseHas('pos_mesas', ['id' => $mesaB->id, 'ancho_celdas' => 1, 'alto_celdas' => 1]);
+
+        // Y la sala del tenant A no expone ninguna mesa del B, con geometría o sin ella.
+        $mesas = $this->getJson('/pos/sala')->assertOk()->json('mesas');
+        $this->assertSame([], array_values(array_filter($mesas, fn ($m) => $m['id'] === $mesaB->id)));
+    }
 }

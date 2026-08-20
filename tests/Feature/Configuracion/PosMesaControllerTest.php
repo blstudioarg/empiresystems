@@ -55,7 +55,8 @@ class PosMesaControllerTest extends TestCase
             'fila' => 0,
             'columna' => 0,
             'forma' => 'cuadrada',
-            'tamano' => 'mediana',
+            'ancho_celdas' => 1,
+            'alto_celdas' => 1,
         ]);
     }
 

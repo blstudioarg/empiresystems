@@ -24,15 +24,21 @@ quede una cuenta olvidada sin cobrar, no un error.</p>
 cuenta, en el chip de mesa que aparece en la cabecera del ticket.</p>
 
 <p><strong>Editar el plano de la sala</strong> (solo con permiso de Configuración): el botón
-<em>Editar plano</em> activa el lienzo de la zona seleccionada, donde cada mesa se arrastra por su
-asa (el círculo con la flecha) a una celda libre distinta. Tocar una mesa (sin arrastrarla) abre un
-panel para cambiar su forma (redonda, cuadrada, rectangular, barra) y su tamaño. Nada se guarda
-hasta pulsar <em>Guardar plano</em>: recargar la página o cambiar de zona sin guardar descarta los
-cambios pendientes.</p>
+<em>Editar plano</em> activa el lienzo de la zona seleccionada, donde cada mesa se
+<strong>mueve</strong> arrastrándola por su asa (el círculo con la flecha) y se
+<strong>agranda o encoge</strong> arrastrando cualquiera de sus bordes o esquinas. La mesa crece de
+celda en celda: una mesa grande ocupa varias celdas de la rejilla y dibuja más sillas alrededor.
+Tocar una mesa (sin arrastrarla) abre un panel para cambiar su forma (redonda, cuadrada,
+rectangular, barra). Nada se guarda hasta pulsar <em>Guardar plano</em>: recargar la página o salir
+del modo edición sin guardar descarta los cambios pendientes.</p>
 
-<p class="ayuda-nota">Si sueltas una mesa exactamente sobre otra, la mesa que ya estaba ahí se
-reubica sola en la celda libre más cercana — nunca se pierde ni queda oculta. Si la zona no tiene
-ninguna celda libre, el movimiento se cancela con un aviso.</p>
+<p class="ayuda-nota">Al agrandar, el borde <strong>se detiene solo</strong> cuando choca con otra
+mesa o con el límite de la zona: la mesa parpadea un instante y no avanza más en esa dirección,
+pero puede seguir creciendo hacia donde sí haya sitio. Dos mesas nunca se solapan.</p>
+
+<p class="ayuda-nota">Si sueltas una mesa encima de otra, la mesa que ya estaba ahí se reubica sola
+en el hueco libre más cercano donde quepa entera — nunca se pierde ni queda oculta. Si no hay
+espacio suficiente para ella, el movimiento se cancela con un aviso.</p>
 
 <p>A la derecha del lienzo, en modo edición, hay un panel para <strong>gestionar zonas y
 mesas</strong> sin salir de la Sala: crear (botón «+»), renombrar (tocar el nombre y escribir) y

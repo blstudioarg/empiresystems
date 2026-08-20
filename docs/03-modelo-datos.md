@@ -1225,13 +1225,35 @@ criterio que ya sigue `stock_actual` como caché de lectura del kardex.
 bloqueo optimista del guardado del plano, mismo patrón que `pos_cuentas.version`, se incrementa en
 cada `PUT /pos/sala/zonas/{zona}/plano`. `pos_mesas` gana `fila`/`columna` (unsigned tinyint,
 nullable, rejilla fija de 8 columnas × 6 filas por zona) y `forma`
-(`redonda`/`cuadrada`/`rectangular`/`barra`, default `cuadrada`) / `tamano`
-(`pequena`/`mediana`/`grande`, default `mediana`). `UNIQUE (tenant_id, zona_id, fila, columna)`
-garantiza ausencia de solapamiento por construcción; al eliminar una mesa (soft delete),
+(`redonda`/`cuadrada`/`rectangular`/`barra`, default `cuadrada`).
+`UNIQUE (tenant_id, zona_id, fila, columna)` garantiza que dos mesas no comparten **celda de
+origen**; al eliminar una mesa (soft delete),
 `fila`/`columna` se ponen a `null` en la fila borrada para que el `UNIQUE` no siga "ocupando" esa
 celda y una mesa nueva pueda reutilizarla. Una mesa creada cuando la rejilla de su zona ya está
 completa (48 mesas) queda sin posición (`fila`/`columna` `null`) hasta que se libere una celda; el
 plano la excluye del lienzo mientras tanto.
+
+**Mesas redimensionables por celdas (feature 040)**: `pos_mesas` gana `ancho_celdas` y
+`alto_celdas` (unsigned tinyint, default 1, tras `columna`), y **pierde `tamano`** — que solo
+escalaba píxeles dentro de una celda y dejaba dos nociones de tamaño solapadas. `fila`/`columna`
+pasan a ser la **celda de origen** (esquina superior izquierda) del rectángulo que la mesa ocupa, y
+`forma` pasa a decidir solo el aspecto y el reparto de sillas: una `barra` puede ser 1×1 y una
+`cuadrada` 3×2.
+
+Invariantes de geometría, verificados **en el servidor en cada guardado**
+(`App\Support\PosPlanoReacomodo::validar()`), no como restricción SQL:
+
+- **G1** — `ancho_celdas >= 1` y `alto_celdas >= 1`.
+- **G2** — `columna + ancho_celdas <= 8` y `fila + alto_celdas <= 6`.
+- **G3 (no solapamiento)** — dos mesas de la misma zona no comparten ninguna celda, no solo el
+  origen. Es el invariante que el `UNIQUE` de la feature 039 **no** puede expresar (compara puntos,
+  no rectángulos) y que las formas alargadas burlaban por diseño. Una tabla de celdas ocupadas sería
+  complejidad desproporcionada (Principio V) para una rejilla de 48 posiciones.
+
+Los planos existentes se convirtieron en la propia migración con `App\Support\PosPlanoConversion`:
+deriva la ocupación de `forma` (`rectangular`→2×1, `barra`→3×1, resto 1×1) y luego reduce el ancho
+de quien no quepa, en orden determinista (`fila`, `columna`, `id`), reservando antes todas las
+celdas de origen para que ninguna mesa desaparezca. `tamano` no interviene en el mapeo.
 
 ### `pos_cuentas` — la cuenta abierta
 

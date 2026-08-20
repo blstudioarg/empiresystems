@@ -1296,3 +1296,18 @@ Cualquier importe que suba el precio sin que el artículo lo explique por sí so
 zona, en este caso) tiene que verse **antes** de cobrar, no solo en el total final: en el `.pos-foot`
 del ticket (`+X% zona`) y en la cabecera del modal de cobro junto con la mesa (FR-064), para que
 nunca sea una sorpresa al pagar.
+
+## Feedback de bloqueo cuando el borde ya comunica estado (feature 040)
+
+Si el **color del borde** de un elemento ya está reservado para comunicar su estado —como en
+"Tarjeta de mesa y sus tres estados" (gris libre / verde ocupada / ámbar olvidada)—, el feedback de
+un intento **rechazado** (una acción que no se puede completar: agrandar contra una vecina, llegar
+al límite de la rejilla) **nunca** se da tiñendo ese borde: haría parecer que el elemento cambió de
+estado. Se da con **sombra exterior** (`box-shadow`) más un **micro-desplazamiento** de rechazo
+(~3px, ~200ms), respetando `@media (prefers-reduced-motion: reduce)`.
+
+Tampoco se usa un toast para esto: durante un arrastre el rechazo se dispara decenas de veces y
+llenaría la pantalla de avisos. El toast queda para el resultado de una acción puntual (por ejemplo,
+un movimiento cancelado al soltar).
+
+Ejemplo vivo: `.plano-mesa.plano-mesa-bloqueada` en `resources/views/pos/sala.blade.php`.

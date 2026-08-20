@@ -27,14 +27,26 @@ guardar, recuperar y anular sin que eso consuma numeración de facturación.
 
 Quien tiene permiso de Configuración puede pulsar **Editar plano** en la Sala para reordenar las
 mesas de la zona activa arrastrándolas sobre una rejilla fija (8 columnas × 6 filas por zona).
-Tocar una mesa (sin arrastrarla) abre un selector para cambiar su **forma** (redonda, cuadrada,
-rectangular, barra) y su **tamaño** (pequeña, mediana, grande) — propiedades puramente visuales del
-mobiliario, sin efecto en el funcionamiento de la cuenta. Nada se persiste hasta pulsar **Guardar
-plano**: cambiar de zona o salir sin guardar descarta los cambios pendientes.
 
-Si se suelta una mesa sobre una celda ya ocupada, la mesa que estaba ahí se reubica sola en la
-celda libre más cercana (nunca se pierde ni queda oculta); si la zona no tiene ninguna celda libre,
-el movimiento se cancela con un aviso. Cada zona tiene su propio plano, independiente de las demás,
+Cada mesa **ocupa un rectángulo de celdas** de esa rejilla: su celda de origen más el ancho y el
+alto en celdas que se le hayan dado. Se redimensiona **arrastrando su borde o su esquina**, y el
+tamaño encaja siempre en celdas enteras. La **forma** (redonda, cuadrada, rectangular, barra) se
+cambia tocando la mesa y ya solo decide su aspecto y cómo se reparten las sillas dibujadas
+alrededor, no el espacio que reserva: una barra puede ser de una sola celda y una mesa cuadrada de
+3×2. Ya **no existe** el antiguo atributo de tamaño «pequeña / mediana / grande». El número de
+sillas dibujadas crece con la mesa, como señal visual; no es la capacidad de comensales como dato
+de negocio. Nada se persiste hasta pulsar **Guardar plano**: cambiar de zona o salir sin guardar
+descarta los cambios pendientes.
+
+**Dos mesas nunca se solapan.** Al agrandar, el borde se detiene en el último tamaño válido cuando
+choca con otra mesa o con el límite de la rejilla (con un resalte momentáneo), y puede seguir
+creciendo por el eje que sí tenga hueco; no se aparta a nadie. Las formas alargadas tampoco
+desbordan ya sobre celdas ajenas, como hacían antes de forma decorativa. Mover sí es distinto: si
+se suelta una mesa encima de otra, la desplazada se reubica sola en el hueco libre más cercano
+donde quepa entera (nunca se pierde ni queda oculta); si no hay espacio suficiente para ella, el
+movimiento se cancela con un aviso. El servidor revalida toda la geometría en cada guardado y
+rechaza el plano entero —sin cambios parciales— si alguna mesa se sale de la rejilla o se solapa
+con otra. Cada zona tiene su propio plano, independiente de las demás,
 y cambiar de pestaña de zona sin guardar **no** descarta el arrastre pendiente de la zona anterior
 (se conserva en memoria mientras dure el modo edición; se pierde solo al salir de "Editar plano"
 sin guardar, o al recargar la página). El guardado usa el mismo mecanismo de bloqueo optimista que

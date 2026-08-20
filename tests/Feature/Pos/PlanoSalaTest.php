@@ -29,9 +29,12 @@ class PlanoSalaTest extends TestCase
         return [$tenant, $this->usuarioConRol($tenant, $rol)];
     }
 
-    private function mesaPayload(PosMesa $mesa, int $fila, int $columna, string $forma = 'cuadrada', string $tamano = 'mediana'): array
+    private function mesaPayload(PosMesa $mesa, int $fila, int $columna, string $forma = 'cuadrada'): array
     {
-        return ['id' => $mesa->id, 'fila' => $fila, 'columna' => $columna, 'forma' => $forma, 'tamano' => $tamano];
+        return [
+            'id' => $mesa->id, 'fila' => $fila, 'columna' => $columna,
+            'ancho_celdas' => 1, 'alto_celdas' => 1, 'forma' => $forma,
+        ];
     }
 
     public function test_guarda_posiciones_validas_de_una_zona_y_aumenta_version(): void
@@ -51,14 +54,14 @@ class PlanoSalaTest extends TestCase
             'mesas' => [
                 $this->mesaPayload($mesa1, 2, 3),
                 $this->mesaPayload($mesa2, 2, 4),
-                $this->mesaPayload($mesa3, 2, 5, 'redonda', 'grande'),
+                $this->mesaPayload($mesa3, 2, 5, 'redonda'),
             ],
         ]);
 
         $response->assertOk()->assertJson(['version' => 2]);
 
         $this->assertDatabaseHas('pos_mesas', ['id' => $mesa1->id, 'fila' => 2, 'columna' => 3]);
-        $this->assertDatabaseHas('pos_mesas', ['id' => $mesa3->id, 'forma' => 'redonda', 'tamano' => 'grande']);
+        $this->assertDatabaseHas('pos_mesas', ['id' => $mesa3->id, 'forma' => 'redonda']);
         $this->assertDatabaseHas('pos_zonas', ['id' => $zona->id, 'version' => 2]);
     }
 

@@ -31,7 +31,8 @@ class PosMesa extends Model
         'fila',
         'columna',
         'forma',
-        'tamano',
+        'ancho_celdas',
+        'alto_celdas',
     ];
 
     protected function casts(): array
@@ -41,7 +42,8 @@ class PosMesa extends Model
             'fila' => 'integer',
             'columna' => 'integer',
             'forma' => 'string',
-            'tamano' => 'string',
+            'ancho_celdas' => 'integer',
+            'alto_celdas' => 'integer',
         ];
     }
 

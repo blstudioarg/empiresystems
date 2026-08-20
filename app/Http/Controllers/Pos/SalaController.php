@@ -72,7 +72,8 @@ class SalaController extends Controller
                     'fila' => $mesa->fila,
                     'columna' => $mesa->columna,
                     'forma' => $mesa->forma,
-                    'tamano' => $mesa->tamano,
+                    'ancho_celdas' => (int) $mesa->ancho_celdas,
+                    'alto_celdas' => (int) $mesa->alto_celdas,
                 ];
             }
 
@@ -93,7 +94,8 @@ class SalaController extends Controller
                 'fila' => $mesa->fila,
                 'columna' => $mesa->columna,
                 'forma' => $mesa->forma,
-                'tamano' => $mesa->tamano,
+                'ancho_celdas' => (int) $mesa->ancho_celdas,
+                'alto_celdas' => (int) $mesa->alto_celdas,
             ];
         })->values();
 
