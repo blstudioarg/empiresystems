@@ -6,6 +6,11 @@ separado: opciones de artículo, cobro por selección de líneas (cobro dividido
 suplemento por zona. **Desactivado por defecto**: si el tenant no lo activó, nada de esto existe
 en su POS.
 
+Si alguien entra por URL directa a una pantalla del módulo (por ejemplo `/pos/opciones`) con el
+módulo o esa capacidad apagados, la app no da un error de "página no encontrada": muestra un
+cartel explicando que el módulo de hostelería está desactivado, con un enlace a Configuración →
+POS para activarlo (solo si el usuario tiene permiso de configuración).
+
 ## Sala y cuentas abiertas
 
 La pantalla **Sala** (menú POS → Sala) muestra todas las mesas del local agrupadas por zona, con

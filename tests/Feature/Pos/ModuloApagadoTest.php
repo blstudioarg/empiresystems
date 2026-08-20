@@ -35,7 +35,8 @@ class ModuloApagadoTest extends TestCase
         $this->loginAs($usuario);
 
         foreach ($this->rutasDelModulo() as $ruta) {
-            $this->get($ruta)->assertNotFound();
+            // Navegación normal: 403 con el cartel de "activa el módulo", no un 404 seco.
+            $this->get($ruta)->assertForbidden()->assertSee('data-pos-modulo-inactivo', false);
             // En JSON el corte es 403 con mensaje legible, para que el front pueda avisarlo.
             $this->getJson($ruta)->assertForbidden();
         }
@@ -85,7 +86,7 @@ class ModuloApagadoTest extends TestCase
         $this->loginAs($usuario);
 
         $this->get('/pos/sala')->assertOk();
-        $this->get('/pos/opciones')->assertNotFound();
+        $this->get('/pos/opciones')->assertForbidden()->assertSee('data-pos-modulo-inactivo', false);
     }
 
     public function test_el_menu_no_muestra_las_entradas_del_modulo_cuando_esta_apagado(): void

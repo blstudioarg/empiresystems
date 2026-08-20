@@ -91,8 +91,8 @@ class CapacidadDesactivadaConservaDatosTest extends TestCase
             'mesa_olvidada_min' => 45,
         ])->assertOk();
 
-        // La pantalla deja de existir…
-        $this->get('/pos/opciones')->assertNotFound();
+        // La pantalla deja de ser accesible (cartel de módulo desactivado)…
+        $this->get('/pos/opciones')->assertForbidden()->assertSee('data-pos-modulo-inactivo', false);
 
         // …pero los datos no se han tocado.
         $this->assertDatabaseHas('pos_opciones', ['tenant_id' => $tenant->id, 'nombre' => 'Patatas', 'deleted_at' => null]);

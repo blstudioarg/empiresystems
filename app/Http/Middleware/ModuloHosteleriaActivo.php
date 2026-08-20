@@ -12,7 +12,7 @@ use Symfony\Component\HttpFoundation\Response;
  * el **estado del módulo en el tenant**, independiente del permiso del usuario.
  *
  * Son cosas distintas y confundirlas produce agujeros: un usuario puede tener `ver-pos-sala` y el
- * tenant tener el módulo apagado — debe recibir 404/403 igualmente (FR-003). Resolverlo quitando
+ * tenant tener el módulo apagado — debe recibir el cartel de "módulo desactivado" igualmente (FR-003). Resolverlo quitando
  * permisos al apagar el módulo sería frágil y dejaría rastro sucio en los roles del tenant.
  *
  * El filtro del menú (`CatalogoMenu`/`MenuTenant`) es solo UX: **el enforcement real es este**.
@@ -24,12 +24,19 @@ class ModuloHosteleriaActivo
 {
     private const MENSAJE = 'El módulo de hostelería del POS está desactivado. Actívalo en Configuración → POS.';
 
+    /** Mensajes por capacidad, para que el cartel diga exactamente qué hay que encender. */
+    private const MENSAJE_CAPACIDAD = [
+        'opciones' => 'Las opciones de artículo forman parte del módulo de hostelería del POS y ahora mismo están desactivadas. Actívalas en Configuración → POS.',
+        'cobro_dividido' => 'El cobro dividido forma parte del módulo de hostelería del POS y ahora mismo está desactivado. Actívalo en Configuración → POS.',
+        'suplemento_zona' => 'El suplemento por zona forma parte del módulo de hostelería del POS y ahora mismo está desactivado. Actívalo en Configuración → POS.',
+    ];
+
     public function handle(Request $request, Closure $next, ?string $capacidad = null): Response
     {
         $tenantId = tenant()?->getTenantKey();
 
         if ($tenantId === null || ! ConfigPos::hosteleriaActivo((int) $tenantId)) {
-            return $this->cortar($request);
+            return $this->cortar($request, null);
         }
 
         // Capacidad concreta dentro del módulo (`modulo.hosteleria:opciones`). Sin argumento basta
@@ -42,17 +49,21 @@ class ModuloHosteleriaActivo
             default => false,
         };
 
-        return $activa ? $next($request) : $this->cortar($request);
+        return $activa ? $next($request) : $this->cortar($request, $capacidad);
     }
 
-    private function cortar(Request $request): Response
+    private function cortar(Request $request, ?string $capacidad): Response
     {
+        $mensaje = self::MENSAJE_CAPACIDAD[$capacidad] ?? self::MENSAJE;
+
         // JSON: 403 con mensaje legible, para que el front pueda mostrarlo con `showToast`.
-        // Navegación normal: 404, porque para ese tenant la pantalla sencillamente no existe.
         if ($request->expectsJson()) {
-            return response()->json(['message' => self::MENSAJE], 403);
+            return response()->json(['message' => $mensaje], 403);
         }
 
-        abort(404);
+        // Navegación normal: 403 con un cartel explicando que hay que activar el módulo. Antes
+        // era un 404 seco, que parecía una pantalla rota o un despliegue incompleto en vez de un
+        // interruptor apagado — el usuario no tenía forma de saber qué hacer.
+        return response()->view('pos.modulo-inactivo', ['mensaje' => $mensaje], 403);
     }
 }

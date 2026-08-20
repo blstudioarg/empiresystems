@@ -248,7 +248,10 @@ feature.
   (`App\Http\Middleware\ModuloHosteleriaActivo`, patrón de
   `BloquearSuperAdminAreaTenant`). Confundir las dos —por ejemplo, "apagar el módulo" quitando
   permisos a los roles— es frágil y deja rastro sucio en la gestión de roles del tenant. Con
-  el módulo apagado, tener el permiso no basta: la ruta responde 403/404 igual.
+  el módulo apagado, tener el permiso no basta: la ruta corta igual. En navegación normal el
+  corte es un **403 con la vista `pos.modulo-inactivo`** (cartel "activa el módulo de hostelería"
+  con enlace a Configuración → POS); en peticiones JSON, un 403 con `message` legible para
+  `showToast`. Antes era un 404 seco y parecía una pantalla rota o un despliegue incompleto.
 - **El filtro del menú es solo UX**, no el enforcement real: `CatalogoMenu` declara qué entradas
   pertenecen a un módulo opcional (`modulo` en la definición) y `MenuTenant::estructura()` las
   poda antes de fusionar la personalización, además del filtro por permiso ya existente. El
