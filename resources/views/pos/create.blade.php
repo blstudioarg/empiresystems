@@ -413,8 +413,14 @@
 		   abierto trae bloqueo de scroll y cierres en cadena; esto se lee igual y no tiene ese
 		   problema. */
 		.pos-entregado-panel {
-			position: absolute; inset: 0; z-index: 5; background: #fff; border-radius: 1rem;
-			padding: .2rem; display: flex; flex-direction: column;
+			position: absolute; inset: -.5rem -.55rem; z-index: 5; border-radius: 1rem;
+			padding: .7rem .55rem .5rem; display: flex; flex-direction: column;
+			/* Fondo gris claro a propósito: es lo que distingue de un vistazo este teclado del de
+			   importe, que va sobre blanco. Sin esa diferencia los dos se ven iguales y no queda
+			   claro cuál de los dos números se está tecleando. Las teclas siguen blancas, así que
+			   el contraste tecla/fondo hasta mejora respecto del teclado de importe. */
+			background: #eef1f5;
+			box-shadow: inset 0 0 0 1px rgba(20,30,60,.07);
 		}
 		.pos-entregado-panel.d-none { display: none; }
 		.pos-entregado-head { display: flex; align-items: center; justify-content: space-between; gap: .6rem; margin-bottom: .7rem; }
@@ -427,7 +433,9 @@
 		   y no solo al cerrar el panel. */
 		.pos-entregado-resumen {
 			display: flex; align-items: center; gap: .6rem; margin-top: .7rem; padding: .55rem .75rem;
-			background: #f5f6f8; border: 1px solid var(--bs-border-color, #e6e6e6); border-radius: .85rem;
+			/* Blanco sobre el gris del panel: se invierte respecto de la fila equivalente del
+			   teclado de importe, que es gris sobre blanco. Así el bloque sigue destacando. */
+			background: #fff; border: 1px solid var(--bs-border-color, #e6e6e6); border-radius: .85rem;
 		}
 		.pos-entregado-resumen .lbl { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #6b7280; }
 		.pos-entregado-resumen .val { margin-left: auto; font-size: 1.1rem; font-weight: 800; color: #16a34a; font-variant-numeric: tabular-nums; }
