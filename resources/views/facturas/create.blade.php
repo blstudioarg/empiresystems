@@ -599,7 +599,7 @@
 			regimen: @json($regimen),
 		};
 	</script>
-	<script src="{{ asset('js/facturas-form.js') }}"></script>
+	<script src="@assetv('js/facturas-form.js')"></script>
 	<script>
 		(function () {
 			const formaPago = document.getElementById('forma_pago');

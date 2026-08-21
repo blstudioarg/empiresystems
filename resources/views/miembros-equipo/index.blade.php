@@ -245,8 +245,8 @@
 	<script src="{{ asset('vendor/datatables/js/jquery.dataTables.min.js') }}"></script>
 	<script src="{{ asset('vendor/datatables/responsive/responsive.js') }}"></script>
 	<script src="{{ asset('vendor/leaflet/leaflet.js') }}"></script>
-	<script src="{{ asset('js/plugins-init/miembro-mapa.init.js') }}"></script>
-	<script src="{{ asset('js/plugins-init/miembros-equipo-datatable.init.js') }}"></script>
-	<script src="{{ asset('js/plugins-init/miembros-equipo-modal.init.js') }}"></script>
-	<script src="{{ asset('js/plugins-init/miembro-horario.init.js') }}"></script>
+	<script src="@assetv('js/plugins-init/miembro-mapa.init.js')"></script>
+	<script src="@assetv('js/plugins-init/miembros-equipo-datatable.init.js')"></script>
+	<script src="@assetv('js/plugins-init/miembros-equipo-modal.init.js')"></script>
+	<script src="@assetv('js/plugins-init/miembro-horario.init.js')"></script>
 @endpush

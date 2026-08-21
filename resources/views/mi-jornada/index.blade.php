@@ -113,5 +113,5 @@
 @endsection
 
 @push('scripts')
-	<script src="{{ asset('js/plugins-init/mi-jornada-filtro.init.js') }}"></script>
+	<script src="@assetv('js/plugins-init/mi-jornada-filtro.init.js')"></script>
 @endpush

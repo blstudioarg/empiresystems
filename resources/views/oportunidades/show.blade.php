@@ -74,7 +74,7 @@
 @endsection
 
 @push('scripts')
-	<script src="{{ asset('js/plugins-init/oportunidades-show.init.js') }}"></script>
+	<script src="@assetv('js/plugins-init/oportunidades-show.init.js')"></script>
 @endpush
 
 @section('ayuda-titulo', 'Oportunidades')

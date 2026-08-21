@@ -97,7 +97,7 @@
 		window.informeComercialData = @json($datosGraficos);
 		window.informeComercialExportarUrl = @json(route('informes-comerciales.exportar'));
 	</script>
-	<script src="{{ asset('js/plugins-init/informe-comercial.init.js') }}"></script>
+	<script src="@assetv('js/plugins-init/informe-comercial.init.js')"></script>
 @endpush
 
 @section('content')

@@ -129,6 +129,6 @@
 	</script>
 	<script src="{{ asset('vendor/datatables/js/jquery.dataTables.min.js') }}"></script>
 	<script src="{{ asset('vendor/datatables/responsive/responsive.js') }}"></script>
-	<script src="{{ asset('js/plugins-init/stock-kardex.init.js') }}"></script>
-	<script src="{{ asset('js/plugins-init/stock-ajuste.init.js') }}"></script>
+	<script src="@assetv('js/plugins-init/stock-kardex.init.js')"></script>
+	<script src="@assetv('js/plugins-init/stock-ajuste.init.js')"></script>
 @endpush

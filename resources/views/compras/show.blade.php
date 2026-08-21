@@ -106,5 +106,5 @@
 			estadoB2bUrl: @json(route('compras.estado-b2b.update', $compra)),
 		};
 	</script>
-	<script src="{{ asset('js/plugins-init/compras-show.init.js') }}"></script>
+	<script src="@assetv('js/plugins-init/compras-show.init.js')"></script>
 @endpush

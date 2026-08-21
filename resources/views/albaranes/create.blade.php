@@ -454,5 +454,5 @@
 			modoBloqueado: @json($modoBloqueado),
 		};
 	</script>
-	<script src="{{ asset('js/albaranes-form.js') }}"></script>
+	<script src="@assetv('js/albaranes-form.js')"></script>
 @endpush

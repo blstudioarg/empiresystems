@@ -131,6 +131,6 @@
 	</div>
 
 	@push('scripts')
-		<script src="{{ asset('js/asistente-chat.js') }}"></script>
+		<script src="@assetv('js/asistente-chat.js')"></script>
 	@endpush
 @endif

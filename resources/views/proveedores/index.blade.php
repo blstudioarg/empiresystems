@@ -120,9 +120,9 @@
 	<script src="{{ asset('vendor/datatables/responsive/responsive.js') }}"></script>
 	<script src="{{ asset('vendor/datatables/js/dataTables.buttons.min.js') }}"></script>
 	<script src="{{ asset('vendor/datatables/js/buttons.colVis.min.js') }}"></script>
-	<script src="{{ asset('js/plugins-init/proveedores-datatable.init.js') }}"></script>
-	<script src="{{ asset('js/plugins-init/proveedores-modal.init.js') }}"></script>
-	<script src="{{ asset('js/plugins-init/excel-importar-modal.init.js') }}"></script>
+	<script src="@assetv('js/plugins-init/proveedores-datatable.init.js')"></script>
+	<script src="@assetv('js/plugins-init/proveedores-modal.init.js')"></script>
+	<script src="@assetv('js/plugins-init/excel-importar-modal.init.js')"></script>
 	<script>
 		window.initImportacionModal({
 			previsualizarUrl: @json(route('proveedores.importar.previsualizar', ['modulo' => 'proveedores'])),

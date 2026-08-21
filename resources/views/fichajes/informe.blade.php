@@ -106,5 +106,5 @@
 @endsection
 
 @push('scripts')
-	<script src="{{ asset('js/plugins-init/jornada-filtro.init.js') }}"></script>
+	<script src="@assetv('js/plugins-init/jornada-filtro.init.js')"></script>
 @endpush

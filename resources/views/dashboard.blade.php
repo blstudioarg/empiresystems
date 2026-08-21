@@ -68,7 +68,7 @@
 	<script>
 		window.dashboardData = @json($datosGraficos);
 	</script>
-	<script src="{{ asset('js/plugins-init/dashboard-charts.init.js') }}"></script>
+	<script src="@assetv('js/plugins-init/dashboard-charts.init.js')"></script>
 	<script>
 		// Sincroniza la entrada animada de las cards con la desaparición del
 		// preloader (mismo delay que handlePreloader en public/js/custom.js),

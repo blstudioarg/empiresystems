@@ -138,5 +138,5 @@
 
 @push('scripts')
 	<script src="{{ asset('vendor/pickr/pickr.min.js') }}"></script>
-	<script src="{{ asset('js/plugins-init/configuracion-apariencia.init.js') }}"></script>
+	<script src="@assetv('js/plugins-init/configuracion-apariencia.init.js')"></script>
 @endpush

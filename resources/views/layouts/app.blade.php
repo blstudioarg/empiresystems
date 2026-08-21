@@ -19,7 +19,7 @@
 	<link href="{{ asset('vendor/bootstrap-select/dist/css/bootstrap-select.min.css') }}" rel="stylesheet">
 	<link href="{{ asset('icons/fontawesome/css/all.min.css') }}" rel="stylesheet">
 	<link href="{{ asset('icons/themify-icons/css/themify-icons.css') }}" rel="stylesheet">
-	<link href="{{ asset('css/perfect-scrollbar.css') }}" rel="stylesheet">
+	<link href="@assetv('css/perfect-scrollbar.css')" rel="stylesheet">
 	<link href="{{ asset('vendor/toastr/css/toastr.min.css') }}" rel="stylesheet">
 
 	{{-- CSS de plugins específicos de cada vista (@push('styles')): DEBE cargar antes que
@@ -29,11 +29,13 @@
 	     del template aunque tenga la misma especificidad. --}}
 	@stack('styles')
 
-	<link href="{{ asset('css/style.css') }}" rel="stylesheet">
-	{{-- ?v= con el filemtime: el hosting sirve los estáticos con Cache-Control de una semana,
-	     así que sin esto un cambio de CSS no llega ni al usuario ni al cliente hasta que hagan
-	     un refresco duro. Al versionar la URL, cada subida invalida el caché sola. --}}
-	<link href="{{ asset('css/app-overrides.css') }}?v={{ @filemtime(public_path('css/app-overrides.css')) }}" rel="stylesheet">
+	{{-- `@assetv` en lugar de `asset()` para TODO el CSS/JS propio: el hosting sirve los
+	     estáticos con Cache-Control de una semana, así que sin versionar la URL un cambio no
+	     llega al usuario hasta que haga un refresco duro. El `?v=<mtime>` lo pone la directiva
+	     (ver AppServiceProvider::registrarAssetVersionado). --}}
+
+	<link href="@assetv('css/style.css')" rel="stylesheet">
+	<link href="@assetv('css/app-overrides.css')" rel="stylesheet">
 
 	@include('partials.apariencia-tenant')
 </head>
@@ -55,15 +57,15 @@
 	{{-- Assets base del template NexaDash (siempre cargados) --}}
 	<script src="{{ asset('vendor/global/global.min.js') }}"></script>
 	<script src="{{ asset('vendor/bootstrap-select/dist/js/bootstrap-select.min.js') }}"></script>
-	<script src="{{ asset('js/deznav-init.js') }}"></script>
-	<script src="{{ asset('js/custom.js') }}"></script>
-	<script src="{{ asset('js/theme-persist.js') }}"></script>
+	<script src="@assetv('js/deznav-init.js')"></script>
+	<script src="@assetv('js/custom.js')"></script>
+	<script src="@assetv('js/theme-persist.js')"></script>
 	<script src="{{ asset('vendor/toastr/js/toastr.min.js') }}"></script>
-	<script src="{{ asset('js/toastr-config.js') }}"></script>
-	<script src="{{ asset('js/button-loading.js') }}"></script>
-	<script src="{{ asset('js/confirm-delete.js') }}"></script>
-	<script src="{{ asset('js/metric-cards.js') }}?v={{ @filemtime(public_path('js/metric-cards.js')) }}"></script>
-	<script src="{{ asset('js/plugins-init/password-toggle.init.js') }}"></script>
+	<script src="@assetv('js/toastr-config.js')"></script>
+	<script src="@assetv('js/button-loading.js')"></script>
+	<script src="@assetv('js/confirm-delete.js')"></script>
+	<script src="@assetv('js/metric-cards.js')"></script>
+	<script src="@assetv('js/plugins-init/password-toggle.init.js')"></script>
 
 	{{-- Player de Lordicon (cuenta propia): renderiza <lord-icon> a partir de los JSON
 	     descargados con `php artisan lordicon:get` y cacheados en public/icons/lordicon/. --}}

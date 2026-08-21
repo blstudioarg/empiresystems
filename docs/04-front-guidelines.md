@@ -1416,3 +1416,33 @@ La forma correcta, y la que mantiene coherentes hover/active/disabled sin repeti
 
 Si un botón con color de marca se ve apagado y en el inspector la variable del tenant **sí** tiene
 valor, es esto: no es la variable, es `.btn` pisando el `background-color`.
+
+## Assets propios: siempre `@assetv`, nunca `asset()` a secas
+
+El hosting sirve los estáticos con `Cache-Control` de una semana y los `<script>`/`<link>` no
+llevaban versión en la URL. Consecuencia práctica: cada despliegue de un JS o un CSS **no llegaba
+al usuario** hasta que hiciera un refresco duro, y había que pedírselo por chat. Un cambio
+desplegado que el usuario no ve es un cambio no desplegado.
+
+```blade
+{{-- mal: el navegador se queda con la copia vieja --}}
+<script src="{{ asset('js/pos-cobro.js') }}"></script>
+
+{{-- bien: ?v=<mtime>, cada despliegue invalida solo lo que cambió --}}
+<script src="@assetv('js/pos-cobro.js')"></script>
+```
+
+La directiva vive en `AppServiceProvider::registrarAssetVersionado()` y añade `?v=<filemtime>`.
+Notas de por qué está hecha así:
+
+- **Es una directiva de Blade y no una función global.** Una función global habría que declararla
+  en el `files` del autoload de Composer, y el despliegue a este hosting es **por FTP** —no corre
+  `composer install`—, así que el autoload del servidor no se enteraría y reventaría la app entera.
+  Una directiva se compila dentro de la propia vista, que sí se despliega.
+- **`is_file` de guarda**: si el archivo no está en disco, devuelve la URL sin versionar en vez de
+  romper la página con un warning de `filemtime`.
+- **Alcance**: los assets **propios** (`public/js`, `public/css`). Los de `public/vendor` e
+  `public/icons` siguen con `asset()`: son de terceros, no se editan en el día a día, y versionarlos
+  solo añadiría ruido. Si alguna vez se parchea uno vendorizado, pasarlo también a `@assetv`.
+
+No hace falta acordarse de esto al desplegar: hace falta acordarse **al escribir la vista**.

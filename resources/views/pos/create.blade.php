@@ -1078,14 +1078,14 @@
 	{{-- Orden obligatorio: `pos-form.js` crea `window.PosApp` (estado compartido + registro de
 	     módulos); los demás se registran contra él. La inicialización real ocurre en
 	     DOMContentLoaded y en dos pasadas, así que entre los tres módulos el orden no importa. --}}
-	<script src="{{ asset('js/pos-form.js') }}"></script>
-	<script src="{{ asset('js/pos-ticket.js') }}"></script>
-	<script src="{{ asset('js/pos-catalogo.js') }}"></script>
-	<script src="{{ asset('js/pos-cobro.js') }}"></script>
+	<script src="@assetv('js/pos-form.js')"></script>
+	<script src="@assetv('js/pos-ticket.js')"></script>
+	<script src="@assetv('js/pos-catalogo.js')"></script>
+	<script src="@assetv('js/pos-cobro.js')"></script>
 	@if ($hosteleriaActiva ?? false)
-		<script src="{{ asset('js/pos-cuenta.js') }}"></script>
+		<script src="@assetv('js/pos-cuenta.js')"></script>
 	@endif
 	@if ($opcionesActivas ?? false)
-		<script src="{{ asset('js/pos-opciones.js') }}"></script>
+		<script src="@assetv('js/pos-opciones.js')"></script>
 	@endif
 @endpush

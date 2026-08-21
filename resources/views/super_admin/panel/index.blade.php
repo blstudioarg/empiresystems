@@ -7,7 +7,7 @@
 	<script>
 		window.panelSuperAdminState = @json(['serie_altas' => $datos['serie_altas'] ?? []]);
 	</script>
-	<script src="{{ asset('js/plugins-init/super-admin-panel.init.js') }}"></script>
+	<script src="@assetv('js/plugins-init/super-admin-panel.init.js')"></script>
 @endpush
 
 @section('content')

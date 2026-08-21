@@ -64,6 +64,6 @@
 
 @once
 	@push('scripts')
-		<script src="{{ asset('js/components/provincia-localidad.js') }}"></script>
+		<script src="@assetv('js/components/provincia-localidad.js')"></script>
 	@endpush
 @endonce

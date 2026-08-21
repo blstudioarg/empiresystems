@@ -82,5 +82,5 @@
 			updateUrl: @json(route('configuracion.pos.update')),
 		};
 	</script>
-	<script src="{{ asset('js/plugins-init/configuracion-pos.init.js') }}"></script>
+	<script src="@assetv('js/plugins-init/configuracion-pos.init.js')"></script>
 @endpush

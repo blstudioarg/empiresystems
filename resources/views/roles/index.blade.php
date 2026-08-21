@@ -192,5 +192,5 @@
 	<script src="{{ asset('vendor/datatables/responsive/responsive.js') }}"></script>
 	<script src="{{ asset('vendor/datatables/js/dataTables.buttons.min.js') }}"></script>
 	<script src="{{ asset('vendor/datatables/js/buttons.colVis.min.js') }}"></script>
-	<script src="{{ asset('js/plugins-init/roles.init.js') }}"></script>
+	<script src="@assetv('js/plugins-init/roles.init.js')"></script>
 @endpush

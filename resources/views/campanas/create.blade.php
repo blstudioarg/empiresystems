@@ -195,5 +195,5 @@
 			tamanoTanda: 8,
 		};
 	</script>
-	<script src="{{ asset('js/plugins-init/campanas-form.js') }}"></script>
+	<script src="@assetv('js/plugins-init/campanas-form.js')"></script>
 @endpush

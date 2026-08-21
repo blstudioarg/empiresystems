@@ -19,7 +19,7 @@
 @once
 	@push('styles')
 		<link href="{{ asset('vendor/select2/css/select2.min.css') }}" rel="stylesheet">
-		<link href="{{ asset('css/categoria-select.css') }}" rel="stylesheet">
+		<link href="@assetv('css/categoria-select.css')" rel="stylesheet">
 	@endpush
 
 	@push('scripts')
@@ -55,6 +55,6 @@
 			};
 		</script>
 		<script src="{{ asset('vendor/select2/js/select2.full.min.js') }}"></script>
-		<script src="{{ asset('js/components/categoria-select.js') }}"></script>
+		<script src="@assetv('js/components/categoria-select.js')"></script>
 	@endpush
 @endonce

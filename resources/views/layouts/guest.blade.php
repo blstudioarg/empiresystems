@@ -18,12 +18,9 @@
 	<link href="{{ asset('vendor/bootstrap-select/dist/css/bootstrap-select.min.css') }}" rel="stylesheet">
 	<link href="{{ asset('icons/fontawesome/css/all.min.css') }}" rel="stylesheet">
 	<link href="{{ asset('icons/themify-icons/css/themify-icons.css') }}" rel="stylesheet">
-	<link href="{{ asset('css/perfect-scrollbar.css') }}" rel="stylesheet">
-	<link href="{{ asset('css/style.css') }}" rel="stylesheet">
-	{{-- ?v= con el filemtime: el hosting sirve los estáticos con Cache-Control de una semana,
-	     así que sin esto un cambio de CSS no llega ni al usuario ni al cliente hasta que hagan
-	     un refresco duro. Al versionar la URL, cada subida invalida el caché sola. --}}
-	<link href="{{ asset('css/app-overrides.css') }}?v={{ @filemtime(public_path('css/app-overrides.css')) }}" rel="stylesheet">
+	<link href="@assetv('css/perfect-scrollbar.css')" rel="stylesheet">
+	<link href="@assetv('css/style.css')" rel="stylesheet">
+	<link href="@assetv('css/app-overrides.css')" rel="stylesheet">
 	@include('partials.apariencia-tenant')
 
 	@stack('styles')
@@ -36,8 +33,8 @@
 	{{-- Assets base del template NexaDash (siempre cargados) --}}
 	<script src="{{ asset('vendor/global/global.min.js') }}"></script>
 	<script src="{{ asset('vendor/bootstrap-select/dist/js/bootstrap-select.min.js') }}"></script>
-	<script src="{{ asset('js/custom.js') }}"></script>
-	<script src="{{ asset('js/plugins-init/password-toggle.init.js') }}"></script>
+	<script src="@assetv('js/custom.js')"></script>
+	<script src="@assetv('js/plugins-init/password-toggle.init.js')"></script>
 
 	@stack('scripts')
 </body>

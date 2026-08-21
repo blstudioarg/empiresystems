@@ -58,10 +58,10 @@
 
 @push('styles')
 	<link rel="stylesheet" href="{{ asset('vendor/jqueryui/css/jquery-ui.min.css') }}">
-	<link rel="stylesheet" href="{{ asset('css/configuracion-menu.css') }}">
+	<link rel="stylesheet" href="@assetv('css/configuracion-menu.css')">
 @endpush
 
 @push('scripts')
 	<script src="{{ asset('vendor/jqueryui/js/jquery-ui.min.js') }}"></script>
-	<script src="{{ asset('js/plugins-init/configuracion-menu.init.js') }}"></script>
+	<script src="@assetv('js/plugins-init/configuracion-menu.init.js')"></script>
 @endpush

@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Support\ConfigTenant;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\ServiceProvider;
@@ -32,6 +33,8 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->desactivarDeteccionMimePorFinfo();
+
+        $this->registrarAssetVersionado();
 
         // Illuminate\Auth\Events\{Login,Logout,Failed,Lockout} -> LogAuthenticationActivity ya
         // quedan enganchados por el auto-discovery de eventos de Laravel (los métodos handle*
@@ -68,6 +71,30 @@ class AppServiceProvider extends ServiceProvider
      * tabla IANA embebida en league/mime-type-detection, sin depender de ninguna extensión de PHP.
      * No afecta a la validación de subida (StoreArchivoRequest usa Symfony Mime, otro mecanismo).
      */
+    /**
+     * `@assetv('js/x.js')` — como `asset()` pero con `?v=<mtime>` pegado detrás.
+     *
+     * Los JS y CSS propios se sirven sin versionar, así que el navegador se queda la copia vieja
+     * después de cada despliegue y hay que explicarle al usuario que pulse Ctrl+F5. Con el mtime
+     * del archivo en la URL, cada despliegue invalida **solo** lo que cambió: lo que no se tocó
+     * sigue cacheado.
+     *
+     * Es una directiva de Blade y no una función global a propósito: una función global habría
+     * que registrarla en el `files` del autoload de Composer, y el despliegue a este hosting es
+     * por FTP —no corre `composer install`—, así que el autoload del servidor no se enteraría y
+     * reventaría toda la app. Una directiva se compila dentro de la propia vista.
+     *
+     * `is_file` de guarda: si el archivo no está en disco (build a medias, ruta mal escrita) se
+     * devuelve la URL sin versionar en vez de romper la página con un warning de `filemtime`.
+     */
+    private function registrarAssetVersionado(): void
+    {
+        Blade::directive('assetv', function (string $expression) {
+            return "<?php \$__ruta = {$expression}; \$__abs = public_path(\$__ruta); ".
+                "echo e(asset(\$__ruta).(is_file(\$__abs) ? '?v='.filemtime(\$__abs) : '')); ?>";
+        });
+    }
+
     private function desactivarDeteccionMimePorFinfo(): void
     {
         Storage::extend('local', function ($app, array $config) {

@@ -110,5 +110,5 @@
 @push('scripts')
 	<script src="{{ asset('vendor/datatables/js/jquery.dataTables.min.js') }}"></script>
 	<script src="{{ asset('vendor/datatables/responsive/responsive.js') }}"></script>
-	<script src="{{ asset('js/plugins-init/pos-datatable.init.js') }}"></script>
+	<script src="@assetv('js/plugins-init/pos-datatable.init.js')"></script>
 @endpush

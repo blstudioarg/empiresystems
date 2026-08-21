@@ -537,6 +537,6 @@
 				turnoHoy: @json($turnoHoy),
 			};
 		</script>
-		<script src="{{ asset('js/plugins-init/fichaje-app.init.js') }}"></script>
+		<script src="@assetv('js/plugins-init/fichaje-app.init.js')"></script>
 	@endpush
 @endif

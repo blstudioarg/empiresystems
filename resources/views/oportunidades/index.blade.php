@@ -174,8 +174,8 @@
 @endsection
 
 @push('scripts')
-	<script src="{{ asset('js/plugins-init/oportunidades-pipeline.init.js') }}"></script>
-	<script src="{{ asset('js/plugins-init/oportunidades-modal.init.js') }}"></script>
+	<script src="@assetv('js/plugins-init/oportunidades-pipeline.init.js')"></script>
+	<script src="@assetv('js/plugins-init/oportunidades-modal.init.js')"></script>
 @endpush
 
 @section('ayuda-titulo', 'Oportunidades')

@@ -496,5 +496,5 @@
 			regimen: @json($regimen),
 		};
 	</script>
-	<script src="{{ asset('js/presupuestos-form.js') }}"></script>
+	<script src="@assetv('js/presupuestos-form.js')"></script>
 @endpush

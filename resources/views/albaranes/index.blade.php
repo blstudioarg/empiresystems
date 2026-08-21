@@ -127,8 +127,8 @@
 @push('scripts')
 	<script src="{{ asset('vendor/datatables/js/jquery.dataTables.min.js') }}"></script>
 	<script src="{{ asset('vendor/datatables/responsive/responsive.js') }}"></script>
-	<script src="{{ asset('js/plugins-init/albaranes-datatable.init.js') }}"></script>
-	<script src="{{ asset('js/plugins-init/excel-export.init.js') }}"></script>
+	<script src="@assetv('js/plugins-init/albaranes-datatable.init.js')"></script>
+	<script src="@assetv('js/plugins-init/excel-export.init.js')"></script>
 	<script>
 		window.initExportacionExcel({
 			boton: '#btn-exportar-albaranes',

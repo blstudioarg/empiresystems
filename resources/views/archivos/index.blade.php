@@ -308,5 +308,5 @@
 			carpetaActual: @json($carpetaActual?->id),
 		};
 	</script>
-	<script src="{{ asset('js/plugins-init/archivos-explorer.js') }}"></script>
+	<script src="@assetv('js/plugins-init/archivos-explorer.js')"></script>
 @endpush

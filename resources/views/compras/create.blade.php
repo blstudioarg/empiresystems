@@ -65,5 +65,5 @@
 
 @push('scripts')
 	<script>window.compraLineasIniciales = @json($lineasIniciales);</script>
-	<script src="{{ asset('js/plugins-init/compras-form.init.js') }}"></script>
+	<script src="@assetv('js/plugins-init/compras-form.init.js')"></script>
 @endpush

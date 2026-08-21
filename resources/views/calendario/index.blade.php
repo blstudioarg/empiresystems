@@ -147,5 +147,5 @@
 			horarios: @json($horarios->map(fn ($h) => ['id' => $h->id, 'nombre' => $h->nombre])->values()),
 		};
 	</script>
-	<script src="{{ asset('js/plugins-init/calendario.init.js') }}"></script>
+	<script src="@assetv('js/plugins-init/calendario.init.js')"></script>
 @endpush
