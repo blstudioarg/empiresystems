@@ -86,6 +86,79 @@
 			.pos-mesa { transition: none; }
 		}
 
+		/* ── Resumen plegable de metricas ─────────────────────────────────────────────────────
+		   Curva de salida fuerte: las built-in de CSS son demasiado flojas y el plegado queda
+		   blando. NUNCA `ease-in` aqui — arranca lento justo en el instante que el usuario mira,
+		   y hace que el mismo tiempo se PERCIBA mas lento. */
+		.pos-sala { --pos-ease-out: cubic-bezier(.23, 1, .32, 1); }
+
+		.pos-sala-resumen-bar { display: flex; justify-content: flex-end; margin-bottom: .6rem; }
+		.pos-sala-resumen-toggle {
+			display: inline-flex; align-items: center; gap: .5rem;
+			min-height: 40px; padding: .4rem .9rem;
+			border: 1.5px solid #e6e6e6; border-radius: 999px; background: #fff;
+			font-size: .82rem; font-weight: 700; color: #8b93a1;
+			-webkit-tap-highlight-color: transparent;
+			transition: transform 160ms var(--pos-ease-out), border-color 160ms ease, color 160ms ease;
+		}
+		/* El hover se restringe a puntero fino: en tablet el toque dispara `:hover` y deja el
+		   boton "encendido" despues de soltarlo, como si estuviera activo. */
+		@media (hover: hover) and (pointer: fine) {
+			.pos-sala-resumen-toggle:hover { border-color: var(--pos-primary, #1d69d6); color: var(--pos-primary, #1d69d6); }
+		}
+		/* Respuesta inmediata al pulsar: sin esto el boton no parece estar escuchando. */
+		.pos-sala-resumen-toggle:active { transform: scale(.97); }
+		.pos-sala-resumen-toggle[aria-expanded="true"] {
+			border-color: var(--pos-primary, #1d69d6); color: var(--pos-primary, #1d69d6);
+		}
+		.pos-sala-resumen-chevron {
+			font-size: .68rem;
+			transition: transform 260ms var(--pos-ease-out);
+		}
+		.pos-sala-resumen-toggle[aria-expanded="true"] .pos-sala-resumen-chevron { transform: rotate(180deg); }
+
+		/* El plegado va con `grid-template-rows: 0fr -> 1fr` y no con `max-height`: anima hasta la
+		   altura REAL del contenido, sin numero magico que se quede corto cuando las tarjetas
+		   pasan a dos filas en tablet. `visibility` sale del arbol de accesibilidad al terminar de
+		   cerrarse (transicion de 0s retrasada), para que un lector de pantalla no lea cuatro
+		   metricas invisibles. */
+		.pos-sala-cards-collapse {
+			display: grid; grid-template-rows: 0fr; visibility: hidden;
+			transition: grid-template-rows 200ms var(--pos-ease-out), visibility 0s linear 200ms;
+		}
+		.pos-sala-cards-collapse-inner { overflow: hidden; min-height: 0; }
+		/* Abrir es un poco mas lento que cerrar (260 vs 200): al abrir hay algo que mirar, al
+		   cerrar el usuario ya decidio y solo quiere que se quite de en medio. */
+		.pos-sala-cards-collapse.abierto {
+			grid-template-rows: 1fr; visibility: visible;
+			transition: grid-template-rows 260ms var(--pos-ease-out), visibility 0s;
+		}
+
+		/* Entrada escalonada de las tarjetas. Nunca desde `scale(0)`: nada en el mundo real
+		   aparece de la nada, asi que arrancan casi a tamano completo y solo bajan un pelo. */
+		.pos-sala-cards-collapse .row > [class*="col-"] {
+			opacity: 0; transform: translateY(-10px) scale(.985);
+			transition: opacity 200ms var(--pos-ease-out), transform 200ms var(--pos-ease-out);
+		}
+		.pos-sala-cards-collapse.abierto .row > [class*="col-"] { opacity: 1; transform: none; }
+		/* El escalonado solo existe al ABRIR: al cerrar salen las cuatro a la vez, porque un
+		   cierre escalonado se siente como que la interfaz tarda en obedecer. */
+		.pos-sala-cards-collapse.abierto .row > [class*="col-"]:nth-child(1) { transition-delay: 40ms; }
+		.pos-sala-cards-collapse.abierto .row > [class*="col-"]:nth-child(2) { transition-delay: 85ms; }
+		.pos-sala-cards-collapse.abierto .row > [class*="col-"]:nth-child(3) { transition-delay: 130ms; }
+		.pos-sala-cards-collapse.abierto .row > [class*="col-"]:nth-child(4) { transition-delay: 175ms; }
+
+		/* Movimiento reducido: se conserva el fundido (ayuda a entender que algo cambio) y se
+		   quitan desplazamiento y escalonado, que es lo que marea. */
+		@media (prefers-reduced-motion: reduce) {
+			.pos-sala-cards-collapse { transition: visibility 0s linear 150ms; }
+			.pos-sala-cards-collapse.abierto { transition: visibility 0s; }
+			.pos-sala-cards-collapse .row > [class*="col-"] {
+				transform: none; transition: opacity 150ms ease; transition-delay: 0ms !important;
+			}
+			.pos-sala-resumen-chevron { transition: none; }
+		}
+
 		/* ── Plano arrastrable (feature 039): rejilla de celdas por zona, con las medidas que la
 		   propia zona declara desde la feature 042 (8×6 por defecto). Se posiciona
 		   con `position: absolute` (no CSS grid) porque jQuery UI `draggable` con `grid: [w,h]`
@@ -349,62 +422,79 @@
 @section('content')
 	<div class="content-body">
 		<div class="container-fluid pos-sala">
-			<div class="row" id="pos-sala-cards">
-				<div class="col-xl-3 col-sm-6">
-					<div class="card same-card">
-						<div class="card-body">
-							<div class="d-flex justify-content-between align-items-center">
-								<div>
-									<h6 class="mb-1">Total de mesas</h6>
-									<h3 class="mb-0" data-metric="total">0</h3>
-								</div>
-								<div>
-									<x-lordicon icon="home" size="50" trigger="hover" target=".card" />
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
-				<div class="col-xl-3 col-sm-6">
-					<div class="card same-card">
-						<div class="card-body">
-							<div class="d-flex justify-content-between align-items-center">
-								<div>
-									<h6 class="mb-1">Libres</h6>
-									<h3 class="mb-0" data-metric="libres">0</h3>
-								</div>
-								<div>
-									<x-lordicon icon="box" size="50" trigger="hover" target=".card" />
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
-				<div class="col-xl-3 col-sm-6">
-					<div class="card same-card">
-						<div class="card-body">
-							<div class="d-flex justify-content-between align-items-center">
-								<div>
-									<h6 class="mb-1">Ocupadas</h6>
-									<h3 class="mb-0 text-success" data-metric="ocupadas">0</h3>
-								</div>
-								<div>
-									<x-lordicon icon="people" size="50" trigger="hover" target=".card" />
+			{{-- Resumen plegable (tira de metricas). Nace CERRADO a proposito: en una tablet de
+			     sala lo que importa es el plano, y cuatro tarjetas ocupando la primera pantalla
+			     empujaban las mesas fuera de la vista. La preferencia se recuerda por usuario,
+			     igual que la eleccion de vista (misma razon: varias personas comparten tablet). --}}
+			<div class="pos-sala-resumen-bar">
+				<button type="button" class="pos-sala-resumen-toggle" id="pos-sala-resumen-toggle"
+				        aria-expanded="false" aria-controls="pos-sala-cards-collapse">
+					<i class="fas fa-chart-simple" aria-hidden="true"></i>
+					<span>Resumen</span>
+					<i class="fas fa-chevron-down pos-sala-resumen-chevron" aria-hidden="true"></i>
+				</button>
+			</div>
+
+			<div class="pos-sala-cards-collapse" id="pos-sala-cards-collapse">
+				<div class="pos-sala-cards-collapse-inner">
+					<div class="row" id="pos-sala-cards">
+						<div class="col-xl-3 col-sm-6">
+							<div class="card same-card">
+								<div class="card-body">
+									<div class="d-flex justify-content-between align-items-center">
+										<div>
+											<h6 class="mb-1">Total de mesas</h6>
+											<h3 class="mb-0" data-metric="total">0</h3>
+										</div>
+										<div>
+											<x-lordicon icon="home" size="50" trigger="hover" target=".card" />
+										</div>
+									</div>
 								</div>
 							</div>
 						</div>
-					</div>
-				</div>
-				<div class="col-xl-3 col-sm-6">
-					<div class="card same-card">
-						<div class="card-body">
-							<div class="d-flex justify-content-between align-items-center">
-								<div>
-									<h6 class="mb-1">Olvidadas</h6>
-									<h3 class="mb-0 text-danger" data-metric="olvidadas">0</h3>
+						<div class="col-xl-3 col-sm-6">
+							<div class="card same-card">
+								<div class="card-body">
+									<div class="d-flex justify-content-between align-items-center">
+										<div>
+											<h6 class="mb-1">Libres</h6>
+											<h3 class="mb-0" data-metric="libres">0</h3>
+										</div>
+										<div>
+											<x-lordicon icon="box" size="50" trigger="hover" target=".card" />
+										</div>
+									</div>
 								</div>
-								<div>
-									<x-lordicon icon="wired-outline-3627-mail-open-warning-hover-pinch" size="50" trigger="hover" target=".card" />
+							</div>
+						</div>
+						<div class="col-xl-3 col-sm-6">
+							<div class="card same-card">
+								<div class="card-body">
+									<div class="d-flex justify-content-between align-items-center">
+										<div>
+											<h6 class="mb-1">Ocupadas</h6>
+											<h3 class="mb-0 text-success" data-metric="ocupadas">0</h3>
+										</div>
+										<div>
+											<x-lordicon icon="people" size="50" trigger="hover" target=".card" />
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="col-xl-3 col-sm-6">
+							<div class="card same-card">
+								<div class="card-body">
+									<div class="d-flex justify-content-between align-items-center">
+										<div>
+											<h6 class="mb-1">Olvidadas</h6>
+											<h3 class="mb-0 text-danger" data-metric="olvidadas">0</h3>
+										</div>
+										<div>
+											<x-lordicon icon="wired-outline-3627-mail-open-warning-hover-pinch" size="50" trigger="hover" target=".card" />
+										</div>
+									</div>
 								</div>
 							</div>
 						</div>

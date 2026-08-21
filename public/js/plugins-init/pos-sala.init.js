@@ -47,6 +47,47 @@
 
 	var vistaActiva = leerVistaGuardada();
 
+	// ── Resumen plegable de metricas ───────────────────────────────────────────────────────
+	//
+	// Nace CERRADO: en la tablet de sala lo util es el plano, y cuatro tarjetas ocupando la
+	// primera pantalla empujaban las mesas fuera de la vista. Quien lo abra, se le recuerda —
+	// misma clave por usuario que la vista, porque varias personas comparten la misma tablet y no
+	// deben pisarse la preferencia.
+	var $resumenToggle = document.getElementById('pos-sala-resumen-toggle');
+	var $resumenPanel = document.getElementById('pos-sala-cards-collapse');
+	var claveResumen = 'pos-sala-resumen:' + (state.userId || 'anon');
+
+	function leerResumenGuardado() {
+		try {
+			// Solo un 'abierto' explicito abre: cualquier otra cosa (nunca guardado, valor raro,
+			// almacenamiento bloqueado) cae en cerrado, que es el defecto pedido.
+			return window.localStorage.getItem(claveResumen) === 'abierto';
+		} catch (e) {
+			return false;
+		}
+	}
+
+	function aplicarResumen(abierto) {
+		if (!$resumenPanel || !$resumenToggle) { return; }
+
+		$resumenPanel.classList.toggle('abierto', abierto);
+		$resumenToggle.setAttribute('aria-expanded', abierto ? 'true' : 'false');
+	}
+
+	if ($resumenToggle && $resumenPanel) {
+		aplicarResumen(leerResumenGuardado());
+
+		$resumenToggle.addEventListener('click', function () {
+			var abierto = !$resumenPanel.classList.contains('abierto');
+
+			aplicarResumen(abierto);
+
+			try {
+				window.localStorage.setItem(claveResumen, abierto ? 'abierto' : 'cerrado');
+			} catch (e) { /* sin persistencia: no es critico */ }
+		});
+	}
+
 	function escapeHtml(s) {
 		var d = document.createElement('div');
 		d.textContent = s == null ? '' : s;

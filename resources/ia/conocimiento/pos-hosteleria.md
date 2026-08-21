@@ -41,6 +41,14 @@ Una **cuenta abierta** no es un ticket ni una factura en borrador: es su propia 
 número asignado, que no aparece en ningún listado de facturas hasta que se cobra. Se puede
 guardar, recuperar y anular sin que eso consuma numeración de facturación.
 
+### Resumen de la sala
+
+Encima de la sala hay cuatro métricas —total de mesas, libres, ocupadas y olvidadas— que vienen
+**plegadas por defecto**: en la tablet de sala lo que importa es ver las mesas, y las tarjetas
+empujaban el plano fuera de la primera pantalla. Se despliegan con el botón **Resumen** y la
+elección se recuerda por usuario y dispositivo, igual que la de vista (tarjetas o plano), porque
+varias personas comparten la misma tablet.
+
 ### Plano de sala arrastrable
 
 Quien tiene permiso de Configuración puede pulsar **Editar plano** en la Sala para reordenar las

@@ -1436,6 +1436,53 @@ y `--plano-gap`, que son el tamaño de celda y valen para toda la app). Conviene
 valor por defecto declarado en la propia regla CSS del componente, para que el elemento se vea bien
 antes de que el JS lo toque. Ejemplo vivo: `PosPlanoDibujo.aplicarGeometria(el, geometria)`.
 
+## Tiras de métricas plegables: `grid-template-rows`, no `max-height`
+
+Las tarjetas de métricas que encabezan casi todos los listados son útiles en escritorio y estorban
+en una tablet de servicio, donde empujan el contenido real fuera de la primera pantalla. Cuando una
+pantalla necesite poder plegarlas, el patrón es este (ejemplo vivo: el botón **Resumen** de
+`pos/sala.blade.php`).
+
+**El plegado va con `grid-template-rows: 0fr → 1fr`, no con `max-height`.** Un `max-height` obliga a
+inventar un número mayor que el contenido; si se queda corto recorta, y si se pasa la animación
+arranca con un tramo muerto en el que no se ve nada moverse. Las tarjetas pasan de una fila a dos al
+estrechar la ventana, así que ese número no existe. El contenedor de dentro lleva `overflow: hidden`
+y `min-height: 0` (sin esto último la fila del grid no baja de la altura del contenido).
+
+```css
+.strip { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 200ms var(--ease-out); }
+.strip-inner { overflow: hidden; min-height: 0; }
+.strip.abierto { grid-template-rows: 1fr; transition-duration: 260ms; }
+```
+
+El resto de decisiones, que se repiten en cualquier plegable:
+
+- **Curva propia, nunca `ease-in`.** Las easings de serie son flojas; `cubic-bezier(.23, 1, .32, 1)`
+  para entrar y salir. `ease-in` arranca lento justo en el instante en que el usuario mira, y hace
+  que la misma duración se *perciba* más lenta.
+- **Abrir un poco más lento que cerrar** (260 vs 200 ms): al abrir hay algo que mirar; al cerrar el
+  usuario ya decidió y solo quiere que se quite de en medio.
+- **Escalonado solo al abrir** (40/85/130/175 ms entre tarjetas). Al cerrar salen todas a la vez: un
+  cierre escalonado se siente como que la interfaz tarda en obedecer.
+- **Nunca entrar desde `scale(0)`**: nada en el mundo real aparece de la nada. `translateY(-10px)` +
+  `scale(.985)` + opacidad.
+- **`visibility` para la accesibilidad**: `visibility: hidden` con `transition: visibility 0s linear
+  <duración>` saca el contenido plegado del árbol de accesibilidad al terminar de cerrarse, para que
+  un lector de pantalla no lea métricas invisibles. Con solo `overflow: hidden` seguiría leyéndolas.
+- **`aria-expanded` + `aria-controls`** en el botón, que además es el que lleva el estado visual
+  (`[aria-expanded="true"]` como selector, en vez de una clase paralela que pueda desincronizarse).
+- **`:active { transform: scale(.97) }`** en el botón, y el `:hover` detrás de
+  `@media (hover: hover) and (pointer: fine)`: en tablet el toque dispara `:hover` y deja el botón
+  encendido después de soltarlo.
+- **Movimiento reducido**: se conserva el fundido (ayuda a entender que algo cambió) y se quitan
+  desplazamiento y escalonado, que es lo que marea.
+
+**La preferencia se persiste por usuario**, con la misma forma de clave que la vista de la Sala
+(`'<pantalla>-<cosa>:' + userId`): en hostelería varias personas comparten la misma tablet y no
+deben pisarse los ajustes. Es preferencia de interfaz, así que vive en `localStorage` y no viaja al
+servidor. El defecto se elige por lo que sirve a la pantalla, no por lo que es más fácil: aquí,
+plegado.
+
 ## Entrada numérica en pantallas táctiles: teclado propio, nunca el del sistema
 
 En una vista pensada para tablet (el TPV, la Sala), un `<input type="number">` o
