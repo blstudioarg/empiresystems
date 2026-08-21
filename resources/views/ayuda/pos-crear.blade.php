@@ -37,7 +37,11 @@ aparece en el ticket impreso.</p>
 			mesa (⇄).</li>
 		<li><strong>Guardar y aparcar</strong>: en vez de cobrar de inmediato, podés tocar
 			<em>Guardar</em> para dejar la cuenta abierta con lo cargado hasta ahora, y
-			<em>Aparcadas</em> para volver a la Sala y atender otra mesa mientras tanto.</li>
+			<em>Aparcadas</em> para volver a la Sala y atender otra mesa mientras tanto.
+			Al guardar, <strong>la pantalla se vacía</strong> y queda lista para el ticket
+			siguiente: la cuenta no se cierra ni se pierde nada, sigue abierta en su mesa con todo
+			lo guardado, y se retoma tocando esa mesa en la Sala. Es lo mismo que pasa al cobrar,
+			para que no te quedes escribiendo sin querer sobre la cuenta anterior.</li>
 		<li><strong>Artículos con opciones</strong>: un plato con modificadores (punto de cocción,
 			extras…) abre un modal de selección al tocarlo; uno sin opciones se añade directo, en
 			un toque, igual que siempre.</li>

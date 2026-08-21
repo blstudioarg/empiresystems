@@ -41,6 +41,21 @@ Una **cuenta abierta** no es un ticket ni una factura en borrador: es su propia 
 número asignado, que no aparece en ningún listado de facturas hasta que se cobra. Se puede
 guardar, recuperar y anular sin que eso consuma numeración de facturación.
 
+### Guardar un ticket deja la pantalla en cero
+
+En **Crear ticket**, cualquier operacion que persista el ticket termina igual: la pantalla se vacia
+por completo (lineas, datos de cliente y el chip de mesa) y queda lista para el siguiente. Aplica
+tanto al cobro —tras cobrar, al cerrar el aviso de exito— como a **Guardar** a secas.
+
+Guardar **no cierra ni anula la cuenta**: sigue abierta en su mesa, en el servidor, con todo lo
+guardado, y se retoma tocando esa mesa en la Sala. Lo que se cierra es el ticket en pantalla. El
+motivo es evitar el error caro del turno: con la cuenta anterior todavia cargada, las lineas del
+siguiente cliente se irian a ella sin que nadie lo notara.
+
+La unica excepcion es el conflicto de concurrencia: si otro dispositivo modifico la cuenta mientras
+tanto, el guardado avisa, recarga lo que hay en servidor y **se queda en pantalla**, que es cuando
+el usuario necesita ver con que se topo.
+
 ### Resumen de la sala
 
 Encima de la sala hay cuatro métricas —total de mesas, libres, ocupadas y olvidadas— que vienen

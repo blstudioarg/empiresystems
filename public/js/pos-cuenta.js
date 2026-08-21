@@ -264,7 +264,21 @@ window.PosApp.registrar('cuenta', function (PosApp) {
 
 		if ($guardarBtn) {
 			$guardarBtn.addEventListener('click', function () {
-				window.withButtonLoading($guardarBtn, function () { return guardar(); });
+				window.withButtonLoading($guardarBtn, function () {
+					var promesa = guardar();
+
+					// `guardar()` devuelve null si no habia nada que guardar, y ya aviso por su
+					// cuenta: no hay nada que vaciar ni que encadenar.
+					if (!promesa) { return Promise.resolve(); }
+
+					return promesa.then(function (res) {
+						// Solo se vacia si el servidor confirmo. Un 409 (otro dispositivo toco la
+						// cuenta) recarga lo que hay en servidor y se queda en pantalla, que es
+						// justo cuando el usuario necesita ver con que se topo.
+						if (res && res.ok) { vaciarPantalla(); }
+						return res;
+					});
+				});
 			});
 		}
 
@@ -281,6 +295,34 @@ window.PosApp.registrar('cuenta', function (PosApp) {
 				window.location.href = PosApp.state.salaUrl || '/pos/sala';
 			});
 		}
+	}
+
+	/**
+	 * Deja la pantalla como recien abierta despues de guardar: sin lineas, sin receptor y sin
+	 * cuenta ni mesa asociadas.
+	 *
+	 * Ojo con lo que NO hace: la cuenta no se cierra ni se anula, sigue viva en el servidor con
+	 * todo lo guardado. Lo que se cierra es el ticket EN PANTALLA.
+	 *
+	 * Guardar significa "ya esta, a la siguiente": se manda la comanda y se pasa a otra mesa. Si
+	 * la cuenta anterior se quedara cargada, las lineas siguientes se irian a ella sin que nadie
+	 * lo notara, que es el error caro de esta pantalla. Por eso guardar y cobrar terminan igual:
+	 * en cero.
+	 */
+	function vaciarPantalla() {
+		var cobro = PosApp.modulos.cobro;
+
+		limpiarTrasCierre();
+
+		// `nuevoTicket()` es el mismo vaciado que corre al cerrar el modal de exito tras cobrar:
+		// se reutiliza para que guardar y cobrar no puedan divergir en que consideran "a cero".
+		if (cobro && cobro.nuevoTicket) {
+			cobro.nuevoTicket();
+			return;
+		}
+
+		PosApp.modulos.ticket.limpiar();
+		PosApp.modulos.ticket.render();
 	}
 
 	// Tras cobrar el total, la cuenta se cierra y la mesa se libera en servidor: el chip deja de
