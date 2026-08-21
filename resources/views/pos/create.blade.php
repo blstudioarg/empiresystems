@@ -421,8 +421,45 @@
 			   el contraste tecla/fondo hasta mejora respecto del teclado de importe. */
 			background: #eef1f5;
 			box-shadow: inset 0 0 0 1px rgba(20,30,60,.07);
+
+			/* Entrada/salida (feature 041). Aparecer de golpe se lee como un salto, no como que
+			   se abrió algo. Notas de la animación:
+			   · `transform-origin: bottom` — el panel crece DESDE el campo "Entregado", que vive
+			     abajo del teclado. Un panel anclado a su disparador no debe escalar desde el
+			     centro; eso es para los modales, que no cuelgan de ningún sitio.
+			   · Nunca desde `scale(0)`: nada en el mundo real aparece de la nada. Arranca en .97
+			     con un desplazamiento mínimo, lo justo para que se lea el movimiento.
+			   · `ease-out` (la curva fuerte que ya usa el modal), nunca `ease-in`: el usuario mira
+			     el primer instante del gesto, y `ease-in` lo deja quieto ahí — se siente lento
+			     aunque dure lo mismo.
+			   · Salida más rápida que la entrada (130 vs 180ms): al abrir acompañamos, al cerrar
+			     apartamos. Y por debajo de 300ms, que es un control que el cajero toca decenas de
+			     veces por turno: una animación lenta ahí se vuelve un peaje.
+			   · Transiciones y no keyframes: se pueden interrumpir a media animación, que es justo
+			     lo que pasa si se toca Entregado y Cancelar en rápida sucesión.
+			   · `visibility` en vez de `display`: `display` no es animable. Se retrasa al final en
+			     la salida para que el panel no desaparezca antes de terminar de irse. */
+			transform-origin: bottom center;
+			opacity: 0;
+			visibility: hidden;
+			pointer-events: none;
+			transform: scale(.97) translateY(6px);
+			transition: opacity .13s var(--ease-out), transform .13s var(--ease-out), visibility 0s linear .13s;
 		}
-		.pos-entregado-panel.d-none { display: none; }
+		.pos-entregado-panel.abierto {
+			opacity: 1;
+			visibility: visible;
+			pointer-events: auto;
+			transform: none;
+			transition: opacity .18s var(--ease-out), transform .18s var(--ease-out), visibility 0s;
+		}
+
+		/* Movimiento reducido: se conserva el fundido —que es lo que explica que algo apareció— y
+		   se quita el desplazamiento, que es lo que marea. No es "cero animación". */
+		@media (prefers-reduced-motion: reduce) {
+			.pos-entregado-panel { transform: none; }
+			.pos-entregado-panel.abierto { transform: none; }
+		}
 		.pos-entregado-head { display: flex; align-items: center; justify-content: space-between; gap: .6rem; margin-bottom: .7rem; }
 		.pos-entregado-head .lbl { display: inline-flex; align-items: center; gap: .5rem; font-weight: 700; color: #2b2f36; }
 		.pos-entregado-head .lbl .ic { color: var(--pos-primary); font-size: 1.05rem; }
@@ -842,7 +879,7 @@
 						{{-- Teclado de "Entregado": mismas teclas `.pos-key` que el de importe (el
 						     listener delegado del keypad las recoge igual) y se superpone dentro del
 						     modal de cobro, sin teclado del sistema de por medio. --}}
-						<div class="pos-entregado-panel d-none" id="pos-entregado-panel">
+						<div class="pos-entregado-panel" id="pos-entregado-panel">
 							<div class="pos-entregado-head">
 								<span class="lbl">
 									<span class="ic"><i class="fas fa-hand-holding-dollar"></i></span>

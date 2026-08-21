@@ -286,14 +286,16 @@ window.PosApp.registrar('cobro', function (PosApp) {
 		// Se arranca de lo que ya hubiera tecleado, pero la primera tecla lo reemplaza: el gesto
 		// normal es teclear el billete entero, no corregir dígito a dígito.
 		entregadoPrellenado = entregadoStr !== '';
-		if ($entregadoPanel) { $entregadoPanel.classList.remove('d-none'); }
+		// `.abierto` en vez de `d-none`: `display` no se puede animar, así que la visibilidad del
+		// panel la lleva una clase propia con su transición (ver el CSS de la vista).
+		if ($entregadoPanel) { $entregadoPanel.classList.add('abierto'); }
 		renderEntregado();
 	}
 
 	function cerrarEntregado() {
 		editandoEntregado = false;
 		entregadoPrellenado = false;
-		if ($entregadoPanel) { $entregadoPanel.classList.add('d-none'); }
+		if ($entregadoPanel) { $entregadoPanel.classList.remove('abierto'); }
 	}
 
 	/** Cancelar deja el campo como estaba, no a cero: cancelar es descartar la edición en curso. */
