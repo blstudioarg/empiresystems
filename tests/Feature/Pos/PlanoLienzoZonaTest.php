@@ -91,6 +91,11 @@ class PlanoLienzoZonaTest extends TestCase
         $this->assertStringNotContainsString('id="pos-plano-filas"', $html);
         $this->assertStringNotContainsString('id="pos-plano-recorte"', $html);
 
+        // Tampoco el menu de acciones de la mesa: renombrar exige `ver-configuracion`
+        // (`can:ver-configuracion` sobre la ruta), asi que sin permiso tocar una mesa tiene que
+        // seguir yendo derecho a su ticket, sin un paso intermedio que ademas no podria usar.
+        $this->assertStringNotContainsString('id="pos-plano-mesa-menu"', $html);
+
         // Pero el módulo de dibujo se sigue cargando fuera del guard del editor: es lo que la
         // feature 041 vino a arreglar y esta feature no puede volver a romper.
         $this->assertStringContainsString('pos-plano-dibujo.js', $html);
@@ -109,6 +114,7 @@ class PlanoLienzoZonaTest extends TestCase
         $this->assertStringContainsString('id="pos-plano-columnas"', $html);
         $this->assertStringContainsString('id="pos-plano-filas"', $html);
         $this->assertStringContainsString('id="pos-plano-recorte"', $html);
+        $this->assertStringContainsString('id="pos-plano-mesa-menu"', $html);
     }
 
     // ── Medidas y G5 ────────────────────────────────────────────────────────────────────────

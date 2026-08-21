@@ -332,6 +332,45 @@
 		.plano-popover .plano-popover-opciones:last-child { margin-bottom: 0; }
 		.plano-popover .btn-check + .btn { min-height: 36px; }
 
+		/* ── Menu de acciones al tocar una mesa en la vista de servicio ───────────────────────
+		   `position: fixed` y colgado fuera del lienzo escalado: dentro, el `transform` del
+		   lienzo lo convertiria en relativo a ese lienzo y el `overflow: hidden` del contenedor
+		   de escala lo recortaria contra el borde. Las coordenadas salen de
+		   `getBoundingClientRect()` de la mesa tocada, que ya vienen en el sistema del viewport. */
+		.plano-mesa-menu {
+			position: fixed; z-index: 1050; display: none;
+			min-width: 13.5rem; padding: .7rem;
+			background: #fff; border: 1px solid #e6e6e6; border-radius: .8rem;
+			box-shadow: 0 12px 34px rgba(16,24,40,.20);
+			/* Sale desde la mesa que se toco, no desde el centro: el panel tiene que parecer que
+			   crece del sitio que el dedo acaba de tocar. El origen exacto lo fija el JS. */
+			transform-origin: top left;
+		}
+		.plano-mesa-menu.abierto {
+			display: block;
+			animation: plano-mesa-menu-entra 150ms cubic-bezier(.23, 1, .32, 1);
+		}
+		/* Nunca desde `scale(0)`: nada aparece de la nada. */
+		@keyframes plano-mesa-menu-entra {
+			from { opacity: 0; transform: scale(.96); }
+			to { opacity: 1; transform: scale(1); }
+		}
+		.plano-mesa-menu .plano-mesa-menu-nombre {
+			font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .04em;
+			color: #9aa0a6; margin: 0 0 .5rem;
+			max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+		}
+		.plano-mesa-menu .plano-mesa-menu-acciones { display: flex; flex-direction: column; gap: .4rem; }
+		/* Alto tactil, igual que el resto de acciones de esta pantalla. */
+		.plano-mesa-menu .btn { min-height: 46px; display: inline-flex; align-items: center; justify-content: center; gap: .45rem; }
+		.plano-mesa-menu .plano-mesa-menu-editar { display: flex; gap: .35rem; align-items: center; }
+		.plano-mesa-menu .plano-mesa-menu-editar input { flex: 1 1 auto; min-width: 0; min-height: 46px; font-weight: 650; }
+		.plano-mesa-menu .plano-mesa-menu-editar .btn { min-height: 46px; width: 2.9rem; padding: 0; flex: 0 0 auto; }
+
+		@media (prefers-reduced-motion: reduce) {
+			.plano-mesa-menu.abierto { animation: none; }
+		}
+
 		/* ── Lienzo por zona y recorte de la planta (feature 042) ─────────────────────────── */
 
 		.pos-plano-lienzo { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; }
@@ -550,6 +589,41 @@
 							<p class="pos-plano-servicio-titulo">Sin sitio en el plano</p>
 							<div class="pos-mesas-grid" id="pos-plano-servicio-sin-sitio-grid"></div>
 						</div>
+
+						{{-- Acciones al tocar una mesa. Solo con permiso de configuracion: sin el,
+						     tocar una mesa sigue yendo derecho a su ticket, que es la accion que
+						     un camarero repite cien veces por turno y no debe costar dos toques.
+
+						     Va FUERA de `.pos-plano-servicio-escala` a proposito: ese contenedor
+						     recorta con `overflow: hidden` y su lienzo lleva un `transform: scale`,
+						     que ademas convertiria a este panel `fixed` en relativo al lienzo. --}}
+						@can('ver-configuracion')
+							<div class="plano-mesa-menu" id="pos-plano-mesa-menu" role="dialog"
+							     aria-label="Acciones de la mesa" aria-hidden="true">
+								<p class="plano-mesa-menu-nombre" id="pos-plano-mesa-menu-nombre"></p>
+
+								<div class="plano-mesa-menu-acciones" id="pos-plano-mesa-menu-acciones">
+									<button type="button" class="btn btn-primary" data-accion="ticket">
+										<i class="fas fa-receipt"></i> Crear ticket
+									</button>
+									<button type="button" class="btn btn-outline-secondary" data-accion="editar">
+										<i class="fas fa-pen"></i> Editar nombre
+									</button>
+								</div>
+
+								<div class="plano-mesa-menu-editar d-none" id="pos-plano-mesa-menu-editar">
+									<input type="text" class="form-control form-control-sm"
+									       id="pos-plano-mesa-menu-input" maxlength="60"
+									       aria-label="Nombre de la mesa">
+									<button type="button" class="btn btn-success" data-accion="guardar" title="Guardar">
+										<i class="fas fa-check"></i>
+									</button>
+									<button type="button" class="btn btn-light" data-accion="cancelar" title="Cancelar">
+										<i class="fas fa-xmark"></i>
+									</button>
+								</div>
+							</div>
+						@endcan
 					</div>
 
 					<p class="pos-sala-vacia d-none" id="pos-sala-vacia">

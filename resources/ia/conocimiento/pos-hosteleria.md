@@ -41,6 +41,20 @@ Una **cuenta abierta** no es un ticket ni una factura en borrador: es su propia 
 número asignado, que no aparece en ningún listado de facturas hasta que se cobra. Se puede
 guardar, recuperar y anular sin que eso consuma numeración de facturación.
 
+### Acciones al tocar una mesa en el plano
+
+En la vista de plano, quien tiene permiso de Configuracion ve un menu al tocar una mesa, con dos
+opciones: **Crear ticket** (lo de siempre: abre el TPV con esa mesa, o retoma su cuenta si ya esta
+ocupada) y **Editar nombre**, que renombra la mesa ahi mismo sin entrar a "Editar plano". Se
+confirma con el check o con Enter, y se cancela con la X, con Escape o tocando fuera.
+
+Quien **no** tiene ese permiso no ve ningun menu: tocar una mesa lleva directo a su ticket, de un
+solo toque. Es deliberado — abrir la cuenta de una mesa es la accion que mas se repite en un turno,
+y renombrar mesas es una tarea de configuracion que ese usuario no podria completar de todos modos.
+
+Renombrar desde aqui usa el mismo endpoint que el panel de gestion del editor: es una sola
+operacion, no una por pantalla desde la que se pueda tocar la mesa.
+
 ### Guardar un ticket deja la pantalla en cero
 
 En **Crear ticket**, cualquier operacion que persista el ticket termina igual: la pantalla se vacia

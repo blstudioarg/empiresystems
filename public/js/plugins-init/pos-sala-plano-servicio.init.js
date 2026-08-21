@@ -122,6 +122,148 @@
 		encajar();
 	}
 
+	// ── Menu de acciones al tocar una mesa ──────────────────────────────────────────────────
+	//
+	// Solo existe con permiso de configuracion (el markup va dentro de un `@can`). Sin el, tocar
+	// una mesa sigue llevando derecho a su ticket: es la accion que un camarero repite cien veces
+	// por turno y meterle un paso intermedio la encarece justo donde mas duele.
+
+	var $menu = document.getElementById('pos-plano-mesa-menu');
+	var $menuNombre = document.getElementById('pos-plano-mesa-menu-nombre');
+	var $menuAcciones = document.getElementById('pos-plano-mesa-menu-acciones');
+	var $menuEditar = document.getElementById('pos-plano-mesa-menu-editar');
+	var $menuInput = document.getElementById('pos-plano-mesa-menu-input');
+
+	var mesaMenu = null; // mesa cuyo menu esta abierto
+
+	function irAlTicket(mesa) {
+		var destino = window.posSalaDestinoMesa ? window.posSalaDestinoMesa(mesa) : null;
+		if (destino) { window.location.href = destino; }
+	}
+
+	function cerrarMenu() {
+		if (!$menu) { return; }
+		mesaMenu = null;
+		$menu.classList.remove('abierto');
+		$menu.setAttribute('aria-hidden', 'true');
+	}
+
+	/** Coloca el menu junto a la mesa tocada, sin dejar que se salga de la pantalla. */
+	function colocarMenu(el) {
+		var caja = el.getBoundingClientRect();
+		var margen = 8;
+
+		// Se mide con el panel ya visible: en `display: none` no tiene dimensiones.
+		var ancho = $menu.offsetWidth;
+		var alto = $menu.offsetHeight;
+
+		var izq = Math.min(caja.left, window.innerWidth - ancho - margen);
+		var arriba = caja.bottom + margen;
+
+		// Si no cabe debajo, se pasa encima de la mesa en vez de quedarse cortado abajo.
+		if (arriba + alto > window.innerHeight - margen) {
+			arriba = Math.max(margen, caja.top - alto - margen);
+		}
+
+		$menu.style.left = Math.max(margen, izq) + 'px';
+		$menu.style.top = arriba + 'px';
+	}
+
+	function abrirMenu(mesa, el) {
+		mesaMenu = mesa;
+
+		$menuNombre.textContent = mesa.nombre || 'Mesa';
+		$menuAcciones.classList.remove('d-none');
+		$menuEditar.classList.add('d-none');
+
+		$menu.classList.add('abierto');
+		$menu.setAttribute('aria-hidden', 'false');
+		colocarMenu(el);
+	}
+
+	function modoEditar() {
+		if (!mesaMenu) { return; }
+
+		$menuAcciones.classList.add('d-none');
+		$menuEditar.classList.remove('d-none');
+		$menuInput.value = mesaMenu.nombre || '';
+		$menuInput.focus();
+		$menuInput.select();
+	}
+
+	function guardarNombre() {
+		if (!mesaMenu) { return; }
+
+		var nuevo = $menuInput.value.trim();
+		var mesa = mesaMenu;
+
+		if (!nuevo || nuevo === mesa.nombre) { cerrarMenu(); return; }
+
+		var plantilla = (window.posPlanoGestionState || {}).mesaUpdateUrlTemplate;
+		if (!plantilla) { cerrarMenu(); return; }
+
+		// Mismo endpoint que usa el panel de gestion del editor: renombrar una mesa es una sola
+		// operacion, no una por pantalla desde la que se la pueda tocar.
+		$.ajax({
+			url: plantilla.replace('__MESA__', mesa.id),
+			method: 'PUT',
+			dataType: 'json',
+			contentType: 'application/json',
+			data: JSON.stringify({ zona_id: mesa.zona_id, nombre: nuevo }),
+			headers: {
+				Accept: 'application/json',
+				'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+			},
+		})
+			.done(function () {
+				// Refresco inmediato en memoria para que el plano no parpadee con el nombre viejo,
+				// y detras el refresco de siempre, que resincroniza TODAS las vistas de la Sala
+				// (tarjetas incluidas) desde el servidor.
+				mesa.nombre = nuevo;
+				pintar();
+				window.showToast('success', 'Mesa actualizada.');
+				document.getElementById('pos-sala-refrescar').click();
+			})
+			.fail(function (xhr) {
+				var msg = (xhr.responseJSON && xhr.responseJSON.message) || 'No se pudo renombrar la mesa.';
+				window.showToast('danger', msg);
+			});
+
+		cerrarMenu();
+	}
+
+	if ($menu) {
+		$menu.addEventListener('click', function (e) {
+			var btn = e.target.closest('[data-accion]');
+			if (!btn) { return; }
+
+			var accion = btn.getAttribute('data-accion');
+
+			if (accion === 'ticket') { irAlTicket(mesaMenu); return; }
+			if (accion === 'editar') { modoEditar(); return; }
+			if (accion === 'guardar') { guardarNombre(); return; }
+			if (accion === 'cancelar') { cerrarMenu(); }
+		});
+
+		$menuInput.addEventListener('keydown', function (e) {
+			if (e.key === 'Enter') { e.preventDefault(); guardarNombre(); }
+			if (e.key === 'Escape') { cerrarMenu(); }
+		});
+
+		// Tocar fuera cierra. Ignora los toques sobre una mesa: de esos ya se ocupa el handler del
+		// lienzo, y sin la excepcion este cerraria en el mismo evento lo que aquel acaba de abrir.
+		document.addEventListener('click', function (e) {
+			if (!$menu.classList.contains('abierto')) { return; }
+			if (e.target.closest('#pos-plano-mesa-menu')) { return; }
+			if (e.target.closest('.plano-mesa, .pos-mesa')) { return; }
+			cerrarMenu();
+		});
+
+		// El menu esta anclado a coordenadas de viewport: si la pagina se mueve bajo el, deja de
+		// apuntar a su mesa. Mas honesto cerrarlo que dejarlo señalando a otra cosa.
+		window.addEventListener('scroll', cerrarMenu, true);
+	}
+
 	/**
 	 * Toque por delegación (D7): un único listener en el contenedor, así no hay que volver a
 	 * enganchar nada en cada repintado. El destino se resuelve **en el momento del toque** a partir
@@ -134,9 +276,18 @@
 		if (!el) { return; }
 
 		var mesa = window.posSalaMesaPorId ? window.posSalaMesaPorId(el.getAttribute('data-mesa-id')) : null;
-		var destino = window.posSalaDestinoMesa ? window.posSalaDestinoMesa(mesa) : null;
+		if (!mesa) { return; }
 
-		if (destino) { window.location.href = destino; }
+		// Sin permiso de configuracion no hay menu que abrir: se va derecho al ticket, como siempre.
+		if (!$menu) { irAlTicket(mesa); return; }
+
+		// Volver a tocar la misma mesa con el menu abierto lo cierra, en vez de reabrirlo igual.
+		if (mesaMenu && String(mesaMenu.id) === String(mesa.id) && $menu.classList.contains('abierto')) {
+			cerrarMenu();
+			return;
+		}
+
+		abrirMenu(mesa, el);
 	});
 
 	// El plano refleja el estado y la zona nuevos sin recargar la página ni volver a elegir la

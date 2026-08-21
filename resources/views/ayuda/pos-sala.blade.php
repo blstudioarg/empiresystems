@@ -30,8 +30,15 @@ no lo consumido. Si ya se cobró parte de la cuenta, la mesa sigue ocupada mostr
 añada nada (el umbral se configura en <em>Configuración → POS</em>). Es un aviso para que no se
 quede una cuenta olvidada sin cobrar, no un error.</p>
 
-<p class="ayuda-nota">En la vista de <strong>plano</strong> las mesas se tocan igual que las
-tarjetas: una mesa libre abre el TPV con esa mesa, una ocupada retoma su cuenta. El borde dice el
+<p class="ayuda-nota">En la vista de <strong>plano</strong>, si tenés permiso de Configuración,
+tocar una mesa abre un pequeño menú con dos opciones: <em>Crear ticket</em> (abre el TPV con esa
+mesa, o retoma su cuenta si ya está ocupada) y <em>Editar nombre</em>, que te deja renombrarla ahí
+mismo sin entrar a <em>Editar plano</em>. Se confirma con el check o con Enter; la X o Escape
+cancelan. Tocar fuera cierra el menú.</p>
+
+<p class="ayuda-nota">Sin ese permiso <strong>no hay menú</strong>: tocar una mesa lleva directo a
+su ticket, de un solo toque, que es como conviene en pleno servicio. Las mesas se tocan igual que
+las tarjetas: una mesa libre abre el TPV con esa mesa, una ocupada retoma su cuenta. El borde dice el
 estado con los mismos colores, y dentro de cada mesa ocupada se ve lo que falta por cobrar y los
 minutos que lleva abierta. En el plano <strong>no se puede mover ni cambiar nada</strong>: para eso
 está <em>Editar plano</em>. Si alguna mesa de la zona no tiene sitio en la rejilla, aparece como
