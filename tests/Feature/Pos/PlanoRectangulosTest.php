@@ -56,6 +56,11 @@ class PlanoRectangulosTest extends TestCase
 
         $this->putJson("/pos/sala/zonas/{$zona->id}/plano", [
             'version' => 1,
+            // Lienzo de la zona (feature 042): el guardado del plano lo lleva siempre.
+            // Aqui van los valores por defecto, que son la rejilla fija que este test asume.
+            'columnas' => 8,
+            'filas' => 6,
+            'celdas_inactivas' => [],
             'mesas' => [$this->mesaPayload($mesa, 2, 3, 2, 1, 'cuadrada')],
         ])->assertOk()->assertJson(['version' => 2]);
 
@@ -76,6 +81,11 @@ class PlanoRectangulosTest extends TestCase
 
         $this->putJson("/pos/sala/zonas/{$zona->id}/plano", [
             'version' => 1,
+            // Lienzo de la zona (feature 042): el guardado del plano lo lleva siempre.
+            // Aqui van los valores por defecto, que son la rejilla fija que este test asume.
+            'columnas' => 8,
+            'filas' => 6,
+            'celdas_inactivas' => [],
             'mesas' => [$this->mesaPayload($mesa, 1, 1, 0, 1)],
         ])->assertStatus(422);
 
@@ -95,12 +105,22 @@ class PlanoRectangulosTest extends TestCase
         // columna + ancho > 8: la celda de origen es válida, el rectángulo no.
         $this->putJson("/pos/sala/zonas/{$zona->id}/plano", [
             'version' => 1,
+            // Lienzo de la zona (feature 042): el guardado del plano lo lleva siempre.
+            // Aqui van los valores por defecto, que son la rejilla fija que este test asume.
+            'columnas' => 8,
+            'filas' => 6,
+            'celdas_inactivas' => [],
             'mesas' => [$this->mesaPayload($mesa, 0, 7, 2, 1)],
         ])->assertStatus(422);
 
         // fila + alto > 6.
         $this->putJson("/pos/sala/zonas/{$zona->id}/plano", [
             'version' => 1,
+            // Lienzo de la zona (feature 042): el guardado del plano lo lleva siempre.
+            // Aqui van los valores por defecto, que son la rejilla fija que este test asume.
+            'columnas' => 8,
+            'filas' => 6,
+            'celdas_inactivas' => [],
             'mesas' => [$this->mesaPayload($mesa, 5, 0, 1, 2)],
         ])->assertStatus(422);
 
@@ -122,6 +142,11 @@ class PlanoRectangulosTest extends TestCase
         // Orígenes distintos (1,1) y (1,2), pero la primera ocupa 2 celdas de ancho: se pisan.
         $this->putJson("/pos/sala/zonas/{$zona->id}/plano", [
             'version' => 1,
+            // Lienzo de la zona (feature 042): el guardado del plano lo lleva siempre.
+            // Aqui van los valores por defecto, que son la rejilla fija que este test asume.
+            'columnas' => 8,
+            'filas' => 6,
+            'celdas_inactivas' => [],
             'mesas' => [
                 $this->mesaPayload($mesa1, 1, 1, 2, 1),
                 $this->mesaPayload($mesa2, 1, 2, 1, 1),
@@ -144,6 +169,11 @@ class PlanoRectangulosTest extends TestCase
         // dos debe quedar escrita.
         $this->putJson("/pos/sala/zonas/{$zona->id}/plano", [
             'version' => 1,
+            // Lienzo de la zona (feature 042): el guardado del plano lo lleva siempre.
+            // Aqui van los valores por defecto, que son la rejilla fija que este test asume.
+            'columnas' => 8,
+            'filas' => 6,
+            'celdas_inactivas' => [],
             'mesas' => [
                 $this->mesaPayload($mesa1, 4, 4, 2, 2),
                 $this->mesaPayload($mesa2, 0, 7, 3, 1),

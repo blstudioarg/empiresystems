@@ -97,7 +97,10 @@ class PosPlanoConversion
      */
     private static function cabe(array $mesa, int $ancho, int $alto, array $ocupadas): bool
     {
-        if ($mesa['columna'] + $ancho > PosPlanoCeldas::COLUMNAS || $mesa['fila'] + $alto > PosPlanoCeldas::FILAS) {
+        // Los DEFECTOS y no el lienzo de la zona, a propósito: esta clase es la conversión de un
+        // solo uso de la feature 040, y en aquel momento TODAS las zonas eran 8×6. El lienzo por
+        // zona llegó después (feature 042); usarlo aquí reinterpretaría un dato histórico.
+        if ($mesa['columna'] + $ancho > PosPlanoCeldas::COLUMNAS_DEFECTO || $mesa['fila'] + $alto > PosPlanoCeldas::FILAS_DEFECTO) {
             return false;
         }
 

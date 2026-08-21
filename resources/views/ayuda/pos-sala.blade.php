@@ -45,6 +45,35 @@ barra). No hay una forma «rectangular»: una mesa rectangular es sencillamente 
 estirada. Nada se guarda hasta pulsar <em>Guardar plano</em>: recargar la página o salir
 del modo edición sin guardar descarta los cambios pendientes.</p>
 
+<p><strong>Darle a la zona la forma y el tamaño de tu sala</strong>: en la barra del modo edición,
+junto a <em>Editar plano</em>, están el <strong>ancho</strong> y el <strong>alto</strong> de la
+zona, en celdas (de 4 a 24 cada uno). Cada zona tiene los suyos: una terraza de cuatro mesas no
+tiene por qué dibujarse con el mismo lienzo que el salón. El plano se redibuja al momento, pero
+<strong>no se guarda</strong> hasta pulsar <em>Guardar plano</em>, igual que las mesas.</p>
+
+<p>El botón <em>Recortar sala</em> activa el <strong>modo recorte</strong>: mientras está encendido,
+arrastrar el dedo (o el ratón) por el plano marca qué celdas <strong>no son sala</strong> —el hueco
+de una L, un patio, la columna del medio, la barra que no es zona de mesas—. Esas celdas se dibujan
+con una trama gris y ninguna mesa puede colocarse encima. Volver a arrastrar sobre una celda ya
+recortada la devuelve a sala. Mientras el modo recorte está activo las mesas <strong>no se mueven
+ni se redimensionan</strong>: es un modo aparte a propósito, para que el mismo gesto no signifique
+dos cosas. Se sale volviendo a pulsar <em>Recortar sala</em>.</p>
+
+<p class="ayuda-nota"><strong>Nada se mueve solo, nunca.</strong> Si intentas reducir el ancho o el
+alto y alguna mesa quedaría fuera, el cambio <strong>no se aplica</strong> y un aviso te dice
+cuántas mesas lo impiden: mueve esas mesas primero y vuelve a reducir. Igual con el recorte: una
+celda que tiene una mesa encima no se recorta —la mesa parpadea para señalar cuál estorba— y al
+soltar el gesto se avisa una sola vez de cuántas celdas quedaron sin recortar. El sistema nunca
+encoge, mueve ni borra una mesa por su cuenta para hacerte sitio.</p>
+
+<p class="ayuda-nota">Una zona siempre conserva <strong>al menos una celda de sala</strong>: no se
+puede recortar entera. Y si encoges la zona, el recorte de las celdas que desaparecen se descarta;
+si más tarde la vuelves a agrandar, esas celdas vuelven como suelo normal, no como recorte.</p>
+
+<p class="ayuda-nota">El <strong>camarero ve la misma sala</strong>: la vista de <em>Plano</em>
+dibuja las medidas y la forma reales de la zona, con sus huecos, aunque no tenga permiso de
+Configuración. Solo cambiarlas requiere ese permiso.</p>
+
 <p class="ayuda-nota">Al agrandar, el borde <strong>se detiene solo</strong> cuando choca con otra
 mesa o con el límite de la zona: la mesa parpadea un instante y no avanza más en esa dirección,
 pero puede seguir creciendo hacia donde sí haya sitio. Dos mesas nunca se solapan.</p>

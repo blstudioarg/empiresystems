@@ -30,12 +30,12 @@ class PlanoConversionTest extends TestCase
             $this->assertGreaterThanOrEqual(1, $ocupacion['alto_celdas'], 'G1: alto mínimo 1');
 
             $this->assertLessThanOrEqual(
-                PosPlanoCeldas::COLUMNAS,
+                PosPlanoCeldas::COLUMNAS_DEFECTO,
                 $mesa['columna'] + $ocupacion['ancho_celdas'],
                 "G2: la mesa {$mesa['id']} se sale de la rejilla"
             );
             $this->assertLessThanOrEqual(
-                PosPlanoCeldas::FILAS,
+                PosPlanoCeldas::FILAS_DEFECTO,
                 $mesa['fila'] + $ocupacion['alto_celdas'],
                 "G2: la mesa {$mesa['id']} se sale de la rejilla"
             );

@@ -1,7 +1,8 @@
 /**
  * Plano de sala arrastrable (feature 039). Se apoya en `window.posSalaData` (cargado por
- * `pos-sala.init.js`) para las mesas/zonas y añade un "modo edición" propio: rejilla de 8×6
- * celdas por zona, arrastre con jQuery UI `draggable` (asa obligatoria, sin dependencia nueva —
+ * `pos-sala.init.js`) para las mesas/zonas y añade un "modo edición" propio: el lienzo de la zona
+ * activa (medidas y celdas recortadas propias, feature 042; 8×6 por defecto), arrastre con
+ * jQuery UI `draggable` (asa obligatoria, sin dependencia nueva —
  * docs/04-front-guidelines.md), reacomodo por colisión en cliente (previsualización, D3 de
  * research.md) y guardado explícito por botón (D4), nunca por evento de arrastre.
  *
@@ -16,8 +17,6 @@
 	var D = window.PosPlanoDibujo;
 	var CELL = D.CELL;
 	var GAP = D.GAP;
-	var COLS = D.COLS;
-	var ROWS = D.ROWS;
 	var STEP = D.STEP;
 
 	var FORMAS = [
@@ -30,6 +29,10 @@
 	if (!state.puedeEditar) { return; }
 
 	var $toggle = document.getElementById('pos-plano-toggle');
+	var $columnas = document.getElementById('pos-plano-columnas');
+	var $filas = document.getElementById('pos-plano-filas');
+	var $recorte = document.getElementById('pos-plano-recorte');
+	var $hint = document.getElementById('pos-plano-hint');
 	var $guardar = document.getElementById('pos-plano-guardar');
 	var $wrap = document.getElementById('pos-plano-wrap');
 	var $canvas = document.getElementById('pos-plano-canvas');
@@ -55,6 +58,40 @@
 	var pendientePorZona = {};
 	var versionPorZona = {};
 
+	// Lienzo de la zona activa (feature 042). Se guarda por zona igual que las mesas: cambiar de
+	// pestaña sin guardar tampoco descarta un ajuste de medidas o un recorte a medio hacer.
+	// `inactivas` es un OBJETO-conjunto (clave "fila-columna" → true) y se muta en sitio, nunca se
+	// reasigna, para que el estado compartido de la zona siga apuntando al mismo objeto
+	// (docs/04-front-guidelines.md, feature 038).
+	var geometria = { columnas: D.COLS_DEFECTO, filas: D.FILAS_DEFECTO, inactivas: {} };
+	var geometriaPorZona = {};
+	var recortando = false;
+	var $celdas = null;
+
+	/** ¿Es una celda recortada (no es sala)? */
+	function esInactiva(fila, columna) {
+		return geometria.inactivas[fila + '-' + columna] === true;
+	}
+
+	/** Número de celdas de suelo que quedarían con una geometría dada (G5 en cliente). */
+	function celdasDeSuelo(columnas, filas, inactivas) {
+		var fuera = 0;
+		Object.keys(inactivas).forEach(function (clave) {
+			var partes = clave.split('-');
+			if (parseInt(partes[0], 10) < filas && parseInt(partes[1], 10) < columnas) { fuera++; }
+		});
+		return columnas * filas - fuera;
+	}
+
+	/** La geometría de la zona activa, en la forma que espera `PosPlanoDibujo`. */
+	function geometriaDibujo() {
+		return {
+			columnas: geometria.columnas,
+			filas: geometria.filas,
+			inactivas: Object.keys(geometria.inactivas),
+		};
+	}
+
 	function mesaPorId(id) {
 		return pendiente.filter(function (m) { return String(m.id) === String(id); })[0] || null;
 	}
@@ -73,10 +110,25 @@
 		});
 	}
 
-	/** ¿Cabe el rectángulo en la rejilla Y sin pisar a nadie? (G2 + G3.) */
+	/** ¿Toca el rectángulo alguna celda recortada? (G4 en cliente, FR-006.) */
+	function pisaRecorte(fila, columna, ancho, alto) {
+		for (var f = fila; f < fila + alto; f++) {
+			for (var c = columna; c < columna + ancho; c++) {
+				if (esInactiva(f, c)) { return true; }
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * ¿Cabe el rectángulo en el lienzo DE ESTA ZONA, sin pisar a nadie y sin salirse de la sala?
+	 * (G2 + G3 + G4.) Una celda recortada se comporta exactamente igual que una celda ocupada:
+	 * misma ruta de colisión, mismo bloqueo, mismo feedback (FR-006).
+	 */
 	function rectanguloValido(r, ignorarId) {
 		if (r.fila < 0 || r.columna < 0 || r.ancho < 1 || r.alto < 1) { return false; }
-		if (r.columna + r.ancho > COLS || r.fila + r.alto > ROWS) { return false; }
+		if (r.columna + r.ancho > geometria.columnas || r.fila + r.alto > geometria.filas) { return false; }
+		if (pisaRecorte(r.fila, r.columna, r.ancho, r.alto)) { return false; }
 		return rectanguloLibre(r.fila, r.columna, r.ancho, r.alto, ignorarId);
 	}
 
@@ -89,8 +141,9 @@
 		var mejor = null;
 		var mejorDist = Infinity;
 
-		for (var f = 0; f <= ROWS - alto; f++) {
-			for (var c = 0; c <= COLS - ancho; c++) {
+		for (var f = 0; f <= geometria.filas - alto; f++) {
+			for (var c = 0; c <= geometria.columnas - ancho; c++) {
+				if (pisaRecorte(f, c, ancho, alto)) { continue; }
 				if (!rectanguloLibre(f, c, ancho, alto, ignorarId)) { continue; }
 				var dist = Math.pow(f - filaOrigen, 2) + Math.pow(c - columnaOrigen, 2);
 				if (dist < mejorDist) {
@@ -117,7 +170,28 @@
 	}
 
 	function pintarCanvas() {
-		$canvas.innerHTML = pendiente.map(renderMesaHtml).join('');
+		// Las medidas del lienzo se escriben en el PROPIO lienzo (D4), no en `documentElement`.
+		D.aplicarGeometria($canvas, geometria);
+
+		var celdasHtml = '';
+		if (recortando) {
+			// En modo recorte la capa lleva TODAS las celdas: cada una es un blanco de toque.
+			celdasHtml = '<div class="pos-plano-celdas recortando" id="pos-plano-celdas">' +
+				D.celdasHtml(geometriaDibujo(), { modo: 'edicion' }) + '</div>';
+		} else {
+			// Fuera del modo recorte solo se dibujan las celdas que NO son sala: son contorno, y
+			// el encargado tiene que verlas mientras coloca mesas.
+			celdasHtml = '<div class="pos-plano-celdas">' +
+				D.celdasHtml(geometriaDibujo(), { modo: 'servicio' }) + '</div>';
+		}
+
+		$canvas.innerHTML = celdasHtml + pendiente.map(renderMesaHtml).join('');
+		$celdas = $canvas.querySelector('.pos-plano-celdas');
+
+		// D6: pintar sobre un lienzo que ya tiene arrastre exige un modo de gesto explícito. Con el
+		// recorte activo las mesas dejan de ser arrastrables y redimensionables — si no, el mismo
+		// dedo sobre el mismo pixel querría decir dos cosas distintas.
+		if (recortando) { return; }
 
 		$canvas.querySelectorAll('.plano-mesa').forEach(function (el) {
 			$(el).draggable({
@@ -139,6 +213,15 @@
 	}
 
 	var temporizadorBloqueo = null;
+
+	/**
+	 * Igual que `marcarBloqueo`, pero por id de mesa: se usa cuando el rechazo ocurre DESPUÉS de un
+	 * repintado, momento en el que el elemento que el usuario estaba arrastrando ya no existe.
+	 */
+	function marcarBloqueoMesa(id) {
+		var el = $canvas.querySelector('.plano-mesa[data-mesa-id="' + id + '"]');
+		if (el) { marcarBloqueo(el); }
+	}
 
 	/**
 	 * Feedback de bloqueo (D7/FR-009): sombra exterior + micro-desplazamiento de rechazo. **Nunca**
@@ -268,8 +351,8 @@
 		var fila = Math.round(top / STEP);
 		// El destino se acota por el rectángulo completo, no por la celda de origen: una barra de
 		// 3×1 no puede empezar en la columna 7 aunque esa celda exista.
-		columna = Math.max(0, Math.min(COLS - mesa.ancho, columna));
-		fila = Math.max(0, Math.min(ROWS - mesa.alto, fila));
+		columna = Math.max(0, Math.min(geometria.columnas - mesa.ancho, columna));
+		fila = Math.max(0, Math.min(geometria.filas - mesa.alto, fila));
 
 		// Instantánea para poder cancelar el movimiento entero si algún desplazado no cabe.
 		var original = pendiente.map(function (m) {
@@ -278,6 +361,15 @@
 
 		function revertir() {
 			original.forEach(function (o) { o.mesa.fila = o.fila; o.mesa.columna = o.columna; });
+		}
+
+		// Soltar sobre una parte que no es sala se rechaza como cualquier otra colisión (FR-006):
+		// el sistema NO le busca sitio, porque dónde va una mesa es decisión del encargado.
+		if (pisaRecorte(fila, columna, mesa.ancho, mesa.alto)) {
+			revertir();
+			pintarCanvas();
+			marcarBloqueoMesa(id);
+			return;
 		}
 
 		mesa.fila = fila;
@@ -365,15 +457,24 @@
 		if (forzar) {
 			delete pendientePorZona[id];
 			delete versionPorZona[id];
+			delete geometriaPorZona[id];
 		}
 
 		if (pendientePorZona[id]) {
 			pendiente = pendientePorZona[id];
 			versionZona = versionPorZona[id];
+			geometria = geometriaPorZona[id];
 		} else {
 			var zona = datos.zonas.filter(function (z) { return String(z.id) === String(id); })[0];
 			versionZona = zona ? zona.version : 1;
 			versionPorZona[id] = versionZona;
+
+			// El lienzo se lee del payload de la zona (contrato de la feature 042): el editor no
+			// lo infiere de las mesas ni de ninguna constante propia.
+			var geo = D.geometriaDeZona(zona);
+			geometria = { columnas: geo.columnas, filas: geo.filas, inactivas: {} };
+			geo.inactivas.forEach(function (clave) { geometria.inactivas[clave] = true; });
+			geometriaPorZona[id] = geometria;
 
 			pendiente = mesasZona
 				.filter(function (m) { return m.fila !== null && m.columna !== null; })
@@ -387,6 +488,8 @@
 			pendientePorZona[id] = pendiente;
 		}
 
+		sincronizarControles();
+
 		var fuera = mesasZona.length - pendiente.length;
 		$fueraRejilla.textContent = fuera > 0
 			? fuera + ' mesa(s) de esta zona no tienen posición en la rejilla (creadas cuando ya estaba llena) y no aparecen en el plano.'
@@ -395,6 +498,186 @@
 		pintarCanvas();
 	}
 
+	/** Refleja en los controles el lienzo de la zona activa. */
+	function sincronizarControles() {
+		if ($columnas) { $columnas.value = geometria.columnas; }
+		if ($filas) { $filas.value = geometria.filas; }
+	}
+
+	/**
+	 * Aplica unas medidas nuevas al estado en memoria y redibuja **en el acto**, sin una sola
+	 * peticion al servidor (FR-013): el cambio de lienzo viaja en el guardado explicito por boton,
+	 * igual que las posiciones de las mesas.
+	 *
+	 * Devuelve `false` si el cambio se rechaza, dejando la geometria intacta.
+	 */
+	function aplicarMedidas(columnas, filas) {
+		columnas = Math.max(D.MIN, Math.min(D.MAX, parseInt(columnas, 10) || geometria.columnas));
+		filas = Math.max(D.MIN, Math.min(D.MAX, parseInt(filas, 10) || geometria.filas));
+
+		if (columnas === geometria.columnas && filas === geometria.filas) {
+			sincronizarControles();
+			return true;
+		}
+
+		// FR-009/D9: nada se mueve solo. Si al encoger alguna mesa quedaria fuera del lienzo, el
+		// cambio no se aplica y se dice CUANTAS mesas lo impiden -- el conteo, no la lista: con
+		// doce mesas fuera, un toast con doce nombres no se lee.
+		var estorban = pendiente.filter(function (m) {
+			return m.columna + m.ancho > columnas || m.fila + m.alto > filas;
+		}).length;
+
+		if (estorban > 0) {
+			sincronizarControles();
+			window.showToast('warning', estorban === 1
+				? 'Hay 1 mesa fuera de esas medidas. Muevela antes de reducir la zona.'
+				: 'Hay ' + estorban + ' mesas fuera de esas medidas. Muevelas antes de reducir la zona.');
+			return false;
+		}
+
+		// G5 en cliente: encoger no puede dejar la zona sin una sola celda de sala (FR-011).
+		if (celdasDeSuelo(columnas, filas, geometria.inactivas) < 1) {
+			sincronizarControles();
+			window.showToast('warning', 'La zona debe conservar al menos una celda de sala.');
+			return false;
+		}
+
+		geometria.columnas = columnas;
+		geometria.filas = filas;
+
+		// El recorte de las celdas que dejan de existir se descarta, no se recuerda: si la zona
+		// vuelve a crecer, esas celdas vuelven como suelo. Misma regla que el servidor al
+		// normalizar la mascara, para que cliente y servidor persistan lo mismo.
+		Object.keys(geometria.inactivas).forEach(function (clave) {
+			var partes = clave.split('-');
+			if (parseInt(partes[0], 10) >= filas || parseInt(partes[1], 10) >= columnas) {
+				delete geometria.inactivas[clave];
+			}
+		});
+
+		sincronizarControles();
+		pintarCanvas();
+		return true;
+	}
+
+	if ($columnas && $filas) {
+		[$columnas, $filas].forEach(function (input) {
+			input.addEventListener('change', function () {
+				aplicarMedidas($columnas.value, $filas.value);
+			});
+		});
+	}
+
+	if ($recorte) {
+		$recorte.addEventListener('click', function () {
+			recortando = !recortando;
+			$recorte.setAttribute('aria-pressed', recortando ? 'true' : 'false');
+			if ($hint) {
+				$hint.textContent = recortando
+					? 'Arrastra sobre el plano para marcar que celdas no son sala. Vuelve a tocar "Recortar sala" para colocar mesas.'
+					: 'Arrastra las mesas por el asa para reordenarlas. Toca una mesa para cambiar su forma y tamano.';
+			}
+			cerrarPopover();
+			pintarCanvas();
+		});
+	}
+
+	// -- Pintado del recorte con Pointer Events (FR-004) --------------------------------------
+	//
+	// `pointerdown` + arrastre con `setPointerCapture` es lo que permite marcar (o desmarcar) una
+	// tira entera de celdas en UN gesto continuo, con raton o con el dedo, sin que el navegador se
+	// quede el arrastre como scroll. El sentido del gesto lo decide la PRIMERA celda tocada: si era
+	// sala, todo el arrastre recorta; si no lo era, todo el arrastre devuelve suelo. Asi el gesto
+	// nunca alterna solo por volver a pasar por una celda ya pintada.
+
+	var pintando = null;   // true = recortar, false = devolver a sala
+	var rechazadas = 0;    // celdas que el gesto no pudo cambiar (se avisa UNA vez al soltar)
+
+	function mesaSobreCelda(fila, columna) {
+		return pendiente.filter(function (m) {
+			return fila >= m.fila && fila < m.fila + m.alto &&
+				columna >= m.columna && columna < m.columna + m.ancho;
+		})[0] || null;
+	}
+
+	function pintarCelda(el) {
+		var fila = parseInt(el.getAttribute('data-fila'), 10);
+		var columna = parseInt(el.getAttribute('data-columna'), 10);
+		var clave = fila + '-' + columna;
+		var yaInactiva = geometria.inactivas[clave] === true;
+
+		if (yaInactiva === pintando) { return; }
+
+		if (pintando) {
+			// FR-010: recortar una celda ocupada NO mueve la mesa. La celda no cambia y la mesa que
+			// lo impide da el feedback de bloqueo (sombra + micro-desplazamiento), nunca un cambio
+			// de color de borde: ese esta reservado al estado libre/ocupada/olvidada (D7).
+			var mesa = mesaSobreCelda(fila, columna);
+			if (mesa) {
+				rechazadas++;
+				marcarBloqueoMesa(mesa.id);
+				return;
+			}
+
+			// FR-011: el recorte no puede dejar la zona sin una sola celda de sala.
+			if (celdasDeSuelo(geometria.columnas, geometria.filas, geometria.inactivas) <= 1) {
+				rechazadas++;
+				return;
+			}
+
+			geometria.inactivas[clave] = true;
+			el.classList.add('plano-celda-inactiva');
+		} else {
+			delete geometria.inactivas[clave];
+			el.classList.remove('plano-celda-inactiva');
+		}
+	}
+
+	$canvas.addEventListener('pointerdown', function (e) {
+		if (!recortando) { return; }
+
+		var celda = e.target.closest ? e.target.closest('.plano-celda') : null;
+		if (!celda) { return; }
+
+		rechazadas = 0;
+		pintando = !celda.classList.contains('plano-celda-inactiva');
+		// La captura mantiene el gesto vivo aunque el dedo salga del lienzo: sin ella, soltar fuera
+		// dejaria el pintado colgado. Se captura en el LIENZO, no en la celda, porque el destino de
+		// cada `pointermove` se resuelve por posicion y no por el elemento capturado.
+		if ($canvas.setPointerCapture) { $canvas.setPointerCapture(e.pointerId); }
+		pintarCelda(celda);
+		e.preventDefault();
+	});
+
+	// Con el puntero capturado por el lienzo, `pointerenter` de cada celda ya no llega: el destino
+	// se resuelve por coordenadas, que ademas es lo unico fiable con el dedo (el toque no emite
+	// eventos de hover sobre los elementos por los que pasa).
+	$canvas.addEventListener('pointermove', function (e) {
+		if (!recortando || pintando === null) { return; }
+
+		var el = document.elementFromPoint(e.clientX, e.clientY);
+		var celda = el && el.closest ? el.closest('.plano-celda') : null;
+		if (celda && $canvas.contains(celda)) { pintarCelda(celda); }
+		e.preventDefault();
+	});
+
+	function terminarPintado() {
+		if (pintando === null) { return; }
+		pintando = null;
+
+		// UN solo toast al soltar, con el conteo agregado (FR-010): uno por celda recorrida
+		// dispararia decenas en un solo arrastre y taparia la pantalla entera.
+		if (rechazadas > 0) {
+			window.showToast('warning', rechazadas === 1
+				? 'Una celda no se pudo recortar: hay una mesa encima o es la ultima celda de sala.'
+				: rechazadas + ' celdas no se pudieron recortar: hay mesas encima o dejarian la zona sin sala.');
+		}
+		rechazadas = 0;
+	}
+
+	document.addEventListener('pointerup', terminarPintado);
+	document.addEventListener('pointercancel', terminarPintado);
+
 	function activarEdicion() {
 		if (editando) { return; }
 
@@ -402,6 +685,8 @@
 		// guardada o descartada al salir), no debe arrastrarse a esta.
 		pendientePorZona = {};
 		versionPorZona = {};
+		geometriaPorZona = {};
+		salirDeRecorte();
 
 		var zid = window.posSalaZonaActiva ? window.posSalaZonaActiva() : '';
 		if (!zid) {
@@ -428,11 +713,25 @@
 		cargarZona(zid);
 	}
 
+	/** Devuelve el editor al modo de colocar mesas (no toca la mascara ya pintada). */
+	function salirDeRecorte() {
+		if (!recortando) { return; }
+		recortando = false;
+		if ($recorte) { $recorte.setAttribute('aria-pressed', 'false'); }
+		if ($hint) {
+			$hint.textContent = 'Arrastra las mesas por el asa para reordenarlas. Toca una mesa para cambiar su forma y tamano.';
+		}
+	}
+
 	function desactivarEdicion() {
 		editando = false;
 		cerrarPopover();
+		salirDeRecorte();
+		// Salir del modo edicion descarta lo pendiente, y el lienzo va en el mismo saco: al volver
+		// a entrar, `cargarZona` lo vuelve a derivar del payload, que es lo ultimo guardado.
 		pendientePorZona = {};
 		versionPorZona = {};
+		geometriaPorZona = {};
 		$toggle.classList.remove('d-none');
 		$guardar.classList.add('d-none');
 		// Devolver la Sala a la vista elegida por el usuario (tarjetas o plano de servicio), no
@@ -461,6 +760,12 @@
 
 		var payload = {
 			version: versionZona,
+			// El lienzo va en el MISMO guardado que las mesas (feature 042): el servidor los
+			// valida juntos y los persiste en una sola transaccion, asi que no puede quedar una
+			// mesa fuera de su propio plano ni por un instante.
+			columnas: geometria.columnas,
+			filas: geometria.filas,
+			celdas_inactivas: Object.keys(geometria.inactivas),
 			mesas: pendiente.map(function (m) {
 				return {
 					id: m.id, fila: m.fila, columna: m.columna,

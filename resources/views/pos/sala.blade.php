@@ -86,7 +86,8 @@
 			.pos-mesa { transition: none; }
 		}
 
-		/* ── Plano arrastrable (feature 039): rejilla fija de 8×6 celdas por zona. Se posiciona
+		/* ── Plano arrastrable (feature 039): rejilla de celdas por zona, con las medidas que la
+		   propia zona declara desde la feature 042 (8×6 por defecto). Se posiciona
 		   con `position: absolute` (no CSS grid) porque jQuery UI `draggable` con `grid: [w,h]`
 		   calcula en píxeles: mover a CSS grid perdería el snap directo a celda. */
 		.pos-plano-wrap { display: none; }
@@ -98,6 +99,11 @@
 		.pos-plano-canvas-scroll { position: relative; overflow-x: auto; padding-bottom: .5rem; }
 		.pos-plano-canvas {
 			position: relative;
+			/* Medidas por defecto. Las reales las escribe `PosPlanoDibujo.aplicarGeometria()` en
+			   ESTE elemento al dibujar cada zona (feature 042, D4), nunca en `documentElement`:
+			   el lienzo del editor y el de servicio pueden estar mostrando zonas distintas. */
+			--plano-cols: 8;
+			--plano-rows: 6;
 			width: calc(var(--plano-cols) * (var(--plano-cell) + var(--plano-gap)) - var(--plano-gap));
 			height: calc(var(--plano-rows) * (var(--plano-cell) + var(--plano-gap)) - var(--plano-gap));
 			background-color: #f7f8fb;
@@ -261,6 +267,51 @@
 		.plano-popover .plano-popover-opciones:last-child { margin-bottom: 0; }
 		.plano-popover .btn-check + .btn { min-height: 36px; }
 
+		/* ── Lienzo por zona y recorte de la planta (feature 042) ─────────────────────────── */
+
+		.pos-plano-lienzo { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; }
+		.pos-plano-lienzo .pos-plano-lienzo-label { font-size: .78rem; font-weight: 700; color: #8b93a1; margin: 0; }
+		.pos-plano-lienzo .pos-plano-lienzo-x { color: #b7bdc9; font-weight: 700; }
+		.pos-plano-lienzo input[type="number"] { width: 4.2rem; text-align: center; font-weight: 700; }
+		.pos-plano-lienzo .btn { margin-left: .4rem; }
+		/* El modo de recorte es un MODO, no una acción suelta (D6): mientras está activo cambia lo
+		   que hace el dedo sobre el lienzo, así que el botón tiene que verse encendido. */
+		.pos-plano-lienzo .btn[aria-pressed="true"] {
+			background: var(--pos-primary, #1d69d6); border-color: var(--pos-primary, #1d69d6); color: #fff;
+		}
+
+		/* Capa de celdas. Va por DEBAJO de las mesas (que no llevan z-index propio salvo al
+		   arrastrar) y solo captura el dedo cuando el modo de recorte la monta. `touch-action: none`
+		   es lo que impide que el navegador se quede el gesto de pintado como scroll de la página,
+		   igual que en las asas de redimensionado. */
+		.pos-plano-celdas { position: absolute; inset: 0; touch-action: none; }
+		/* En modo recorte la capa va POR ENCIMA de las mesas. No es un detalle estético: la celda
+		   que está debajo de una mesa es precisamente la que hay que poder tocar para que el
+		   sistema conteste "aquí hay una mesa" (FR-010). Si la mesa se quedara el evento, el
+		   usuario tocaría y no pasaría nada, que es la peor respuesta posible. Fuera del modo
+		   recorte la capa se queda debajo y no captura nada. */
+		.pos-plano-celdas.recortando { z-index: 18; }
+		.pos-plano-celdas .plano-celda {
+			position: absolute; border-radius: .5rem; background: transparent;
+			border: 1.5px solid transparent; transition: background-color .12s ease, border-color .12s ease;
+		}
+		/* Suelo libre en modo recorte: se insinúa al pasar por encima, para que se vea que la celda
+		   es un blanco de toque sin tapar el plano. */
+		.pos-plano-celdas.recortando .plano-celda:not(.plano-celda-inactiva):hover {
+			background: rgba(29,105,214,.08); border-color: rgba(29,105,214,.35);
+		}
+		/* Celda que NO es sala (FR-005): un hueco, inequívocamente distinto del suelo libre. Se
+		   dibuja con la trama diagonal de "aquí no hay planta", no con un gris que podría leerse
+		   como "celda ocupada". */
+		.pos-plano-celdas .plano-celda-inactiva {
+			background-color: #eceef2;
+			background-image: repeating-linear-gradient(45deg, transparent 0 6px, rgba(140,148,162,.28) 6px 8px);
+			border-color: #dcdfe6; border-style: solid;
+		}
+		@media (prefers-reduced-motion: reduce) {
+			.pos-plano-celdas .plano-celda { transition: none; }
+		}
+
 		/* ── Plano en modo servicio (feature 041). Reutiliza `.pos-plano-canvas` y `.plano-mesa`
 		   del editor: el contorno tiene que ser el mismo, y para eso el CSS también se comparte.
 		   Lo propio de esta vista es el bloque de texto de la mesa y el encaje en pantalla. */
@@ -421,7 +472,29 @@
 
 					<div class="pos-plano-wrap" id="pos-plano-wrap">
 						<div class="pos-plano-toolbar">
-							<span class="pos-plano-hint">Arrastra las mesas por el asa <i class="fas fa-arrows-up-down-left-right"></i> para reordenarlas. Toca una mesa para cambiar su forma y tamaño.</span>
+							<span class="pos-plano-hint" id="pos-plano-hint">Arrastra las mesas por el asa <i class="fas fa-arrows-up-down-left-right"></i> para reordenarlas. Toca una mesa para cambiar su forma y tamaño.</span>
+
+							{{-- Controles del lienzo (feature 042, FR-018): solo con permiso de
+							     configuración. El lienzo lo VE todo el mundo (viaja en el payload
+							     para la vista de servicio), pero cambiarlo es del encargado.
+							     Formato `sm` como el resto de formularios (docs/04-front-guidelines.md,
+							     "Tamaño de formularios"). --}}
+							@can('ver-configuracion')
+								<div class="pos-plano-lienzo" id="pos-plano-lienzo">
+									<label class="pos-plano-lienzo-label" for="pos-plano-columnas">Ancho</label>
+									<input type="number" class="form-control form-control-sm" id="pos-plano-columnas"
+									       min="4" max="24" step="1" inputmode="numeric" aria-label="Columnas de la zona">
+									<span class="pos-plano-lienzo-x" aria-hidden="true">×</span>
+									<label class="pos-plano-lienzo-label" for="pos-plano-filas">Alto</label>
+									<input type="number" class="form-control form-control-sm" id="pos-plano-filas"
+									       min="4" max="24" step="1" inputmode="numeric" aria-label="Filas de la zona">
+
+									<button type="button" class="btn btn-sm btn-outline-secondary" id="pos-plano-recorte"
+									        aria-pressed="false">
+										<i class="fas fa-eraser"></i> Recortar sala
+									</button>
+								</div>
+							@endcan
 						</div>
 						<div class="pos-plano-body">
 							<div class="pos-plano-body-izq">
@@ -497,9 +570,9 @@
 	<script src="{{ asset('vendor/jqueryui/js/jquery-ui.min.js') }}"></script>
 	{{-- El módulo de dibujo va PRIMERO: lo consumen las tres vistas (tarjetas, plano de servicio y
 	     editor). Orden orquestador -> módulos de docs/04-front-guidelines.md. --}}
-	<script src="{{ asset('js/plugins-init/pos-plano-dibujo.js') }}"></script>
-	<script src="{{ asset('js/plugins-init/pos-sala.init.js') }}"></script>
-	<script src="{{ asset('js/plugins-init/pos-sala-plano-servicio.init.js') }}"></script>
-	<script src="{{ asset('js/plugins-init/pos-sala-plano.init.js') }}"></script>
-	<script src="{{ asset('js/plugins-init/pos-sala-plano-gestion.init.js') }}"></script>
+	<script src="@assetv('js/plugins-init/pos-plano-dibujo.js')"></script>
+	<script src="@assetv('js/plugins-init/pos-sala.init.js')"></script>
+	<script src="@assetv('js/plugins-init/pos-sala-plano-servicio.init.js')"></script>
+	<script src="@assetv('js/plugins-init/pos-sala-plano.init.js')"></script>
+	<script src="@assetv('js/plugins-init/pos-sala-plano-gestion.init.js')"></script>
 @endpush

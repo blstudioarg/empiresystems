@@ -7,6 +7,7 @@ use App\Models\PosCuenta;
 use App\Models\PosMesa;
 use App\Models\PosZona;
 use App\Support\ConfigPos;
+use App\Support\PosPlanoCeldas;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -106,6 +107,13 @@ class SalaController extends Controller
                 'suplemento' => $suplementoActivo ? number_format((float) $zona->suplemento_porcentaje, 2, '.', '') : '0.00',
                 'total_mesas' => $mesas->where('zona_id', $zona->id)->count(),
                 'version' => (int) $zona->version,
+                // Lienzo de la zona (feature 042). Viaja SIEMPRE, tenga el usuario permiso de
+                // configuración o no (FR-012): el contorno de la sala es lo que dibujan las dos
+                // vistas del plano, y el camarero necesita ver la misma sala que colocó el
+                // encargado. No añade ninguna consulta: la zona ya estaba cargada.
+                'columnas' => PosPlanoCeldas::columnasDe($zona),
+                'filas' => PosPlanoCeldas::filasDe($zona),
+                'celdas_inactivas' => $zona->celdasInactivas(),
             ])->values(),
             'mesas' => $mesasPayload,
             'umbral_olvidada_min' => $umbral,

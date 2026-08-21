@@ -20,8 +20,14 @@
 	var CELL = 96;
 	var GAP = 12;
 	var STEP = CELL + GAP;
-	var COLS = 8;
-	var ROWS = 6;
+
+	// Lienzo por defecto (feature 042). NO son "la" rejilla: son el valor con el que nace una zona
+	// y el que se usa si el payload todavía no trae geometría. Toda función de aquí recibe la
+	// geometría de la zona que está dibujando; ninguna la supone.
+	var COLS_DEFECTO = 8;
+	var FILAS_DEFECTO = 6;
+	var MIN = 4;
+	var MAX = 24;
 
 	function escapeHtml(s) {
 		var d = document.createElement('div');
@@ -168,12 +174,95 @@
 			'</div>';
 	}
 
+	/**
+	 * Geometría normalizada de una zona del payload (feature 042). Una zona que todavía no trae
+	 * lienzo cae al de por defecto, que es exactamente la rejilla fija anterior: así ninguna vista
+	 * tiene que defenderse de un campo ausente.
+	 */
+	function geometriaDeZona(zona) {
+		zona = zona || {};
+
+		var columnas = parseInt(zona.columnas, 10);
+		var filas = parseInt(zona.filas, 10);
+
+		return {
+			columnas: acotar(isNaN(columnas) ? COLS_DEFECTO : columnas),
+			filas: acotar(isNaN(filas) ? FILAS_DEFECTO : filas),
+			inactivas: (zona.celdas_inactivas || []).slice(),
+		};
+	}
+
+	function acotar(n) {
+		return Math.max(MIN, Math.min(MAX, n));
+	}
+
+	/** Ancho/alto en px del lienzo completo de una geometría. */
+	function tamanoLienzo(geometria) {
+		return {
+			width: geometria.columnas * STEP - GAP,
+			height: geometria.filas * STEP - GAP,
+		};
+	}
+
+	/**
+	 * Escribe las medidas del lienzo **en el propio elemento del lienzo** (D4), no en la raíz del
+	 * documento: dos lienzos de zonas distintas pueden coexistir en la misma página (el del editor
+	 * y el de servicio) y cada uno tiene que quedarse con las suyas.
+	 */
+	function aplicarGeometria(el, geometria) {
+		if (!el) { return; }
+		el.style.setProperty('--plano-cols', geometria.columnas);
+		el.style.setProperty('--plano-rows', geometria.filas);
+	}
+
+	/**
+	 * HTML de la capa de celdas del lienzo (feature 042, D5). Función pura como el resto del
+	 * módulo: produce una cadena y no toca el DOM.
+	 *
+	 * `opciones.modo`:
+	 *  - `'edicion'`  → **todas** las celdas, porque en modo recorte cada una es un blanco de toque.
+	 *  - `'servicio'` → **solo las inactivas**, que es lo único que el camarero necesita ver: el
+	 *    hueco que no es sala. Pintar 576 divs de suelo que nadie va a tocar sería puro coste.
+	 */
+	function celdasHtml(geometria, opciones) {
+		var soloInactivas = ((opciones && opciones.modo) || 'edicion') === 'servicio';
+		var inactivas = {};
+		var html = [];
+		var i;
+
+		for (i = 0; i < geometria.inactivas.length; i++) {
+			inactivas[geometria.inactivas[i]] = true;
+		}
+
+		for (var f = 0; f < geometria.filas; f++) {
+			for (var c = 0; c < geometria.columnas; c++) {
+				var clave = f + '-' + c;
+				var inactiva = inactivas[clave] === true;
+
+				if (soloInactivas && !inactiva) { continue; }
+
+				html.push('<div class="plano-celda' + (inactiva ? ' plano-celda-inactiva' : '') +
+					'" data-celda="' + clave + '" data-fila="' + f + '" data-columna="' + c + '"' +
+					' style="left:' + (c * STEP) + 'px;top:' + (f * STEP) + 'px;' +
+					'width:' + CELL + 'px;height:' + CELL + 'px;"></div>');
+			}
+		}
+
+		return html.join('');
+	}
+
 	window.PosPlanoDibujo = {
 		CELL: CELL,
 		GAP: GAP,
 		STEP: STEP,
-		COLS: COLS,
-		ROWS: ROWS,
+		COLS_DEFECTO: COLS_DEFECTO,
+		FILAS_DEFECTO: FILAS_DEFECTO,
+		MIN: MIN,
+		MAX: MAX,
+		geometriaDeZona: geometriaDeZona,
+		tamanoLienzo: tamanoLienzo,
+		aplicarGeometria: aplicarGeometria,
+		celdasHtml: celdasHtml,
 		escapeHtml: escapeHtml,
 		formatoImporte: formatoImporte,
 		dimensiones: dimensiones,
@@ -184,10 +273,11 @@
 		mesaHtml: mesaHtml,
 	};
 
-	// Las variables de la rejilla las consume el CSS del lienzo (ambos modos), así que se fijan
-	// aquí y no en el init del editor: la vista de servicio también las necesita.
-	document.documentElement.style.setProperty('--plano-cols', COLS);
-	document.documentElement.style.setProperty('--plano-rows', ROWS);
+	// El TAMAÑO de la celda es constante del sistema de diseño y sí vive en `documentElement`.
+	// Las MEDIDAS del lienzo ya no (D4 de la feature 042): son de cada zona, y escribirlas en la
+	// raíz haría que la última zona dibujada le impusiera su tamaño a las demás —incluso al plano
+	// de servicio, que puede estar mostrando otra—. Las escribe `aplicarGeometria()` en el propio
+	// elemento del lienzo.
 	document.documentElement.style.setProperty('--plano-cell', CELL + 'px');
 	document.documentElement.style.setProperty('--plano-gap', GAP + 'px');
 })();

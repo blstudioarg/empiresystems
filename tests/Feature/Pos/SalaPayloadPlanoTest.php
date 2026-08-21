@@ -74,6 +74,79 @@ class SalaPayloadPlanoTest extends TestCase
         $this->assertIsString($mesa['abrir_url']);
     }
 
+    /**
+     * Feature 042 — el lienzo de la zona es contrato de lectura.
+     *
+     * Sin este test, quitar los tres campos del controlador dejaría el plano dibujando 8×6 en toda
+     * zona (el fallback del cliente) sin que nada fallara: la sala se vería "bien", solo que no
+     * sería la sala del cliente.
+     */
+    public function test_cada_zona_llega_con_su_lienzo_medidas_y_celdas_recortadas(): void
+    {
+        $this->sembrarPermisos();
+        [$tenant, $user] = $this->tenantConSala();
+
+        PosZona::factory()->create([
+            'tenant_id' => $tenant->id, 'nombre' => 'Terraza',
+            'columnas' => 12, 'filas' => 8, 'celdas_inactivas' => ['0-10', '0-11'],
+        ]);
+
+        $this->loginAs($user);
+        $zona = $this->getJson('/pos/sala')->assertOk()->json('zonas.0');
+
+        foreach (['columnas', 'filas', 'celdas_inactivas'] as $campo) {
+            $this->assertArrayHasKey($campo, $zona, "El payload de la Sala perdió el campo de contrato «{$campo}».");
+        }
+
+        $this->assertSame(12, $zona['columnas']);
+        $this->assertSame(8, $zona['filas']);
+        $this->assertSame(['0-10', '0-11'], $zona['celdas_inactivas']);
+    }
+
+    /**
+     * Una zona anterior a la feature 042 (o recién creada) llega con el lienzo por defecto y la
+     * máscara vacía, nunca con `null`: el cliente no tiene que defenderse de un campo ausente.
+     */
+    public function test_una_zona_sin_lienzo_propio_llega_con_el_lienzo_por_defecto(): void
+    {
+        $this->sembrarPermisos();
+        [$tenant, $user] = $this->tenantConSala();
+
+        $zona = PosZona::factory()->create(['tenant_id' => $tenant->id]);
+        // Estado exacto de una zona migrada sin backfill: la columna JSON quedó a NULL.
+        $zona->forceFill(['celdas_inactivas' => null])->saveQuietly();
+
+        $this->loginAs($user);
+        $zona = $this->getJson('/pos/sala')->assertOk()->json('zonas.0');
+
+        $this->assertSame(8, $zona['columnas']);
+        $this->assertSame(6, $zona['filas']);
+        $this->assertSame([], $zona['celdas_inactivas']);
+    }
+
+    /**
+     * FR-012: el lienzo viaja para cualquier usuario con acceso a la Sala. La vista de plano en
+     * modo servicio la usa un camarero SIN permiso de configuración, y sin estos campos dibujaría
+     * un contorno distinto del que colocó el encargado.
+     */
+    public function test_el_lienzo_viaja_tambien_sin_permiso_de_configuracion(): void
+    {
+        $this->sembrarPermisos();
+        [$tenant, $user] = $this->tenantConSala();
+
+        PosZona::factory()->create([
+            'tenant_id' => $tenant->id, 'columnas' => 10, 'filas' => 9, 'celdas_inactivas' => ['1-1'],
+        ]);
+
+        // `tenantConSala()` NO concede `ver-configuracion`: es exactamente el camarero de FR-012.
+        $this->loginAs($user);
+        $zona = $this->getJson('/pos/sala')->assertOk()->json('zonas.0');
+
+        $this->assertSame(10, $zona['columnas']);
+        $this->assertSame(9, $zona['filas']);
+        $this->assertSame(['1-1'], $zona['celdas_inactivas']);
+    }
+
     public function test_una_mesa_sin_posicion_llega_con_fila_y_columna_a_null(): void
     {
         $this->sembrarPermisos();

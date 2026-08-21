@@ -44,7 +44,10 @@ guardar, recuperar y anular sin que eso consuma numeración de facturación.
 ### Plano de sala arrastrable
 
 Quien tiene permiso de Configuración puede pulsar **Editar plano** en la Sala para reordenar las
-mesas de la zona activa arrastrándolas sobre una rejilla fija (8 columnas × 6 filas por zona).
+mesas de la zona activa arrastrándolas sobre el **lienzo de esa zona**, una rejilla de celdas cuyo
+tamaño decide el propio encargado (ver «Forma y medidas de la zona» más abajo). Una zona nueva
+nace con 8 columnas × 6 filas, que es lo que tenían todas las zonas antes de que el lienzo fuera
+configurable.
 
 Cada mesa **ocupa un rectángulo de celdas** de esa rejilla: su celda de origen más el ancho y el
 alto en celdas que se le hayan dado. Se redimensiona **arrastrando su borde o su esquina**, y el
@@ -72,6 +75,36 @@ y cambiar de pestaña de zona sin guardar **no** descarta el arrastre pendiente 
 sin guardar, o al recargar la página). El guardado usa el mismo mecanismo de bloqueo optimista que
 las cuentas abiertas: si dos personas editan el plano de la misma zona a la vez, la segunda en
 guardar recibe un aviso para recargar en vez de pisar los cambios de la primera.
+
+### Forma y medidas de la zona
+
+Cada zona tiene **su propio lienzo**: no hay una rejilla única para todo el local. En la barra del
+modo edición se ajustan el **ancho** y el **alto** de la zona en celdas, entre 4 y 24 cada uno. Una
+terraza pequeña deja así de dibujarse con el mismo tamaño que el salón. El cambio se ve al momento
+pero no se guarda hasta pulsar **Guardar plano**, igual que las posiciones de las mesas.
+
+La sala tampoco tiene por qué ser un rectángulo. El botón **Recortar sala** activa un modo aparte en
+el que arrastrar el dedo por el plano marca qué celdas **no son sala**: el hueco de una planta en L,
+un patio, un pilar, la barra. Esas celdas se dibujan como un hueco con trama gris y **ninguna mesa
+puede colocarse encima** —ni moviéndola, ni agrandándola—. Volver a arrastrar sobre una celda
+recortada la devuelve a sala. Mientras el modo recorte está activo las mesas no se mueven ni se
+redimensionan: es deliberado, para que el mismo gesto de arrastre no signifique dos cosas distintas.
+
+**Ningún ajuste del lienzo mueve, encoge ni borra una mesa.** Si al reducir el ancho o el alto
+alguna mesa quedaría fuera, el cambio no se aplica y se avisa de **cuántas** mesas lo impiden; hay
+que moverlas primero. Si se intenta recortar una celda con una mesa encima, la celda no cambia, la
+mesa que estorba parpadea, y al soltar el gesto se avisa una sola vez con el total de celdas
+rechazadas. Una zona conserva siempre al menos una celda de sala: no se puede recortar entera. Y si
+la zona se encoge, el recorte de las celdas que dejan de existir se descarta —si más tarde vuelve a
+crecer, esas celdas vuelven como suelo, no como recorte recordado—.
+
+El servidor revalida todo esto en cada guardado y rechaza el plano entero si alguna mesa se sale del
+lienzo o queda sobre una celda recortada: medidas, recorte y mesas se guardan juntos o no se guarda
+nada.
+
+Ajustar el lienzo requiere permiso de Configuración, pero **verlo no**: la vista de plano en modo
+servicio dibuja las medidas y la forma reales de la zona, con sus huecos, para cualquier usuario con
+acceso a la Sala. El camarero ve exactamente la sala que colocó el encargado.
 
 En modo edición, un panel a la derecha del lienzo permite **crear, renombrar y eliminar zonas y
 mesas** sin salir de la Sala. El alta se confirma de forma explícita: se pulsa «+», se escribe

@@ -28,6 +28,9 @@ class PosZona extends Model
         'tenant_id',
         'nombre',
         'suplemento_porcentaje',
+        'columnas',
+        'filas',
+        'celdas_inactivas',
         'orden',
         'version',
     ];
@@ -36,9 +39,25 @@ class PosZona extends Model
     {
         return [
             'suplemento_porcentaje' => 'decimal:2',
+            'columnas' => 'integer',
+            'filas' => 'integer',
+            // La mascara de recorte se lee y se escribe ENTERA (D1 de la feature 042): nunca se
+            // consulta ni se filtra desde SQL, asi que un `array` plano es la representacion justa.
+            'celdas_inactivas' => 'array',
             'orden' => 'integer',
             'version' => 'integer',
         ];
+    }
+
+    /**
+     * Celdas que no son sala, siempre como array (la columna es `nullable` porque MySQL no admite
+     * DEFAULT en JSON; ausente significa "sin recortes", no "sin dato").
+     *
+     * @return array<int, string>
+     */
+    public function celdasInactivas(): array
+    {
+        return array_values((array) ($this->celdas_inactivas ?? []));
     }
 
     public function tenant(): BelongsTo

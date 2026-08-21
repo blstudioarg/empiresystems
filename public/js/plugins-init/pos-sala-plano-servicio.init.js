@@ -27,6 +27,18 @@
 		return window.posSalaZonaActiva ? window.posSalaZonaActiva() : '';
 	}
 
+	/**
+	 * Lienzo de la zona activa (feature 042). Se lee del payload, igual que en el editor: es lo que
+	 * garantiza que el camarero vea EXACTAMENTE la sala que coloco el encargado -- mismas medidas y
+	 * mismos huecos-- y no un rectangulo generico.
+	 */
+	function geometriaActiva() {
+		var datos = window.posSalaData || { zonas: [] };
+		var zona = datos.zonas.filter(function (z) { return String(z.id) === String(zonaActiva()); })[0];
+
+		return D.geometriaDeZona(zona);
+	}
+
 	function mesasDeZona() {
 		var datos = window.posSalaData || { mesas: [] };
 		var zona = zonaActiva();
@@ -47,8 +59,9 @@
 	function encajar() {
 		if (!$escala || $wrap.classList.contains('d-none')) { return; }
 
-		var anchoLienzo = D.COLS * D.STEP - D.GAP;
-		var altoLienzo = D.ROWS * D.STEP - D.GAP;
+		var tamano = D.tamanoLienzo(geometriaActiva());
+		var anchoLienzo = tamano.width;
+		var altoLienzo = tamano.height;
 		var disponible = $escala.parentNode.clientWidth;
 
 		var factor = disponible > 0 && disponible < anchoLienzo ? disponible / anchoLienzo : 1;
@@ -63,13 +76,23 @@
 
 	function pintar() {
 		var mesas = mesasDeZona();
+		var geometria = geometriaActiva();
 
 		var enRejilla = mesas.filter(function (m) { return m.fila !== null && m.columna !== null; });
 		var sinSitio = mesas.filter(function (m) { return m.fila === null || m.columna === null; });
 
-		$canvas.innerHTML = enRejilla.map(function (mesa) {
-			return D.mesaHtml(mesa, { modo: 'servicio' });
-		}).join('');
+		// Las medidas del lienzo se escriben en ESTE lienzo, no en `documentElement` (D4): el
+		// editor puede tener otra zona cargada y las dos vistas coexisten en la misma pagina.
+		D.aplicarGeometria($canvas, geometria);
+
+		// Capa de celdas SOLO con las inactivas (D5): al camarero le hace falta ver donde no hay
+		// sala, no una rejilla de 576 divs de suelo que nadie va a tocar. Y aqui no hay ningun
+		// control de edicion: esta vista no escribe nada.
+		$canvas.innerHTML =
+			'<div class="pos-plano-celdas">' + D.celdasHtml(geometria, { modo: 'servicio' }) + '</div>' +
+			enRejilla.map(function (mesa) {
+				return D.mesaHtml(mesa, { modo: 'servicio' });
+			}).join('');
 
 		// Mesas sin posición en la rejilla (FR-011): se dibujan con el MISMO componente de tarjeta
 		// que la otra vista — cero markup y cero CSS nuevos — para que ninguna mesa activa quede

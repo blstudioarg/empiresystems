@@ -1245,11 +1245,45 @@ Invariantes de geometría, verificados **en el servidor en cada guardado**
 (`App\Support\PosPlanoReacomodo::validar()`), no como restricción SQL:
 
 - **G1** — `ancho_celdas >= 1` y `alto_celdas >= 1`.
-- **G2** — `columna + ancho_celdas <= 8` y `fila + alto_celdas <= 6`.
+- **G2** — `columna + ancho_celdas <= columnas` y `fila + alto_celdas <= filas` de la zona (hasta la
+  feature 042, contra la rejilla fija de 8×6).
 - **G3 (no solapamiento)** — dos mesas de la misma zona no comparten ninguna celda, no solo el
   origen. Es el invariante que el `UNIQUE` de la feature 039 **no** puede expresar (compara puntos,
   no rectángulos) y que las formas alargadas burlaban por diseño. Una tabla de celdas ocupadas sería
   complejidad desproporcionada (Principio V) para una rejilla de 48 posiciones.
+
+**Lienzo por zona (feature 042)**: la rejilla deja de ser una constante global y pasa a ser un dato
+de cada zona. `pos_zonas` gana tres columnas:
+
+| Columna | Tipo | Default | Descripción |
+|---------|------|---------|-------------|
+| `columnas` | `TINYINT UNSIGNED` | `8` | Ancho de la rejilla de la zona, en celdas (entre 4 y 24). |
+| `filas` | `TINYINT UNSIGNED` | `6` | Alto de la rejilla de la zona, en celdas (mismo rango). |
+| `celdas_inactivas` | `JSON` (nullable) | `[]` | Celdas que **no son suelo**, como array de claves `"fila-columna"`. |
+
+Los defaults reproducen exactamente la rejilla fija anterior, así que **la migración no lleva
+backfill**: ninguna zona existente cambia. `celdas_inactivas` va `nullable` en vez de con
+`DEFAULT '[]'` porque MySQL no admite DEFAULT en columnas JSON; el valor ausente se lee como `[]`
+(`PosZona::celdasInactivas()`). Sin índices nuevos: la máscara nunca se filtra desde SQL, se lee
+entera con la zona.
+
+La máscara se **normaliza al guardar** (`PosPlanoReacomodo::normalizarCeldas()`): se descartan las
+claves mal formadas y las que caen fuera de la rejilla propuesta, se deduplica y se ordena por
+(fila, columna). Descartar en vez de recordar es deliberado: si la zona se encoge y más tarde vuelve
+a crecer, esas celdas vuelven como suelo y no como un recorte fantasma que el usuario ya no
+recuerda haber hecho.
+
+Esto añade dos invariantes a los de la feature 040, comprobados sobre la geometría **propuesta en el
+payload** y no sobre la persistida — encoger la zona y mover en el mismo guardado la mesa que
+estorbaba es una operación legítima:
+
+- **G4** — ninguna celda de una mesa pertenece a `celdas_inactivas`.
+- **G5** — `columnas` y `filas` dentro de 4-24, y al menos una celda de suelo
+  (`columnas × filas − |celdas_inactivas|` ≥ 1).
+
+G2 pasa a comprobarse contra las medidas de la zona, no contra 8×6. El lienzo se persiste en la
+**misma transacción y con el mismo bump de `version`** que las mesas: el contorno de la sala y lo
+que hay dentro son un solo estado, y guardar la mitad dejaría mesas fuera de su propio plano.
 
 Los planos existentes se convirtieron en la propia migración con `App\Support\PosPlanoConversion`:
 deriva la ocupación de `forma` (`rectangular`→2×1, `barra`→3×1, resto 1×1) y luego reduce el ancho

@@ -51,6 +51,11 @@ class PlanoSalaTest extends TestCase
 
         $response = $this->putJson("/pos/sala/zonas/{$zona->id}/plano", [
             'version' => 1,
+            // Lienzo de la zona (feature 042): el guardado del plano lo lleva siempre.
+            // Aqui van los valores por defecto, que son la rejilla fija que este test asume.
+            'columnas' => 8,
+            'filas' => 6,
+            'celdas_inactivas' => [],
             'mesas' => [
                 $this->mesaPayload($mesa1, 2, 3),
                 $this->mesaPayload($mesa2, 2, 4),
@@ -78,6 +83,11 @@ class PlanoSalaTest extends TestCase
 
         $this->putJson("/pos/sala/zonas/{$zonaB->id}/plano", [
             'version' => 1,
+            // Lienzo de la zona (feature 042): el guardado del plano lo lleva siempre.
+            // Aqui van los valores por defecto, que son la rejilla fija que este test asume.
+            'columnas' => 8,
+            'filas' => 6,
+            'celdas_inactivas' => [],
             'mesas' => [$this->mesaPayload($mesaB, 1, 1)],
         ])->assertNotFound();
 
@@ -97,6 +107,11 @@ class PlanoSalaTest extends TestCase
 
         $this->putJson("/pos/sala/zonas/{$zona->id}/plano", [
             'version' => 1,
+            // Lienzo de la zona (feature 042): el guardado del plano lo lleva siempre.
+            // Aqui van los valores por defecto, que son la rejilla fija que este test asume.
+            'columnas' => 8,
+            'filas' => 6,
+            'celdas_inactivas' => [],
             'mesas' => [
                 $this->mesaPayload($mesa1, 3, 3),
                 $this->mesaPayload($mesa2, 3, 3),
@@ -120,11 +135,21 @@ class PlanoSalaTest extends TestCase
 
         $this->putJson("/pos/sala/zonas/{$zona->id}/plano", [
             'version' => 1,
+            // Lienzo de la zona (feature 042): el guardado del plano lo lleva siempre.
+            // Aqui van los valores por defecto, que son la rejilla fija que este test asume.
+            'columnas' => 8,
+            'filas' => 6,
+            'celdas_inactivas' => [],
             'mesas' => [$this->mesaPayload($mesa, 6, 0)],
         ])->assertStatus(422);
 
         $this->putJson("/pos/sala/zonas/{$zona->id}/plano", [
             'version' => 1,
+            // Lienzo de la zona (feature 042): el guardado del plano lo lleva siempre.
+            // Aqui van los valores por defecto, que son la rejilla fija que este test asume.
+            'columnas' => 8,
+            'filas' => 6,
+            'celdas_inactivas' => [],
             'mesas' => [$this->mesaPayload($mesa, 0, 8)],
         ])->assertStatus(422);
     }
@@ -144,6 +169,11 @@ class PlanoSalaTest extends TestCase
 
         $this->putJson("/pos/sala/zonas/{$zonaA->id}/plano", [
             'version' => 1,
+            // Lienzo de la zona (feature 042): el guardado del plano lo lleva siempre.
+            // Aqui van los valores por defecto, que son la rejilla fija que este test asume.
+            'columnas' => 8,
+            'filas' => 6,
+            'celdas_inactivas' => [],
             'mesas' => [$this->mesaPayload($mesaA, 4, 4)],
         ])->assertOk();
 
@@ -163,12 +193,22 @@ class PlanoSalaTest extends TestCase
 
         $this->putJson("/pos/sala/zonas/{$zona->id}/plano", [
             'version' => 1,
+            // Lienzo de la zona (feature 042): el guardado del plano lo lleva siempre.
+            // Aqui van los valores por defecto, que son la rejilla fija que este test asume.
+            'columnas' => 8,
+            'filas' => 6,
+            'celdas_inactivas' => [],
             'mesas' => [$this->mesaPayload($mesa, 1, 1)],
         ])->assertOk()->assertJson(['version' => 2]);
 
         // Segundo guardado con el `version` original (1), ya desactualizado.
         $this->putJson("/pos/sala/zonas/{$zona->id}/plano", [
             'version' => 1,
+            // Lienzo de la zona (feature 042): el guardado del plano lo lleva siempre.
+            // Aqui van los valores por defecto, que son la rejilla fija que este test asume.
+            'columnas' => 8,
+            'filas' => 6,
+            'celdas_inactivas' => [],
             'mesas' => [$this->mesaPayload($mesa, 2, 2)],
         ])->assertStatus(409);
 

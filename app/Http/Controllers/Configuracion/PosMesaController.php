@@ -53,10 +53,13 @@ class PosMesaController extends Controller
         $datos = $this->validar($request);
 
         // Toda mesa nueva aparece en una posición libre por defecto, nunca superpuesta a una
-        // mesa existente (FR-014, feature 039). Si la rejilla de la zona ya está completa (48
-        // mesas), la mesa se crea sin posición: el plano la deja fuera del lienzo hasta que se
-        // libere una celda.
-        $celda = PosPlanoCeldas::primeraCeldaLibre((int) $datos['zona_id']);
+        // mesa existente (FR-014, feature 039). Si el lienzo de la zona ya está completo, la mesa
+        // se crea sin posición: el plano la deja fuera hasta que se libere una celda.
+        //
+        // Desde la feature 042 el hueco se busca en el lienzo de ESA zona (sus medidas, saltándose
+        // sus celdas recortadas), no en una rejilla global de 8×6 que ya no existe.
+        $zona = PosZona::query()->findOrFail($datos['zona_id']);
+        $celda = PosPlanoCeldas::primeraCeldaLibre($zona);
 
         $mesa = PosMesa::create($datos + [
             'tenant_id' => tenant()->getTenantKey(),

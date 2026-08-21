@@ -1364,6 +1364,53 @@ entonces solo usaba otra, conviene un test de backend que **fije esos campos** a
 cambie el servidor (`tests/Feature/Pos/SalaPayloadPlanoTest.php`). Si no, un refactor del controller
 rompe la vista nueva en silencio.
 
+## Pintar sobre un lienzo que ya tiene arrastre exige un modo de gesto explícito (feature 042)
+
+Cuando una superficie ya interpreta el arrastre como *mover cosas* (el plano de sala: arrastrar
+mesas por su asa, estirarlas por el borde) y se le quiere añadir un gesto que también es arrastrar
+—pintar celdas para recortar la planta—, **el mismo dedo sobre el mismo píxel pasa a querer decir
+dos cosas distintas**. No hay heurística que resuelva eso bien: distinguir por dónde empezó el
+gesto, o por si tocó una mesa, produce un plano donde el usuario nunca sabe qué va a pasar antes de
+soltar.
+
+La regla: **un modo explícito, con un toggle visible, que reconfigura la superficie entera.**
+
+- El toggle es un `aria-pressed` real y se ve encendido mientras el modo está activo. El texto de
+  ayuda de la barra cambia con él: el usuario tiene que poder leer qué hace su dedo ahora mismo.
+- Al entrar en el modo, lo que competía por el gesto se **desactiva de verdad** (en el plano:
+  `draggable` y `resizable` de todas las mesas), no se "deja ganar" por z-index o por orden de
+  listeners. Al salir, se reactiva.
+- La capa de pintado se monta y se desmonta con el modo. Lleva `touch-action: none`, sin lo cual el
+  navegador se queda el gesto como scroll de la página (mismo motivo que las asas de
+  redimensionado).
+- El pintado va con **Pointer Events**: `pointerdown` + `setPointerCapture` en el contenedor, y el
+  destino de cada `pointermove` se resuelve por coordenadas (`elementFromPoint`) y no por el
+  elemento capturado. Con el dedo no hay eventos de hover sobre los elementos por los que se pasa,
+  así que `pointerenter` por celda no sirve.
+- El **sentido** del gesto lo decide la primera celda tocada (si era suelo, todo el arrastre
+  recorta; si no lo era, todo el arrastre devuelve suelo). Si cada celda decidiera por su cuenta,
+  volver a pasar por una ya pintada la desharía y el trazo saldría a franjas.
+- Lo que el gesto **no puede** hacer (recortar una celda con una mesa encima) se rechaza sin mover
+  nada, con el feedback de bloqueo que ya existe, y se avisa **una sola vez al soltar** con el
+  conteo agregado. Un toast por celda recorrida son decenas de toasts en un arrastre.
+
+Ejemplo vivo: modo "Recortar sala" del editor del plano
+(`public/js/plugins-init/pos-sala-plano.init.js`, `.pos-plano-celdas` en `pos/sala.blade.php`).
+
+### Corolario: la geometría de un lienzo se escribe en el lienzo, no en `documentElement`
+
+Mientras la rejilla del plano fue una constante global, escribir `--plano-cols`/`--plano-rows` en
+`documentElement` al cargar el módulo era inocuo. En cuanto pasó a ser un dato por zona (feature
+042) dejó de serlo: en la Sala coexisten **dos lienzos** en la misma página —el del editor y el de
+la vista de servicio—, que pueden estar mostrando zonas distintas, y la última en dibujarse le
+imponía su tamaño a la otra.
+
+La regla: **una variable CSS que describe una instancia se declara en el elemento de esa
+instancia**; en la raíz solo van las que describen el sistema de diseño (ahí siguen `--plano-cell`
+y `--plano-gap`, que son el tamaño de celda y valen para toda la app). Conviene además dejar el
+valor por defecto declarado en la propia regla CSS del componente, para que el elemento se vea bien
+antes de que el JS lo toque. Ejemplo vivo: `PosPlanoDibujo.aplicarGeometria(el, geometria)`.
+
 ## Entrada numérica en pantallas táctiles: teclado propio, nunca el del sistema
 
 En una vista pensada para tablet (el TPV, la Sala), un `<input type="number">` o

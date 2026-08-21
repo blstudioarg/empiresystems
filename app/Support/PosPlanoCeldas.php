@@ -3,37 +3,76 @@
 namespace App\Support;
 
 use App\Models\PosMesa;
+use App\Models\PosZona;
 use Illuminate\Support\Collection;
 
 /**
- * Rejilla del plano de sala (feature 039, D2/D7 de research.md): 8 columnas × 6 filas por zona.
- * Reutilizado por el backfill de la migración y por la creación de mesas nuevas (FR-014/FR-015).
+ * Lienzo del plano de sala.
+ *
+ * Hasta la feature 041 esto era **la** rejilla: 8×6 celdas, iguales para toda zona de todo tenant.
+ * Desde la feature 042 el lienzo es un dato de cada zona (`columnas`, `filas`, `celdas_inactivas`)
+ * y lo que queda aquí son los **defectos** y los **límites**: por eso `COLUMNAS`/`FILAS` pasaron a
+ * llamarse `COLUMNAS_DEFECTO`/`FILAS_DEFECTO` (D3). El nombre viejo afirmaba algo que dejó de ser
+ * cierto, y un nombre que miente se vuelve a usar mal.
  */
 class PosPlanoCeldas
 {
-    public const COLUMNAS = 8;
+    /** Lienzo de una zona nueva, y de toda zona anterior a la feature 042. */
+    public const COLUMNAS_DEFECTO = 8;
 
-    public const FILAS = 6;
+    public const FILAS_DEFECTO = 6;
+
+    /** Mínimo por eje: por debajo de 4 celdas el lienzo deja de ser una sala. */
+    public const MIN = 4;
+
+    /** Máximo por eje: acota el lienzo a 576 celdas, que es lo que el navegador dibuja con soltura. */
+    public const MAX = 24;
 
     /**
-     * Primera celda libre de la zona, recorriendo fila por fila, columna por columna. `null` si la
-     * rejilla ya está completa (48 mesas).
+     * Primera celda **de suelo** libre de la zona, recorriendo fila por fila, columna por columna.
+     * `null` si ya no queda ninguna.
+     *
+     * Recorre las medidas de ESA zona y se salta sus celdas recortadas (FR-020): una mesa nueva no
+     * puede nacer sobre un patio ni fuera de una sala de 5×4 solo porque la rejilla antigua llegaba
+     * hasta la columna 7.
      *
      * @return array{fila: int, columna: int}|null
      */
-    public static function primeraCeldaLibre(int $zonaId): ?array
+    public static function primeraCeldaLibre(PosZona $zona): ?array
     {
-        $ocupadas = self::celdasOcupadas($zonaId);
+        $ocupadas = self::celdasOcupadas($zona->id);
+        $inactivas = array_flip($zona->celdasInactivas());
 
-        for ($fila = 0; $fila < self::FILAS; $fila++) {
-            for ($columna = 0; $columna < self::COLUMNAS; $columna++) {
-                if (! $ocupadas->contains("{$fila}-{$columna}")) {
+        $filas = self::filasDe($zona);
+        $columnas = self::columnasDe($zona);
+
+        for ($fila = 0; $fila < $filas; $fila++) {
+            for ($columna = 0; $columna < $columnas; $columna++) {
+                $clave = "{$fila}-{$columna}";
+
+                if (isset($inactivas[$clave])) {
+                    continue;
+                }
+
+                if (! $ocupadas->contains($clave)) {
                     return ['fila' => $fila, 'columna' => $columna];
                 }
             }
         }
 
         return null;
+    }
+
+    /** Ancho del lienzo de la zona, cayendo al defecto si el dato todavía no está poblado. */
+    public static function columnasDe(PosZona $zona): int
+    {
+        return (int) ($zona->columnas ?: self::COLUMNAS_DEFECTO);
+    }
+
+    /** Alto del lienzo de la zona, cayendo al defecto si el dato todavía no está poblado. */
+    public static function filasDe(PosZona $zona): int
+    {
+        return (int) ($zona->filas ?: self::FILAS_DEFECTO);
     }
 
     /**
