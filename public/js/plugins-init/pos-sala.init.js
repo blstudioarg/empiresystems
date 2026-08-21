@@ -92,7 +92,13 @@
 	function pintarMesas() {
 		var visibles = mesasVisibles();
 
-		$vacia.classList.toggle('d-none', visibles.length > 0);
+		// Mismo motivo que en `aplicarVista`: el cartel de "no hay mesas" pertenece a la vista de
+		// lectura, y con el editor abierto no debe asomar por encima de él. Se da justo al crear
+		// una zona nueva desde el panel de gestión, que es cuando la zona activa se queda sin
+		// mesas y el editor está abierto por definición.
+		var editandoPlano = !!(window.PosPlano && window.PosPlano.estaEditando && window.PosPlano.estaEditando());
+
+		$vacia.classList.toggle('d-none', editandoPlano || visibles.length > 0);
 
 		$mesas.innerHTML = visibles.map(function (mesa) {
 			// Misma regla de estado que el plano: implementación única en `pos-plano-dibujo.js`
@@ -206,7 +212,16 @@
 	/**
 	 * Alternado de vista (feature 041). La rejilla de tarjetas y el lienzo de servicio son
 	 * hermanos: solo uno está visible a la vez. El editor de plano (`.pos-plano-wrap`) es un tercer
-	 * contenedor y no se toca desde aquí.
+	 * contenedor y no se abre ni se cierra desde aquí — pero sí hay que **respetarlo**: mientras
+	 * está abierto, los dos contenedores de lectura se quedan ocultos, sea cual sea la vista
+	 * elegida.
+	 *
+	 * Sin esa condición aparecían DOS planos en pantalla (el de servicio arriba, el editor abajo):
+	 * `activarEdicion()` oculta el de lectura al entrar, pero cualquier refresco posterior de la
+	 * sala —crear una zona o una mesa desde el panel de gestión dispara uno— volvía a pasar por
+	 * aquí y le devolvía la visibilidad, porque esta función solo miraba `vistaActiva`. El editor
+	 * seguía debajo con los cambios sin guardar, así que además parecía que la edición se había
+	 * perdido.
 	 */
 	function aplicarVista(anunciar) {
 		// "Todas" no aplica en el plano: se resuelve a la primera zona disponible y se refleja en
@@ -217,8 +232,12 @@
 			document.dispatchEvent(new CustomEvent('pos-sala:zona-cambiada', { detail: { zonaId: zonaActiva } }));
 		}
 
-		$mesas.classList.toggle('d-none', vistaActiva !== 'tarjetas');
-		if ($planoServicio) { $planoServicio.classList.toggle('d-none', vistaActiva !== 'plano'); }
+		// `window.PosPlano` solo existe con permiso de configuración (el editor sale por su guard
+		// antes de publicarlo), así que se comprueba su existencia y no solo su respuesta.
+		var editandoPlano = !!(window.PosPlano && window.PosPlano.estaEditando && window.PosPlano.estaEditando());
+
+		$mesas.classList.toggle('d-none', editandoPlano || vistaActiva !== 'tarjetas');
+		if ($planoServicio) { $planoServicio.classList.toggle('d-none', editandoPlano || vistaActiva !== 'plano'); }
 
 		if ($vista) {
 			$vista.querySelectorAll('[data-vista]').forEach(function (btn) {

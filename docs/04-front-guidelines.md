@@ -1364,6 +1364,31 @@ entonces solo usaba otra, conviene un test de backend que **fije esos campos** a
 cambie el servidor (`tests/Feature/Pos/SalaPayloadPlanoTest.php`). Si no, un refactor del controller
 rompe la vista nueva en silencio.
 
+### Corolario: quien decide la visibilidad de unos hermanos tiene que conocer al tercero en discordia
+
+Si una función centraliza "cuál de estos contenedores se ve" (en la Sala: `aplicarVista()`, que
+alterna tarjetas y plano de servicio) y **otro** contenedor los oculta a los dos al abrirse (el
+editor de plano), la función central **no puede limitarse a mirar su propia variable de estado**.
+Ocultar al entrar no basta: cualquier repintado posterior vuelve a pasar por ella y les devuelve la
+visibilidad.
+
+El síntoma es feo y desconcertante —dos planos en pantalla, el de lectura encima del editor, con el
+usuario creyendo que perdió los cambios que en realidad seguían en memoria— y el disparador es
+lejano: crear una zona o una mesa desde el panel de gestión refresca la sala, y ese refresco es el
+que reabre lo que el editor había cerrado.
+
+La regla: **la función que reparte visibilidad consulta el estado del modo excluyente**, no al
+revés. Si el modo excluyente vive en otro módulo que puede no estar cargado (el editor sale por su
+guard de permiso antes de publicar su API), la consulta se hace defensiva:
+
+```js
+var editando = !!(window.PosPlano && window.PosPlano.estaEditando && window.PosPlano.estaEditando());
+$mesas.classList.toggle('d-none', editando || vistaActiva !== 'tarjetas');
+```
+
+Aplica a todo lo que pertenezca a la vista de lectura, no solo al contenedor principal: el cartel de
+estado vacío cayó en el mismo agujero y asomaba por encima del editor al crear una zona sin mesas.
+
 ## Pintar sobre un lienzo que ya tiene arrastre exige un modo de gesto explícito (feature 042)
 
 Cuando una superficie ya interpreta el arrastre como *mover cosas* (el plano de sala: arrastrar
