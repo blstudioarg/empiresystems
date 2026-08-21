@@ -19,9 +19,11 @@ caja y se consulta en el listado de tickets. No aparece en el PDF del ticket que
 <p class="ayuda-nota">Un producto en rojo (“Sin stock”) o en ámbar (“Quedan pocos”) igual se puede
 vender: el badge es solo un aviso, no un bloqueo.</p>
 
-<p class="ayuda-nota">En efectivo, podés teclear lo que te <strong>entregó</strong> el cliente y la
-pantalla calcula cuánto <strong>devolver</strong>. Es solo una ayuda de caja: no cambia el importe
-cobrado ni aparece en el ticket impreso.</p>
+<p class="ayuda-nota">En efectivo, tocá el campo <strong>Entregado</strong> y se abre un teclado
+dentro de la propia pantalla —nunca el teclado del sistema, que en tablet taparía el importe— para
+escribir lo que te dio el cliente; mientras tecleás ya se ve cuánto hay que <strong>devolver</strong>,
+y con <em>Listo</em> queda guardado. Es solo una ayuda de caja: no cambia el importe cobrado ni
+aparece en el ticket impreso.</p>
 
 @if ($hosteleriaActiva ?? false)
 	<hr>

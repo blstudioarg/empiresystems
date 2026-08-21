@@ -1363,3 +1363,56 @@ Corolario de contrato: cuando una vista nueva pasa a depender de campos del payl
 entonces solo usaba otra, conviene un test de backend que **fije esos campos** aunque la feature no
 cambie el servidor (`tests/Feature/Pos/SalaPayloadPlanoTest.php`). Si no, un refactor del controller
 rompe la vista nueva en silencio.
+
+## Entrada numérica en pantallas táctiles: teclado propio, nunca el del sistema
+
+En una vista pensada para tablet (el TPV, la Sala), un `<input type="number">` o
+`inputmode="decimal"` es una trampa: al enfocarlo, Android/iOS levantan su teclado, que ocupa
+media pantalla y **tapa justo el dato que el usuario necesita ver** para decidir qué teclea (el
+importe a cobrar, el restante, el vuelto). Encima de un modal, además, empuja el layout y deja
+botones fuera de alcance.
+
+La regla: **el campo es un disparador, no una caja de texto.**
+
+- `readonly` + `inputmode="none"` en el `<input>`. `readonly` es lo que realmente impide que el
+  teclado del sistema aparezca al enfocarlo; sin él, cualquier foco lo levanta.
+- El `click` (y el `focus`, con un `blur()` defensivo para la llegada por tabulador) abre un
+  **teclado propio** de la app: la misma familia visual `.pos-key` / `.pos-keypad-grid` que ya usa
+  el teclado de importe del modal de cobro. No se diseña un teclado nuevo por campo.
+- Ese teclado se superpone **dentro del modal** que ya está abierto (`position: absolute; inset: 0`
+  sobre el contenedor), **no** como un modal de Bootstrap anidado: apilar backdrops sobre un modal
+  abierto trae bloqueo de scroll, cierres en cadena y z-index peleado, y al usuario se le lee
+  exactamente igual.
+- El panel muestra en vivo el dato derivado (el vuelto, en el caso de "Entregado") y se confirma
+  con un botón explícito. **Cancelar restaura el valor anterior**, no lo pone a cero: cancelar es
+  descartar la edición en curso, no borrar lo que ya había.
+- La regla de tecleo (coma decimal, máximo 2 decimales, la primera pulsación tras prellenar
+  reemplaza) se comparte entre todos los teclados de la pantalla en una sola función
+  (`aplicarTecla()` en `public/js/pos-cobro.js`). Dos teclados que se comportan distinto al teclear
+  son un error de bulto en una pantalla de servicio.
+
+Ejemplo vivo: campo "Entregado" del modal de cobro (`#pos-keypad-entregado` +
+`#pos-entregado-panel` en `resources/views/pos/create.blade.php`).
+
+### Corolario: un `.btn` de color propio necesita las variables `--bs-btn-*`, no `background`
+
+Bootstrap 5 no pinta los botones con un color literal: `.btn` declara
+`background-color: var(--bs-btn-bg)` y `color: var(--bs-btn-color)`. Como `css/style.css` carga
+**después** de `@stack('styles')`, una regla propia de **una sola clase** (`.pos-keypad-anadir { background: var(--pos-primary) }`)
+empata en especificidad con `.btn` y **pierde por orden de cascada**: el botón queda transparente
+con texto gris y parece deshabilitado aunque no lo esté. Pasó exactamente eso con "Añadir pago" del
+modal de cobro, y estuvo así sin que nadie lo notara hasta que un botón nuevo heredó el mismo fallo.
+
+La forma correcta, y la que mantiene coherentes hover/active/disabled sin repetir colores:
+
+```css
+.pos-cobro-modal .pos-keypad-anadir {   /* doble clase: gana a `.btn` en especificidad */
+    --bs-btn-bg: var(--pos-primary);
+    --bs-btn-color: #fff;
+    --bs-btn-hover-bg: color-mix(in srgb, var(--pos-primary) 86%, #000);
+    --bs-btn-disabled-bg: #c9ccd1;
+}
+```
+
+Si un botón con color de marca se ve apagado y en el inspector la variable del tenant **sí** tiene
+valor, es esto: no es la variable, es `.btn` pisando el `background-color`.

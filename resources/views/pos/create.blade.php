@@ -382,7 +382,7 @@
 		.pos-metodo.activo .ic { background: rgba(255,255,255,.22); color: #fff; }
 
 		/* Teclado numérico en pantalla: aparece al elegir un método; el foco no sale de la app. */
-		.pos-keypad { margin-top: .3rem; }
+		.pos-keypad { margin-top: .3rem; position: relative; }
 		.pos-keypad-head { display: flex; align-items: center; justify-content: space-between; gap: .6rem; margin-bottom: .7rem; }
 		.pos-keypad-head .metodo-lbl { display: inline-flex; align-items: center; gap: .5rem; font-weight: 700; color: #2b2f36; }
 		.pos-keypad-head .metodo-lbl .ic { color: var(--pos-primary); font-size: 1.05rem; }
@@ -397,10 +397,41 @@
 			background: #f5f6f8; border: 1px solid var(--bs-border-color, #e6e6e6); border-radius: .85rem;
 		}
 		.pos-keypad-cambio-lbl { font-size: .78rem; font-weight: 700; color: #6b7280; margin: 0; }
+		/* El campo NO se escribe con el teclado del sistema: en tablet ese teclado tapa media
+		   pantalla y encima del modal de cobro deja el importe fuera de vista. Es un disparador
+		   táctil que abre el teclado propio de la app (`.pos-entregado-panel`). `readonly` es lo
+		   que impide que Android/iOS levanten el teclado nativo al enfocarlo. */
 		.pos-keypad-entregado {
-			width: 90px; border: 1px solid var(--bs-border-color, #e6e6e6); border-radius: .6rem;
-			padding: .35rem .5rem; font-weight: 700; font-variant-numeric: tabular-nums; text-align: right;
+			width: 104px; min-height: 44px; border: 1px solid var(--bs-border-color, #e6e6e6); border-radius: .6rem;
+			padding: .35rem .55rem; font-weight: 700; font-variant-numeric: tabular-nums; text-align: right;
+			background: #fff; cursor: pointer; -webkit-tap-highlight-color: transparent;
 		}
+		.pos-keypad-entregado:focus { outline: 2px solid var(--pos-primary); outline-offset: 1px; }
+
+		/* Teclado de "Entregado": se superpone al de importe dentro del propio modal de cobro.
+		   No es un modal de Bootstrap anidado a propósito — apilar backdrops sobre un modal ya
+		   abierto trae bloqueo de scroll y cierres en cadena; esto se lee igual y no tiene ese
+		   problema. */
+		.pos-entregado-panel {
+			position: absolute; inset: 0; z-index: 5; background: #fff; border-radius: 1rem;
+			padding: .2rem; display: flex; flex-direction: column;
+		}
+		.pos-entregado-panel.d-none { display: none; }
+		.pos-entregado-head { display: flex; align-items: center; justify-content: space-between; gap: .6rem; margin-bottom: .7rem; }
+		.pos-entregado-head .lbl { display: inline-flex; align-items: center; gap: .5rem; font-weight: 700; color: #2b2f36; }
+		.pos-entregado-head .lbl .ic { color: var(--pos-primary); font-size: 1.05rem; }
+		.pos-entregado-monto {
+			font-size: 1.7rem; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -.01em; color: #2b2f36;
+		}
+		/* Mismo bloque Devolver que ya conoce el cajero, para que el vuelto se vea mientras teclea
+		   y no solo al cerrar el panel. */
+		.pos-entregado-resumen {
+			display: flex; align-items: center; gap: .6rem; margin-top: .7rem; padding: .55rem .75rem;
+			background: #f5f6f8; border: 1px solid var(--bs-border-color, #e6e6e6); border-radius: .85rem;
+		}
+		.pos-entregado-resumen .lbl { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #6b7280; }
+		.pos-entregado-resumen .val { margin-left: auto; font-size: 1.1rem; font-weight: 800; color: #16a34a; font-variant-numeric: tabular-nums; }
+		.pos-entregado-resumen .val.insuficiente { color: #6b7280; }
 		.pos-keypad-devolver { margin-left: auto; text-align: right; display: flex; flex-direction: column; gap: 0; }
 		.pos-keypad-devolver span { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #6b7280; }
 		.pos-keypad-devolver strong { font-size: 1.1rem; color: #16a34a; font-variant-numeric: tabular-nums; }
@@ -416,8 +447,30 @@
 
 		.pos-keypad-acciones { display: flex; gap: .55rem; margin-top: .7rem; }
 		.pos-keypad-acciones .btn { flex: 1 1 0; min-height: 54px; font-weight: 700; border-radius: 14px !important; font-size: 1rem !important; }
-		.pos-keypad-anadir { background: var(--pos-primary); border: none; color: #fff; }
-		.pos-keypad-anadir:disabled { background: #c9ccd1; }
+		/* `.btn` de Bootstrap 5 no pinta con un color literal: usa
+		   `background-color: var(--bs-btn-bg)` / `color: var(--bs-btn-color)`. Y `css/style.css`
+		   carga DESPUÉS de `@stack('styles')`, así que una regla de UNA sola clase
+		   (`.pos-keypad-anadir`) empata en especificidad con `.btn` y pierde por orden de cascada:
+		   el botón salía transparente con texto gris, con toda la pinta de estar deshabilitado
+		   aunque no lo estuviera.
+		   Se arregla igual que en `.pos-cobro-emitir` —doble clase para subir la especificidad— y
+		   fijando las propias variables `--bs-btn-*`, que es la vía que Bootstrap 5 espera y la
+		   única que deja coherentes hover, active y disabled sin repetir colores a mano. */
+		.pos-cobro-modal .pos-keypad-anadir {
+			--bs-btn-bg: var(--pos-primary);
+			--bs-btn-border-color: var(--pos-primary);
+			--bs-btn-color: #fff;
+			--bs-btn-hover-bg: color-mix(in srgb, var(--pos-primary) 86%, #000);
+			--bs-btn-hover-border-color: color-mix(in srgb, var(--pos-primary) 86%, #000);
+			--bs-btn-hover-color: #fff;
+			--bs-btn-active-bg: color-mix(in srgb, var(--pos-primary) 78%, #000);
+			--bs-btn-active-border-color: color-mix(in srgb, var(--pos-primary) 78%, #000);
+			--bs-btn-active-color: #fff;
+			--bs-btn-disabled-bg: #c9ccd1;
+			--bs-btn-disabled-border-color: #c9ccd1;
+			--bs-btn-disabled-color: #fff;
+			font-weight: 700;
+		}
 
 		/* Doble clase (.pos-cobro-modal .pos-cobro-emitir) para ganarle en especificidad al
 		   `.btn { font-size:.76rem !important }` de app-overrides.css, que carga después. */
@@ -762,7 +815,11 @@
 						     Es ayuda de caja: no altera el importe cobrado ni figura en el documento. --}}
 						<div class="pos-keypad-cambio d-none" id="pos-keypad-cambio">
 							<label class="pos-keypad-cambio-lbl" for="pos-keypad-entregado">Entregado</label>
-							<input type="text" inputmode="decimal" class="pos-keypad-entregado" id="pos-keypad-entregado" placeholder="0,00">
+							{{-- readonly + inputmode="none": el teclado del sistema no debe aparecer nunca
+							     en tablet. Tocarlo abre el teclado propio de abajo. --}}
+							<input type="text" readonly inputmode="none" class="pos-keypad-entregado"
+								id="pos-keypad-entregado" placeholder="0,00" aria-haspopup="true"
+								title="Tocá para teclear lo que entrega el cliente">
 							<div class="pos-keypad-devolver">
 								<span>Devolver</span>
 								<strong id="pos-keypad-devolver-val">0,00 €</strong>
@@ -772,6 +829,43 @@
 						<div class="pos-keypad-acciones">
 							<button type="button" class="btn btn-light" id="pos-keypad-cancelar">Cancelar</button>
 							<button type="button" class="btn pos-keypad-anadir" id="pos-keypad-anadir">Añadir pago</button>
+						</div>
+
+						{{-- Teclado de "Entregado": mismas teclas `.pos-key` que el de importe (el
+						     listener delegado del keypad las recoge igual) y se superpone dentro del
+						     modal de cobro, sin teclado del sistema de por medio. --}}
+						<div class="pos-entregado-panel d-none" id="pos-entregado-panel">
+							<div class="pos-entregado-head">
+								<span class="lbl">
+									<span class="ic"><i class="fas fa-hand-holding-dollar"></i></span>
+									<span>Entregado</span>
+								</span>
+								<span class="pos-entregado-monto" id="pos-entregado-monto">0,00 €</span>
+							</div>
+							<div class="pos-keypad-grid">
+								<button type="button" class="pos-key" data-key="1">1</button>
+								<button type="button" class="pos-key" data-key="2">2</button>
+								<button type="button" class="pos-key" data-key="3">3</button>
+								<button type="button" class="pos-key" data-key="4">4</button>
+								<button type="button" class="pos-key" data-key="5">5</button>
+								<button type="button" class="pos-key" data-key="6">6</button>
+								<button type="button" class="pos-key" data-key="7">7</button>
+								<button type="button" class="pos-key" data-key="8">8</button>
+								<button type="button" class="pos-key" data-key="9">9</button>
+								<button type="button" class="pos-key wide" data-key=",">,</button>
+								<button type="button" class="pos-key" data-key="0">0</button>
+								<button type="button" class="pos-key wide" data-key="del" aria-label="Borrar">⌫</button>
+							</div>
+
+							<div class="pos-entregado-resumen">
+								<span class="lbl">Devolver</span>
+								<span class="val" id="pos-entregado-devolver">0,00 €</span>
+							</div>
+
+							<div class="pos-keypad-acciones">
+								<button type="button" class="btn btn-light" id="pos-entregado-cancelar">Cancelar</button>
+								<button type="button" class="btn pos-keypad-anadir" id="pos-entregado-listo">Listo</button>
+							</div>
 						</div>
 					</div>
 				</div>

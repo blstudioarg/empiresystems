@@ -33,6 +33,14 @@ window.PosApp.registrar('cobro', function (PosApp) {
 	var $keypadEntregado = document.getElementById('pos-keypad-entregado');
 	var $keypadDevolverVal = document.getElementById('pos-keypad-devolver-val');
 
+	// Teclado propio para "Entregado" (tablet): el del sistema tapa media pantalla y deja el
+	// importe fuera de vista justo cuando el cajero necesita verlo.
+	var $entregadoPanel = document.getElementById('pos-entregado-panel');
+	var $entregadoMonto = document.getElementById('pos-entregado-monto');
+	var $entregadoDevolver = document.getElementById('pos-entregado-devolver');
+	var $entregadoCancelar = document.getElementById('pos-entregado-cancelar');
+	var $entregadoListo = document.getElementById('pos-entregado-listo');
+
 	var metodosMeta = {};
 	try { metodosMeta = JSON.parse((document.getElementById('pos-metodos-data') || {}).textContent || '{}'); } catch (e) { metodosMeta = {}; }
 
@@ -40,6 +48,11 @@ window.PosApp.registrar('cobro', function (PosApp) {
 	var keypadMetodo = null; // método en edición
 	var keypadStr = '';      // importe tecleado (decimal con coma)
 	var keypadPrellenado = false;
+
+	var editandoEntregado = false; // el panel de "Entregado" está abierto y se queda las teclas
+	var entregadoStr = '';
+	var entregadoPrellenado = false;
+	var entregadoPrevio = ''; // valor al abrir el panel, para poder cancelar de verdad
 
 	// Modal de éxito al emitir (OK + mensaje + acciones; sin PDF embebido).
 	var $exitoModalEl = document.getElementById('posExitoModal');
@@ -140,9 +153,17 @@ window.PosApp.registrar('cobro', function (PosApp) {
 	}
 
 	// Importe tecleado (coma decimal es-ES) → número.
-	function montoKeypad() {
-		var val = parseFloat((keypadStr || '0').replace(',', '.'));
+	function aNumero(str) {
+		var val = parseFloat((str || '0').replace(',', '.'));
 		return isNaN(val) ? 0 : Math.round(val * 100) / 100;
+	}
+
+	function montoKeypad() {
+		return aNumero(keypadStr);
+	}
+
+	function montoEntregado() {
+		return aNumero(entregadoStr);
 	}
 
 	function renderTenders() {
@@ -205,12 +226,16 @@ window.PosApp.registrar('cobro', function (PosApp) {
 		if ($cobroKeypad) { $cobroKeypad.classList.remove('d-none'); }
 		if ($cobroEleccion) { $cobroEleccion.classList.add('d-none'); }
 		if ($keypadEntregado) { $keypadEntregado.value = ''; }
+		entregadoStr = '';
+		cerrarEntregado();
 		renderKeypad();
 	}
 
 	function cerrarKeypad() {
 		keypadMetodo = null;
 		keypadStr = '';
+		entregadoStr = '';
+		cerrarEntregado();
 		if ($cobroKeypad) { $cobroKeypad.classList.add('d-none'); }
 		renderRestante();
 	}
@@ -234,30 +259,111 @@ window.PosApp.registrar('cobro', function (PosApp) {
 
 		if (!esEfectivo) { return; }
 
-		var entregado = parseFloat((($keypadEntregado && $keypadEntregado.value) || '0').replace(',', '.'));
-		if (isNaN(entregado)) { entregado = 0; }
-
-		var devuelve = Math.max(0, Math.round((entregado - monto) * 100) / 100);
+		var devuelve = vueltoSobre(monto, montoEntregado());
 		if ($keypadDevolverVal) { $keypadDevolverVal.textContent = PosApp.format(devuelve) + ' €'; }
 	}
 
-	function pulsarTecla(key) {
+	/**
+	 * Vuelto = entregado − importe cobrado, nunca negativo. Sigue siendo **ayuda de caja**: no
+	 * altera el tender que se registra ni figura en el documento (FR-063), así que aquí no hay
+	 * ningún importe fiscal en juego.
+	 */
+	function vueltoSobre(monto, entregado) {
+		return Math.max(0, Math.round((entregado - monto) * 100) / 100);
+	}
+
+	// ── Teclado propio de "Entregado" ──────────────────────────────────────────────────────────
+	//
+	// El campo es `readonly` (el teclado del sistema no aparece) y hace de disparador de este
+	// panel, que se superpone al teclado de importe dentro del mismo modal. Reutiliza las mismas
+	// teclas `.pos-key`: el listener delegado del keypad las recoge y `pulsarTecla` decide a qué
+	// número van según si el panel está abierto.
+
+	function abrirEntregado() {
+		if (keypadMetodo !== 'efectivo') { return; }
+		editandoEntregado = true;
+		entregadoPrevio = entregadoStr;
+		// Se arranca de lo que ya hubiera tecleado, pero la primera tecla lo reemplaza: el gesto
+		// normal es teclear el billete entero, no corregir dígito a dígito.
+		entregadoPrellenado = entregadoStr !== '';
+		if ($entregadoPanel) { $entregadoPanel.classList.remove('d-none'); }
+		renderEntregado();
+	}
+
+	function cerrarEntregado() {
+		editandoEntregado = false;
+		entregadoPrellenado = false;
+		if ($entregadoPanel) { $entregadoPanel.classList.add('d-none'); }
+	}
+
+	/** Cancelar deja el campo como estaba, no a cero: cancelar es descartar la edición en curso. */
+	function cancelarEntregado() {
+		entregadoStr = entregadoPrevio;
+		cerrarEntregado();
+		renderKeypad();
+	}
+
+	function renderEntregado() {
+		var entregado = montoEntregado();
+		if ($entregadoMonto) { $entregadoMonto.textContent = PosApp.format(entregado) + ' €'; }
+
+		if ($entregadoDevolver) {
+			var monto = montoKeypad();
+			$entregadoDevolver.textContent = PosApp.format(vueltoSobre(monto, entregado)) + ' €';
+			// Mientras no alcanza para cubrir el importe no hay vuelto que anunciar: el 0,00 se
+			// muestra apagado para que no se confunda con "no hay que devolver nada".
+			$entregadoDevolver.classList.toggle('insuficiente', PosApp.centimos(entregado) < PosApp.centimos(monto));
+		}
+	}
+
+	function aplicarEntregado() {
+		if ($keypadEntregado) {
+			// Se muestra formateado ("20,00", no "20"): el campo queda en la misma familia
+			// tipográfica de importes del modal, con sus dos decimales.
+			$keypadEntregado.value = entregadoStr === '' ? '' : PosApp.format(montoEntregado());
+		}
+		cerrarEntregado();
+		renderKeypad();
+	}
+
+
+	/**
+	 * Aplica una tecla a una cadena de importe. Devuelve `null` si la pulsación no cambia nada
+	 * (tercer decimal, coma repetida): así quien llama no repinta de más.
+	 *
+	 * Es la MISMA regla para el importe cobrado y para "Entregado" — dos cajas de teclado que se
+	 * comportan distinto al teclear serían un error de bulto en una pantalla táctil de servicio.
+	 */
+	function aplicarTecla(str, key, prellenado) {
 		if (key === 'del') {
-			keypadStr = keypadPrellenado ? '' : keypadStr.slice(0, -1);
-			keypadPrellenado = false;
-			renderKeypad();
-			return;
+			return prellenado ? '' : str.slice(0, -1);
 		}
 		// La primera pulsación tras prellenar arranca de cero (el cajero teclea su importe).
-		if (keypadPrellenado) { keypadStr = ''; keypadPrellenado = false; }
+		if (prellenado) { str = ''; }
 		if (key === ',') {
-			if (keypadStr.indexOf(',') === -1) { keypadStr = (keypadStr || '0') + ','; }
-		} else {
-			// Máximo 2 decimales.
-			var partes = keypadStr.split(',');
-			if (partes[1] && partes[1].length >= 2) { return; }
-			keypadStr += key;
+			return str.indexOf(',') === -1 ? (str || '0') + ',' : null;
 		}
+		// Máximo 2 decimales.
+		var partes = str.split(',');
+		if (partes[1] && partes[1].length >= 2) { return null; }
+		return str + key;
+	}
+
+	function pulsarTecla(key) {
+		// Con el panel abierto, las teclas son suyas: el importe cobrado no se toca.
+		if (editandoEntregado) {
+			var siguiente = aplicarTecla(entregadoStr, key, entregadoPrellenado);
+			entregadoPrellenado = false;
+			if (siguiente === null) { return; }
+			entregadoStr = siguiente;
+			renderEntregado();
+			return;
+		}
+
+		var nuevo = aplicarTecla(keypadStr, key, keypadPrellenado);
+		keypadPrellenado = false;
+		if (nuevo === null) { return; }
+		keypadStr = nuevo;
 		renderKeypad();
 	}
 
@@ -338,8 +444,15 @@ window.PosApp.registrar('cobro', function (PosApp) {
 		});
 
 		if ($keypadEntregado) {
-			$keypadEntregado.addEventListener('input', function () { renderCambio(montoKeypad()); });
+			// Es un disparador, no un campo de texto: tocarlo abre el teclado propio. El `blur()`
+			// cubre el caso de llegar por tabulador y que algún navegador insista con el teclado
+			// del sistema pese al `readonly`.
+			$keypadEntregado.addEventListener('click', abrirEntregado);
+			$keypadEntregado.addEventListener('focus', function () { this.blur(); abrirEntregado(); });
 		}
+
+		if ($entregadoCancelar) { $entregadoCancelar.addEventListener('click', cancelarEntregado); }
+		if ($entregadoListo) { $entregadoListo.addEventListener('click', aplicarEntregado); }
 
 		if ($cobroKeypad) {
 			$cobroKeypad.addEventListener('click', function (e) {

@@ -26,7 +26,11 @@ cliente, y no interviene en el módulo de cobros de facturas ni en los KPIs del 
 especifica reparto, el ticket se registra como cobrado íntegro en efectivo.
 
 En efectivo se puede teclear lo "entregado" y la pantalla calcula el "devolver" (cambio): es solo
-una ayuda de caja, no cambia el importe cobrado ni figura en el ticket.
+una ayuda de caja, no cambia el importe cobrado ni figura en el ticket. El campo "Entregado" no se
+escribe con el teclado del sistema: al tocarlo se abre un teclado numérico propio dentro del modal
+de cobro (el mismo tipo de teclado con el que se teclea el importe), que muestra el vuelto en vivo
+y se confirma con "Listo" o se descarta con "Cancelar". Está pensado así para tablet, donde el
+teclado del sistema tapa media pantalla y deja el importe fuera de vista.
 
 ## Módulo de hostelería (mesas, opciones de artículo)
 
