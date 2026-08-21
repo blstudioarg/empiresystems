@@ -1477,6 +1477,13 @@ El resto de decisiones, que se repiten en cualquier plegable:
 - **Movimiento reducido**: se conserva el fundido (ayuda a entender que algo cambió) y se quitan
   desplazamiento y escalonado, que es lo que marea.
 
+**El botón va con el resto de acciones de la pantalla, nunca en una barra propia.** Darle una
+franja para él solo gasta exactamente el alto vertical que el plegado venía a recuperar, así que el
+plegable no llega a rendir. En la Sala vive en la cabecera de la card, junto a Tarjetas/Plano y
+Actualizar. Y como la tira aparece **encima** de esa cabecera, el chevron apunta hacia arriba cuando
+está plegado: hacia abajo estaría diciendo que el contenido sale por debajo del botón, que no es
+donde va a aparecer.
+
 **La preferencia se persiste por usuario**, con la misma forma de clave que la vista de la Sala
 (`'<pantalla>-<cosa>:' + userId`): en hostelería varias personas comparten la misma tablet y no
 deben pisarse los ajustes. Es preferencia de interfaz, así que vive en `localStorage` y no viaja al

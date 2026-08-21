@@ -4,8 +4,8 @@ la que se abren, se retoman y se cobran las cuentas.</p>
 <ol>
 	<li><strong>Ver el resumen</strong>: las cuatro tarjetas de arriba (total de mesas, libres,
 		ocupadas y olvidadas) vienen <strong>plegadas</strong> para que la sala se vea entera de un
-		vistazo. Se despliegan con el botón <em>Resumen</em>, arriba a la derecha, y se vuelven a
-		plegar con el mismo botón. Lo que elijas se recuerda para la próxima vez, en ese
+		vistazo. Se despliegan con el botón <em>Resumen</em>, en la cabecera de la
+		sala junto a <em>Tarjetas</em> y <em>Plano</em>, y se vuelven a plegar con el mismo botón. Lo que elijas se recuerda para la próxima vez, en ese
 		dispositivo y para tu usuario.</li>
 	<li><strong>Elegir cómo verla</strong>: arriba a la derecha se cambia entre
 		<em>Tarjetas</em> (la rejilla de siempre) y <em>Plano</em> (las mesas dibujadas donde están

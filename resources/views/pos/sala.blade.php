@@ -92,25 +92,17 @@
 		   y hace que el mismo tiempo se PERCIBA mas lento. */
 		.pos-sala { --pos-ease-out: cubic-bezier(.23, 1, .32, 1); }
 
-		.pos-sala-resumen-bar { display: flex; justify-content: flex-end; margin-bottom: .6rem; }
+		/* El boton vive en la cabecera con el resto de acciones, asi que es un `.btn` normal y
+		   hereda de `.pos-sala-acciones .btn` el alto tactil de 48px: aqui solo va lo suyo. */
 		.pos-sala-resumen-toggle {
-			display: inline-flex; align-items: center; gap: .5rem;
-			min-height: 40px; padding: .4rem .9rem;
-			border: 1.5px solid #e6e6e6; border-radius: 999px; background: #fff;
-			font-size: .82rem; font-weight: 700; color: #8b93a1;
 			-webkit-tap-highlight-color: transparent;
-			transition: transform 160ms var(--pos-ease-out), border-color 160ms ease, color 160ms ease;
-		}
-		/* El hover se restringe a puntero fino: en tablet el toque dispara `:hover` y deja el
-		   boton "encendido" despues de soltarlo, como si estuviera activo. */
-		@media (hover: hover) and (pointer: fine) {
-			.pos-sala-resumen-toggle:hover { border-color: var(--pos-primary, #1d69d6); color: var(--pos-primary, #1d69d6); }
+			transition: transform 160ms var(--pos-ease-out), color 160ms ease;
 		}
 		/* Respuesta inmediata al pulsar: sin esto el boton no parece estar escuchando. */
 		.pos-sala-resumen-toggle:active { transform: scale(.97); }
-		.pos-sala-resumen-toggle[aria-expanded="true"] {
-			border-color: var(--pos-primary, #1d69d6); color: var(--pos-primary, #1d69d6);
-		}
+		/* El estado lo lleva el propio `aria-expanded`, no una clase paralela que pueda
+		   desincronizarse con el atributo que lee el lector de pantalla. */
+		.pos-sala-resumen-toggle[aria-expanded="true"] { color: var(--pos-primary, #1d69d6); }
 		.pos-sala-resumen-chevron {
 			font-size: .68rem;
 			transition: transform 260ms var(--pos-ease-out);
@@ -425,16 +417,11 @@
 			{{-- Resumen plegable (tira de metricas). Nace CERRADO a proposito: en una tablet de
 			     sala lo que importa es el plano, y cuatro tarjetas ocupando la primera pantalla
 			     empujaban las mesas fuera de la vista. La preferencia se recuerda por usuario,
-			     igual que la eleccion de vista (misma razon: varias personas comparten tablet). --}}
-			<div class="pos-sala-resumen-bar">
-				<button type="button" class="pos-sala-resumen-toggle" id="pos-sala-resumen-toggle"
-				        aria-expanded="false" aria-controls="pos-sala-cards-collapse">
-					<i class="fas fa-chart-simple" aria-hidden="true"></i>
-					<span>Resumen</span>
-					<i class="fas fa-chevron-down pos-sala-resumen-chevron" aria-hidden="true"></i>
-				</button>
-			</div>
+			     igual que la eleccion de vista (misma razon: varias personas comparten tablet).
 
+			     Su boton NO vive aqui sino en la cabecera de la card, con el resto de acciones:
+			     una barra propia solo para el gastaba justamente la franja de alto que este
+			     plegado viene a despejar. Plegado, esto no ocupa ni un pixel. --}}
 			<div class="pos-sala-cards-collapse" id="pos-sala-cards-collapse">
 				<div class="pos-sala-cards-collapse-inner">
 					<div class="row" id="pos-sala-cards">
@@ -506,6 +493,15 @@
 				<div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
 					<h4 class="card-title mb-0">Sala</h4>
 					<div class="pos-sala-acciones">
+						<button type="button" class="btn btn-light pos-sala-resumen-toggle" id="pos-sala-resumen-toggle"
+						        aria-expanded="false" aria-controls="pos-sala-cards-collapse">
+							<i class="fas fa-chart-simple" aria-hidden="true"></i>
+							<span>Resumen</span>
+							{{-- Apunta ARRIBA plegado, porque la tira aparece encima de este boton: un
+							     chevron hacia abajo diria que el contenido sale por debajo. Al abrir
+							     rota 180 y pasa a apuntar abajo = "guardalo". --}}
+							<i class="fas fa-chevron-up pos-sala-resumen-chevron" aria-hidden="true"></i>
+						</button>
 						{{-- Sin @can a propósito (FR-004): ver la Sala como plano es parte del servicio;
 						     editarlo sigue siendo `ver-configuracion`. --}}
 						<div class="pos-sala-vista" id="pos-sala-vista" role="group" aria-label="Vista de la sala">
