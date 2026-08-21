@@ -16,11 +16,36 @@
 	var $mesas = document.getElementById('pos-sala-mesas');
 	var $vacia = document.getElementById('pos-sala-vacia');
 	var $refrescar = document.getElementById('pos-sala-refrescar');
+	var $vista = document.getElementById('pos-sala-vista');
+	var $planoServicio = document.getElementById('pos-plano-servicio');
 
 	if (!$zonas || !$mesas) { return; }
 
 	var datos = { zonas: [], mesas: [] };
 	var zonaActiva = ''; // '' = todas
+
+	// Vista de la Sala (feature 041): 'tarjetas' (la de siempre, por defecto) o 'plano'.
+	// La preferencia es de INTERFAZ, no de negocio: vive en `localStorage` y no viaja al servidor.
+	// La clave lleva el id del usuario porque en hostelería varias personas comparten la misma
+	// tablet y no deben pisarse la preferencia (FR-003).
+	var VISTAS = ['tarjetas', 'plano'];
+	var claveVista = 'pos-sala-vista:' + (state.userId || 'anon');
+
+	function leerVistaGuardada() {
+		try {
+			var guardada = window.localStorage.getItem(claveVista);
+			return VISTAS.indexOf(guardada) !== -1 ? guardada : 'tarjetas';
+		} catch (e) {
+			// Navegador con el almacenamiento bloqueado: la vista de siempre y a trabajar.
+			return 'tarjetas';
+		}
+	}
+
+	function guardarVista(vista) {
+		try { window.localStorage.setItem(claveVista, vista); } catch (e) { /* sin persistencia: no es crítico */ }
+	}
+
+	var vistaActiva = leerVistaGuardada();
 
 	function escapeHtml(s) {
 		var d = document.createElement('div');
@@ -41,8 +66,13 @@
 	function pintarZonas() {
 		var total = datos.mesas.length;
 
+		// "Todas" no tiene plano que dibujar (la rejilla es de UNA zona): en vista de plano se
+		// deshabilita en vez de ocultarse, para que la fila de filtros no cambie de tamaño al
+		// alternar de vista (D6).
+		var todasDeshabilitado = vistaActiva === 'plano' ? ' disabled title="El plano se ve por zonas"' : '';
+
 		var html = '<button type="button" class="pos-filtro' + (zonaActiva === '' ? ' active' : '') + '"' +
-			' data-zona="" aria-pressed="' + (zonaActiva === '' ? 'true' : 'false') + '">' +
+			' data-zona="" aria-pressed="' + (zonaActiva === '' ? 'true' : 'false') + '"' + todasDeshabilitado + '>' +
 			'Todas <span class="badge-count">' + total + '</span></button>';
 
 		datos.zonas.forEach(function (zona) {
@@ -65,7 +95,9 @@
 		$vacia.classList.toggle('d-none', visibles.length > 0);
 
 		$mesas.innerHTML = visibles.map(function (mesa) {
-			var clase = mesa.estado === 'libre' ? 'libre' : (mesa.olvidada ? 'olvidada' : 'ocupada');
+			// Misma regla de estado que el plano: implementación única en `pos-plano-dibujo.js`
+			// (feature 041). Duplicarla es lo que permitiría que tarjeta y plano se contradigan.
+			var clase = window.PosPlanoDibujo.claseEstado(mesa);
 
 			var badge = '';
 			if (mesa.olvidada) {
@@ -88,14 +120,19 @@
 		}).join('');
 	}
 
+	/**
+	 * Métricas de cabecera. Se cuentan **una sola vez** aquí, sobre todas las mesas del tenant y con
+	 * la misma regla de estado que dibujan las dos vistas: así el total de la cabecera no puede
+	 * contradecir lo que se ve abajo, sea plano o tarjetas (FR-018).
+	 */
 	function pintarCards() {
-		var libres = 0, ocupadas = 0, olvidadas = 0;
+		var conteo = { libre: 0, ocupada: 0, olvidada: 0 };
 
 		datos.mesas.forEach(function (mesa) {
-			if (mesa.estado === 'libre') { libres++; }
-			else if (mesa.olvidada) { olvidadas++; }
-			else { ocupadas++; }
+			conteo[window.PosPlanoDibujo.claseEstado(mesa)]++;
 		});
+
+		var libres = conteo.libre, ocupadas = conteo.ocupada, olvidadas = conteo.olvidada;
 
 		$('[data-metric="total"]').text(datos.mesas.length);
 		$('[data-metric="libres"]').text(libres);
@@ -111,9 +148,11 @@
 			.then(function (json) {
 				datos = json;
 				window.posSalaData = datos;
-				pintarZonas();
-				pintarMesas();
 				pintarCards();
+				// `aplicarVista` pinta zonas y mesas: se llama en lugar de pintarlas aquí para que
+				// la vista guardada quede aplicada ANTES del primer pintado, sin parpadeo
+				// tarjetas -> plano en cada entrada a la Sala.
+				aplicarVista(false);
 				document.dispatchEvent(new CustomEvent('pos-sala:actualizado', { detail: datos }));
 			})
 			.catch(function () {
@@ -133,20 +172,88 @@
 	// El init del plano (feature 039) necesita saber qué zona está activa sin duplicar el estado.
 	window.posSalaZonaActiva = function () { return zonaActiva; };
 
+	/**
+	 * A dónde lleva tocar una mesa. Mesa libre: se abre el TPV con la mesa preseleccionada; el POS
+	 * crea la cuenta al guardar la primera línea, para no dejar cuentas vacías por cada toque en la
+	 * sala. Mesa ocupada: su cuenta.
+	 *
+	 * Lo consumen **las dos vistas** (tarjeta y plano, feature 041): la forma de garantizar que
+	 * las dos lleven al mismo sitio es que compartan la decisión, no que la repitan (FR-013/FR-014).
+	 */
+	function destinoMesa(mesa) {
+		if (!mesa || !mesa.abrir_url) { return null; }
+		var url = mesa.abrir_url;
+		return mesa.estado === 'libre'
+			? url + (url.indexOf('?') === -1 ? '?' : '&') + 'mesa=' + mesa.id
+			: url;
+	}
+
+	window.posSalaDestinoMesa = destinoMesa;
+	window.posSalaMesaPorId = function (id) {
+		return datos.mesas.filter(function (m) { return String(m.id) === String(id); })[0] || null;
+	};
+
 	$mesas.addEventListener('click', function (e) {
 		var btn = e.target.closest('.pos-mesa');
 		if (!btn) { return; }
 
-		var url = btn.getAttribute('data-url');
-		var mesaId = btn.getAttribute('data-mesa-id');
-		var mesa = datos.mesas.filter(function (m) { return String(m.id) === String(mesaId); })[0];
-
-		// Mesa libre: se abre el TPV con la mesa preseleccionada; el POS crea la cuenta al
-		// guardar la primera línea, para no dejar cuentas vacías por cada toque en la sala.
-		window.location.href = (mesa && mesa.estado === 'libre')
-			? url + (url.indexOf('?') === -1 ? '?' : '&') + 'mesa=' + mesaId
-			: url;
+		// El destino se resuelve en el momento del toque a partir del elemento tocado, nunca de un
+		// índice capturado antes (FR-017).
+		var destino = destinoMesa(window.posSalaMesaPorId(btn.getAttribute('data-mesa-id')));
+		if (destino) { window.location.href = destino; }
 	});
+
+	/**
+	 * Alternado de vista (feature 041). La rejilla de tarjetas y el lienzo de servicio son
+	 * hermanos: solo uno está visible a la vez. El editor de plano (`.pos-plano-wrap`) es un tercer
+	 * contenedor y no se toca desde aquí.
+	 */
+	function aplicarVista(anunciar) {
+		// "Todas" no aplica en el plano: se resuelve a la primera zona disponible y se refleja en
+		// el filtro disparando el evento que ya existe, para no duplicar el estado de "qué zona
+		// está activa" (D6).
+		if (vistaActiva === 'plano' && zonaActiva === '' && datos.zonas.length > 0) {
+			zonaActiva = datos.zonas[0].id;
+			document.dispatchEvent(new CustomEvent('pos-sala:zona-cambiada', { detail: { zonaId: zonaActiva } }));
+		}
+
+		$mesas.classList.toggle('d-none', vistaActiva !== 'tarjetas');
+		if ($planoServicio) { $planoServicio.classList.toggle('d-none', vistaActiva !== 'plano'); }
+
+		if ($vista) {
+			$vista.querySelectorAll('[data-vista]').forEach(function (btn) {
+				var activo = btn.getAttribute('data-vista') === vistaActiva;
+				btn.classList.toggle('active', activo);
+				btn.setAttribute('aria-pressed', activo ? 'true' : 'false');
+			});
+		}
+
+		pintarZonas();
+		pintarMesas();
+
+		if (anunciar !== false) {
+			document.dispatchEvent(new CustomEvent('pos-sala:vista-cambiada', { detail: { vista: vistaActiva } }));
+		}
+	}
+
+	window.posSalaVistaActiva = function () { return vistaActiva; };
+	// El editor de plano la usa al salir del modo edición, para devolver la Sala a la vista que el
+	// usuario tenía elegida en vez de asumir tarjetas (feature 041).
+	window.posSalaAplicarVista = function () { aplicarVista(); };
+
+	if ($vista) {
+		$vista.addEventListener('click', function (e) {
+			var btn = e.target.closest('[data-vista]');
+			if (!btn) { return; }
+
+			var vista = btn.getAttribute('data-vista');
+			if (VISTAS.indexOf(vista) === -1 || vista === vistaActiva) { return; }
+
+			vistaActiva = vista;
+			guardarVista(vista);
+			aplicarVista();
+		});
+	}
 
 	if ($refrescar) {
 		$refrescar.addEventListener('click', function () {

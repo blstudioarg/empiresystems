@@ -70,6 +70,18 @@
 		.pos-sala-acciones { display: flex; gap: .6rem; flex-wrap: wrap; }
 		.pos-sala-acciones .btn { min-height: 48px; display: inline-flex; align-items: center; gap: .45rem; }
 
+		/* Selector de vista (feature 041). Va en la cabecera y NO reutiliza `.pos-filtro`: ese
+		   componente está reservado al filtro por zona y este control no filtra nada, cambia cómo
+		   se ve lo mismo. Mínimo 44px de alto, como el resto de controles táctiles de la Sala. */
+		.pos-sala-vista { display: inline-flex; gap: .25rem; padding: .2rem; border-radius: .8rem; background: #eef0f4; }
+		.pos-sala-vista button {
+			min-height: 44px; display: inline-flex; align-items: center; gap: .4rem;
+			border: none; background: transparent; border-radius: .65rem; padding: .4rem .9rem;
+			font-weight: 650; font-size: .92rem; color: #5b6270; -webkit-tap-highlight-color: transparent;
+			transition: background .15s ease, color .15s ease;
+		}
+		.pos-sala-vista button.active { background: #fff; color: var(--pos-primary, #1d69d6); box-shadow: 0 1px 3px rgba(20,30,60,.14); }
+
 		@media (prefers-reduced-motion: reduce) {
 			.pos-mesa { transition: none; }
 		}
@@ -249,6 +261,33 @@
 		.plano-popover .plano-popover-opciones:last-child { margin-bottom: 0; }
 		.plano-popover .btn-check + .btn { min-height: 36px; }
 
+		/* ── Plano en modo servicio (feature 041). Reutiliza `.pos-plano-canvas` y `.plano-mesa`
+		   del editor: el contorno tiene que ser el mismo, y para eso el CSS también se comparte.
+		   Lo propio de esta vista es el bloque de texto de la mesa y el encaje en pantalla. */
+		.pos-plano-servicio-escala { position: relative; overflow: hidden; }
+		.pos-plano-servicio-titulo { font-size: .78rem; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: #9aa0a6; margin: 1.1rem 0 .55rem; }
+		.pos-plano-servicio-vacio { text-align: center; padding: 2.5rem 1rem; color: #9aa0a6; }
+
+		/* En servicio la mesa se toca para abrir su cuenta, así que se comporta como un control:
+		   cursor de mano y la misma respuesta al toque que la tarjeta. */
+		.plano-mesa.plano-mesa-servicio { cursor: pointer; gap: .05rem; line-height: 1.15; overflow: hidden; }
+		.plano-mesa.plano-mesa-servicio:active { filter: brightness(.97); }
+		/* El texto NUNCA desborda el contorno: en una mesa de 1×1 (96px) el nombre se trunca con
+		   elipsis antes que salirse, y el importe usa cifras tabulares para que cuatro dígitos
+		   sigan cayendo dentro (FR-009). */
+		.plano-mesa.plano-mesa-servicio .plano-mesa-nombre {
+			max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+			font-size: .74rem; font-weight: 750;
+		}
+		.plano-mesa.plano-mesa-servicio .plano-mesa-importe {
+			font-weight: 800; font-size: .92rem; letter-spacing: -.02em; font-variant-numeric: tabular-nums;
+			max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+		}
+		.plano-mesa.plano-mesa-servicio .plano-mesa-tiempo { font-size: .68rem; font-weight: 650; color: #9aa0a6; }
+		.plano-mesa.ocupada.plano-mesa-servicio .plano-mesa-importe { color: var(--pos-money, #16a34a); }
+		.plano-mesa.olvidada.plano-mesa-servicio .plano-mesa-importe,
+		.plano-mesa.olvidada.plano-mesa-servicio .plano-mesa-tiempo { color: var(--pos-warn, #d97706); }
+
 		@media (prefers-reduced-motion: reduce) {
 			.plano-mesa { transition: none; }
 			.plano-mesa.plano-mesa-bloqueada { animation: none; }
@@ -326,6 +365,16 @@
 				<div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
 					<h4 class="card-title mb-0">Sala</h4>
 					<div class="pos-sala-acciones">
+						{{-- Sin @can a propósito (FR-004): ver la Sala como plano es parte del servicio;
+						     editarlo sigue siendo `ver-configuracion`. --}}
+						<div class="pos-sala-vista" id="pos-sala-vista" role="group" aria-label="Vista de la sala">
+							<button type="button" data-vista="tarjetas" aria-pressed="true">
+								<i class="fas fa-table-cells-large"></i> Tarjetas
+							</button>
+							<button type="button" data-vista="plano" aria-pressed="false">
+								<i class="fas fa-map"></i> Plano
+							</button>
+						</div>
 						<button type="button" class="btn btn-light" id="pos-sala-refrescar">
 							<i class="fas fa-rotate"></i> Actualizar
 						</button>
@@ -348,6 +397,23 @@
 					</div>
 
 					<div class="pos-mesas-grid" id="pos-sala-mesas"></div>
+
+					{{-- Vista de plano en modo servicio (feature 041). Contenedor DISTINTO de
+					     `.pos-plano-wrap`, que es el del editor: aquí no se edita nada. --}}
+					<div class="d-none" id="pos-plano-servicio">
+						<div class="pos-plano-servicio-escala" id="pos-plano-servicio-escala">
+							<div class="pos-plano-canvas" id="pos-plano-servicio-canvas"></div>
+						</div>
+
+						<p class="pos-plano-servicio-vacio d-none" id="pos-plano-servicio-vacio">
+							Esta zona todavía no tiene mesas colocadas en el plano.
+						</p>
+
+						<div class="d-none" id="pos-plano-servicio-sin-sitio">
+							<p class="pos-plano-servicio-titulo">Sin sitio en el plano</p>
+							<div class="pos-mesas-grid" id="pos-plano-servicio-sin-sitio-grid"></div>
+						</div>
+					</div>
 
 					<p class="pos-sala-vacia d-none" id="pos-sala-vacia">
 						Todavía no hay mesas configuradas. Créalas con el botón <strong>Editar plano</strong> de arriba.
@@ -409,6 +475,9 @@
 		window.posSalaState = {
 			estadoUrl: @json(route('pos.sala')),
 			umbralOlvidadaMin: {{ $umbralOlvidadaMin }},
+			// Compone la clave de la preferencia de vista: varias personas comparten la misma
+			// tablet en sala y no deben pisarse la elección (FR-003).
+			userId: @json(auth()->id()),
 		};
 		window.posPlanoState = {
 			puedeEditar: @json(auth()->user()?->can('ver-configuracion') ?? false),
@@ -426,7 +495,11 @@
 		};
 	</script>
 	<script src="{{ asset('vendor/jqueryui/js/jquery-ui.min.js') }}"></script>
+	{{-- El módulo de dibujo va PRIMERO: lo consumen las tres vistas (tarjetas, plano de servicio y
+	     editor). Orden orquestador -> módulos de docs/04-front-guidelines.md. --}}
+	<script src="{{ asset('js/plugins-init/pos-plano-dibujo.js') }}"></script>
 	<script src="{{ asset('js/plugins-init/pos-sala.init.js') }}"></script>
+	<script src="{{ asset('js/plugins-init/pos-sala-plano-servicio.init.js') }}"></script>
 	<script src="{{ asset('js/plugins-init/pos-sala-plano.init.js') }}"></script>
 	<script src="{{ asset('js/plugins-init/pos-sala-plano-gestion.init.js') }}"></script>
 @endpush

@@ -11,11 +11,14 @@
 (function () {
 	'use strict';
 
-	var CELL = 96;
-	var GAP = 12;
-	var COLS = 8;
-	var ROWS = 6;
-	var STEP = CELL + GAP;
+	// Geometría y dibujo viven en `pos-plano-dibujo.js` (feature 041): la vista de servicio dibuja
+	// exactamente lo mismo que el editor porque comparten esta implementación, no una copia.
+	var D = window.PosPlanoDibujo;
+	var CELL = D.CELL;
+	var GAP = D.GAP;
+	var COLS = D.COLS;
+	var ROWS = D.ROWS;
+	var STEP = D.STEP;
 
 	var FORMAS = [
 		{ valor: 'redonda', etiqueta: 'Redonda' },
@@ -34,14 +37,10 @@
 	var $popover = document.getElementById('plano-popover');
 	var $popoverFormas = document.getElementById('plano-popover-formas');
 	var $mesasLectura = document.getElementById('pos-sala-mesas');
+	var $planoServicio = document.getElementById('pos-plano-servicio');
 	var $zonasTabs = document.getElementById('pos-sala-zonas');
 
 	if (!$toggle || !$wrap || !$canvas) { return; }
-
-	document.documentElement.style.setProperty('--plano-cols', COLS);
-	document.documentElement.style.setProperty('--plano-rows', ROWS);
-	document.documentElement.style.setProperty('--plano-cell', CELL + 'px');
-	document.documentElement.style.setProperty('--plano-gap', GAP + 'px');
 
 	var editando = false;
 	var zonaId = null;
@@ -55,12 +54,6 @@
 	// (mismo objeto guardado aquí), así que mutarlo ya deja el cambio reflejado en el mapa.
 	var pendientePorZona = {};
 	var versionPorZona = {};
-
-	function escapeHtml(s) {
-		var d = document.createElement('div');
-		d.textContent = s == null ? '' : s;
-		return d.innerHTML;
-	}
 
 	function mesaPorId(id) {
 		return pendiente.filter(function (m) { return String(m.id) === String(id); })[0] || null;
@@ -110,94 +103,17 @@
 		return mejor;
 	}
 
-	/**
-	 * Ancho/alto en px de una mesa de `ancho`×`alto` celdas. Aritmética del encaje (D1): con
-	 * `grid: [STEP, STEP]` el widget solo emite múltiplos del paso, y `n * STEP - GAP` es
-	 * exactamente el tamaño que ocupa la mesa dejando el hueco de separación entre celdas.
-	 *
-	 * La forma ya NO decide el tamaño (feature 040): decide solo el aspecto (border-radius) y el
-	 * reparto de sillas. Una `barra` puede ser 1×1 y una `cuadrada` 3×2.
-	 */
-	function dimensiones(ancho, alto) {
-		return { width: ancho * STEP - GAP, height: alto * STEP - GAP };
-	}
-
-	/** Rectángulo (en celdas) → caja en px dentro del lienzo. */
-	function aPx(r) {
-		var dim = dimensiones(r.ancho, r.alto);
-		return { left: r.columna * STEP, top: r.fila * STEP, width: dim.width, height: dim.height };
-	}
-
-	/** Caja en px (lo que emite el widget) → rectángulo en celdas. */
-	function aCeldas(pos, size) {
-		return {
-			fila: Math.round(pos.top / STEP),
-			columna: Math.round(pos.left / STEP),
-			ancho: Math.max(1, Math.round((size.width + GAP) / STEP)),
-			alto: Math.max(1, Math.round((size.height + GAP) / STEP)),
-		};
-	}
-
-	/**
-	 * Puntos de silla alrededor del perímetro, en porcentaje del tamaño del elemento (D9): dos
-	 * plazas por celda de ancho (una arriba y otra abajo) y dos por celda de alto (una a cada lado),
-	 * de modo que el número de sillas comunica el tamaño real de la mesa.
-	 *
-	 * La `barra` solo lleva sillas en el lado largo, como una barra real, y ahí sí van dos por celda.
-	 *
-	 * Fuera de alcance a propósito: esto NO es la capacidad de comensales como dato de negocio, es
-	 * una señal visual.
-	 */
-	function sillasParaMesa(forma, ancho, alto) {
-		var puntos = [];
-		var i;
-
-		if (forma === 'barra') {
-			var largo = ancho >= alto ? ancho : alto;
-			var plazas = Math.max(2, largo * 2);
-			for (i = 0; i < plazas; i++) {
-				var p = ((i + 0.5) / plazas) * 100;
-				puntos.push(ancho >= alto ? [p, -6] : [-6, p]);
-			}
-			return puntos;
-		}
-
-		for (i = 0; i < ancho; i++) {
-			var x = ((i + 0.5) / ancho) * 100;
-			puntos.push([x, -6]);
-			puntos.push([x, 106]);
-		}
-		for (i = 0; i < alto; i++) {
-			var y = ((i + 0.5) / alto) * 100;
-			puntos.push([-6, y]);
-			puntos.push([106, y]);
-		}
-
-		return puntos;
-	}
+	// Geometría y HTML de una mesa: implementación única en `pos-plano-dibujo.js` (feature 041).
+	// Aquí solo se alias-an para no reescribir el resto del editor.
+	var aPx = D.aPx;
+	var aCeldas = D.aCeldas;
 
 	function posicionPx(fila, columna) {
 		return { left: columna * STEP, top: fila * STEP };
 	}
 
 	function renderMesaHtml(mesa) {
-		var caja = aPx(mesa);
-		var clase = mesa.estado === 'libre' ? 'libre' : (mesa.olvidada ? 'olvidada' : 'ocupada');
-
-		var sillasHtml = sillasParaMesa(mesa.forma, mesa.ancho, mesa.alto).map(function (p) {
-			return '<span class="silla" style="left:' + p[0] + '%;top:' + p[1] + '%;transform:translate(-50%,-50%);"></span>';
-		}).join('');
-
-		// `estirada` sustituye a la antigua forma `rectangular`: el borde se redondea menos en cuanto
-		// la mesa deja de ser un cuadrado, sin que el usuario tenga que elegir nada.
-		var estirada = mesa.ancho !== mesa.alto ? ' estirada' : '';
-
-		return '<div class="plano-mesa ' + clase + ' forma-' + mesa.forma + estirada + '" data-mesa-id="' + mesa.id + '"' +
-			' style="left:' + caja.left + 'px;top:' + caja.top + 'px;width:' + caja.width + 'px;height:' + caja.height + 'px;">' +
-			sillasHtml +
-			'<span class="plano-mesa-nombre">' + escapeHtml(mesa.nombre) + '</span>' +
-			'<span class="plano-mesa-handle" title="Arrastrar"><i class="fas fa-arrows-up-down-left-right"></i></span>' +
-			'</div>';
+		return D.mesaHtml(mesa, { modo: 'edicion' });
 	}
 
 	function pintarCanvas() {
@@ -505,6 +421,9 @@
 		$toggle.classList.add('d-none');
 		$guardar.classList.remove('d-none');
 		$mesasLectura.classList.add('d-none');
+		// La vista de servicio (feature 041) es un tercer contenedor: entrar a editar la oculta,
+		// igual que a la rejilla de tarjetas.
+		if ($planoServicio) { $planoServicio.classList.add('d-none'); }
 		$wrap.classList.add('activo');
 		cargarZona(zid);
 	}
@@ -516,7 +435,10 @@
 		versionPorZona = {};
 		$toggle.classList.remove('d-none');
 		$guardar.classList.add('d-none');
+		// Devolver la Sala a la vista elegida por el usuario (tarjetas o plano de servicio), no
+		// asumir tarjetas: quien edita el plano lo normal es que estuviera viendo el plano.
 		$mesasLectura.classList.remove('d-none-plano', 'd-none');
+		if (window.posSalaAplicarVista) { window.posSalaAplicarVista(); }
 		$wrap.classList.remove('activo');
 	}
 

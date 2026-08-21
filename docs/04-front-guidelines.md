@@ -1334,3 +1334,32 @@ conocido y el cambio es reversible escribiendo de nuevo. Crear y editar no corre
 por eso no siguen la misma regla.
 
 Ejemplo vivo: `filaDeAlta()` en `public/js/plugins-init/pos-sala-plano-gestion.init.js`.
+
+## Dos vistas de los mismos datos: el estado y el destino se comparten, no se repiten (feature 041)
+
+Cuando una pantalla ofrece **el mismo dato en dos envases distintos** (en la Sala del POS: la
+rejilla de tarjetas y el plano de mesas), el reflejo natural es escribir cada vista por separado.
+Es exactamente lo que hace que acaben contradiciéndose: dos copias de "¿esta mesa está olvidada?"
+divergen a la primera vez que alguien toca una y no la otra, y entonces la app le miente al usuario
+sobre el estado de su propia sala.
+
+La regla es que **la decisión vive en un solo sitio y las vistas la consumen**:
+
+- **El estado visual** (`libre` / `ocupada` / `olvidada`) se calcula una vez. Ejemplo vivo:
+  `PosPlanoDibujo.claseEstado(mesa)` en `public/js/plugins-init/pos-plano-dibujo.js`, consumido por
+  la tarjeta, por la mesa del plano y por el conteo de las métricas de cabecera.
+- **El destino de la interacción** también. Ejemplo vivo: `window.posSalaDestinoMesa(mesa)` en
+  `pos-sala.init.js` — tocar una mesa lleva al mismo sitio se toque donde se toque.
+- **El dibujo compartido no puede vivir detrás del guard de permiso de una de las vistas.** El
+  módulo de dibujo estaba dentro del init del editor, después de `if (!state.puedeEditar) return;`:
+  el usuario sin permiso de configuración se quedaba literalmente sin código para dibujar. Si un
+  módulo lo van a usar dos vistas con permisos distintos, es un archivo aparte.
+- Lo que **sí** puede cambiar entre modos es el contenido interior y los controles (el editor añade
+  el asa de arrastre; la vista de servicio, el importe y el tiempo). El **contorno** —posición,
+  tamaño, forma, color de estado— es el invariante: si se calculara por separado, el plano que ve
+  el camarero podría dejar de coincidir con el que colocó el encargado.
+
+Corolario de contrato: cuando una vista nueva pasa a depender de campos del payload que hasta
+entonces solo usaba otra, conviene un test de backend que **fije esos campos** aunque la feature no
+cambie el servidor (`tests/Feature/Pos/SalaPayloadPlanoTest.php`). Si no, un refactor del controller
+rompe la vista nueva en silencio.

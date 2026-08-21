@@ -2,8 +2,13 @@
 la que se abren, se retoman y se cobran las cuentas.</p>
 
 <ol>
+	<li><strong>Elegir cómo verla</strong>: arriba a la derecha se cambia entre
+		<em>Tarjetas</em> (la rejilla de siempre) y <em>Plano</em> (las mesas dibujadas donde están
+		de verdad en el local). La elección se recuerda para la próxima vez que entres, en ese
+		dispositivo y para tu usuario.</li>
 	<li><strong>Filtrar por zona</strong>: las pestañas de arriba filtran las mesas. «Todas» muestra
-		el local entero.</li>
+		el local entero. En la vista de plano, «Todas» no aplica —el plano es de una zona— y aparece
+		deshabilitada: se muestra la primera zona.</li>
 	<li><strong>Abrir una cuenta</strong>: tocá una mesa <em>libre</em> (borde gris) y se abre el
 		TPV con esa mesa ya seleccionada. La cuenta se crea al guardar la primera línea, así que
 		tocar una mesa por error no deja nada abierto.</li>
@@ -19,6 +24,13 @@ no lo consumido. Si ya se cobró parte de la cuenta, la mesa sigue ocupada mostr
 <p class="ayuda-nota">Una mesa con borde <strong>ámbar</strong> lleva mucho tiempo sin que nadie le
 añada nada (el umbral se configura en <em>Configuración → POS</em>). Es un aviso para que no se
 quede una cuenta olvidada sin cobrar, no un error.</p>
+
+<p class="ayuda-nota">En la vista de <strong>plano</strong> las mesas se tocan igual que las
+tarjetas: una mesa libre abre el TPV con esa mesa, una ocupada retoma su cuenta. El borde dice el
+estado con los mismos colores, y dentro de cada mesa ocupada se ve lo que falta por cobrar y los
+minutos que lleva abierta. En el plano <strong>no se puede mover ni cambiar nada</strong>: para eso
+está <em>Editar plano</em>. Si alguna mesa de la zona no tiene sitio en la rejilla, aparece como
+tarjeta bajo el plano, en «Sin sitio en el plano», para que nunca quede una mesa sin poder cobrar.</p>
 
 <p class="ayuda-nota">Mover una cuenta a otra mesa o juntar dos cuentas se hace desde la propia
 cuenta, en el chip de mesa que aparece en la cabecera del ticket.</p>

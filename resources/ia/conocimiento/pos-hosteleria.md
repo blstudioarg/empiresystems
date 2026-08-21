@@ -19,6 +19,24 @@ que se abrió) u olvidada (borde ámbar, cuando lleva más tiempo del umbral con
 nadie le añada nada). Tocar una mesa libre abre el TPV con esa mesa; tocar una ocupada retoma su
 cuenta.
 
+La Sala se puede ver de **dos formas**, con un selector en la cabecera visible para cualquiera que
+pueda entrar a la Sala (no hace falta permiso de Configuración): **Tarjetas** (la rejilla de
+siempre, la vista por defecto) y **Plano** (las mesas dibujadas en la posición y el tamaño que el
+encargado les dio). Las dos muestran exactamente los mismos datos y llevan al mismo sitio al tocar
+una mesa; solo cambia el envase. La vista elegida se recuerda por usuario y por dispositivo (se
+guarda en el navegador, no en el servidor), así que la tablet de sala puede quedarse en plano y el
+PC de caja en tarjetas.
+
+En la vista de plano, el filtro **«Todas» no aplica** —la rejilla es de una sola zona— y aparece
+deshabilitado: se muestra la primera zona disponible, reflejada en el filtro. Las mesas de la zona
+que **no tienen posición** en la rejilla (creadas cuando ya estaba llena) no desaparecen: se
+dibujan como tarjetas en una franja «Sin sitio en el plano» bajo el lienzo, con su mismo estado y
+comportamiento, para que ninguna mesa activa quede sin poder cobrarse. El lienzo se escala para que
+el ancho quepa siempre en pantalla, sin obligar a arrastrar en horizontal.
+
+La vista de plano es de **solo lectura**: no se arrastra, no se redimensiona y no guarda nada. El
+plano solo se modifica desde **Editar plano**, que sigue requiriendo permiso de Configuración.
+
 Una **cuenta abierta** no es un ticket ni una factura en borrador: es su propia entidad, sin
 número asignado, que no aparece en ningún listado de facturas hasta que se cobra. Se puede
 guardar, recuperar y anular sin que eso consuma numeración de facturación.
