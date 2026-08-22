@@ -63,7 +63,7 @@
 						<div class="card-header border-0 flex-wrap">
 							<h4 class="card-title mb-0">Facturas</h4>
 							<div class="d-flex align-items-center gap-2">
-								<div class="btn-group" role="group" aria-label="Filtrar por tipo">
+								<div class="btn-group filtro-segmentado" role="group" aria-label="Filtrar por tipo">
 									<button type="button" class="btn btn-outline-secondary btn-filtro-factura active" data-filtro-factura="">Todas</button>
 									<button type="button" class="btn btn-outline-secondary btn-filtro-factura" data-filtro-factura="borrador">Borradores</button>
 									<button type="button" class="btn btn-outline-secondary btn-filtro-factura" data-filtro-factura="emitida">Emitidas</button>

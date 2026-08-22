@@ -73,7 +73,7 @@
 						<div class="card-header border-0 flex-wrap">
 							<h4 class="card-title mb-0">Leads</h4>
 							<div class="d-flex gap-2 align-items-center">
-								<div class="btn-group" role="group">
+								<div class="btn-group filtro-segmentado" role="group">
 									<button type="button" class="btn btn-outline-primary btn-filtro-leads active" data-filtro="todos">Todos</button>
 									<button type="button" class="btn btn-outline-primary btn-filtro-leads" data-filtro="mios">Mis leads</button>
 									<button type="button" class="btn btn-outline-primary btn-filtro-leads" data-filtro="sin_asignar">Sin asignar</button>

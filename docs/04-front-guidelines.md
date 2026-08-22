@@ -1595,6 +1595,40 @@ Notas de por qué está hecha así:
 
 No hace falta acordarse de esto al desplegar: hace falta acordarse **al escribir la vista**.
 
+## Filtro de un solo valor: control segmentado (`.filtro-segmentado`)
+
+Cualquier filtro donde el usuario elige **una sola opción de un set corto** (rango de fechas
+predefinido, estado, tipo de documento, cambio de vista…) se marca con la clase `.filtro-segmentado`
+sobre el `.btn-group` — nunca un `.btn-group` a secas con `.btn-outline-*`, que se ve como
+rectángulos contorneados pegados y pesa visualmente más que los datos que filtra.
+
+`.filtro-segmentado` reestiliza el grupo entero por CSS (`public/css/app-overrides.css`) como un
+control segmentado real: una pista gris con el activo "levantado" en blanco. Cubre los dos
+mecanismos de selección que conviven en la app — no hay que elegir entre ellos, la clase sirve para
+ambos:
+
+- **Radios `.btn-check` + `label.btn`** (rango de fechas: Mes/Trimestre/Año/Personalizado —
+  `dashboard.blade.php`, `informes-comerciales/index.blade.php`, `cobros/_filtros.blade.php`).
+- **`<button>` sueltos que un JS alterna con `.active`** (filtro por tipo/estado —
+  `facturas/index.blade.php` `.btn-filtro-factura`, `leads/index.blade.php` `.btn-filtro-leads`,
+  `cobros/_filtros.blade.php` `.btn-filtro-cobro`, o un simple selector de vista como
+  `archivos/index.blade.php` `.btn-vista`).
+
+```html
+<div class="btn-group filtro-segmentado" role="group" aria-label="…">
+	<button type="button" class="btn btn-outline-secondary btn-filtro-x active" data-x="">Todas</button>
+	<button type="button" class="btn btn-outline-secondary btn-filtro-x" data-x="algo">Algo</button>
+</div>
+```
+
+Con radios es igual, agregando la clase al `.btn-group` que envuelve los `input.btn-check` +
+`label.btn`. En ningún caso hace falta tocar el JS ni el color base (`btn-outline-primary` o
+`btn-outline-secondary`): `.filtro-segmentado` pisa el estilo del template sobre el markup existente.
+
+**Toda vista nueva con este tipo de filtro usa esta clase de entrada** — no reinventar el estilo
+copiando `.btn-group` + `.btn-outline-*` sin ella. Si un filtro segmentado se ve como botones
+contorneados sueltos en vez de la pista con el activo "levantado", casi seguro falta la clase.
+
 ## Cards de resumen + DataTable server-side con filtros compartidos (feature 043, Cobros)
 
 Patrón para una pantalla que combina una tira de cards de métricas agregadas con un listado

@@ -170,7 +170,7 @@
 				<div class="card-header d-flex justify-content-between align-items-center flex-wrap">
 					<h4 class="card-title mb-0">Archivos</h4>
 					<div class="d-flex align-items-center">
-						<div class="btn-group me-2" role="group" aria-label="Cambiar vista">
+						<div class="btn-group filtro-segmentado me-2" role="group" aria-label="Cambiar vista">
 							<button type="button" class="btn btn-outline-secondary btn-vista active" data-vista="grid" title="Vista rejilla"><i class="fas fa-th-large"></i></button>
 							<button type="button" class="btn btn-outline-secondary btn-vista" data-vista="lista" title="Vista lista"><i class="fas fa-list"></i></button>
 						</div>

@@ -14,13 +14,6 @@
 @push('styles')
 	<link rel="stylesheet" href="{{ asset('vendor/bootstrap-daterangepicker/daterangepicker.css') }}">
 	<style>
-		/* style.css define `label { margin-bottom: 0.5rem }` global; en el btn-group de presets
-		   los <label> son los propios botones (patrón .btn-check + label.btn), no campos de
-		   formulario, así que ese margen deja un hueco debajo del grupo. */
-		#dashboard-filtro-form label.btn {
-			margin-bottom: 0;
-		}
-
 		#dashboard-contenido.dashboard-cargando {
 			opacity: .5;
 			pointer-events: none;
@@ -93,7 +86,7 @@
 					<div class="card same-card">
 						<div class="card-body py-2">
 							<form id="dashboard-filtro-form" method="GET" class="d-flex flex-wrap align-items-center gap-2">
-								<div class="btn-group" role="group" aria-label="Rango de fechas">
+								<div class="btn-group filtro-segmentado" role="group" aria-label="Rango de fechas">
 									<input type="radio" class="btn-check" name="preset" id="preset-mes" value="mes" autocomplete="off" {{ $rango['preset'] === 'mes' ? 'checked' : '' }}>
 									<label class="btn btn-outline-primary" for="preset-mes">Mes</label>
 

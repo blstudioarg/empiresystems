@@ -5,7 +5,7 @@
 	informes-comerciales/index.blade.php (research D5).
 --}}
 <div id="cobros-filtro-barra" class="d-flex flex-wrap align-items-center gap-2">
-	<div class="btn-group" role="group" aria-label="Filtrar por estado de cobro">
+	<div class="btn-group filtro-segmentado" role="group" aria-label="Filtrar por estado de cobro">
 		<button type="button" class="btn btn-outline-secondary btn-filtro-cobro active" data-estado-cobro="">Todas</button>
 		<button type="button" class="btn btn-outline-secondary btn-filtro-cobro" data-estado-cobro="pendiente">Pendiente</button>
 		<button type="button" class="btn btn-outline-secondary btn-filtro-cobro" data-estado-cobro="parcial">Parcial</button>
@@ -31,7 +31,7 @@
 		@endforeach
 	</select>
 
-	<div class="btn-group ms-auto" role="group" aria-label="Rango de fechas">
+	<div class="btn-group filtro-segmentado ms-auto" role="group" aria-label="Rango de fechas">
 		<input type="radio" class="btn-check" name="cobros-preset" id="cobros-preset-mes" value="mes" autocomplete="off" checked>
 		<label class="btn btn-outline-primary" for="cobros-preset-mes">Mes</label>
 

@@ -17,10 +17,6 @@
 @push('styles')
 	<link rel="stylesheet" href="{{ asset('vendor/bootstrap-daterangepicker/daterangepicker.css') }}">
 	<style>
-		#informe-comercial-filtro-form label.btn {
-			margin-bottom: 0;
-		}
-
 		#informe-comercial-contenido.informe-comercial-cargando {
 			opacity: .5;
 			pointer-events: none;
@@ -109,7 +105,7 @@
 					<div class="card same-card">
 						<div class="card-body py-2">
 							<form id="informe-comercial-filtro-form" method="GET" class="d-flex flex-wrap align-items-center gap-2">
-								<div class="btn-group" role="group" aria-label="Rango de fechas">
+								<div class="btn-group filtro-segmentado" role="group" aria-label="Rango de fechas">
 									<input type="radio" class="btn-check" name="preset" id="ic-preset-mes" value="mes" autocomplete="off" {{ $periodo['preset'] === 'mes' ? 'checked' : '' }}>
 									<label class="btn btn-outline-primary" for="ic-preset-mes">Mes</label>
 
