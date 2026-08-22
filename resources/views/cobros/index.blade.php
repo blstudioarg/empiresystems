@@ -21,6 +21,7 @@
 		   border-collapse: separate es necesario para que el radio se note (con collapse,
 		   que es lo que trae DataTables, el borde no respeta el radio de las celdas). */
 		#cobros-facturas-table {
+			box-sizing: border-box;
 			border-collapse: separate;
 			border-spacing: 0;
 			border: 1px solid rgb(235, 237, 243);
