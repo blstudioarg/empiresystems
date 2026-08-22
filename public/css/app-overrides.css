@@ -40,6 +40,13 @@
    la integración datatables.bootstrap5), así que no heredan el override "sm" de arriba y quedan
    con el tamaño nativo del navegador, grande y desalineado del resto de inputs "sm" de la UI.
    Replicamos a mano los mismos valores para que se vean consistentes en cualquier tabla. */
+/* Separación entre la tabla y la fila inferior de "Mostrando X de Y registros" +
+   Anterior/Siguiente: por defecto quedan pegadas al borde de la tabla en toda la app. */
+.dataTables_wrapper .dataTables_info,
+.dataTables_wrapper .dataTables_paginate {
+	margin-top: 1rem;
+}
+
 .dataTables_wrapper .dataTables_length select,
 .dataTables_wrapper .dataTables_filter input {
 	height: calc(1.5em + 0.5rem + calc(var(--bs-border-width) * 2));
