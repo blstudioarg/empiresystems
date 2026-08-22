@@ -15,21 +15,6 @@
 			margin-bottom: 0;
 		}
 
-		/* Mismo borde/radio/sombra que .card (public/css/app-overrides.css, regla global
-		   `body:not([data-theme-version="dark"]) .card`), pero aplicado directo a la tabla:
-		   dentro del card-body la tabla queda "pegada" sin separación propia.
-		   border-collapse: separate es necesario para que el radio se note (con collapse,
-		   que es lo que trae DataTables, el borde no respeta el radio de las celdas). */
-		#cobros-facturas-table {
-			box-sizing: border-box;
-			border-collapse: separate;
-			border-spacing: 0;
-			border: 1px solid rgb(235, 237, 243);
-			border-radius: 5.25px;
-			box-shadow: 0 1px 2px 0 rgba(16, 24, 40, 0.04),
-				0 8px 24px -6px rgba(16, 24, 40, 0.10);
-		}
-
 		/* El template estiliza previous/next como flechas de 24px; con texto se rompe en
 		   vertical (memoria feedback_datatable_pagination_css). */
 		#cobros-facturas-table_wrapper .dataTables_paginate .paginate_button.previous,

@@ -47,6 +47,24 @@
 	margin-top: 1rem;
 }
 
+/* Mismo borde/radio/sombra que .card (regla `body:not([data-theme-version="dark"]) .card`
+   más abajo en este archivo), pero aplicado directo a la tabla: dentro del card-body la
+   tabla queda "pegada" sin separación visual propia. `table.dataTable` es la clase que el
+   propio plugin agrega a cualquier tabla que inicializa, así que aplica a toda la app sin
+   tener que repetirlo tabla por tabla. border-collapse: separate es necesario para que el
+   radio se note (con collapse, que es lo que trae DataTables, el borde no respeta el radio
+   de las celdas). box-sizing es redundante con el reset global de Bootstrap (`*` ya es
+   border-box) pero se deja explícito para no depender de que nadie lo cambie. */
+table.dataTable {
+	box-sizing: border-box;
+	border-collapse: separate;
+	border-spacing: 0;
+	border: 1px solid rgb(235, 237, 243);
+	border-radius: 5.25px;
+	box-shadow: 0 1px 2px 0 rgba(16, 24, 40, 0.04),
+		0 8px 24px -6px rgba(16, 24, 40, 0.10);
+}
+
 .dataTables_wrapper .dataTables_length select,
 .dataTables_wrapper .dataTables_filter input {
 	height: calc(1.5em + 0.5rem + calc(var(--bs-border-width) * 2));
