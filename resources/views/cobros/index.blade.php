@@ -7,6 +7,14 @@
 	<link href="{{ asset('vendor/datatables/responsive/responsive.css') }}" rel="stylesheet">
 	<link rel="stylesheet" href="{{ asset('vendor/bootstrap-daterangepicker/daterangepicker.css') }}">
 	<style>
+		/* style.css define `label { margin-bottom: 0.5rem }` global; en el btn-group de estado
+		   de cobro y de rango de fechas los <label> son los propios botones (patrón .btn-check +
+		   label.btn), no campos de formulario, así que ese margen deja un hueco debajo del grupo.
+		   Mismo fix que dashboard.blade.php (#dashboard-filtro-form label.btn). */
+		#cobros-filtro-barra label.btn {
+			margin-bottom: 0;
+		}
+
 		/* El template estiliza previous/next como flechas de 24px; con texto se rompe en
 		   vertical (memoria feedback_datatable_pagination_css). */
 		#cobros-facturas-table_wrapper .dataTables_paginate .paginate_button.previous,
@@ -112,15 +120,22 @@
 			</div>
 
 			<div class="row">
+				<div class="col-12">
+					<div class="card same-card">
+						<div class="card-body py-2">
+							@include('cobros._filtros')
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="row">
 				<div class="col-xl-12">
 					<div class="card">
 						<div class="card-header border-0 flex-wrap">
 							<h4 class="card-title mb-0">Cobros</h4>
 						</div>
 						<div class="card-body pt-0">
-							<div class="mb-3">
-								@include('cobros._filtros')
-							</div>
 							<div class="table-responsive">
 								<table id="cobros-facturas-table" class="display responsive nowrap w-100">
 									<thead>

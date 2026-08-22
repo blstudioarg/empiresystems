@@ -4,7 +4,7 @@
 	aparte que se combina con AND (research D10), y el selector de rango de fechas clonado de
 	informes-comerciales/index.blade.php (research D5).
 --}}
-<div class="d-flex flex-wrap align-items-center gap-2">
+<div id="cobros-filtro-barra" class="d-flex flex-wrap align-items-center gap-2">
 	<div class="btn-group" role="group" aria-label="Filtrar por estado de cobro">
 		<button type="button" class="btn btn-outline-secondary btn-filtro-cobro active" data-estado-cobro="">Todas</button>
 		<button type="button" class="btn btn-outline-secondary btn-filtro-cobro" data-estado-cobro="pendiente">Pendiente</button>
