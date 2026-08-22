@@ -224,6 +224,12 @@ en la primera versión de esta regla. La solución es igualar la forma del selec
 `!important` (que es lo que empieza la guerra de `!important` contra `!important` que ya se
 documentó más arriba para `.icon-box`).
 
+**Padding vertical de la cabecera: `0.5rem`, no el `1rem` del template.** `style.css` da
+`padding: 1rem 0.9375rem` a `table.dataTable > thead > tr > th`; con la banda de color eso deja
+demasiado aire y engorda todos los listados. `app-overrides.css` baja solo `padding-top` y
+`padding-bottom` a `0.5rem` y no toca el horizontal (el izquierdo lo fija `style.css` con
+`!important`, y el derecho reserva sitio para la flecha de orden).
+
 **Si hace falta otro elemento con fondo primario y texto encima, usar `--primary-contraste`**, no
 `#fff`. Es la única forma de que la marca del tenant no rompa la legibilidad.
 

@@ -979,6 +979,11 @@ table.dataTable > thead > tr > td {
 	border-bottom: 0;
 	border-top: 0;
 	border-color: transparent;
+	/* style.css da 1rem de padding vertical a la cabecera: demasiado aire para
+	   una banda de color. Se baja a .5rem sin tocar el horizontal (0.9375rem,
+	   que style.css fija aparte con !important en el izquierdo). */
+	padding-top: 0.5rem;
+	padding-bottom: 0.5rem;
 }
 
 /* Las esquinas superiores acompañan el radio de la card que contiene la tabla:
