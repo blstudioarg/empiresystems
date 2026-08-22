@@ -37,6 +37,7 @@ class RutasPermisosTest extends TestCase
             'ver-compras' => '/compras',
             'ver-facturas' => '/facturas',
             'ver-facturas-crear' => '/facturas/crear',
+            'ver-cobros' => '/cobros',
             'ver-pos' => '/pos',
             'ver-pos-crear' => '/pos/crear',
             // Módulo de hostelería (feature 038). Estas dos rutas llevan además el middleware

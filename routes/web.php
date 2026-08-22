@@ -15,6 +15,7 @@ use App\Http\Controllers\CanalCaptacionController;
 use App\Http\Controllers\CarpetaController;
 use App\Http\Controllers\CategoriaArticuloController;
 use App\Http\Controllers\ClienteController;
+use App\Http\Controllers\CobroController;
 use App\Http\Controllers\CompraController;
 use App\Http\Controllers\CompraFacturaeController;
 use App\Http\Controllers\Configuracion\PosConfiguracionController;
@@ -140,12 +141,21 @@ Route::middleware(['tenant.context', 'auth', 'sin_super_admin'])->group(function
         Route::get('/facturas/{factura}/facturae', [FacturaeController::class, 'descargar'])->name('facturas.facturae.descargar');
         Route::post('/facturas/{factura}/facturae', [FacturaeController::class, 'generarYEnviar'])->name('facturas.facturae.generar-enviar');
         Route::post('/facturas/{factura}/facturae/reenviar', [FacturaeController::class, 'reenviar'])->name('facturas.facturae.reenviar');
-        Route::get('/facturas/{factura}/pagos', [PagoController::class, 'index'])->name('facturas.pagos.index');
-        Route::post('/facturas/{factura}/pagos', [PagoController::class, 'store'])->name('facturas.pagos.store');
-        Route::post('/pagos/{pago}/anular', [PagoController::class, 'anular'])->name('pagos.anular');
 
         Route::post('/exportar/facturas', [ExportacionController::class, 'exportar'])
             ->defaults('modulo', 'facturas')->name('facturas.exportar');
+    });
+
+    // Módulo de Cobros (feature 043): permiso propio ver-cobros, independiente de ver-facturas.
+    // Las tres rutas de pagos vivían bajo can:ver-facturas; se mueven aquí (research D7) para que
+    // un usuario con ver-cobros pero sin ver-facturas pueda registrar/anular cobros igualmente.
+    Route::middleware('can:ver-cobros')->group(function () {
+        Route::get('/cobros', [CobroController::class, 'index'])->name('cobros.index');
+        Route::get('/cobros/resumen', [CobroController::class, 'resumen'])->name('cobros.resumen');
+
+        Route::get('/facturas/{factura}/pagos', [PagoController::class, 'index'])->name('facturas.pagos.index');
+        Route::post('/facturas/{factura}/pagos', [PagoController::class, 'store'])->name('facturas.pagos.store');
+        Route::post('/pagos/{pago}/anular', [PagoController::class, 'anular'])->name('pagos.anular');
     });
 
     // CRM — leads, oportunidades, presupuestos (feature 028)

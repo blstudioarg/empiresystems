@@ -1220,6 +1220,22 @@ no solo en un tooltip o en la documentación aparte. Tres criterios ya tienen su
 cuarto criterio, sumar su propia clase con el mismo patrón (fondo translúcido + texto del mismo
 tono) en vez de reusar uno existente con un significado distinto.
 
+## Cards de resumen sobre un listado server-side (feature 043, Cobros)
+
+Cuando una pantalla combina una tira de cards de métricas con un DataTable **server-side**
+(`cobros/index.blade.php`, patrón `LogActividadController`), se aplican dos reglas juntas:
+
+- **Cards y DataTable comparten un único juego de filtros y se recargan a la vez.** Cualquier
+  cambio de filtro (estado, cliente, rango de fechas, etc.) dispara tanto `table.ajax.reload()`
+  como la recarga del endpoint de resumen, con los mismos parámetros. Si no se hace así, cards y
+  tabla pueden mostrar periodos o subconjuntos distintos sin que el usuario lo note — el error de
+  comunicación más peligroso de un dashboard. Ver `cobros-datatable.init.js` (`recargarTodo()`).
+- **Cada card declara su propio criterio de fecha** con `.criterio-badge` (ver sección anterior)
+  cuando alguna cifra es instantánea (ignora el rango, ej. "pendiente de cobro a hoy") y otra
+  depende del rango (ej. "cobrado en el periodo"). Mezclarlas bajo el mismo rango sin avisar hace
+  que una cifra "baje" al estrechar el periodo cuando en realidad no debería (una deuda pendiente
+  no depende de qué rango mires).
+
 ## Badge secundario bajo el estado principal (DataTable)
 
 Cuando una fila necesita mostrar un segundo estado independiente del "estado" principal de la columna
@@ -1572,3 +1588,45 @@ Notas de por qué está hecha así:
   solo añadiría ruido. Si alguna vez se parchea uno vendorizado, pasarlo también a `@assetv`.
 
 No hace falta acordarse de esto al desplegar: hace falta acordarse **al escribir la vista**.
+
+## Cards de resumen + DataTable server-side con filtros compartidos (feature 043, Cobros)
+
+Patrón para una pantalla que combina una tira de cards de métricas agregadas con un listado
+paginado grande (miles de filas por tenant, ver `cobros/index.blade.php`):
+
+- **Un único juego de filtros para las dos piezas.** Las cards y el DataTable de la misma pantalla
+  **comparten los mismos parámetros de filtro/rango** (estado, cliente, serie, fechas…) y se
+  recargan **juntos** ante cualquier cambio: el DataTable vía `table.ajax.reload()` y las cards vía
+  un segundo `$.getJSON` al endpoint de resumen con los mismos parámetros (`ajax.data`, nunca una
+  función en `ajax.url` — memoria `feedback_datatables_ajax_url_function`). Nunca dos formularios
+  de filtro independientes para cards y tabla: mostrarían periodos distintos sin que el usuario lo
+  note, que es exactamente el tipo de discrepancia silenciosa que rompe la confianza en las cifras.
+- **Criterio de fecha explícito por card cuando no es obvio.** Si una métrica agregada es una foto
+  instantánea a hoy (p. ej. "pendiente de cobro") y otra depende del rango seleccionado (p. ej.
+  "cobrado en el periodo"), cada una lleva su `.criterio-badge` (`.criterio-instantanea` /
+  `.criterio-evento`, ver sección "Etiqueta de criterio de fecha en indicadores agregados" más
+  arriba) junto al título. Mezclar los dos criterios bajo un único selector de rango sin
+  distinguirlos hace que una cifra "baje" al estrechar el periodo cuando en realidad es una deuda
+  acumulada — lo contrario de lo que espera el usuario.
+- **DataTable server-side, no client-side**, en cuanto el dataset puede crecer a miles de filas por
+  tenant y cada fila necesita un cálculo derivado (saldo, estado, días de retraso) que no es una
+  columna directa de la tabla: cargar todo y calcular en PHP por fila no escala. El cálculo derivado
+  se concentra en una única clase de `App\Support` (patrón `ConsultaCobros`) con un test de paridad
+  contra el método de modelo equivalente, para que un cambio de regla en un solo sitio no
+  desincronice el otro.
+
+## Extracción de UI compartida entre dos pantallas ya existentes (feature 043)
+
+Cuando dos pantallas necesitan exactamente el mismo bloque de UI con comportamiento (p. ej. el
+modal de cobros de una factura, usado tanto desde `facturas/index.blade.php` como desde
+`cobros/index.blade.php`), extraer **a comportamiento constante**, no duplicar:
+
+- El markup va a un partial Blade compartido (`resources/views/partials/_cobros_modal.blade.php`),
+  incluido desde ambas vistas con `@include(...)`.
+- La lógica JS va a un módulo compartido (`public/js/plugins-init/cobros-modal.js`) que expone una
+  función de inicialización con un único punto de variación explícito como parámetro (aquí,
+  `onCambio`: qué recargar tras un cambio — en Facturas su propia tabla, en Cobros tabla + cards).
+  La vista original pasa a delegar en ese módulo en vez de mantener su propia copia de la lógica.
+- **Verificación de "a comportamiento constante"**: la suite de tests ya existente de la pantalla
+  origen debe seguir en verde **sin modificar ni un test**. Si hay que tocar un test para que pase,
+  la extracción cambió comportamiento y hay que revertirla y rehacerla.

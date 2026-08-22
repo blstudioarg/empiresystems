@@ -378,161 +378,16 @@
 			window.setButtonLoading($(this).find('button[type="submit"]'), true);
 		});
 
-		var $cobrosModal = $('#cobrosModal');
-		var cobrosTable = null;
-		var csrfHeaders = function () {
-			return { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') };
-		};
-
-		function renderCobroEstado(data, type, row) {
-			return row.vigente
-				? '<span class="badge light badge-success">Vigente</span>'
-				: '<span class="badge light badge-dark">Anulado</span>';
-		}
-
-		function renderCobroAccion(data, type, row) {
-			return row.vigente
-				? '<button type="button" class="btn btn-link text-danger p-0 btn-anular-pago" data-anular-url="' + row.anular_url + '">Anular</button>'
-				: '';
-		}
-
-		function initCobrosTable() {
-			if (cobrosTable) {
-				return cobrosTable;
-			}
-
-			cobrosTable = $('#cobros-table').DataTable({
-				responsive: true,
-				data: [],
-				columns: [
-					{ data: 'fecha', render: escapeHtml },
-					{ data: 'metodo', render: function (data) { return escapeHtml(metodoLabels[data] || data); } },
-					{ data: 'referencia', render: function (data) { return escapeHtml(data || '-'); } },
-					{ data: 'importe', render: function (data) { return escapeHtml(data) + ' €'; }, className: 'text-end' },
-					{ data: null, orderable: false, render: renderCobroEstado },
-					{ data: null, orderable: false, render: renderCobroAccion },
-				],
-				language: {
-					search: 'Buscar:',
-					lengthMenu: 'Mostrar _MENU_ registros',
-					info: 'Mostrando _START_ a _END_ de _TOTAL_ registros',
-					infoEmpty: 'Mostrando 0 a 0 de 0 registros',
-					infoFiltered: '(filtrado de _MAX_ registros totales)',
-					zeroRecords: 'Sin cobros registrados',
-					emptyTable: 'Sin cobros registrados',
-					paginate: {
-						first: 'Primero',
-						last: 'Último',
-						next: 'Siguiente',
-						previous: 'Anterior',
-					},
+		// Modal de cobros compartido (feature 043, research D6): la lógica vive en
+		// cobros-modal.js (window.initCobrosModal), cargado antes que este script. Aquí solo se
+		// declara el punto de variación: en Facturas, "cambio" recarga esta misma tabla.
+		if (window.initCobrosModal) {
+			window.initCobrosModal({
+				onCambio: function () {
+					table.ajax.reload(null, false);
 				},
 			});
-
-			return cobrosTable;
 		}
-
-		function cargarCobros(cobrosUrl) {
-			$cobrosModal.data('cobros-url', cobrosUrl);
-
-			$.getJSON(cobrosUrl, function (response) {
-				$('#cobroSaldoPendiente').text(response.saldo_pendiente);
-				$('#cobroPagarRestante').data('saldo-pendiente', response.saldo_pendiente);
-
-				var $tabla = initCobrosTable();
-				$tabla.clear().rows.add(response.data).draw();
-			});
-		}
-
-		$table.on('click', '.btn-ver-cobros', function () {
-			var $btn = $(this);
-			var cobrosUrl = $btn.data('cobros-url');
-			var pagoUrl = $btn.data('pago-url');
-			var $form = $('#registrarCobroForm');
-
-			$form.attr('action', pagoUrl || '');
-			$form[0].reset();
-			$('#cobroFecha').val(new Date().toISOString().slice(0, 10));
-			$form.toggle(!!pagoUrl);
-
-			var $contexto = $('#cobroContextoRectificada');
-
-			if ($btn.data('es-rectificada')) {
-				var modalidad = modalidadRectificacionLabels[$btn.data('modalidad')] || 'rectificada';
-				$contexto
-					.html(
-						'Factura <strong>' + modalidad.toLowerCase() + '</strong>. El importe a cobrar es el ' +
-						'efectivo (<strong>' + escapeHtml($btn.data('total-efectivo')) + ' €</strong>), no el ' +
-						'total original (' + escapeHtml($btn.data('total-nominal')) + ' €). Los cobros se ' +
-						'gestionan siempre desde esta factura original.'
-					)
-					.removeClass('d-none');
-			} else {
-				$contexto.addClass('d-none').empty();
-			}
-
-			cargarCobros(cobrosUrl);
-
-			bootstrap.Modal.getOrCreateInstance($cobrosModal[0]).show();
-		});
-
-		$cobrosModal.on('shown.bs.modal', function () {
-			if (cobrosTable) {
-				cobrosTable.responsive.recalc();
-			}
-		});
-
-		$('#cobroPagarRestante').on('click', function () {
-			$('#cobroImporte').val($(this).data('saldo-pendiente'));
-		});
-
-		$('#registrarCobroForm').on('submit', function (e) {
-			e.preventDefault();
-
-			var $form = $(this);
-			var $submit = $form.find('button[type="submit"]');
-
-			window.withButtonLoading($submit, function () {
-				return $.ajax({
-					url: $form.attr('action'),
-					type: 'POST',
-					dataType: 'json',
-					headers: $.extend({ Accept: 'application/json' }, csrfHeaders()),
-					data: $form.serialize(),
-				});
-			})
-				.done(function (response) {
-					window.showToast('success', response.message);
-					$form[0].reset();
-					$('#cobroFecha').val(new Date().toISOString().slice(0, 10));
-					cargarCobros($cobrosModal.data('cobros-url'));
-					table.ajax.reload(null, false);
-				})
-				.fail(function (xhr) {
-					window.showToast('error', xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'No se pudo registrar el cobro.');
-				});
-		});
-
-		$cobrosModal.on('click', '.btn-anular-pago', function () {
-			var anularUrl = $(this).data('anular-url');
-
-			window.confirmDelete('¿Anular este cobro? El saldo pendiente de la factura se recalculará.', function () {
-				return $.ajax({
-					url: anularUrl,
-					type: 'POST',
-					dataType: 'json',
-					headers: $.extend({ Accept: 'application/json' }, csrfHeaders()),
-				})
-					.done(function (response) {
-						window.showToast('success', response.message);
-						cargarCobros($cobrosModal.data('cobros-url'));
-						table.ajax.reload(null, false);
-					})
-					.fail(function (xhr) {
-						window.showToast('error', xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'No se pudo anular el cobro.');
-					});
-			}, { confirmLabel: 'Anular', confirmClass: 'btn-danger' });
-		});
 
 		$table.on('click', '.btn-enviar-factura', function () {
 			if (window.facturasEmailConfigurado === false) {

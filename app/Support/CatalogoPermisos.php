@@ -39,6 +39,9 @@ class CatalogoPermisos
         ['clave' => 'ver-compras', 'etiqueta' => 'Compras', 'modulo' => 'Stock'],
         ['clave' => 'ver-facturas', 'etiqueta' => 'Facturas', 'modulo' => 'Facturas'],
         ['clave' => 'ver-facturas-crear', 'etiqueta' => 'Crear factura', 'modulo' => 'Facturas'],
+        // Módulo de Cobros (feature 043): permiso propio, independiente de ver-facturas, que
+        // gobierna la pantalla /cobros y las rutas de registro/anulación de pagos (research D7).
+        ['clave' => 'ver-cobros', 'etiqueta' => 'Cobros', 'modulo' => 'Facturas'],
         ['clave' => 'ver-pos', 'etiqueta' => 'POS', 'modulo' => 'POS'],
         ['clave' => 'ver-pos-crear', 'etiqueta' => 'Crear ticket', 'modulo' => 'POS'],
         // Módulo de hostelería (feature 038). Tener el permiso NO basta: las rutas llevan además

@@ -77,6 +77,8 @@ class CatalogoMenu
             'hijos' => [
                 ['clave' => 'facturas-listado', 'etiqueta' => 'Facturas', 'icono' => null, 'ruta' => 'facturas.index', 'permiso' => 'ver-facturas', 'hijos' => []],
                 ['clave' => 'facturas-crear', 'etiqueta' => 'Crear factura', 'icono' => null, 'ruta' => 'facturas.create', 'permiso' => 'ver-facturas-crear', 'hijos' => []],
+                // Módulo de Cobros (feature 043): tercer hijo del grupo, permiso propio ver-cobros.
+                ['clave' => 'cobros', 'etiqueta' => 'Cobros', 'icono' => null, 'ruta' => 'cobros.index', 'permiso' => 'ver-cobros', 'hijos' => []],
             ],
         ],
         [

@@ -51,6 +51,11 @@ class FacturaController extends Controller
     public function index(Request $request): View|JsonResponse
     {
         if ($request->wantsJson()) {
+            // Módulo de Cobros (feature 043): las acciones de cobro exigen ver-cobros desde que
+            // las rutas de pagos se movieron a ese permiso (research D7, T033a). Un usuario con
+            // ver-facturas pero sin ver-cobros no debe ver botones que le devolverían 403.
+            $puedeCobrar = (bool) $request->user()->can('ver-cobros');
+
             // Excluye las simplificadas: viven en su propio módulo POS (pos.index).
             $facturas = Factura::with(['cliente', 'eventos', 'rectificativa'])
                 ->where('tipo', '!=', TipoFactura::Simplificada->value)
@@ -58,7 +63,7 @@ class FacturaController extends Controller
                 ->get();
 
             return response()->json([
-                'data' => $facturas->map(function (Factura $factura) {
+                'data' => $facturas->map(function (Factura $factura) use ($puedeCobrar) {
                     $esBorrador = $factura->estado === EstadoFactura::Borrador;
                     $esAnulada = $factura->estado === EstadoFactura::Anulada;
 
@@ -99,8 +104,8 @@ class FacturaController extends Controller
                         'estado_cobro' => $factura->estadoCobro()->value,
                         'saldo_pendiente' => number_format($saldoPendiente, 2, '.', ''),
                         'monto_cobrado' => number_format($factura->montoCobrado(), 2, '.', ''),
-                        'pago_url' => $esCobrable ? route('facturas.pagos.store', $factura) : null,
-                        'cobros_url' => $admiteCobros ? route('facturas.pagos.index', $factura) : null,
+                        'pago_url' => ($esCobrable && $puedeCobrar) ? route('facturas.pagos.store', $factura) : null,
+                        'cobros_url' => ($admiteCobros && $puedeCobrar) ? route('facturas.pagos.index', $factura) : null,
                         'emitir_url' => $esBorrador ? route('facturas.emitir', $factura) : null,
                         'edit_url' => $esBorrador ? route('facturas.edit', $factura) : null,
                         'delete_url' => $esBorrador ? route('facturas.destroy', $factura) : null,
