@@ -1166,21 +1166,26 @@ table.dataTable thead > tr > th.sorting_desc::after {
 }
 
 /* ==========================================================================
-   Dashboard — filtro de rango como control segmentado
+   Dashboard / Cobros — filtro de rango como control segmentado
    --------------------------------------------------------------------------
    El markup es un `.btn-group` de Bootstrap con radios `.btn-check` y labels
-   `.btn-outline-primary`: cuatro rectángulos contorneados pegados, que pesan
-   más que los datos que filtran. Se reestiliza como control segmentado (una
-   pista gris con el activo en blanco "levantado"), que es el patrón habitual
-   para elegir UNA opción de un set corto y se lee de un vistazo.
+   `.btn-outline-primary`/`.btn-outline-secondary`: rectángulos contorneados
+   pegados, que pesan más que los datos que filtran. Se reestiliza como
+   control segmentado (una pista gris con el activo en blanco "levantado"),
+   que es el patrón habitual para elegir UNA opción de un set corto y se lee
+   de un vistazo.
 
-   Todo por CSS sobre el markup existente — la vista, el form y el JS del
-   dashboard no se tocan. Los selectores van anclados al id del form, así que
-   ganan especificidad sin necesidad de un solo !important contra las reglas
-   de .btn-group / .btn-outline-primary del template.
-   ========================================================================== */
+   Todo por CSS sobre el markup existente — la vista, el form y el JS de cada
+   pantalla no se tocan. Los selectores van anclados al id del contenedor del
+   filtro, así que ganan especificidad sin necesidad de un solo !important
+   contra las reglas de .btn-group / .btn-outline-* del template. Cobros
+   (#cobros-filtro-barra) reusa el mismo bloque que el Dashboard
+   (#dashboard-filtro-form) para que ambas pantallas compartan look — ver
+   docs/04-front-guidelines.md, "cards de resumen con criterio de fecha
+   explícito sobre un listado server-side". */
 
-#dashboard-filtro-form .btn-group {
+#dashboard-filtro-form .btn-group,
+#cobros-filtro-barra .btn-group {
 	display: inline-flex;
 	gap: 0.125rem;
 	padding: 0.1875rem;
@@ -1191,9 +1196,10 @@ table.dataTable thead > tr > th.sorting_desc::after {
 /* `!important` en radius y padding, a regañadientes: más arriba en este mismo archivo
    hay un `.btn, .btn-group > .btn { padding / font-size / border-radius !important }`
    global (compactado de botones), y contra un !important solo gana otro !important. El
-   id del form garantiza que este gane a aquel sin ampliar el alcance a ningún otro botón
-   de la app. */
-#dashboard-filtro-form .btn-group > .btn {
+   id del contenedor garantiza que este gane a aquel sin ampliar el alcance a ningún otro
+   botón de la app. */
+#dashboard-filtro-form .btn-group > .btn,
+#cobros-filtro-barra .btn-group > .btn {
 	margin: 0;
 	border: 0;
 	border-radius: 999px !important;
@@ -1206,19 +1212,23 @@ table.dataTable thead > tr > th.sorting_desc::after {
 }
 
 @media (hover: hover) and (pointer: fine) {
-	#dashboard-filtro-form .btn-group > .btn:hover {
+	#dashboard-filtro-form .btn-group > .btn:hover,
+	#cobros-filtro-barra .btn-group > .btn:hover {
 		color: #1F2937;
 		background-color: rgba(255, 255, 255, 0.6);
 	}
 }
 
 /* Feedback de pulsación: el control tiene que responder al dedo/click. */
-#dashboard-filtro-form .btn-group > .btn:active {
+#dashboard-filtro-form .btn-group > .btn:active,
+#cobros-filtro-barra .btn-group > .btn:active {
 	transform: scale(0.97);
 }
 
 /* El seleccionado es el "thumb": blanco y levantado sobre la pista. */
-#dashboard-filtro-form .btn-check:checked + .btn {
+#dashboard-filtro-form .btn-check:checked + .btn,
+#cobros-filtro-barra .btn-check:checked + .btn,
+#cobros-filtro-barra .btn-filtro-cobro.active {
 	color: var(--primary);
 	background-color: #fff;
 	box-shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.12);
@@ -1226,17 +1236,20 @@ table.dataTable thead > tr > th.sorting_desc::after {
 
 /* Foco de teclado: los radios son invisibles, así que el anillo tiene que
    pintarse sobre el label o el control queda inoperable a ciegas. */
-#dashboard-filtro-form .btn-check:focus-visible + .btn {
+#dashboard-filtro-form .btn-check:focus-visible + .btn,
+#cobros-filtro-barra .btn-check:focus-visible + .btn {
 	outline: 2px solid var(--primary);
 	outline-offset: 2px;
 }
 
 @media (prefers-reduced-motion: reduce) {
-	#dashboard-filtro-form .btn-group > .btn {
+	#dashboard-filtro-form .btn-group > .btn,
+	#cobros-filtro-barra .btn-group > .btn {
 		transition: none;
 	}
 
-	#dashboard-filtro-form .btn-group > .btn:active {
+	#dashboard-filtro-form .btn-group > .btn:active,
+	#cobros-filtro-barra .btn-group > .btn:active {
 		transform: none;
 	}
 }
