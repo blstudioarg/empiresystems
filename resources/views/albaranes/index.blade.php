@@ -26,10 +26,10 @@
 							<div class="d-flex justify-content-between align-items-center">
 								<div>
 									<h6 class="mb-1">Total de albaranes</h6>
-									<h3 class="mb-0" data-metric="total">0</h3>
+									<h4 class="mb-0" data-metric="total">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="box" size="50" trigger="hover" target=".card" />
+									<x-lordicon icon="box" size="45" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>
@@ -41,10 +41,10 @@
 							<div class="d-flex justify-content-between align-items-center">
 								<div>
 									<h6 class="mb-1">Entregados</h6>
-									<h3 class="mb-0" data-metric="entregados">0</h3>
+									<h4 class="mb-0" data-metric="entregados">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="wired-outline-56-document-hover-swipe" size="50" trigger="hover" target=".card" />
+									<x-lordicon icon="wired-outline-56-document-hover-swipe" size="45" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>
@@ -56,10 +56,10 @@
 							<div class="d-flex justify-content-between align-items-center">
 								<div>
 									<h6 class="mb-1">Pendientes de facturar</h6>
-									<h3 class="mb-0" data-metric="pendientes_facturar">0</h3>
+									<h4 class="mb-0" data-metric="pendientes_facturar">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="euro" size="50" trigger="hover" target=".card" />
+									<x-lordicon icon="euro" size="45" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>

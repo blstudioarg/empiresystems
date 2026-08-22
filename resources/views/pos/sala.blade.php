@@ -470,10 +470,10 @@
 									<div class="d-flex justify-content-between align-items-center">
 										<div>
 											<h6 class="mb-1">Total de mesas</h6>
-											<h3 class="mb-0" data-metric="total">0</h3>
+											<h4 class="mb-0" data-metric="total">0</h4>
 										</div>
 										<div>
-											<x-lordicon icon="home" size="50" trigger="hover" target=".card" />
+											<x-lordicon icon="home" size="45" trigger="hover" target=".card" />
 										</div>
 									</div>
 								</div>
@@ -485,10 +485,10 @@
 									<div class="d-flex justify-content-between align-items-center">
 										<div>
 											<h6 class="mb-1">Libres</h6>
-											<h3 class="mb-0" data-metric="libres">0</h3>
+											<h4 class="mb-0" data-metric="libres">0</h4>
 										</div>
 										<div>
-											<x-lordicon icon="box" size="50" trigger="hover" target=".card" />
+											<x-lordicon icon="box" size="45" trigger="hover" target=".card" />
 										</div>
 									</div>
 								</div>
@@ -500,10 +500,10 @@
 									<div class="d-flex justify-content-between align-items-center">
 										<div>
 											<h6 class="mb-1">Ocupadas</h6>
-											<h3 class="mb-0 text-success" data-metric="ocupadas">0</h3>
+											<h4 class="mb-0 text-success" data-metric="ocupadas">0</h4>
 										</div>
 										<div>
-											<x-lordicon icon="people" size="50" trigger="hover" target=".card" />
+											<x-lordicon icon="people" size="45" trigger="hover" target=".card" />
 										</div>
 									</div>
 								</div>
@@ -515,10 +515,10 @@
 									<div class="d-flex justify-content-between align-items-center">
 										<div>
 											<h6 class="mb-1">Olvidadas</h6>
-											<h3 class="mb-0 text-danger" data-metric="olvidadas">0</h3>
+											<h4 class="mb-0 text-danger" data-metric="olvidadas">0</h4>
 										</div>
 										<div>
-											<x-lordicon icon="wired-outline-3627-mail-open-warning-hover-pinch" size="50" trigger="hover" target=".card" />
+											<x-lordicon icon="wired-outline-3627-mail-open-warning-hover-pinch" size="45" trigger="hover" target=".card" />
 										</div>
 									</div>
 								</div>

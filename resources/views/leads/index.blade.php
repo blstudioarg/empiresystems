@@ -26,10 +26,10 @@
 							<div class="d-flex justify-content-between align-items-center">
 								<div>
 									<h6 class="mb-1">Total de leads</h6>
-									<h3 class="mb-0" data-metric="total">0</h3>
+									<h4 class="mb-0" data-metric="total">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="people" size="50" trigger="hover" target=".card" />
+									<x-lordicon icon="people" size="45" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>
@@ -41,10 +41,10 @@
 							<div class="d-flex justify-content-between align-items-center">
 								<div>
 									<h6 class="mb-1">Sin asignar</h6>
-									<h3 class="mb-0" data-metric="sin_asignar">0</h3>
+									<h4 class="mb-0" data-metric="sin_asignar">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="wired-outline-424-question-bubble-hover-wiggle" size="50" trigger="hover" target=".card" />
+									<x-lordicon icon="wired-outline-424-question-bubble-hover-wiggle" size="45" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>
@@ -56,10 +56,10 @@
 							<div class="d-flex justify-content-between align-items-center">
 								<div>
 									<h6 class="mb-1">Cualificados</h6>
-									<h3 class="mb-0" data-metric="cualificados">0</h3>
+									<h4 class="mb-0" data-metric="cualificados">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="wired-outline-267-like-thumb-up-hover-up" size="50" trigger="hover" target=".card" />
+									<x-lordicon icon="wired-outline-267-like-thumb-up-hover-up" size="45" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>

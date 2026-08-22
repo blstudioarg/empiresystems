@@ -25,10 +25,10 @@
 							<div class="d-flex justify-content-between align-items-center">
 								<div>
 									<h6 class="mb-1">Artículos con gestión de stock</h6>
-									<h3 class="mb-0" data-metric="articulos_gestionados">0</h3>
+									<h4 class="mb-0" data-metric="articulos_gestionados">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="box" size="50" trigger="hover" target=".card" />
+									<x-lordicon icon="box" size="45" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>
@@ -40,10 +40,10 @@
 							<div class="d-flex justify-content-between align-items-center">
 								<div>
 									<h6 class="mb-1">Movimientos registrados</h6>
-									<h3 class="mb-0" data-metric="movimientos">0</h3>
+									<h4 class="mb-0" data-metric="movimientos">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="wired-outline-153-bar-chart" size="50" trigger="hover" target=".card" />
+									<x-lordicon icon="wired-outline-153-bar-chart" size="45" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>
@@ -55,10 +55,10 @@
 							<div class="d-flex justify-content-between align-items-center">
 								<div>
 									<h6 class="mb-1">Alertas de stock mínimo</h6>
-									<h3 class="mb-0" data-metric="alertas">0</h3>
+									<h4 class="mb-0" data-metric="alertas">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="wired-outline-50-minus-circle" size="50" trigger="hover" target=".card" />
+									<x-lordicon icon="wired-outline-50-minus-circle" size="45" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>

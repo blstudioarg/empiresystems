@@ -25,10 +25,10 @@
 							<div class="d-flex justify-content-between align-items-center">
 								<div>
 									<h6 class="mb-1">Plantillas</h6>
-									<h3 class="mb-0" data-metric="total">0</h3>
+									<h4 class="mb-0" data-metric="total">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="invoice" size="50" trigger="hover" target=".card" />
+									<x-lordicon icon="invoice" size="45" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>
@@ -40,10 +40,10 @@
 							<div class="d-flex justify-content-between align-items-center">
 								<div>
 									<h6 class="mb-1">Activas</h6>
-									<h3 class="mb-0" data-metric="activas">0</h3>
+									<h4 class="mb-0" data-metric="activas">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="system-regular-48-favorite-heart" size="50" trigger="hover" target=".card" />
+									<x-lordicon icon="system-regular-48-favorite-heart" size="45" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>
@@ -55,10 +55,10 @@
 							<div class="d-flex justify-content-between align-items-center">
 								<div>
 									<h6 class="mb-1">Inactivas</h6>
-									<h3 class="mb-0" data-metric="inactivas">0</h3>
+									<h4 class="mb-0" data-metric="inactivas">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="system-regular-28-info" size="50" trigger="hover" target=".card" />
+									<x-lordicon icon="system-regular-28-info" size="45" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>

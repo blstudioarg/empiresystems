@@ -6,7 +6,7 @@
 				<div class="d-flex justify-content-between align-items-center">
 					<div>
 						<h6 class="mb-1">Facturado</h6>
-						<h3 class="mb-0" data-metric="facturado">{{ \App\Support\Formato::moneda($datos['kpis']['facturado']['valor']) }} €</h3>
+						<h4 class="mb-0" data-metric="facturado">{{ \App\Support\Formato::moneda($datos['kpis']['facturado']['valor']) }} €</h4>
 						@if ($datos['kpis']['facturado']['variacion_pct'] === null)
 							<small class="text-muted">Sin datos previos</small>
 						@else
@@ -17,7 +17,7 @@
 						@endif
 					</div>
 					<div>
-						<x-lordicon icon="invoice" size="50" trigger="hover" target=".card" />
+						<x-lordicon icon="invoice" size="45" trigger="hover" target=".card" />
 					</div>
 				</div>
 			</div>
@@ -29,7 +29,7 @@
 				<div class="d-flex justify-content-between align-items-center">
 					<div>
 						<h6 class="mb-1">Cobrado</h6>
-						<h3 class="mb-0" data-metric="cobrado">{{ \App\Support\Formato::moneda($datos['kpis']['cobrado']['valor']) }} €</h3>
+						<h4 class="mb-0" data-metric="cobrado">{{ \App\Support\Formato::moneda($datos['kpis']['cobrado']['valor']) }} €</h4>
 						@if ($datos['kpis']['cobrado']['variacion_pct'] === null)
 							<small class="text-muted">Sin datos previos</small>
 						@else
@@ -40,7 +40,7 @@
 						@endif
 					</div>
 					<div>
-						<x-lordicon icon="euro" size="50" trigger="hover" target=".card" />
+						<x-lordicon icon="euro" size="45" trigger="hover" target=".card" />
 					</div>
 				</div>
 			</div>
@@ -52,11 +52,11 @@
 				<div class="d-flex justify-content-between align-items-center">
 					<div>
 						<h6 class="mb-1">Gastos</h6>
-						<h3 class="mb-0" data-metric="gastos">{{ \App\Support\Formato::moneda($datos['kpis']['gastos']['valor']) }} €</h3>
+						<h4 class="mb-0" data-metric="gastos">{{ \App\Support\Formato::moneda($datos['kpis']['gastos']['valor']) }} €</h4>
 						<small class="text-muted">Compras confirmadas del periodo</small>
 					</div>
 					<div>
-						<x-lordicon icon="wired-outline-153-bar-chart" size="50" trigger="hover" target=".card" />
+						<x-lordicon icon="wired-outline-153-bar-chart" size="45" trigger="hover" target=".card" />
 					</div>
 				</div>
 			</div>
@@ -68,13 +68,13 @@
 				<div class="d-flex justify-content-between align-items-center">
 					<div>
 						<h6 class="mb-1">Resultado</h6>
-						<h3 class="mb-0 {{ $datos['kpis']['resultado']['valor'] >= 0 ? 'text-success' : 'text-danger' }}" data-metric="resultado">
+						<h4 class="mb-0 {{ $datos['kpis']['resultado']['valor'] >= 0 ? 'text-success' : 'text-danger' }}" data-metric="resultado">
 							{{ \App\Support\Formato::moneda($datos['kpis']['resultado']['valor']) }} €
-						</h3>
+						</h4>
 						<small class="text-muted">Facturado − gastos</small>
 					</div>
 					<div>
-						<x-lordicon icon="ticket" size="50" trigger="hover" target=".card" />
+						<x-lordicon icon="ticket" size="45" trigger="hover" target=".card" />
 					</div>
 				</div>
 			</div>
@@ -90,7 +90,7 @@
 				<div class="d-flex justify-content-between align-items-center">
 					<div>
 						<h6 class="mb-1">Pendiente de cobro</h6>
-						<h3 class="mb-0" data-metric="pendiente_cobro">{{ \App\Support\Formato::moneda($datos['kpis']['pendiente_cobro']['valor']) }} €</h3>
+						<h4 class="mb-0" data-metric="pendiente_cobro">{{ \App\Support\Formato::moneda($datos['kpis']['pendiente_cobro']['valor']) }} €</h4>
 						<small class="text-muted"><i class="fas fa-clock me-1"></i>A día de hoy, no depende del periodo</small>
 					</div>
 				</div>
@@ -103,7 +103,7 @@
 				<div class="d-flex justify-content-between align-items-center">
 					<div>
 						<h6 class="mb-1">Facturas emitidas</h6>
-						<h3 class="mb-0" data-metric="num_facturas">{{ $datos['kpis']['num_facturas']['valor'] }}</h3>
+						<h4 class="mb-0" data-metric="num_facturas">{{ $datos['kpis']['num_facturas']['valor'] }}</h4>
 						@if ($datos['kpis']['num_facturas']['variacion_pct'] === null)
 							<small class="text-muted">Sin datos previos</small>
 						@else
@@ -123,7 +123,7 @@
 				<div class="d-flex justify-content-between align-items-center">
 					<div>
 						<h6 class="mb-1">Ventas POS</h6>
-						<h3 class="mb-0" data-metric="ventas_pos">{{ \App\Support\Formato::moneda($datos['kpis']['ventas_pos']['valor']) }} €</h3>
+						<h4 class="mb-0" data-metric="ventas_pos">{{ \App\Support\Formato::moneda($datos['kpis']['ventas_pos']['valor']) }} €</h4>
 						<small class="text-muted">Tickets simplificados, aparte del facturado</small>
 					</div>
 				</div>

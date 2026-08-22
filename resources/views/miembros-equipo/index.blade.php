@@ -58,10 +58,10 @@
 							<div class="d-flex justify-content-between align-items-center">
 								<div>
 									<h6 class="mb-1">Total de miembros</h6>
-									<h3 class="mb-0" data-metric="total">0</h3>
+									<h4 class="mb-0" data-metric="total">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="people" size="50" trigger="hover" target=".card" />
+									<x-lordicon icon="people" size="45" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>
@@ -73,10 +73,10 @@
 							<div class="d-flex justify-content-between align-items-center">
 								<div>
 									<h6 class="mb-1">Activos</h6>
-									<h3 class="mb-0" data-metric="activos">0</h3>
+									<h4 class="mb-0" data-metric="activos">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="wired-outline-1846-employee-working-hover-working" size="50" trigger="hover" target=".card" />
+									<x-lordicon icon="wired-outline-1846-employee-working-hover-working" size="45" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>
@@ -88,10 +88,10 @@
 							<div class="d-flex justify-content-between align-items-center">
 								<div>
 									<h6 class="mb-1">Con ubicación de trabajo</h6>
-									<h3 class="mb-0" data-metric="con_ubicacion">0</h3>
+									<h4 class="mb-0" data-metric="con_ubicacion">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="wired-outline-27-globe-hover-rotate" size="50" trigger="hover" target=".card" />
+									<x-lordicon icon="wired-outline-27-globe-hover-rotate" size="45" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>

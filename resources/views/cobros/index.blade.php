@@ -55,10 +55,10 @@
 							<div class="d-flex justify-content-between align-items-center">
 								<div>
 									<h6 class="mb-1">Pendiente de cobro<span class="criterio-badge criterio-instantanea">Hoy</span></h6>
-									<h3 class="mb-0" data-metric="pendiente_total">0,00 €</h3>
+									<h4 class="mb-0" data-metric="pendiente_total">0,00 €</h4>
 								</div>
 								<div>
-									<x-lordicon icon="euro" size="50" trigger="hover" target=".card" />
+									<x-lordicon icon="euro" size="45" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>
@@ -70,10 +70,10 @@
 							<div class="d-flex justify-content-between align-items-center">
 								<div>
 									<h6 class="mb-1">Cobrado en el periodo<span class="criterio-badge criterio-evento">Cobro</span></h6>
-									<h3 class="mb-0 text-success" data-metric="cobrado_periodo">0,00 €</h3>
+									<h4 class="mb-0 text-success" data-metric="cobrado_periodo">0,00 €</h4>
 								</div>
 								<div>
-									<x-lordicon icon="wired-outline-2115-refund-hover-pinch" size="50" trigger="hover" target=".card" />
+									<x-lordicon icon="wired-outline-2115-refund-hover-pinch" size="45" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>
@@ -85,10 +85,10 @@
 							<div class="d-flex justify-content-between align-items-center">
 								<div>
 									<h6 class="mb-1">Vencido<span class="criterio-badge criterio-instantanea">Hoy</span></h6>
-									<h3 class="mb-0 text-danger" data-metric="vencido_total">0,00 €</h3>
+									<h4 class="mb-0 text-danger" data-metric="vencido_total">0,00 €</h4>
 								</div>
 								<div>
-									<x-lordicon icon="wired-outline-457-shield-security-hover-pinch" size="50" trigger="hover" target=".card" />
+									<x-lordicon icon="wired-outline-457-shield-security-hover-pinch" size="45" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>
@@ -100,10 +100,10 @@
 							<div class="d-flex justify-content-between align-items-center">
 								<div>
 									<h6 class="mb-1">Facturas pendientes<span class="criterio-badge criterio-instantanea">Hoy</span></h6>
-									<h3 class="mb-0" data-metric="facturas_pendientes">0</h3>
+									<h4 class="mb-0" data-metric="facturas_pendientes">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="invoice" size="50" trigger="hover" target=".card" />
+									<x-lordicon icon="invoice" size="45" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>

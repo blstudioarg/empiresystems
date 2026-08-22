@@ -25,10 +25,10 @@
 							<div class="d-flex justify-content-between align-items-center">
 								<div>
 									<h6 class="mb-1">Total de alertas</h6>
-									<h3 class="mb-0" data-metric="total">0</h3>
+									<h4 class="mb-0" data-metric="total">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="wired-outline-457-shield-security-hover-pinch" size="50" trigger="hover" target=".card" />
+									<x-lordicon icon="wired-outline-457-shield-security-hover-pinch" size="45" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>
@@ -40,10 +40,10 @@
 							<div class="d-flex justify-content-between align-items-center">
 								<div>
 									<h6 class="mb-1">Nuevas</h6>
-									<h3 class="mb-0" data-metric="nuevas">0</h3>
+									<h4 class="mb-0" data-metric="nuevas">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="wired-outline-49-plus-circle" size="50" trigger="hover" target=".card" />
+									<x-lordicon icon="wired-outline-49-plus-circle" size="45" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>
@@ -55,10 +55,10 @@
 							<div class="d-flex justify-content-between align-items-center">
 								<div>
 									<h6 class="mb-1">Resueltas</h6>
-									<h3 class="mb-0" data-metric="resueltas">0</h3>
+									<h4 class="mb-0" data-metric="resueltas">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="wired-outline-267-like-thumb-up-hover-up" size="50" trigger="hover" target=".card" />
+									<x-lordicon icon="wired-outline-267-like-thumb-up-hover-up" size="45" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>

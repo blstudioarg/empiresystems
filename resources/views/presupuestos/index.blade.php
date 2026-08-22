@@ -26,10 +26,10 @@
 							<div class="d-flex justify-content-between align-items-center">
 								<div>
 									<h6 class="mb-1">Total de presupuestos</h6>
-									<h3 class="mb-0" data-metric="total">0</h3>
+									<h4 class="mb-0" data-metric="total">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="wired-outline-979-project-estimate-hover-pinch" size="50" trigger="hover" target=".card" />
+									<x-lordicon icon="wired-outline-979-project-estimate-hover-pinch" size="45" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>
@@ -41,10 +41,10 @@
 							<div class="d-flex justify-content-between align-items-center">
 								<div>
 									<h6 class="mb-1">Pendientes de respuesta</h6>
-									<h3 class="mb-0" data-metric="pendientes">0</h3>
+									<h4 class="mb-0" data-metric="pendientes">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="wired-outline-177-envelope-send-hover-flying" size="50" trigger="hover" target=".card" />
+									<x-lordicon icon="wired-outline-177-envelope-send-hover-flying" size="45" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>
@@ -56,10 +56,10 @@
 							<div class="d-flex justify-content-between align-items-center">
 								<div>
 									<h6 class="mb-1">Aceptado, por facturar</h6>
-									<h3 class="mb-0" data-metric="importe_aceptado">0,00 €</h3>
+									<h4 class="mb-0" data-metric="importe_aceptado">0,00 €</h4>
 								</div>
 								<div>
-									<x-lordicon icon="euro" size="50" trigger="hover" target=".card" />
+									<x-lordicon icon="euro" size="45" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>

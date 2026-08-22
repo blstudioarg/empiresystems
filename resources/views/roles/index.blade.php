@@ -93,10 +93,10 @@
 							<div class="d-flex justify-content-between align-items-center">
 								<div>
 									<h6 class="mb-1">Roles del tenant</h6>
-									<h3 class="mb-0" data-metric="roles">0</h3>
+									<h4 class="mb-0" data-metric="roles">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="person" size="50" trigger="hover" target=".card" />
+									<x-lordicon icon="person" size="45" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>
@@ -108,10 +108,10 @@
 							<div class="d-flex justify-content-between align-items-center">
 								<div>
 									<h6 class="mb-1">Usuarios con rol asignado</h6>
-									<h3 class="mb-0" data-metric="usuarios_con_rol">0</h3>
+									<h4 class="mb-0" data-metric="usuarios_con_rol">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="people" size="50" trigger="hover" target=".card" />
+									<x-lordicon icon="people" size="45" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>
@@ -123,10 +123,10 @@
 							<div class="d-flex justify-content-between align-items-center">
 								<div>
 									<h6 class="mb-1">Permisos del catálogo</h6>
-									<h3 class="mb-0" data-metric="permisos_catalogo">0</h3>
+									<h4 class="mb-0" data-metric="permisos_catalogo">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="box" size="50" trigger="hover" target=".card" />
+									<x-lordicon icon="box" size="45" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>

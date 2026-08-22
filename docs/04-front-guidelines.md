@@ -258,8 +258,13 @@ piensan en un ícono de fuente (`<i class="...">`) chico dentro de una caja, no 
 Se corrigió puntualmente antes agregando un override CSS por vista para anular `border`/
 `background` de `.icon-box` — quedó feo (`!important` peleando contra `!important`) y no arregla
 el `height`/`width` fijo. La solución correcta es no poner esas clases desde el principio: dejar
-el `<div>` contenedor limpio y que el tamaño del ícono lo controle solo `size="50"` del
-`<x-lordicon>`.
+el `<div>` contenedor limpio y que el tamaño del ícono lo controle solo `size="45"` del
+`<x-lordicon>` — y el valor de la métrica va en `<h4 class="mb-0">` (no `<h3>`), debajo del
+`<h6 class="mb-1">` del título. Si el valor lleva color condicional (ej. "Resultado" en
+`dashboard-contenido.blade.php`, verde/rojo según el signo) y el `<h4>` queda multilínea por el
+`{{ }}` del color, prestar atención a que la etiqueta de **cierre** también sea `</h4>` — un
+`sed`/find-replace línea por línea puede dejar el cierre en la etiqueta vieja si abre y cierra en
+líneas distintas.
 
 ### Rail de acento y conteo animado (automáticos, no hay que hacer nada)
 

@@ -21,11 +21,11 @@
 								<div class="d-flex justify-content-between align-items-center">
 									<div>
 										<h6 class="mb-1">Cumplimiento</h6>
-										<h3 class="mb-0" data-kpi="cumplimiento">—</h3>
+										<h4 class="mb-0" data-kpi="cumplimiento">—</h4>
 										<small class="text-muted" data-kpi="cumplimiento-detalle">&nbsp;</small>
 									</div>
 									<div>
-										<x-lordicon icon="wired-outline-2764-reliable-alt-hover-pinch" size="50" trigger="hover" target=".card" />
+										<x-lordicon icon="wired-outline-2764-reliable-alt-hover-pinch" size="45" trigger="hover" target=".card" />
 									</div>
 								</div>
 							</div>
@@ -37,11 +37,11 @@
 								<div class="d-flex justify-content-between align-items-center">
 									<div>
 										<h6 class="mb-1">Horas trabajadas</h6>
-										<h3 class="mb-0"><span data-kpi="horas-trabajadas">—</span> <small class="text-muted fs-6">/ <span data-kpi="horas-previstas">—</span> h</small></h3>
+										<h4 class="mb-0"><span data-kpi="horas-trabajadas">—</span> <small class="text-muted fs-6">/ <span data-kpi="horas-previstas">—</span> h</small></h4>
 										<small data-kpi="horas-diferencia">&nbsp;</small>
 									</div>
 									<div>
-										<x-lordicon icon="wired-outline-1846-employee-working-hover-working" size="50" trigger="hover" target=".card" />
+										<x-lordicon icon="wired-outline-1846-employee-working-hover-working" size="45" trigger="hover" target=".card" />
 									</div>
 								</div>
 							</div>
@@ -53,11 +53,11 @@
 								<div class="d-flex justify-content-between align-items-center">
 									<div>
 										<h6 class="mb-1">Retrasos</h6>
-										<h3 class="mb-0" data-kpi="retrasos">—</h3>
+										<h4 class="mb-0" data-kpi="retrasos">—</h4>
 										<small class="text-muted" data-kpi="retrasos-detalle">&nbsp;</small>
 									</div>
 									<div>
-										<x-lordicon icon="wired-outline-3097-pause-circle-hover-pinch" size="50" trigger="hover" target=".card" />
+										<x-lordicon icon="wired-outline-3097-pause-circle-hover-pinch" size="45" trigger="hover" target=".card" />
 									</div>
 								</div>
 							</div>
@@ -69,11 +69,11 @@
 								<div class="d-flex justify-content-between align-items-center">
 									<div>
 										<h6 class="mb-1">Ausencias</h6>
-										<h3 class="mb-0" data-kpi="ausencias">—</h3>
+										<h4 class="mb-0" data-kpi="ausencias">—</h4>
 										<small class="text-muted" data-kpi="ausencias-detalle">&nbsp;</small>
 									</div>
 									<div>
-										<x-lordicon icon="wired-outline-309-avatar-icon-cross-hover-click" size="50" trigger="hover" target=".card" />
+										<x-lordicon icon="wired-outline-309-avatar-icon-cross-hover-click" size="45" trigger="hover" target=".card" />
 									</div>
 								</div>
 							</div>

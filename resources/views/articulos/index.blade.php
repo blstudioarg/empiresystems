@@ -145,10 +145,10 @@
 							<div class="d-flex justify-content-between align-items-center">
 								<div>
 									<h6 class="mb-1">Total de artículos</h6>
-									<h3 class="mb-0" data-metric="total">0</h3>
+									<h4 class="mb-0" data-metric="total">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="box" size="50" trigger="hover" target=".card" />
+									<x-lordicon icon="box" size="45" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>
@@ -160,10 +160,10 @@
 							<div class="d-flex justify-content-between align-items-center">
 								<div>
 									<h6 class="mb-1">Productos</h6>
-									<h3 class="mb-0" data-metric="productos">0</h3>
+									<h4 class="mb-0" data-metric="productos">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="producto" size="50" trigger="hover" target=".card" />
+									<x-lordicon icon="producto" size="45" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>
@@ -175,10 +175,10 @@
 							<div class="d-flex justify-content-between align-items-center">
 								<div>
 									<h6 class="mb-1">Servicios</h6>
-									<h3 class="mb-0" data-metric="servicios">0</h3>
+									<h4 class="mb-0" data-metric="servicios">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="servicio" size="50" trigger="hover" target=".card" />
+									<x-lordicon icon="servicio" size="45" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>
