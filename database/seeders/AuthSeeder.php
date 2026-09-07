@@ -6,6 +6,7 @@ use App\Enums\RegimenImpositivo;
 use App\Enums\UserRole;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Support\ProvisionadorRoles;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Stancl\Tenancy\Database\Models\Domain;
@@ -51,7 +52,7 @@ class AuthSeeder extends Seeder
             ['tenant_id' => $tenant->id]
         );
 
-        User::firstOrCreate(
+        $adminDemo = User::firstOrCreate(
             ['email' => self::DEMO_ADMIN_EMAIL],
             [
                 'name' => 'Admin Demo',
@@ -61,5 +62,13 @@ class AuthSeeder extends Seeder
                 'activo' => true,
             ]
         );
+
+        // El enum `rol` no otorga permisos por sí solo: las rutas gatean por spatie (`can:...`).
+        // Sin esto el tenant queda sin roles, porque la migración que los provisiona solo recorre
+        // los tenants existentes en el momento de correr, y en una instalación limpia este seeder
+        // va después.
+        $provisionador = new ProvisionadorRoles;
+        $provisionador->provisionarAdministrador($tenant, $adminDemo);
+        $provisionador->provisionarUsuarioBase($tenant);
     }
 }
