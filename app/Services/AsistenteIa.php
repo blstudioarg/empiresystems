@@ -33,9 +33,16 @@ use OpenAI\Exceptions\TransporterException;
  */
 class AsistenteIa
 {
+    /** Tope de acciones en una sola propuesta: una lista más larga deja de ser revisable. */
+    private const MAX_ACCIONES_POR_PROPUESTA = 20;
+
+    /** @var array<int, array<string, mixed>> Escrituras preparadas en el turno en curso. */
+    private array $propuestasDelTurno = [];
+
     public function __construct(
         private readonly ConversacionAsistente $conversacion,
         private readonly ConocimientoAsistente $conocimiento,
+        private readonly ?CompactadorConversacion $compactador = null,
     ) {}
 
     /**
@@ -45,7 +52,10 @@ class AsistenteIa
     {
         // Un mensaje nuevo descarta cualquier propuesta de escritura previa.
         $this->conversacion->limpiarAccion();
+        $this->propuestasDelTurno = [];
         $this->conversacion->agregar('user', $mensaje);
+
+        $this->compactarSiHaceFalta($callbacks);
 
         try {
             $this->ejecutarLoop($usuario, $callbacks);
@@ -65,6 +75,42 @@ class AsistenteIa
             $this->error($callbacks, 'interno', 'Ocurrió un error al procesar tu mensaje.', $usuario, $e);
         } finally {
             $this->conversacion->truncar();
+        }
+    }
+
+    /**
+     * Resume los turnos viejos si el hilo cruzó el umbral (feature 045, US2).
+     *
+     * Nunca puede tumbar el turno: si el resumen falla —proveedor caído, respuesta vacía, lo que
+     * sea— se sigue adelante con el recorte simple de siempre, que es lo que `mensajes()` ya aplica
+     * al leer. El usuario recibe su respuesta igual y no pierde el mensaje que acaba de enviar
+     * (FR-013): una conversación degradada es mucho mejor que una rota.
+     *
+     * @param  Callbacks  $callbacks
+     */
+    private function compactarSiHaceFalta(array $callbacks): void
+    {
+        $compactador = $this->compactador;
+        $conversacion = $this->conversacion->activa();
+
+        if ($compactador === null || $conversacion === null) {
+            return;
+        }
+
+        try {
+            if (! $compactador->debeCompactar($conversacion)) {
+                return;
+            }
+
+            $this->invocar($callbacks, 'compactando', null);
+
+            $resultado = $compactador->compactar($conversacion);
+
+            if ($resultado !== null) {
+                $this->conversacion->aplicarCompactacion($resultado['resumen'], $resultado['hasta_mensaje_id']);
+            }
+        } catch (\Throwable $e) {
+            report($e);
         }
     }
 
@@ -152,11 +198,11 @@ class AsistenteIa
                 $this->conversacion->agregarMensajeTool($tc['id'] ?? '', $resultado);
             }
 
-            // Una escritura propuesta cierra el turno: la pelota pasa al usuario, que confirma o
+            // Una propuesta de escritura cierra el turno: la pelota pasa al usuario, que confirma o
             // cancela en un request aparte (D4). Sin este corte el loop seguía iterando, el modelo
             // volvía a hablar sobre lo que acababa de proponer y el usuario veía la misma pregunta
-            // dos veces (la segunda ya sin tarjeta, porque el guard de acción pendiente la frena).
-            if ($this->conversacion->hayAccionPendiente()) {
+            // dos veces (la segunda ya sin tarjeta, porque el guard de propuesta pendiente la frena).
+            if ($this->presentarPropuestas($callbacks) || $this->conversacion->hayAccionPendiente()) {
                 return;
             }
         }
@@ -201,6 +247,31 @@ class AsistenteIa
      * @param  array<string, mixed>  $input
      * @param  Callbacks  $callbacks
      */
+    /**
+     * Presenta como UNA tarjeta todas las escrituras preparadas en este turno. Devuelve `true` si
+     * había algo que presentar, en cuyo caso el turno termina y espera al usuario.
+     *
+     * @param  Callbacks  $callbacks
+     */
+    private function presentarPropuestas(array $callbacks): bool
+    {
+        if ($this->propuestasDelTurno === []) {
+            return false;
+        }
+
+        $acciones = $this->propuestasDelTurno;
+        $this->propuestasDelTurno = [];
+
+        $idAccion = $this->conversacion->proponerAcciones($acciones);
+
+        $this->invocar($callbacks, 'accionPendiente', [
+            'id' => $idAccion,
+            'resumenes' => array_column($acciones, 'resumen'),
+        ]);
+
+        return true;
+    }
+
     private function ejecutarTool(string $id, string $nombre, array $input, User $usuario, array $callbacks): string
     {
         $tool = CatalogoTools::resolver($nombre, $usuario);
@@ -219,9 +290,15 @@ class AsistenteIa
             }
         }
 
-        // Escritura: dos fases con confirmación (D4). Solo una pendiente por turno.
+        // Escritura: dos fases con confirmación (D4). Las de un mismo turno se acumulan y se
+        // presentan juntas en UNA tarjeta (ver `presentarPropuestas`): pedir diez altas y tener que
+        // confirmar diez tarjetas no era más seguro, solo más tedioso.
         if ($this->conversacion->hayAccionPendiente()) {
-            return 'Ya hay una acción pendiente de confirmación del usuario. Esperá a que confirme o cancele antes de proponer otra.';
+            return 'Ya hay una propuesta pendiente de confirmación del usuario. Esperá a que confirme o cancele antes de proponer otra.';
+        }
+
+        if (count($this->propuestasDelTurno) >= self::MAX_ACCIONES_POR_PROPUESTA) {
+            return 'Ya se prepararon '.self::MAX_ACCIONES_POR_PROPUESTA.' acciones en esta propuesta, que es el máximo. Presentá estas al usuario antes de seguir.';
         }
 
         try {
@@ -230,20 +307,14 @@ class AsistenteIa
             return 'No se pudo preparar la acción: '.$e->getMessage();
         }
 
-        $idAccion = $this->conversacion->proponerAccion(
-            $tool->nombre(),
-            $propuesta['parametros'],
-            $propuesta['resumen'],
-            $propuesta['url'] ?? null,
-        );
-
-        $this->invocar($callbacks, 'accionPendiente', [
-            'id' => $idAccion,
+        $this->propuestasDelTurno[] = [
             'tool' => $tool->nombre(),
+            'parametros' => $propuesta['parametros'],
             'resumen' => $propuesta['resumen'],
-        ]);
+            'url' => $propuesta['url'] ?? null,
+        ];
 
-        return 'Propuesta presentada al usuario, pendiente de su confirmación explícita.';
+        return 'Acción preparada y añadida a la propuesta que se le mostrará al usuario para que la confirme.';
     }
 
     private function cliente(): Client

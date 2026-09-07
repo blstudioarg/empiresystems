@@ -6,6 +6,7 @@ use App\Http\Controllers\ArchivoController;
 use App\Http\Controllers\ArticuloController;
 use App\Http\Controllers\AsignacionHorarioController;
 use App\Http\Controllers\AsistenteChatController;
+use App\Http\Controllers\AsistenteConversacionController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\BancoController;
@@ -354,7 +355,13 @@ Route::middleware(['tenant.context', 'auth', 'sin_super_admin'])->group(function
     Route::post('/asistente/mensaje', [AsistenteChatController::class, 'mensaje'])->name('asistente.mensaje');
     Route::post('/asistente/accion/{id}/confirmar', [AsistenteChatController::class, 'confirmar'])->name('asistente.accion.confirmar');
     Route::post('/asistente/accion/{id}/cancelar', [AsistenteChatController::class, 'cancelar'])->name('asistente.accion.cancelar');
-    Route::post('/asistente/reiniciar', [AsistenteChatController::class, 'reiniciar'])->name('asistente.reiniciar');
+
+    // Historial de conversaciones (feature 045). `conversaciones.store` sustituye a la antigua
+    // `asistente.reiniciar`: "conversación nueva" ya no descarta el hilo, lo deja guardado.
+    Route::get('/asistente/conversaciones', [AsistenteConversacionController::class, 'index'])->name('asistente.conversaciones.index');
+    Route::post('/asistente/conversaciones', [AsistenteConversacionController::class, 'store'])->name('asistente.conversaciones.store');
+    Route::get('/asistente/conversaciones/{id}', [AsistenteConversacionController::class, 'show'])->whereNumber('id')->name('asistente.conversaciones.show');
+    Route::delete('/asistente/conversaciones/{id}', [AsistenteConversacionController::class, 'destroy'])->whereNumber('id')->name('asistente.conversaciones.destroy');
 
     Route::middleware('can:ver-stock')->group(function () {
         Route::get('/stock', [MovimientoStockController::class, 'index'])->name('stock.index');

@@ -81,9 +81,67 @@
 				0%, 70%, 100% { opacity: .25; transform: translateY(0); }
 				35% { opacity: 1; transform: translateY(-3px); }
 			}
+			/* El texto se escribe y se borra letra a letra (máquina de escribir), con un cursor que
+			   parpadea. No lleva animación de opacidad: latir Y teclear a la vez es ruido. */
+			.asistente-chat__estado-texto {
+				border-right: 1.5px solid var(--primary, #4361ee);
+				padding-right: 2px;
+				animation: asistente-cursor 1s step-end infinite;
+			}
+			@keyframes asistente-cursor {
+				0%, 100% { border-right-color: var(--primary, #4361ee); }
+				50% { border-right-color: transparent; }
+			}
+			/* Etiqueta estable para lectores de pantalla: el texto que se teclea va con aria-hidden,
+			   porque un aria-live que cambia letra a letra es insoportable de escuchar. */
+			.asistente-chat__estado-sr {
+				position: absolute; width: 1px; height: 1px; margin: -1px;
+				overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+			}
 			@media (prefers-reduced-motion: reduce) {
 				.asistente-chat__puntos span { animation: none; opacity: .6; }
+				.asistente-chat__estado-texto { animation: none; border-right-color: transparent; }
 			}
+			/* Historial (feature 045): se desliza sobre la lista de mensajes dentro del propio panel. */
+			.asistente-chat__historial {
+				position: absolute; inset: 56px 0 0 0; background: #f7f8fc; z-index: 2;
+				display: flex; flex-direction: column;
+			}
+			.asistente-chat__historial-cabecera {
+				display: flex; align-items: center; justify-content: space-between;
+				padding: 12px 16px; border-bottom: 1px solid #e9ecef; background: #fff;
+				font-size: .9rem; font-weight: 600; color: #212529;
+			}
+			.asistente-chat__historial-volver {
+				background: transparent; border: none; color: var(--primary, #4361ee);
+				font-size: .85rem; cursor: pointer; padding: 2px 4px;
+			}
+			.asistente-chat__historial-lista { flex: 1; overflow-y: auto; padding: 8px; }
+			.asistente-chat__hilo {
+				display: flex; align-items: center; gap: 8px; width: 100%;
+				background: #fff; border: 1px solid #e9ecef; border-radius: 10px;
+				padding: 10px 12px; margin-bottom: 8px; text-align: left; cursor: pointer;
+			}
+			.asistente-chat__hilo:hover { border-color: var(--primary, #4361ee); }
+			.asistente-chat__hilo.is-activo { border-color: var(--primary, #4361ee); background: #f2f5ff; }
+			.asistente-chat__hilo-datos { flex: 1; min-width: 0; }
+			.asistente-chat__hilo-titulo {
+				display: block; font-size: .88rem; color: #212529;
+				overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+			}
+			.asistente-chat__hilo-fecha { font-size: .75rem; color: #6c757d; }
+			.asistente-chat__hilo-borrar {
+				background: transparent; border: none; color: #adb5bd; cursor: pointer; padding: 4px;
+				border-radius: 6px; flex-shrink: 0;
+			}
+			.asistente-chat__hilo-borrar:hover { color: #dc3545; background: #f8d7da; }
+			.asistente-chat__historial-vacio { color: #6c757d; font-size: .85rem; text-align: center; padding: 24px 12px; }
+			/* Marca de la parte compactada (FR-012): el usuario debe ver que hay hilo anterior resumido. */
+			.asistente-chat__resumido {
+				align-self: center; font-size: .75rem; color: #6c757d; text-transform: uppercase;
+				letter-spacing: .04em; padding: 4px 10px; background: #eceef5; border-radius: 999px;
+			}
+
 			.asistente-chat__form { display: flex; gap: 8px; padding: 12px; border-top: 1px solid #e9ecef; background: #fff; }
 			.asistente-chat__input { flex: 1; resize: none; border: 1px solid #ced4da; border-radius: 10px; padding: 9px 12px; font-size: .92rem; max-height: 120px; }
 			.asistente-chat__input:focus { outline: none; border-color: var(--primary, #4361ee); box-shadow: 0 0 0 3px rgba(67, 97, 238, .12); }
@@ -93,11 +151,16 @@
 			.asistente-accion { align-self: flex-start; max-width: 92%; background: #fff; border: 1px solid #e9ecef; border-radius: 14px; padding: 12px; }
 			.asistente-accion__resumen { font-size: .9rem; margin-bottom: 10px; }
 			.asistente-accion__botones { display: flex; gap: 8px; }
+			/* Lista de acciones de una propuesta en lote: el usuario debe poder revisarlas antes de
+			   confirmar, si no "confirmar 10 cosas" es un cheque en blanco. */
+			.asistente-accion__lista { margin: 6px 0 0; padding-left: 18px; font-size: .85rem; }
+			.asistente-accion__lista li { margin-bottom: 2px; }
+			.asistente-accion__lista--error { color: #dc3545; }
 		</style>
 
 	<div id="asistente-chat" class="asistente-chat" data-configurada="{{ $iaConfigurada ? '1' : '0' }}"
 		data-url-mensaje="{{ route('asistente.mensaje') }}"
-		data-url-reiniciar="{{ route('asistente.reiniciar') }}"
+		data-url-conversaciones="{{ route('asistente.conversaciones.index') }}"
 		data-url-confirmar="{{ url('asistente/accion') }}">
 
 		{{-- Backdrop: click cierra el panel. --}}
@@ -110,6 +173,12 @@
 					Asistente IA
 				</div>
 				<div class="asistente-chat__actions">
+					<button type="button" class="asistente-chat__icon-btn" id="asistente-historial-abrir" title="Historial" aria-label="Historial de conversaciones">
+						<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+							stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+							<path d="M3 3v5h5"></path><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"></path><path d="M12 7v5l4 2"></path>
+						</svg>
+					</button>
 					<button type="button" class="asistente-chat__icon-btn" id="asistente-nueva" title="Conversación nueva" aria-label="Conversación nueva">
 						<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
 							stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -131,6 +200,17 @@
 						¡Hola! Preguntame cómo funciona la app o pedime que consulte tus datos.
 					</div>
 				</div>
+				{{-- Historial: vista deslizante DENTRO del panel (research D10). El panel mide 440px
+				     fijos y 100% en móvil, así que una segunda columna al estilo del sidebar de Claude no
+				     cabe sin rehacer el layout. --}}
+				<div class="asistente-chat__historial" id="asistente-historial" hidden>
+					<div class="asistente-chat__historial-cabecera">
+						<span>Tus conversaciones</span>
+						<button type="button" class="asistente-chat__historial-volver" id="asistente-historial-cerrar">Volver</button>
+					</div>
+					<div class="asistente-chat__historial-lista" id="asistente-historial-lista"></div>
+				</div>
+
 				<form class="asistente-chat__form" id="asistente-form">
 					<textarea id="asistente-input" class="asistente-chat__input" rows="1" maxlength="4000"
 						placeholder="Escribí tu mensaje…" autocomplete="off"></textarea>

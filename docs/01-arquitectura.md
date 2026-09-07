@@ -227,6 +227,16 @@ Widget de chat flotante (área tenant) conectado a la API de OpenAI (Chat Comple
 - **Escrituras en dos fases**: la tool `proponer()` valida y guarda una acción pendiente en sesión;
   solo `POST /asistente/accion/{id}/confirmar` (request separado, CSRF) ejecuta vía los servicios de
   cálculo del servidor (`CalculadoraFactura`, `RegistroPresupuesto`, `RegistroFacturaBorrador`).
+  - **Propuestas en lote (feature 045)**: varias escrituras del mismo turno se acumulan y se
+    presentan en **una sola tarjeta** con la lista completa, que el usuario confirma una vez (tope
+    de 20). Antes solo se admitía una escritura por turno: pedir "creá 10 clientes" creaba uno y
+    las otras nueve chocaban con el guard, sin que confirmar reanudara al modelo. La garantía de D4
+    no se relaja —nada se escribe sin confirmación explícita y la lista se revisa antes—, lo que
+    cambia es que confirmar diez tarjetas seguidas no era más seguro, solo más tedioso.
+    Al ejecutar el lote se aplica el criterio de los importadores (`ImportadorExcel`,
+    `ImportadorLeads`): se ejecutan las válidas y **se reportan las rechazadas**, nunca se aborta
+    todo por una. Los rechazos quedan en el log (`asistente.accion.rechazada`), que antes era un
+    punto ciego: la confirmación devolvía 422 sin dejar rastro y no había forma de saber por qué.
   - **Proponer cierra el turno**: en cuanto hay una acción pendiente, `AsistenteIa::ejecutarLoop()`
     corta y devuelve. Si no, el loop de tool use seguía iterando y el modelo volvía a redactar la
     propuesta que acababa de hacer, así que el usuario veía la misma pregunta dos veces (la
@@ -234,8 +244,17 @@ Widget de chat flotante (área tenant) conectado a la API de OpenAI (Chat Comple
     texto ya se emitió). Regresión en `tests/Feature/Asistente/TurnoTerminaAlProponerTest.php`,
     que ejercita el loop sustituyendo `abrirStream()` —el único punto que toca la red, aislado
     porque `StreamResponse` es final y no se puede doblar el SDK desde afuera—.
-- **Conversación efímera** en la sesión de Laravel (`app/Ia/ConversacionAsistente.php`): sobrevive a
-  la navegación, muere con la sesión, truncado en servidor. Sin tablas nuevas.
+- **Conversación persistida** en `asistente_conversaciones` / `asistente_mensajes`
+  (`app/Ia/ConversacionAsistente.php`). **Cambio deliberado de la feature 045**: hasta entonces era
+  efímera en sesión y moría con ella. La clase conservó su interfaz pública y cambió el respaldo por
+  dentro, así que `AsistenteIa` no se enteró. En sesión quedan solo el id de la conversación activa
+  y la acción pendiente.
+  - **Historial** por persona (no por tenant): lista, retomar y borrar, en una vista deslizante
+    dentro del propio panel.
+  - **Compactación** por resumen al superar el umbral, en `CompactadorConversacion` (única pieza
+    que habla con el proveedor para esto), síncrona y con recorte simple como fallback.
+  - **Retención de 90 días** configurable + `asistente:purgar` diario: al dejar de ser efímera, la
+    conversación pasa a ser dato personal conservado y el Principio II exige plazo y purga.
   - **Cuidado al escribir en sesión dentro del stream.** `StartSession` guarda la sesión justo
     después de que el controlador devuelve la respuesta, pero la closure de una
     `StreamedResponse` no corre hasta `send()`: todo lo que se escriba en sesión ahí dentro

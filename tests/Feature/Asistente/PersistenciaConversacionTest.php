@@ -128,11 +128,13 @@ class PersistenciaConversacionTest extends TestCase
 
         $this->post('/asistente/mensaje', ['mensaje' => 'Me llamo Federico'])->streamedContent();
 
-        $this->assertStringContainsString(
-            'Me llamo Federico',
-            $this->ultimaEscritura(),
-            'El turno del usuario no se persistió: el mensaje siguiente arrancará sin contexto.',
-        );
+        // Desde la feature 045 los turnos van a base de datos, no a la sesión: el oráculo del
+        // handler espía sigue valiendo para la acción pendiente (que sí es de sesión), pero el
+        // hilo se comprueba donde ahora vive.
+        $this->assertDatabaseHas('asistente_mensajes', [
+            'rol' => 'user',
+            'contenido' => 'Me llamo Federico',
+        ]);
     }
 
     public function test_la_accion_propuesta_en_el_stream_llega_al_almacenamiento(): void

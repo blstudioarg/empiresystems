@@ -650,6 +650,7 @@ Almacén clave-valor por tenant para parámetros ajustables sin tocar código (t
 | `articulo.precio_incluye_iva` | facturacion | `false` (precios sin IVA) / `true` (IVA incluido, retail) |
 | `verifactu.activo` | verifactu | `false` |
 | `verifactu.entorno` | verifactu | `pruebas` / `produccion` |
+| `asistente.retencion_dias` | ia | `90` — días sin actividad antes de purgar una conversación del asistente (comando `asistente:purgar`, RGPD, feature 045) |
 | `logs.retencion_dias` | seguridad | `730` (2 años, referencia RD 1720/2007); plazo de retención del registro de accesos antes de purgar |
 | `email.smtp_host` | email | `smtp.hostinger.com` (default en `EmailTenant::DEFAULT_SMTP_HOST`, `''`) |
 | `email.smtp_port` | email | `465` (default en `EmailTenant::DEFAULT_SMTP_PORT`) |
@@ -1183,16 +1184,32 @@ stock ya se movió al confirmar cada albarán como entregado.
 - **Numeración:** asignar `numero` dentro de una transacción con bloqueo (evitar huecos/duplicados en concurrencia).
 - **Verifactu:** el cálculo de huella y encadenamiento se hace al **emitir** (pasar de borrador a emitida), en un servicio dedicado; a partir de ahí la factura es inmutable.
 
-## Asistente IA (feature 030) — sin tablas nuevas
+## Asistente IA (features 030 y 045)
 
 - **`configuraciones`, grupo `ia`**: fila `ia.api_key` con la API key de OpenAI del tenant,
   cifrada con `Crypt::encryptString` (patrón `email.smtp_password`). Acceso solo vía
   `App\Support\IaTenant`; a la vista se entrega enmascarada (`sk-ant-…XXXX`). Guardar/quitar la clave
   se registra en `logs_actividad`.
-- **Conversación del asistente**: estado efímero en la sesión de Laravel (clave
-  `asistente.conversacion`), no persistido en BD. Formato Chat Completions de OpenAI (roles user/assistant/tool, con
-  tool_calls) + una acción pendiente opcional (máx. 1). Se destruye con la sesión (RGPD:
-  efímero por diseño, sin retención adicional).
+- **Conversación del asistente**: **persistida desde la feature 045**. Hasta entonces era estado
+  efímero en la sesión, "efímero por diseño, sin retención adicional"; esa decisión se invirtió a
+  propósito para poder ofrecer historial. Dos tablas:
+  - **`asistente_conversaciones`**: `tenant_id`, `user_id` (el hilo es privado de cada persona, no
+    del tenant), `titulo` (primer mensaje recortado a 60), `resumen` + `resumido_hasta_mensaje_id`
+    (parte ya compactada), `ultima_actividad_en`. Sin `softDeletes`: lo que se borra, se borra.
+  - **`asistente_mensajes`**: `tenant_id`, `conversacion_id`, `rol` (user/assistant/tool),
+    `contenido` (nullable: un `assistant` que solo pide herramientas no lleva texto) y `metadatos`
+    JSON con `tool_calls` o `tool_call_id`. Se guarda en el formato que consume Chat Completions
+    para que reconstruir el contexto sea un `map` sobre filas.
+  - En sesión solo quedan el id de la conversación activa y la acción pendiente (máx. 1), que
+    sigue siendo efímera y se descarta al cambiar de hilo.
+  - **Compactación**: al superar `ia.max_mensajes` (30) los turnos viejos se sustituyen por un
+    resumen pedido al proveedor, dejando los 10 últimos literales. El corte nunca parte un par
+    `assistant(tool_calls)`/`tool`. Si el resumen falla se recurre al recorte simple: el turno
+    responde igual.
+  - **Retención (RGPD — minimización, Principio II):** `configuraciones` → `asistente.retencion_dias`
+    (default **90 días** desde la última actividad), leído por `App\Support\RetencionAsistenteTenant`
+    y aplicado por el comando `asistente:purgar` (diario). Se purga por `ultima_actividad_en` y no
+    por `created_at`: un hilo empezado hace un año pero usado ayer está vivo.
 
 ## POS con mesas y opciones — módulo de hostelería (feature 038)
 

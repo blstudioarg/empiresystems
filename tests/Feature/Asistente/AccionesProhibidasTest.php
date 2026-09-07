@@ -3,6 +3,7 @@
 namespace Tests\Feature\Asistente;
 
 use App\Enums\EstadoFactura;
+use App\Enums\TipoFactura;
 use App\Ia\CatalogoTools;
 use App\Ia\Tools\CrearFacturaBorrador;
 use App\Ia\Tools\EditarFacturaBorrador;
@@ -55,7 +56,7 @@ class AccionesProhibidasTest extends TestCase
     {
         $tenant = Tenant::factory()->create();
         $this->activar($tenant);
-        Serie::factory()->create(['tenant_id' => $tenant->id, 'tipo' => \App\Enums\TipoFactura::Ordinaria, 'activa' => true]);
+        Serie::factory()->create(['tenant_id' => $tenant->id, 'tipo' => TipoFactura::Ordinaria, 'activa' => true]);
 
         $cliente = Cliente::factory()->for($tenant)->create();
         $articulo = Articulo::factory()->for($tenant)->create(['precio' => 100, 'tipo_impositivo' => 21]);
@@ -78,7 +79,7 @@ class AccionesProhibidasTest extends TestCase
     {
         $tenant = Tenant::factory()->create();
         $this->activar($tenant);
-        Serie::factory()->create(['tenant_id' => $tenant->id, 'tipo' => \App\Enums\TipoFactura::Ordinaria, 'activa' => true]);
+        Serie::factory()->create(['tenant_id' => $tenant->id, 'tipo' => TipoFactura::Ordinaria, 'activa' => true]);
 
         $cliente = Cliente::factory()->for($tenant)->create();
         $articulo = Articulo::factory()->for($tenant)->create(['precio' => 50, 'tipo_impositivo' => 21]);
