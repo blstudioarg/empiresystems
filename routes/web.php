@@ -17,6 +17,7 @@ use App\Http\Controllers\CategoriaArticuloController;
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\CobroController;
 use App\Http\Controllers\CompraController;
+use App\Http\Controllers\CompraDocumentoController;
 use App\Http\Controllers\CompraFacturaeController;
 use App\Http\Controllers\Configuracion\PosConfiguracionController;
 use App\Http\Controllers\Configuracion\PosMesaController;
@@ -382,7 +383,16 @@ Route::middleware(['tenant.context', 'auth', 'sin_super_admin'])->group(function
         Route::get('/compras', [CompraController::class, 'index'])->name('compras.index');
         Route::get('/compras/crear', [CompraController::class, 'create'])->name('compras.create');
         Route::post('/compras', [CompraController::class, 'store'])->name('compras.store');
+
+        // Importación desde PDF/imagen interpretados por IA (feature 044). Van ANTES de
+        // `/compras/{compra}` o `documentos` se resolvería como un id de compra.
+        Route::post('/compras/documentos', [CompraDocumentoController::class, 'subir'])->name('compras.documentos.subir');
+        Route::post('/compras/documentos/{token}/interpretar', [CompraDocumentoController::class, 'interpretar'])->name('compras.documentos.interpretar');
+        Route::post('/compras/documentos/{token}/crear', [CompraDocumentoController::class, 'crear'])->name('compras.documentos.crear');
+        Route::delete('/compras/documentos/{token}', [CompraDocumentoController::class, 'descartar'])->name('compras.documentos.descartar');
+
         Route::get('/compras/{compra}', [CompraController::class, 'show'])->name('compras.show');
+        Route::get('/compras/{compra}/documento', [CompraDocumentoController::class, 'descargar'])->name('compras.documentos.descargar');
         Route::get('/compras/{compra}/editar', [CompraController::class, 'edit'])->name('compras.edit');
         Route::match(['put', 'patch'], '/compras/{compra}', [CompraController::class, 'update'])->name('compras.update');
         Route::post('/compras/{compra}/confirmar', [CompraController::class, 'confirmar'])->name('compras.confirmar');

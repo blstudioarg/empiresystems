@@ -10,6 +10,7 @@ use App\Services\RegistradorActividad;
 use App\Support\IaTenant;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -39,7 +40,7 @@ class AsistenteChatController extends Controller
         $usuario = $request->user();
         $mensaje = $datos['mensaje'];
 
-        $respuesta = new StreamedResponse(function () use ($usuario, $mensaje) {
+        $respuesta = new StreamedResponse(function () use ($request, $usuario, $mensaje) {
             $emitir = function (string $evento, array $datos): void {
                 echo 'event: '.$evento."\n";
                 echo 'data: '.json_encode($datos, JSON_UNESCAPED_UNICODE)."\n\n";
@@ -63,6 +64,13 @@ class AsistenteChatController extends Controller
             ]);
 
             $emitir('fin', []);
+
+            // `StartSession` ya guardó la sesión cuando este callback empieza a correr (se ejecuta
+            // en `send()`, después del middleware), así que todo lo que el asistente escribió aquí
+            // —los turnos de la conversación y la acción pendiente— vive solo en memoria y se
+            // perdería al terminar el request: sin este guardado explícito, cada mensaje arranca
+            // sin contexto y el endpoint de confirmación no encuentra la acción propuesta.
+            $request->session()->save();
         });
 
         $respuesta->headers->set('Content-Type', 'text/event-stream');
@@ -94,7 +102,7 @@ class AsistenteChatController extends Controller
 
         try {
             $resultado = $tool->ejecutar($pendiente['parametros']);
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             return response()->json(['ok' => false, 'mensaje' => $e->getMessage()], 422);
         } catch (\Throwable $e) {
             report($e);

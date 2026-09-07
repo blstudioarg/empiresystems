@@ -533,8 +533,8 @@ Registra la factura recibida del proveedor. Al confirmarla, genera **entradas** 
 | total | decimal(12,2) | |
 | notas | text | |
 | **Recepción electrónica (factura electrónica B2B — `02` §2):** | | |
-| origen | enum | `manual` (default) / `facturae` (importada de un XML recibido) / `otro` |
-| formato_recepcion | varchar(20), nullable | `facturae`, `ubl`, `cii`… cuando `origen != manual` |
+| origen | enum | `manual` (default) / `facturae` (importada de un XML recibido) / `documento` (PDF o imagen interpretado por IA, feature 044) / `otro` |
+| formato_recepcion | varchar(20), nullable | `facturae`, `ubl`, `cii`… cuando `origen != manual`; `pdf` o `imagen` cuando `origen = documento` |
 | archivo_recibido_path | varchar, nullable | ruta del XML/documento electrónico recibido del proveedor (se conserva) |
 | estado_b2b | enum, nullable | ciclo comercial del lado receptor: `recibida`, `aceptada`, `rechazada`, `pagada` |
 | estado_b2b_fecha | datetime, nullable | fecha del último cambio de `estado_b2b` (reportable en 4 días hábiles) |
@@ -547,6 +547,16 @@ Registra la factura recibida del proveedor. Al confirmarla, genera **entradas** 
 > guardando el archivo en `archivo_recibido_path`. El `estado_b2b` permite **reportar** al emisor si
 > la factura fue aceptada/rechazada/pagada dentro del plazo legal. La carga **manual** existente sigue
 > igual (`origen=manual`); la recepción electrónica es un canal adicional, no la reemplaza.
+
+> **Compras desde documentos interpretados por IA (feature 044):** un PDF o una foto de una factura
+> de proveedor se manda al modelo, que devuelve una lectura; el usuario la revisa y al confirmar se
+> crea la compra con `origen=documento`, `formato_recepcion` = `pdf`/`imagen` y el documento original
+> guardado en `archivo_recibido_path` (disco `documentos`, misma convención que Facturae).
+> `estado_b2b` queda **null**: el ciclo B2B es propio de Facturae, no de un escaneo.
+> **No hubo migración**: `origen` ya era `string(20)` y las otras dos columnas ya existían de la
+> feature 022. Mientras la propuesta no se confirma, el documento vive en un temporal segmentado por
+> tenant (`storage/app/private/compras-documentos/{tenant_id}/`) que se purga a las 24 h con
+> `compras-documentos:purgar` (RGPD — minimización, Principio II).
 
 ### `compra_lineas` — (implementado)
 Detalle de la compra. Igual que las líneas de factura, con `articulo_id` opcional.

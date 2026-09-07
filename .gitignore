@@ -36,3 +36,6 @@ tutoriales-video/node_modules/
 
 # Hoja portable de acceso al hosting gestionley.com (credenciales en claro)
 /ACCESO-FTP-GESTIONLEY.md
+
+# Claves de API en local (no versionar)
+/claves.md

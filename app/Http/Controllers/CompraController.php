@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\EstadoCompra;
+use App\Enums\TipoArticulo;
 use App\Exceptions\CompraNoModificableException;
 use App\Http\Requests\StoreCompraRequest;
 use App\Http\Requests\UpdateCompraRequest;
@@ -10,6 +11,7 @@ use App\Models\Articulo;
 use App\Models\Compra;
 use App\Models\Proveedor;
 use App\Services\RegistroCompra;
+use App\Support\IaTenant;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -48,7 +50,29 @@ class CompraController extends Controller
             ]);
         }
 
-        return view('compras.index');
+        return view('compras.index', [
+            // Para el modal de importación por IA (feature 044): el select de proveedor de la
+            // propuesta y el botón, que se deshabilita si el tenant no tiene clave de IA.
+            // Ya mapeados aquí y no en la vista: un array multilínea dentro de `@json(...)` rompe
+            // el parser de directivas de Blade ("Unclosed '[' ... does not match ')'").
+            'proveedoresImportacion' => Proveedor::orderBy('nombre')
+                ->get(['id', 'nombre', 'razon_social'])
+                ->map(fn (Proveedor $p) => [
+                    'id' => $p->id,
+                    'nombre' => $p->razon_social ?: $p->nombre,
+                ])
+                ->values(),
+            'articulosImportacion' => Articulo::where('activo', true)
+                ->orderBy('nombre')
+                ->get(['id', 'nombre', 'tipo', 'gestion_stock'])
+                ->map(fn (Articulo $a) => [
+                    'id' => $a->id,
+                    'nombre' => $a->nombre,
+                    'mueve_stock' => $a->tipo === TipoArticulo::Producto && (bool) $a->gestion_stock,
+                ])
+                ->values(),
+            'iaConfigurada' => IaTenant::configurada(),
+        ]);
     }
 
     public function create(): View

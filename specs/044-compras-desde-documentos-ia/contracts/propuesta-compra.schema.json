@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "propuesta-compra.schema.json",
+  "title": "LecturaDocumento",
+  "description": "Structured Output exigido al modelo por InterpretadorDocumentoCompra. Se envía como response_format = {type: 'json_schema', json_schema: {name: 'lectura_documento_compra', strict: true, schema: <este documento>}}. IMPORTANTE: con strict:true el proveedor exige additionalProperties:false y que TODAS las propiedades estén en 'required' (los campos opcionales se expresan admitiendo null en su tipo). Los importes que devuelva el modelo son SOLO para contraste: el servidor recalcula (Principio III).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["es_documento_compra", "motivo_descarte", "emisor", "numero_documento", "fecha", "moneda", "lineas", "total_documento"],
+  "properties": {
+    "es_documento_compra": {
+      "type": "boolean",
+      "description": "true solo si el documento es una factura o albarán de un proveedor. Un contrato, un recibo de gasto sin desglose, una página en blanco o una foto ilegible son false."
+    },
+    "motivo_descarte": {
+      "type": ["string", "null"],
+      "description": "Si es_documento_compra es false, explicación breve y concreta en español de qué se vio en su lugar. Null en caso contrario."
+    },
+    "emisor": {
+      "type": ["object", "null"],
+      "description": "Quien EMITE el documento, es decir el proveedor. Nunca el receptor. Null si no se identifica.",
+      "additionalProperties": false,
+      "required": ["nombre", "razon_social", "nif", "direccion", "cp", "ciudad", "provincia", "pais", "email", "telefono"],
+      "properties": {
+        "nombre": { "type": ["string", "null"] },
+        "razon_social": { "type": ["string", "null"] },
+        "nif": { "type": ["string", "null"], "description": "NIF/CIF/VAT tal como aparece, sin normalizar." },
+        "direccion": { "type": ["string", "null"] },
+        "cp": { "type": ["string", "null"] },
+        "ciudad": { "type": ["string", "null"] },
+        "provincia": { "type": ["string", "null"] },
+        "pais": { "type": ["string", "null"] },
+        "email": { "type": ["string", "null"] },
+        "telefono": { "type": ["string", "null"] }
+      }
+    },
+    "numero_documento": {
+      "type": ["string", "null"],
+      "description": "Número de la factura o albarán del proveedor. Null si no se lee."
+    },
+    "fecha": {
+      "type": ["string", "null"],
+      "description": "Fecha de emisión en formato YYYY-MM-DD. Interpretar formatos españoles (DD/MM/AAAA). Null si no se lee con seguridad; NO inventar ni usar la fecha de hoy."
+    },
+    "moneda": {
+      "type": ["string", "null"],
+      "description": "Código ISO de la moneda (EUR, USD…). Null si no consta."
+    },
+    "lineas": {
+      "type": "array",
+      "description": "Una entrada por línea de detalle. Excluir subtotales, totales, portes ya sumados aparte, y textos legales. Si el documento no tiene líneas legibles, array vacío.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["referencia", "concepto", "unidad", "cantidad", "precio_unitario", "tipo_impositivo"],
+        "properties": {
+          "referencia": {
+            "type": ["string", "null"],
+            "description": "Código/SKU del artículo según el proveedor, si la línea lo trae."
+          },
+          "concepto": {
+            "type": "string",
+            "description": "Descripción de la línea. Obligatorio: si no hay texto legible, usar 'Sin descripción'."
+          },
+          "unidad": { "type": ["string", "null"], "description": "ud, kg, m, caja…" },
+          "cantidad": { "type": ["number", "null"] },
+          "precio_unitario": {
+            "type": ["number", "null"],
+            "description": "Precio por unidad SIN impuestos. Si el documento solo da el importe de línea, dividirlo por la cantidad."
+          },
+          "tipo_impositivo": {
+            "type": ["number", "null"],
+            "description": "Porcentaje del impuesto indirecto de la línea (IVA, IGIC o IPSI), como número: 21, 10, 4, 7, 0… NULL si el documento no lo indica. NUNCA asumir 21."
+          }
+        }
+      }
+    },
+    "total_documento": {
+      "type": ["number", "null"],
+      "description": "Total con impuestos que figura impreso en el documento. Solo para contraste; el sistema recalcula sus propios importes."
+    }
+  }
+}

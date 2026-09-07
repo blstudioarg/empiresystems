@@ -81,6 +81,11 @@
 								<button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#importarFacturaeModal">
 									Importar Facturae
 								</button>
+								<button type="button" class="btn btn-outline-primary"
+									@if ($iaConfigurada) data-bs-toggle="modal" data-bs-target="#importarDocumentoModal"
+									@else disabled title="Configurá el asistente IA en Configuración › Asistente IA para poder importar documentos." @endif>
+									Importar documento
+								</button>
 								<a href="{{ route('compras.create') }}" class="btn btn-primary">+ Nueva compra</a>
 							</div>
 						</div>
@@ -134,6 +139,8 @@
 				</form>
 			</div>
 		</div>
+
+		@include('compras._importar_documento_modal')
 	</div>
 @endsection
 
@@ -246,4 +253,24 @@
 			});
 		});
 	</script>
+
+	@if ($iaConfigurada)
+		{{-- @assetv, no asset(): el hosting cachea los estáticos una semana (guía, "Assets propios"). --}}
+		<script src="@assetv('js/plugins-init/compras-importar-documento.init.js')"></script>
+		<script>
+			$(function () {
+				window.initImportacionDocumentosCompra({
+					urls: {
+						subir: @json(route('compras.documentos.subir')),
+						interpretar: @json(route('compras.documentos.interpretar', ['token' => '__TOKEN__'])),
+						crear: @json(route('compras.documentos.crear', ['token' => '__TOKEN__'])),
+						descartar: @json(route('compras.documentos.descartar', ['token' => '__TOKEN__'])),
+					},
+					proveedores: @json($proveedoresImportacion),
+					articulos: @json($articulosImportacion),
+					tabla: '#compras-table',
+				});
+			});
+		</script>
+	@endif
 @endpush

@@ -229,6 +229,17 @@ Widget de chat flotante (área tenant) conectado a la API de OpenAI (Chat Comple
   cálculo del servidor (`CalculadoraFactura`, `RegistroPresupuesto`, `RegistroFacturaBorrador`).
 - **Conversación efímera** en la sesión de Laravel (`app/Ia/ConversacionAsistente.php`): sobrevive a
   la navegación, muere con la sesión, truncado en servidor. Sin tablas nuevas.
+  - **Cuidado al escribir en sesión dentro del stream.** `StartSession` guarda la sesión justo
+    después de que el controlador devuelve la respuesta, pero la closure de una
+    `StreamedResponse` no corre hasta `send()`: todo lo que se escriba en sesión ahí dentro
+    (turnos de la conversación, acción pendiente) queda solo en memoria y se pierde. Por eso
+    `AsistenteChatController::mensaje()` cierra el stream con un `$request->session()->save()`
+    explícito. Se detectó porque el asistente arrancaba sin contexto en cada mensaje y la
+    confirmación de escrituras respondía "La acción ya no está disponible".
+  - Los tests HTTP **no** detectan esto por sí solos: con `SESSION_DRIVER=array` (phpunit.xml)
+    se reutiliza la misma instancia de `Store` entre requests y los datos sobreviven aunque no
+    se guarden nunca. La regresión (`tests/Feature/Asistente/PersistenciaConversacionTest.php`)
+    comprueba lo que ve un handler de sesión espía, no el estado en memoria.
 - **Base de conocimiento modular** en `resources/ia/conocimiento/*.md` (un archivo por módulo);
   `ConocimientoAsistente` los ensambla en el system prompt. Añadir feature = añadir archivo (SC-007).
 

@@ -20,6 +20,25 @@ php artisan migrate --seed
 php artisan serve
 ```
 
+### Certificados TLS en Windows (obligatorio para el asistente IA)
+
+PHP en Windows no trae bundle de CAs configurado, así que cualquier llamada saliente por HTTPS
+(OpenAI, VIES, etc.) falla con `cURL error 60: SSL certificate ... unable to get local issuer
+certificate`. No se arregla desactivando la verificación: hay que apuntar PHP al bundle de CAs.
+
+1. Descargar [cacert.pem](https://curl.se/ca/cacert.pem) y guardarlo, por ejemplo, en
+   `<carpeta-de-PHP>\extras\ssl\cacert.pem`.
+2. En el `php.ini` cargado (`php -i | findstr "Loaded Configuration File"`), descomentar y
+   apuntar **ambas** claves a esa ruta absoluta:
+
+   ```ini
+   curl.cainfo = "C:\ruta\a\PHP\extras\ssl\cacert.pem"
+   openssl.cafile = "C:\ruta\a\PHP\extras\ssl\cacert.pem"
+   ```
+
+3. Reiniciar `php artisan serve` (el `php.ini` se lee al arrancar el proceso) y comprobar con
+   `php -i | findstr cainfo`.
+
 ## Credenciales de desarrollo (sembradas por `AuthSeeder`)
 
 > ⚠️ Estas credenciales son solo para desarrollo local. **Cambiarlas antes de desplegar a

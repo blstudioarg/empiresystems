@@ -1675,3 +1675,35 @@ modal de cobros de una factura, usado tanto desde `facturas/index.blade.php` com
 - **Verificación de "a comportamiento constante"**: la suite de tests ya existente de la pantalla
   origen debe seguir en verde **sin modificar ni un test**. Si hay que tocar un test para que pase,
   la extracción cambió comportamiento y hay que revertirla y rehacerla.
+
+## Cola de propuestas revisables en un modal (feature 044)
+
+Cuando un flujo produce **varias propuestas que el usuario debe revisar una por una** antes de que
+se persista nada (importar compras desde documentos interpretados por IA), el patrón es una **cola
+dentro del mismo modal**, no un modal por documento ni una pantalla aparte:
+
+- **Cuatro estados alternados con `d-none`** en el mismo modal, igual que el de importación de
+  Excel: `subir` → `interpretando` → `propuesta` → `resumen`. El fichero no se vuelve a pedir: el
+  token que devuelve la subida viaja hasta el final.
+- **Contador «n de N»** visible mientras haya más de un documento, para que el usuario sepa cuánto
+  falta. Sin él, una cola larga parece colgada.
+- **Las peticiones caras van en serie, nunca en paralelo.** Cada interpretación es una llamada al
+  modelo; lanzarlas a la vez revienta el `max_execution_time` del hosting compartido. El navegador
+  encadena token a token.
+- **Avanzar al crear o descartar** sin cerrar el modal: confirmar una propuesta pasa a la siguiente.
+- **Un fallo parcial no aborta la cola.** Un documento ilegible se marca como fallido y se sigue con
+  el siguiente. Solo se aborta ante un fallo que afecta a todo el lote por igual (clave de API
+  inválida, cuota agotada): ahí seguir intentando solo gasta tiempo del usuario.
+- **Resumen final** con cuántas se crearon, cuántas se descartaron y **cuáles fallaron y por qué**,
+  identificando cada documento por su **nombre de archivo** — un índice («documento 3») no le dice
+  nada a quien subió diez ficheros. Al cerrar, recargar tabla y métricas.
+
+**La tabla de líneas de la propuesta NO es un DataTable**, y no contradice la regla «listados:
+siempre DataTable». Esa regla es para *listados*; esta es una tabla de **edición**, con un input por
+celda, igual que `compras/_form_lineas.blade.php` o las líneas del alta de facturas. Un DataTable
+aquí estorbaría (paginación y buscador sobre filas que se están editando).
+
+**Los totales que se recalculan en vivo al editar son solo UX.** El importe que se guarda lo calcula
+el servidor a partir de las líneas (Principio III de la constitución); el número que se pinta
+mientras el usuario teclea es una aproximación para que vea el efecto de su cambio, y jamás se envía
+como fuente de verdad.
