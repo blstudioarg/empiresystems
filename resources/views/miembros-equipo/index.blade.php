@@ -61,7 +61,7 @@
 									<h4 class="mb-0" data-metric="total">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="people" size="45" trigger="hover" target=".card" />
+									<x-lordicon icon="people" size="38" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>
@@ -76,7 +76,7 @@
 									<h4 class="mb-0" data-metric="activos">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="wired-outline-1846-employee-working-hover-working" size="45" trigger="hover" target=".card" />
+									<x-lordicon icon="wired-outline-1846-employee-working-hover-working" size="38" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>
@@ -91,7 +91,7 @@
 									<h4 class="mb-0" data-metric="con_ubicacion">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="wired-outline-27-globe-hover-rotate" size="45" trigger="hover" target=".card" />
+									<x-lordicon icon="wired-outline-27-globe-hover-rotate" size="38" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>

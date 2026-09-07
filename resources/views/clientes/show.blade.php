@@ -177,7 +177,7 @@
 															<h6 class="mb-1">Total facturado</h6>
 															<h4 class="mb-0">{{ \App\Support\Formato::moneda($resumen['total_facturado']) }}</h4>
 														</div>
-														<x-lordicon icon="invoice" size="45" trigger="hover" target=".card" />
+														<x-lordicon icon="invoice" size="38" trigger="hover" target=".card" />
 													</div>
 												</div>
 											</div>
@@ -190,7 +190,7 @@
 															<h6 class="mb-1">Pendiente de cobro</h6>
 															<h4 class="mb-0">{{ \App\Support\Formato::moneda($resumen['pendiente_cobro']) }}</h4>
 														</div>
-														<x-lordicon icon="euro" size="45" trigger="hover" target=".card" />
+														<x-lordicon icon="euro" size="38" trigger="hover" target=".card" />
 													</div>
 												</div>
 											</div>
@@ -204,7 +204,7 @@
 															<h4 class="mb-0">{{ $resumen['facturas_vencidas_cantidad'] }}</h4>
 															<small class="text-muted">{{ \App\Support\Formato::moneda($resumen['facturas_vencidas_importe']) }}</small>
 														</div>
-														<x-lordicon icon="wired-outline-2115-refund-hover-pinch" size="45" trigger="hover" target=".card" />
+														<x-lordicon icon="wired-outline-2115-refund-hover-pinch" size="38" trigger="hover" target=".card" />
 													</div>
 												</div>
 											</div>
@@ -217,7 +217,7 @@
 															<h6 class="mb-1">Ticket medio</h6>
 															<h4 class="mb-0">{{ \App\Support\Formato::moneda($resumen['ticket_medio']) }}</h4>
 														</div>
-														<x-lordicon icon="wired-outline-153-bar-chart" size="45" trigger="hover" target=".card" />
+														<x-lordicon icon="wired-outline-153-bar-chart" size="38" trigger="hover" target=".card" />
 													</div>
 												</div>
 											</div>

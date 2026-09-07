@@ -15,6 +15,18 @@ es perfectamente válida (portes, un servicio puntual, algo que no está en el c
 no mueve stock. Solo las líneas con un artículo de tipo producto y gestión de stock activada
 mueven inventario al confirmar.
 
+## Acciones desde el listado
+
+En el listado de compras cada fila tiene un **desplegable «Acciones»** con todo lo que se puede
+hacer sobre esa compra, sin entrar al detalle: **Ver**, y —según en qué estado esté— **Editar**,
+**Confirmar**, **Anular** o **Eliminar**. Editar y Eliminar solo aparecen en compras en borrador;
+Anular, solo en confirmadas. Si la compra vino por Facturae o por documento, el desplegable incluye
+también **descargar el original** (XML o PDF/imagen), y en las de Facturae, marcar el **estado
+B2B** (recibida, aceptada, rechazada, pagada) directamente desde ahí.
+
+Confirmar, anular y eliminar piden confirmación antes de ejecutarse, porque mueven stock o borran
+el registro. Cambiar el estado B2B no la pide: se puede volver a cambiar cuando haga falta.
+
 ## Formas de registrar una compra
 
 1. **A mano**, con «+ Nueva compra»: se elige el proveedor y se cargan las líneas.

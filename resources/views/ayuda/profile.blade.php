@@ -5,8 +5,10 @@ las acciones están organizadas en pestañas debajo de tus datos.</p>
 <ol>
 	<li><strong>Tus datos</strong>: nombre, email, rol y estado de tu cuenta se muestran arriba
 		(tu rol real, el que definen tus permisos hoy, no uno desactualizado).</li>
-	<li><strong>Foto de perfil</strong>: subí una imagen (PNG, JPG o WEBP, hasta 2 MB) y guardá;
-		es la que se ve en el menú lateral.</li>
+	<li><strong>Foto de perfil</strong>: tocá el <strong>botón de cámara</strong> sobre tu foto y
+		elegí la imagen (PNG, JPG o WEBP, hasta 2 MB). Se guarda sola al elegirla, no hay que
+		confirmar nada. Es la misma foto que se ve en el menú lateral, y podés cambiarla desde
+		cualquiera de los dos sitios.</li>
 	<li><strong>Cambiar contraseña</strong>: pedí tu contraseña actual + la nueva (mínimo 8
 		caracteres, dos veces para confirmar). Al guardar, se cierran automáticamente tus sesiones
 		activas en otros dispositivos (la sesión desde la que hacés el cambio queda abierta).</li>

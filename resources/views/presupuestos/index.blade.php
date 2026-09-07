@@ -29,7 +29,7 @@
 									<h4 class="mb-0" data-metric="total">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="wired-outline-979-project-estimate-hover-pinch" size="45" trigger="hover" target=".card" />
+									<x-lordicon icon="wired-outline-979-project-estimate-hover-pinch" size="38" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>
@@ -44,7 +44,7 @@
 									<h4 class="mb-0" data-metric="pendientes">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="wired-outline-177-envelope-send-hover-flying" size="45" trigger="hover" target=".card" />
+									<x-lordicon icon="wired-outline-177-envelope-send-hover-flying" size="38" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>
@@ -59,7 +59,7 @@
 									<h4 class="mb-0" data-metric="importe_aceptado">0,00 €</h4>
 								</div>
 								<div>
-									<x-lordicon icon="euro" size="45" trigger="hover" target=".card" />
+									<x-lordicon icon="euro" size="38" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>

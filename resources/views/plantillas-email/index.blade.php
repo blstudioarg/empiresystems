@@ -28,7 +28,7 @@
 									<h4 class="mb-0" data-metric="total">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="invoice" size="45" trigger="hover" target=".card" />
+									<x-lordicon icon="invoice" size="38" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>
@@ -43,7 +43,7 @@
 									<h4 class="mb-0" data-metric="activas">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="system-regular-48-favorite-heart" size="45" trigger="hover" target=".card" />
+									<x-lordicon icon="system-regular-48-favorite-heart" size="38" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>
@@ -58,7 +58,7 @@
 									<h4 class="mb-0" data-metric="inactivas">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="system-regular-28-info" size="45" trigger="hover" target=".card" />
+									<x-lordicon icon="system-regular-28-info" size="38" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>

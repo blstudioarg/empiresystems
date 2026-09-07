@@ -28,7 +28,7 @@
 									<h4 class="mb-0" data-metric="total">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="wired-outline-457-shield-security-hover-pinch" size="45" trigger="hover" target=".card" />
+									<x-lordicon icon="wired-outline-457-shield-security-hover-pinch" size="38" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>
@@ -43,7 +43,7 @@
 									<h4 class="mb-0" data-metric="nuevas">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="wired-outline-49-plus-circle" size="45" trigger="hover" target=".card" />
+									<x-lordicon icon="wired-outline-49-plus-circle" size="38" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>
@@ -58,7 +58,7 @@
 									<h4 class="mb-0" data-metric="resueltas">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="wired-outline-267-like-thumb-up-hover-up" size="45" trigger="hover" target=".card" />
+									<x-lordicon icon="wired-outline-267-like-thumb-up-hover-up" size="38" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>

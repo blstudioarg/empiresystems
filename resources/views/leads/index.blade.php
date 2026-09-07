@@ -29,7 +29,7 @@
 									<h4 class="mb-0" data-metric="total">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="people" size="45" trigger="hover" target=".card" />
+									<x-lordicon icon="people" size="38" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>
@@ -44,7 +44,7 @@
 									<h4 class="mb-0" data-metric="sin_asignar">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="wired-outline-424-question-bubble-hover-wiggle" size="45" trigger="hover" target=".card" />
+									<x-lordicon icon="wired-outline-424-question-bubble-hover-wiggle" size="38" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>
@@ -59,7 +59,7 @@
 									<h4 class="mb-0" data-metric="cualificados">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="wired-outline-267-like-thumb-up-hover-up" size="45" trigger="hover" target=".card" />
+									<x-lordicon icon="wired-outline-267-like-thumb-up-hover-up" size="38" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>

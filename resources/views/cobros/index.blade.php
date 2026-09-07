@@ -58,7 +58,7 @@
 									<h4 class="mb-0" data-metric="pendiente_total">0,00 €</h4>
 								</div>
 								<div>
-									<x-lordicon icon="euro" size="45" trigger="hover" target=".card" />
+									<x-lordicon icon="euro" size="38" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>
@@ -73,7 +73,7 @@
 									<h4 class="mb-0 text-success" data-metric="cobrado_periodo">0,00 €</h4>
 								</div>
 								<div>
-									<x-lordicon icon="wired-outline-2115-refund-hover-pinch" size="45" trigger="hover" target=".card" />
+									<x-lordicon icon="wired-outline-2115-refund-hover-pinch" size="38" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>
@@ -88,7 +88,7 @@
 									<h4 class="mb-0 text-danger" data-metric="vencido_total">0,00 €</h4>
 								</div>
 								<div>
-									<x-lordicon icon="wired-outline-457-shield-security-hover-pinch" size="45" trigger="hover" target=".card" />
+									<x-lordicon icon="wired-outline-457-shield-security-hover-pinch" size="38" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>
@@ -103,7 +103,7 @@
 									<h4 class="mb-0" data-metric="facturas_pendientes">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="invoice" size="45" trigger="hover" target=".card" />
+									<x-lordicon icon="invoice" size="38" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>

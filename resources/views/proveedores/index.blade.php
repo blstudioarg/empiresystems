@@ -33,7 +33,7 @@
 									<h4 class="mb-0" data-metric="total">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="empresa" size="45" trigger="hover" target=".card" />
+									<x-lordicon icon="empresa" size="38" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>

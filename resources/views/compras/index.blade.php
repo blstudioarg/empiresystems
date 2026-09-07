@@ -28,7 +28,7 @@
 									<h4 class="mb-0" data-metric="total">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="invoice" size="45" trigger="hover" target=".card" />
+									<x-lordicon icon="invoice" size="38" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>
@@ -43,7 +43,7 @@
 									<h4 class="mb-0" data-metric="confirmadas">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="box" size="45" trigger="hover" target=".card" />
+									<x-lordicon icon="box" size="38" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>
@@ -58,7 +58,7 @@
 									<h4 class="mb-0" data-metric="importe_total">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="euro" size="45" trigger="hover" target=".card" />
+									<x-lordicon icon="euro" size="38" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>
@@ -152,68 +152,10 @@
 @push('scripts')
 	<script src="{{ asset('vendor/datatables/js/jquery.dataTables.min.js') }}"></script>
 	<script src="{{ asset('vendor/datatables/responsive/responsive.js') }}"></script>
+	{{-- @assetv, no asset(): el hosting cachea los estáticos una semana (guía, "Assets propios"). --}}
+	<script src="@assetv('js/plugins-init/compras-datatable.init.js')"></script>
 	<script>
-		var estadoB2bLabels = {
-			recibida: 'Recibida',
-			aceptada: 'Aceptada',
-			rechazada: 'Rechazada',
-			pagada: 'Pagada',
-		};
-
 		$(function () {
-			var table = $('#compras-table').DataTable({
-				responsive: true,
-				processing: true,
-				ajax: {
-					url: window.location.pathname,
-					// El filtro se pasa como query param vía ajax.data (DataTables no admite una
-					// función en ajax.url: jQuery la castearía a string y pediría una URL inválida).
-					data: function (d) {
-						var estado = $('#filtro-estado-b2b').val();
-						if (estado) {
-							d.estado_b2b = estado;
-						}
-					},
-					dataSrc: function (json) {
-						if (json.totales) {
-							$('[data-metric="total"]').text(json.totales.total);
-							$('[data-metric="confirmadas"]').text(json.totales.confirmadas);
-							$('[data-metric="importe_total"]').text(json.totales.importe_total);
-						}
-
-						return json.data;
-					},
-				},
-				columns: [
-					{ data: 'proveedor' },
-					{ data: 'numero_documento' },
-					{ data: 'fecha' },
-					{ data: 'estado' },
-					{ data: null, orderable: false, render: function (data, type, row) {
-						return row.estado_b2b ? (estadoB2bLabels[row.estado_b2b] || row.estado_b2b) : '-';
-					} },
-					{ data: 'total' },
-					{ data: null, orderable: false, render: function (data, type, row) {
-						return '<a class="btn btn-primary light btn-sm" href="' + row.show_url + '">Ver</a>';
-					} },
-				],
-				language: {
-					search: 'Buscar:',
-					lengthMenu: 'Mostrar _MENU_ registros',
-					info: 'Mostrando _START_ a _END_ de _TOTAL_ registros',
-					infoEmpty: 'Mostrando 0 a 0 de 0 registros',
-					infoFiltered: '(filtrado de _MAX_ registros totales)',
-					zeroRecords: 'No se encontraron compras',
-					emptyTable: 'Todavía no hay compras',
-					processing: 'Cargando...',
-					paginate: { first: 'Primero', last: 'Último', next: 'Siguiente', previous: 'Anterior' },
-				},
-			});
-
-			$('#filtro-estado-b2b').on('change', function () {
-				table.ajax.reload();
-			});
-
 			$('#importarFacturaeForm').on('submit', function (e) {
 				e.preventDefault();
 

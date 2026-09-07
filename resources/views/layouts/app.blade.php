@@ -64,7 +64,10 @@
 	<script src="@assetv('js/toastr-config.js')"></script>
 	<script src="@assetv('js/button-loading.js')"></script>
 	<script src="@assetv('js/confirm-delete.js')"></script>
+	<script src="@assetv('js/form-loading.js')"></script>
 	<script src="@assetv('js/metric-cards.js')"></script>
+	<script src="@assetv('js/datatables-init-hooks.js')"></script>
+	<script src="@assetv('js/avatar-upload.js')"></script>
 	<script src="@assetv('js/plugins-init/password-toggle.init.js')"></script>
 
 	{{-- Player de Lordicon (cuenta propia): renderiza <lord-icon> a partir de los JSON

@@ -22,16 +22,7 @@
 		<div class="deznav">
 			<div class="deznav-scroll grid-menu">
 				<div class="sidebar-user-card text-center">
-					<form id="sidebar-avatar-form" action="{{ route('profile.avatar.update') }}" method="POST" enctype="multipart/form-data">
-						@csrf
-						<div class="sidebar-user-avatar">
-							<img id="sidebar-avatar-preview" src="{{ auth()->user()->avatarUrl() }}" alt="{{ auth()->user()->name }}">
-							<label for="sidebar-avatar-input" class="sidebar-user-avatar-edit" title="Cambiar foto">
-								<i class="fas fa-camera"></i>
-							</label>
-							<input type="file" id="sidebar-avatar-input" name="avatar" accept="image/*" class="d-none">
-						</div>
-					</form>
+					<x-avatar-editable />
 					<div class="sidebar-user-name">{{ auth()->user()->name }}</div>
 					<div class="sidebar-user-role">{{ auth()->user()->isSuperAdmin() ? auth()->user()->rol->value : (auth()->user()->getRoleNames()->first() ?? 'Sin rol') }}</div>
 				</div>
@@ -122,7 +113,8 @@
 					@endif
 				</ul>
 				<div class="help-desk pb-3">
-					<button type="button" class="ayuda-trigger" data-bs-toggle="modal" data-bs-target="#ayudaContextualModal">
+					<button type="button" class="ayuda-trigger" data-bs-toggle="modal" data-bs-target="#ayudaContextualModal"
+						title="Ayuda de esta pantalla" aria-label="Ayuda de esta pantalla">
 						<span class="ayuda-trigger-icon">
 							<x-lordicon icon="wired-outline-424-question-bubble-hover-wiggle" trigger="hover" size="22" target=".ayuda-trigger" />
 						</span>
@@ -159,35 +151,3 @@
 				</div>
 			</div>
 		</div>
-
-		@push('scripts')
-		<script>
-			document.getElementById('sidebar-avatar-input').addEventListener('change', function (e) {
-				if (!e.target.files.length) return;
-
-				const form = document.getElementById('sidebar-avatar-form');
-				const formData = new FormData(form);
-
-				fetch(form.action, {
-					method: 'POST',
-					headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
-					body: formData,
-				})
-					.then((response) => response.json().then((data) => ({ ok: response.ok, data })))
-					.then(({ ok, data }) => {
-						if (!ok) {
-							const message = data.errors ? Object.values(data.errors)[0][0] : (data.message || 'No se pudo actualizar la foto.');
-							window.showToast('error', message);
-							return;
-						}
-
-						document.getElementById('sidebar-avatar-preview').src = data.avatar_url;
-						document.querySelectorAll('.header-media img, .products img.avatar-md').forEach((img) => {
-							img.src = data.avatar_url;
-						});
-						window.showToast('success', data.message);
-					})
-					.catch(() => window.showToast('error', 'No se pudo actualizar la foto.'));
-			});
-		</script>
-		@endpush

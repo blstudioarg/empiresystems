@@ -31,7 +31,7 @@
 									<h4 class="mb-0">{{ $totalesGenerales['abiertas'] }}</h4>
 								</div>
 								<div>
-									<x-lordicon icon="wired-outline-153-bar-chart" size="45" trigger="hover" target=".card" />
+									<x-lordicon icon="wired-outline-153-bar-chart" size="38" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>
@@ -46,7 +46,7 @@
 									<h4 class="mb-0">{{ number_format($totalesGenerales['importe_pipeline'], 2, ',', '.') }} €</h4>
 								</div>
 								<div>
-									<x-lordicon icon="euro" size="45" trigger="hover" target=".card" />
+									<x-lordicon icon="euro" size="38" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>
@@ -61,7 +61,7 @@
 									<h4 class="mb-0">{{ $totalesGenerales['ganadas'] }}</h4>
 								</div>
 								<div>
-									<x-lordicon icon="wired-outline-456-handshake-deal-hover-pinch" size="45" trigger="hover" target=".card" />
+									<x-lordicon icon="wired-outline-456-handshake-deal-hover-pinch" size="38" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>

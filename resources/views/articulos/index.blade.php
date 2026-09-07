@@ -148,7 +148,7 @@
 									<h4 class="mb-0" data-metric="total">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="box" size="45" trigger="hover" target=".card" />
+									<x-lordicon icon="box" size="38" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>
@@ -163,7 +163,7 @@
 									<h4 class="mb-0" data-metric="productos">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="producto" size="45" trigger="hover" target=".card" />
+									<x-lordicon icon="producto" size="38" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>
@@ -178,7 +178,7 @@
 									<h4 class="mb-0" data-metric="servicios">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="servicio" size="45" trigger="hover" target=".card" />
+									<x-lordicon icon="servicio" size="38" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>

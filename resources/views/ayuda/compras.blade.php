@@ -15,6 +15,10 @@ para llevar el gasto y para <strong>reponer stock</strong>.</p>
 		producto con gestión de stock <strong>suma unidades al inventario</strong> automáticamente.</li>
 	<li><strong>Estado B2B</strong>: si la compra vino por vía electrónica, refleja su ciclo
 		(recibida, aceptada, rechazada, pagada). Filtralo con el selector de arriba.</li>
+	<li><strong>Acciones</strong>: en cada fila del listado, el botón <strong>Acciones</strong>
+		abre el menú con todo lo que podés hacer sobre esa compra sin entrar al detalle: ver,
+		editar, confirmar, anular, eliminar, descargar el documento original y —en las de
+		Facturae— marcar el estado B2B. Solo aparece lo que corresponde a su estado.</li>
 </ol>
 
 <p class="ayuda-nota">El stock lo mueve confirmar la compra, no crearla: mientras esté en borrador
