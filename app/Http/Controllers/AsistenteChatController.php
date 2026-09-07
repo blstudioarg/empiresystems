@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use App\Enums\AccionLogActividad;
 use App\Ia\CatalogoTools;
 use App\Ia\ConversacionAsistente;
+use App\Ia\SugerenciasAsistente;
+use App\Models\User;
+use App\Services\AlmacenImportaciones;
 use App\Services\AsistenteIa;
 use App\Services\RegistradorActividad;
 use App\Support\IaTenant;
@@ -32,6 +35,7 @@ class AsistenteChatController extends Controller
     {
         $datos = $request->validate([
             'mensaje' => ['required', 'string', 'max:4000'],
+            'material_token' => ['nullable', 'string'],
         ]);
 
         if (! IaTenant::configurada()) {
@@ -40,6 +44,8 @@ class AsistenteChatController extends Controller
 
         $usuario = $request->user();
         $mensaje = $datos['mensaje'];
+
+        $this->anunciarMaterial($usuario, $datos['material_token'] ?? null);
 
         $idPrevio = $this->conversacion->idActivo();
 
@@ -148,10 +154,16 @@ class AsistenteChatController extends Controller
             $hechas[] = $resultado['descripcion'] ?? $accion['resumen'];
             $ultimaUrl = $resultado['url'] ?? $accion['url'] ?? $ultimaUrl;
 
+            // Una acción puede completarse **y** dejar cosas fuera: importar un fichero crea las
+            // filas válidas y reporta las rechazadas sin abortar el lote (feature 046, FR-018).
+            foreach ($resultado['rechazadas'] ?? [] as $rechazada) {
+                $rechazadas[] = $rechazada;
+            }
+
             $this->registradorActividad->registrar(
                 $usuario,
                 AccionLogActividad::Alta,
-                null,
+                $resultado['entidad_tipo'] ?? null,
                 $resultado['id'] ?? null,
                 'Asistente IA: '.($resultado['descripcion'] ?? $accion['resumen']),
             );
@@ -195,6 +207,47 @@ class AsistenteChatController extends Controller
             'rechazadas' => $rechazadas,
             // Solo se ofrece "Ver" cuando hay una única acción: con varias, a cuál llevaría.
             'url' => count($hechas) === 1 ? $ultimaUrl : null,
+        ]);
+    }
+
+    /**
+     * Le dice al modelo que hay material adjunto y con qué token trabajarlo (feature 046).
+     *
+     * Va como nota interna y no dentro del mensaje de la persona porque el token es fontanería: el
+     * modelo lo necesita para llamar a sus tools, pero nadie tiene por qué leer un UUID en su propia
+     * conversación.
+     */
+    private function anunciarMaterial(?User $usuario, ?string $token): void
+    {
+        if ($usuario === null || $token === null || $token === '') {
+            return;
+        }
+
+        $borrador = app(AlmacenImportaciones::class)
+            ->borrador($token, (int) $usuario->tenant_id, (int) $usuario->id);
+
+        // Un token que no es suyo simplemente no existe: no se avisa de nada y el turno sigue.
+        if ($borrador === null) {
+            return;
+        }
+
+        $this->conversacion->agregarNotaInterna(
+            "La persona adjuntó material para importar {$borrador->modulo}. "
+            ."El token del material es {$borrador->token}. "
+            .'Analizalo con analizar_material_importable antes de responder, y contale qué encontraste.'
+        );
+    }
+
+    /**
+     * GET /asistente/sugerencias — lo que el panel ofrece cuando todavía no hay conversación.
+     *
+     * Se filtra en servidor (FR-027): ofrecer algo que al pulsarlo responde «no tenés permiso» es
+     * peor que no ofrecer nada.
+     */
+    public function sugerencias(Request $request): JsonResponse
+    {
+        return response()->json([
+            'categorias' => (new SugerenciasAsistente)->paraUsuario($request->user()),
         ]);
     }
 

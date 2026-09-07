@@ -1210,6 +1210,30 @@ stock ya se movió al confirmar cada albarán como entregado.
     (default **90 días** desde la última actividad), leído por `App\Support\RetencionAsistenteTenant`
     y aplicado por el comando `asistente:purgar` (diario). Se purga por `ultima_actividad_en` y no
     por `created_at`: un hilo empezado hace un año pero usado ayer está vivo.
+- **Material de importación aportado al asistente (feature 046): sin tablas nuevas.** El asistente
+  puede recibir un fichero o un documento para importar clientes, artículos o proveedores. Una
+  importación en curso es **efímera por diseño** —vive mientras dura la conversación y desaparece al
+  confirmarse, descartarse o caducar—, así que persistirla obligaría a un plazo de retención y una
+  purga propios para un dato que no aporta nada una vez terminado el proceso.
+  - Vive en el **almacén de ficheros de importación de la feature 031**
+    (`storage/app/private/importaciones/`), y con él hereda la purga `importaciones:purgar` que ya
+    corre a diario a las 24 h. El borrador es un `{token}.borrador.json` junto al material, así que
+    la purga se lo lleva sin saber que existe.
+  - Contenido del borrador (`App\Excel\BorradorImportacion`): `token`, `tenant_id`, `user_id` —el
+    material es de **la persona**, no de la empresa: el scope de tenant no separa a dos compañeros—,
+    `conversacion_id` (cambiar de hilo lo deja fuera de juego, igual que una propuesta pendiente),
+    `modulo`, `origen` (`hoja` o `documento`), `filas` de trabajo ya normalizadas a las claves
+    internas de `ColumnaExcel`, `descartadas`, `correcciones`, `analisis_origen` (lo que no se pudo
+    leer de un documento) y `pendientes` (material subido y aún no leído, que es lo que permite
+    acumular varios documentos en la misma importación).
+  - **`estado` y `motivo` de una fila no se guardan**: se recalculan en cada análisis. Guardarlos
+    sería arriesgarse a mostrar un veredicto viejo.
+  - **Qué NO se guarda**: el documento original más allá de lo necesario —una vez interpretado y con
+    las filas en el borrador se borra—, el resultado crudo de la interpretación, y nada del material
+    en los mensajes de la conversación.
+  - Es dato personal de terceros (Principio II, minimización): 5 MB por fichero, 2.000 filas por
+    importación —ambos de la 031— y un tope de páginas por documento interpretado en
+    `config/importacion.php` (`material.max_paginas`, 20 por defecto).
 
 ## POS con mesas y opciones — módulo de hostelería (feature 038)
 

@@ -7,6 +7,7 @@ use App\Http\Controllers\ArticuloController;
 use App\Http\Controllers\AsignacionHorarioController;
 use App\Http\Controllers\AsistenteChatController;
 use App\Http\Controllers\AsistenteConversacionController;
+use App\Http\Controllers\AsistenteMaterialController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\BancoController;
@@ -355,6 +356,16 @@ Route::middleware(['tenant.context', 'auth', 'sin_super_admin'])->group(function
     Route::post('/asistente/mensaje', [AsistenteChatController::class, 'mensaje'])->name('asistente.mensaje');
     Route::post('/asistente/accion/{id}/confirmar', [AsistenteChatController::class, 'confirmar'])->name('asistente.accion.confirmar');
     Route::post('/asistente/accion/{id}/cancelar', [AsistenteChatController::class, 'cancelar'])->name('asistente.accion.cancelar');
+
+    // Material de una importación conversacional (feature 046). El permiso del módulo no se puede
+    // poner como middleware `can:` porque el módulo llega en el cuerpo de la petición: lo exige el
+    // controlador con la definición ya resuelta, que además es lo que hace que un módulo no
+    // importable dé 404 por construcción (FR-010, FR-021).
+    Route::post('/asistente/material', [AsistenteMaterialController::class, 'store'])->name('asistente.material.store');
+    Route::delete('/asistente/material/{token}', [AsistenteMaterialController::class, 'destroy'])->name('asistente.material.destroy');
+
+    // Sugerencias del estado vacío del panel (feature 046, US4), filtradas por permisos en servidor.
+    Route::get('/asistente/sugerencias', [AsistenteChatController::class, 'sugerencias'])->name('asistente.sugerencias');
 
     // Historial de conversaciones (feature 045). `conversaciones.store` sustituye a la antigua
     // `asistente.reiniciar`: "conversación nueva" ya no descarta el hilo, lo deja guardado.

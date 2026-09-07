@@ -12,5 +12,16 @@ clientes, artículos o proveedores desde tu propia hoja de cálculo.</p>
 		columnas exactas que se esperan, con una fila de ejemplo.</li>
 </ol>
 
+<p>Esta pantalla ya no es la única vía: también podés <strong>importar hablando con el asistente
+	IA</strong>, sin pasar por acá. Le decís qué querés importar, adjuntás el fichero con el clip que
+	aparece en el panel, y él te dice qué leyó, qué falta y a quién le falta. Los datos que falten se
+	los das escribiendo en el chat y él los aplica; también podés pedirle que deje fuera registros
+	concretos. Antes de confirmar ves la tabla con todos los campos de todo lo que se va a crear.</p>
+
+<p>Por esa vía además se admiten cosas que no son hojas de cálculo: un PDF, una foto de un listado o
+	un texto pegado. El asistente los interpreta, pero <strong>nunca inventa un dato que no aparezca
+	en el documento</strong>: si no lo lee con seguridad, lo deja vacío y te lo pregunta.</p>
+
 <p class="ayuda-nota">Facturas y albaranes solo se pueden exportar, nunca importar — son
-	documentos con numeración e impuestos que siempre se generan desde la propia aplicación.</p>
+	documentos con numeración e impuestos que siempre se generan desde la propia aplicación. Tampoco
+	pidiéndoselo al asistente.</p>

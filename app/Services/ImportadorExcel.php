@@ -91,6 +91,45 @@ class ImportadorExcel
     private function analizar(DefinicionImportable $definicion, string $rutaAbsoluta): array
     {
         $columnas = $definicion->columnas();
+        $normalizadas = $this->leerFilas($definicion, $rutaAbsoluta);
+
+        $analisis = $this->analizarFilas($definicion, $normalizadas, 'fichero');
+
+        $muestra = [];
+        foreach ($analisis['validas'] as $valida) {
+            // La muestra se muestra al usuario (modal/vista de previsualización): claves con la
+            // etiqueta legible (contracts/importacion.md), no la clave interna del modelo.
+            $filaMuestra = [];
+            foreach ($columnas as $columna) {
+                $filaMuestra[$columna->etiqueta] = $valida['normalizada'][$columna->clave];
+            }
+            $muestra[] = $filaMuestra;
+        }
+
+        return [
+            'totalFilas' => count($normalizadas),
+            'datosValidos' => array_column($analisis['validas'], 'datos'),
+            'rechazadas' => array_map(
+                fn (array $r) => new FilaRechazada($r['indice'], $r['motivo']),
+                $analisis['rechazadas'],
+            ),
+            'muestra' => $muestra,
+        ];
+    }
+
+    /**
+     * Lee un fichero y devuelve sus filas **ya normalizadas** a las claves internas, listas para
+     * `analizarFilas()`. Es la mitad "leer" de lo que antes hacía `analizar()` de una pieza: la
+     * importación conversacional necesita las filas por separado para poder corregirlas antes de
+     * validarlas (feature 046, research D2).
+     *
+     * @return array<int, array{indice: int, datos: array<string, mixed>}>
+     *
+     * @throws ImportacionInvalidaException
+     */
+    public function leerFilas(DefinicionImportable $definicion, string $rutaAbsoluta): array
+    {
+        $columnas = $definicion->columnas();
 
         $this->comprobarCabeceras($definicion, $rutaAbsoluta, $columnas);
 
@@ -119,59 +158,132 @@ class ImportadorExcel
             );
         }
 
-        $datosValidos = [];
-        $rechazadas = [];
-        $muestra = [];
-        $vistos = [];
+        $normalizadas = [];
 
         foreach ($filas as $indice => $filaCruda) {
-            $numeroFila = $indice + 2; // fila 1 = cabecera, los datos empiezan en la 2
+            $normalizadas[] = [
+                'indice' => $indice + 2, // fila 1 = cabecera, los datos empiezan en la 2
+                'datos' => $this->normalizarFila($columnas, $filaCruda),
+            ];
+        }
 
-            $filaNormalizada = [];
-            foreach ($columnas as $columna) {
-                // La cabecera leída del fichero está normalizada por la etiqueta (lo que el
-                // usuario ve), no por la clave interna (lo que espera el FormRequest/modelo) —
-                // ambas coinciden la mayoría de las veces pero no siempre (p. ej. "Recargo de
-                // equivalencia" → "recargo_de_equivalencia", clave interna "aplica_recargo_...").
-                $valorCrudo = $filaCruda[ColumnaExcel::normalizarCabecera($columna->etiqueta)] ?? null;
-                $filaNormalizada[$columna->clave] = $columna->importar
-                    ? ($columna->importar)($valorCrudo)
-                    : $valorCrudo;
-            }
+        return $normalizadas;
+    }
 
-            $validador = $definicion->validador($filaNormalizada);
+    /**
+     * Reindexa una fila cruda del fichero a las claves internas que esperan `validador()`/`crear()`.
+     *
+     * La cabecera leída del fichero está normalizada por la etiqueta (lo que el usuario ve), no por
+     * la clave interna (lo que espera el FormRequest/modelo) — ambas coinciden la mayoría de las
+     * veces pero no siempre (p. ej. "Recargo de equivalencia" → "recargo_de_equivalencia", clave
+     * interna "aplica_recargo_equivalencia").
+     *
+     * @param  ColumnaExcel[]  $columnas
+     * @param  array<string, mixed>  $filaCruda
+     * @return array<string, mixed>
+     */
+    private function normalizarFila(array $columnas, array $filaCruda): array
+    {
+        $filaNormalizada = [];
+
+        foreach ($columnas as $columna) {
+            $valorCrudo = $filaCruda[ColumnaExcel::normalizarCabecera($columna->etiqueta)] ?? null;
+            $filaNormalizada[$columna->clave] = $columna->importar
+                ? ($columna->importar)($valorCrudo)
+                : $valorCrudo;
+        }
+
+        return $filaNormalizada;
+    }
+
+    /**
+     * Costura por filas (feature 046, research D2): valida filas **ya normalizadas** a las claves
+     * internas, vengan de un fichero o del material que el asistente interpretó.
+     *
+     * Es el único sitio donde se decide si una fila vale, para las dos vías: la corrección
+     * conversacional es imposible sobre un fichero (no se puede reescribir el `.xlsx` cuando la
+     * persona dice «el NIF de Acme es B12345678»), y el material interpretado nunca fue tabular.
+     * Un camino de validación propio del asistente nacería desalineado del alta manual.
+     *
+     * @param  array<int, array{indice: int, datos: array<string, mixed>}>  $filas
+     * @param  string  $origen  Cómo nombrar el material en los motivos de rechazo ("fichero"/"material").
+     * @return array{leidas: int, validas: array<int, array{indice: int, datos: array<string, mixed>, normalizada: array<string, mixed>}>, rechazadas: array<int, array{indice: int, motivo: string, campo: string|null}>}
+     */
+    public function analizarFilas(DefinicionImportable $definicion, array $filas, string $origen = 'material'): array
+    {
+        if (count($filas) > self::LIMITE_FILAS) {
+            throw new ImportacionInvalidaException(
+                'El '.$origen.' tiene '.number_format(count($filas), 0, ',', '.').' filas de datos, más del límite de '
+                .number_format(self::LIMITE_FILAS, 0, ',', '.').' por importación. Divídelo en partes más pequeñas.'
+            );
+        }
+
+        $validas = [];
+        $rechazadas = [];
+        $vistos = [];
+
+        foreach ($filas as $fila) {
+            $validador = $definicion->validador($fila['datos']);
 
             if ($validador->fails()) {
-                $rechazadas[] = new FilaRechazada($numeroFila, $validador->errors()->first());
+                $rechazadas[] = [
+                    'indice' => $fila['indice'],
+                    'motivo' => $validador->errors()->first(),
+                    // Qué campo concreto falla es lo que permite al asistente pedir ese dato en vez
+                    // de leerle el error al usuario (FR-011).
+                    'campo' => array_key_first($validador->errors()->messages()),
+                ];
 
                 continue;
             }
 
-            $motivoDuplicado = $this->motivoDuplicadoEnFichero($definicion, $filaNormalizada, $numeroFila, $vistos);
+            $duplicado = $this->duplicadoEnElMaterial($definicion, $fila['datos'], $fila['indice'], $vistos, $origen);
 
-            if ($motivoDuplicado !== null) {
-                $rechazadas[] = new FilaRechazada($numeroFila, $motivoDuplicado);
+            if ($duplicado !== null) {
+                $rechazadas[] = $duplicado + ['indice' => $fila['indice']];
 
                 continue;
             }
 
-            $datosValidos[] = $validador->validated();
-
-            // La muestra se muestra al usuario (modal/vista de previsualización): claves con la
-            // etiqueta legible (contracts/importacion.md), no la clave interna del modelo.
-            $filaMuestra = [];
-            foreach ($columnas as $columna) {
-                $filaMuestra[$columna->etiqueta] = $filaNormalizada[$columna->clave];
-            }
-            $muestra[] = $filaMuestra;
+            $validas[] = [
+                'indice' => $fila['indice'],
+                'datos' => $validador->validated(),
+                'normalizada' => $fila['datos'],
+            ];
         }
 
         return [
-            'totalFilas' => count($filas),
-            'datosValidos' => $datosValidos,
+            'leidas' => count($filas),
+            'validas' => $validas,
             'rechazadas' => $rechazadas,
-            'muestra' => $muestra,
         ];
+    }
+
+    /**
+     * Importa filas ya normalizadas (feature 046). **Revalida desde cero** en vez de fiarse del
+     * análisis previo: entre que el asistente analizó el material y la persona confirmó, otra
+     * persona del tenant pudo crear un registro que ahora choca (FR-019). Es la misma propiedad que
+     * da revalidar el fichero en la vía de la 031, aplicada al soporte nuevo.
+     *
+     * `crear()` fuerza el `tenant_id` (FR-020): lo que traiga el material da igual.
+     *
+     * @param  array<int, array{indice: int, datos: array<string, mixed>}>  $filas
+     */
+    public function importarFilas(DefinicionImportable $definicion, array $filas, int $tenantId): ResultadoImportacion
+    {
+        $analisis = $this->analizarFilas($definicion, $filas);
+
+        $importados = 0;
+        foreach ($analisis['validas'] as $valida) {
+            $definicion->crear($valida['datos'], $tenantId);
+            $importados++;
+        }
+
+        // Nunca aborta por filas inválidas: importa las válidas y reporta las rechazadas (FR-018).
+        return new ResultadoImportacion(
+            $importados,
+            array_map(fn (array $r) => new FilaRechazada($r['indice'], $r['motivo']), $analisis['rechazadas']),
+        );
     }
 
     /**
@@ -204,12 +316,16 @@ class ImportadorExcel
     }
 
     /**
-     * Detección de duplicados dentro del propio fichero (research.md D3), más allá de la unicidad
-     * contra la base de datos que ya validó `$definicion->validador()`.
+     * Detección de duplicados dentro del propio material (research.md D3 de la 031), más allá de la
+     * unicidad contra la base de datos que ya validó `$definicion->validador()`.
+     *
+     * Los dos casos se distinguen en el motivo a propósito (FR-007): «repetido en el fichero» y «ya
+     * existe un cliente con ese NIF» piden acciones distintas de quien lo lee.
      *
      * @param  array<string, int>  &$vistos
+     * @return array{motivo: string, campo: string}|null
      */
-    private function motivoDuplicadoEnFichero(DefinicionImportable $definicion, array $filaNormalizada, int $numeroFila, array &$vistos): ?string
+    private function duplicadoEnElMaterial(DefinicionImportable $definicion, array $filaNormalizada, int $numeroFila, array &$vistos, string $origen): ?array
     {
         foreach ($definicion->camposUnicos() as $campo) {
             $valor = $filaNormalizada[$campo] ?? null;
@@ -224,7 +340,10 @@ class ImportadorExcel
                 $columna = collect($definicion->columnas())->firstWhere('clave', $campo);
                 $etiqueta = $columna?->etiqueta ?? $campo;
 
-                return "El {$etiqueta} {$valor} está repetido en el fichero (fila {$vistos[$clave]}).";
+                return [
+                    'motivo' => "El {$etiqueta} {$valor} está repetido en el {$origen} (fila {$vistos[$clave]}).",
+                    'campo' => $campo,
+                ];
             }
 
             $vistos[$clave] = $numeroFila;

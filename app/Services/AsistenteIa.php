@@ -264,19 +264,56 @@ class AsistenteIa
 
         $idAccion = $this->conversacion->proponerAcciones($acciones);
 
-        $this->invocar($callbacks, 'accionPendiente', [
+        $payload = [
             'id' => $idAccion,
             'resumenes' => array_column($acciones, 'resumen'),
             // Los campos completos viajan para que el usuario pueda revisarlos antes de confirmar:
             // el resumen de una línea oculta lo que no cabe en él (diez altas con la misma razón
             // social y distinto NIF se ven idénticas si solo mirás el resumen).
-            'detalle' => array_map(fn (array $a) => [
-                'resumen' => $a['resumen'],
-                'campos' => self::camposLegibles($a['parametros']),
-            ], $acciones),
-        ]);
+            'detalle' => self::detalleDe($acciones),
+        ];
+
+        // Estado del análisis para la caja del modal de detalle: solo lo traen las propuestas que
+        // salen de material analizado (feature 046).
+        $analisis = array_values(array_filter(array_column($acciones, 'analisis')));
+
+        if ($analisis !== []) {
+            $payload['analisis'] = implode(' ', $analisis);
+        }
+
+        $this->invocar($callbacks, 'accionPendiente', $payload);
 
         return true;
+    }
+
+    /**
+     * Filas de la tabla de detalle. Por defecto, una fila por acción con sus parámetros; una acción
+     * que trae su propio `detalle` aporta sus filas en lugar de la suya, porque sus parámetros no
+     * son lo revisable (feature 046).
+     *
+     * @param  array<int, array<string, mixed>>  $acciones
+     * @return array<int, array{resumen: string, campos: array<int, array{etiqueta: string, valor: string}>}>
+     */
+    private static function detalleDe(array $acciones): array
+    {
+        $filas = [];
+
+        foreach ($acciones as $accion) {
+            if (($accion['detalle'] ?? null) !== null) {
+                foreach ($accion['detalle'] as $fila) {
+                    $filas[] = $fila;
+                }
+
+                continue;
+            }
+
+            $filas[] = [
+                'resumen' => $accion['resumen'],
+                'campos' => self::camposLegibles($accion['parametros']),
+            ];
+        }
+
+        return $filas;
     }
 
     /**
@@ -362,6 +399,11 @@ class AsistenteIa
             'parametros' => $propuesta['parametros'],
             'resumen' => $propuesta['resumen'],
             'url' => $propuesta['url'] ?? null,
+            // Una acción puede traer su propio detalle cuando sus parámetros no son lo que hay que
+            // revisar: importar un fichero se propone con un token, pero lo que la persona tiene que
+            // poder mirar antes de confirmar son las filas que se van a crear (feature 046, FR-017).
+            'detalle' => $propuesta['detalle'] ?? null,
+            'analisis' => $propuesta['analisis'] ?? null,
         ];
 
         return 'Acción preparada y añadida a la propuesta que se le mostrará al usuario para que la confirme.';

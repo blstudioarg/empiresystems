@@ -142,6 +142,39 @@
 				letter-spacing: .04em; padding: 4px 10px; background: #eceef5; border-radius: 999px;
 			}
 
+			/* Sugerencias del estado vacío (feature 046, US4): chips de categoría + una lista de
+			   frases que se envían al pulsarlas. Desaparecen en cuanto hay conversación. */
+			.asistente-chat__sugerencias { margin-top: 18px; display: flex; flex-direction: column; gap: 10px; align-items: center; }
+			.asistente-chat__categorias { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+			.asistente-chat__categoria {
+				background: #fff; border: 1px solid #e9ecef; border-radius: 999px;
+				padding: 4px 12px; font-size: .78rem; color: #6c757d; cursor: pointer;
+			}
+			.asistente-chat__categoria.is-activa { border-color: var(--primary, #4361ee); color: var(--primary, #4361ee); background: #f2f5ff; }
+			.asistente-chat__lista-sugerencias { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+			.asistente-chat__sugerencia {
+				background: #fff; border: 1px solid #e9ecef; border-radius: 10px;
+				padding: 8px 12px; font-size: .85rem; color: #212529; text-align: left; cursor: pointer;
+			}
+			.asistente-chat__sugerencia:hover { border-color: var(--primary, #4361ee); background: #f7f8fc; }
+
+			/* Material adjunto (feature 046). El clip solo aparece en el contexto de una
+			   importación: adjuntar ficheros para cualquier otra cosa queda fuera de alcance
+			   (research D5). */
+			.asistente-chat__clip {
+				border: none; background: transparent; color: #6c757d; cursor: pointer;
+				padding: 0 6px; display: flex; align-items: center;
+			}
+			.asistente-chat__clip:hover { color: var(--primary, #4361ee); }
+			.asistente-chat__clip[hidden] { display: none !important; }
+			.asistente-chat__adjunto {
+				display: flex; align-items: center; gap: 8px; padding: 8px 12px;
+				border-top: 1px solid #e9ecef; background: #f7f8fc; font-size: .82rem; color: #495057;
+			}
+			.asistente-chat__adjunto-nombre { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+			.asistente-chat__adjunto-quitar { background: transparent; border: none; color: #adb5bd; cursor: pointer; padding: 2px 4px; border-radius: 6px; }
+			.asistente-chat__adjunto-quitar:hover { color: #dc3545; background: #f8d7da; }
+
 			.asistente-chat__form { display: flex; gap: 8px; padding: 12px; border-top: 1px solid #e9ecef; background: #fff; }
 			.asistente-chat__input { flex: 1; resize: none; border: 1px solid #ced4da; border-radius: 10px; padding: 9px 12px; font-size: .92rem; max-height: 120px; }
 			.asistente-chat__input:focus { outline: none; border-color: var(--primary, #4361ee); box-shadow: 0 0 0 3px rgba(67, 97, 238, .12); }
@@ -168,7 +201,8 @@
 	<div id="asistente-chat" class="asistente-chat" data-configurada="{{ $iaConfigurada ? '1' : '0' }}"
 		data-url-mensaje="{{ route('asistente.mensaje') }}"
 		data-url-conversaciones="{{ route('asistente.conversaciones.index') }}"
-		data-url-confirmar="{{ url('asistente/accion') }}">
+		data-url-confirmar="{{ url('asistente/accion') }}"
+		data-url-material-base="{{ url('asistente/material') }}">
 
 		{{-- Backdrop: click cierra el panel. --}}
 		<div class="asistente-chat__backdrop" id="asistente-backdrop" aria-hidden="true"></div>
@@ -204,7 +238,14 @@
 			@if ($iaConfigurada)
 				<div class="asistente-chat__mensajes" id="asistente-mensajes" aria-live="polite">
 					<div class="asistente-chat__bienvenida">
-						¡Hola! Preguntame cómo funciona la app o pedime que consulte tus datos.
+						¡Hola! Preguntame cómo funciona la app, pedime que consulte tus datos o pasame un
+						fichero para importarlo.
+						{{-- Sugerencias por categoría: las rellena asistente-chat.js con lo que el
+						     servidor deja pasar según los permisos de la persona (FR-025, FR-027). --}}
+						<div class="asistente-chat__sugerencias" id="asistente-sugerencias" hidden>
+							<div class="asistente-chat__categorias" id="asistente-categorias" role="tablist"></div>
+							<div class="asistente-chat__lista-sugerencias" id="asistente-lista-sugerencias"></div>
+						</div>
 					</div>
 				</div>
 				{{-- Historial: vista deslizante DENTRO del panel (research D10). El panel mide 440px
@@ -218,7 +259,38 @@
 					<div class="asistente-chat__historial-lista" id="asistente-historial-lista"></div>
 				</div>
 
-				<form class="asistente-chat__form" id="asistente-form">
+				{{-- Material adjunto de una importación en curso: se muestra entre la conversación y
+				     el formulario, con su nombre y la forma de quitarlo. --}}
+				<div class="asistente-chat__adjunto" id="asistente-adjunto" hidden>
+					<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
+						stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+					</svg>
+					<span class="asistente-chat__adjunto-nombre" id="asistente-adjunto-nombre"></span>
+					<button type="button" class="asistente-chat__adjunto-quitar" id="asistente-adjunto-quitar"
+						title="Quitar el material" aria-label="Quitar el material">
+						<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+							stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+							<path d="M18 6 6 18"></path><path d="m6 6 12 12"></path>
+						</svg>
+					</button>
+				</div>
+
+				<form class="asistente-chat__form" id="asistente-form"
+					data-url-material="{{ route('asistente.material.store') }}"
+					data-url-sugerencias="{{ route('asistente.sugerencias') }}"
+					data-tipos-material="{{ implode(',', \App\Support\MaterialImportable::tiposAdmitidos()) }}">
+					{{-- El clip solo se muestra cuando la conversación va de una importación: lo
+					     enciende el JS al detectar el contexto, no está siempre disponible. --}}
+					<button type="button" class="asistente-chat__clip" id="asistente-clip" hidden
+						title="Adjuntar material para importar" aria-label="Adjuntar material para importar">
+						<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+							stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+							<path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+						</svg>
+					</button>
+					<input type="file" id="asistente-fichero" class="d-none"
+						accept="{{ collect(\App\Support\MaterialImportable::tiposAdmitidos())->map(fn ($t) => '.'.$t)->implode(',') }}">
 					<textarea id="asistente-input" class="asistente-chat__input" rows="1" maxlength="4000"
 						placeholder="Escribí tu mensaje…" autocomplete="off"></textarea>
 					<button type="submit" id="asistente-enviar" class="asistente-chat__enviar" aria-label="Enviar">

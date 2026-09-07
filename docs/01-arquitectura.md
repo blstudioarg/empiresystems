@@ -304,3 +304,52 @@ feature.
   un servicio nuevo traduce sus propios datos al contrato que el servicio de emisión ya espera
   (`CobradorCuenta` → `RegistroTicket`), en vez de duplicar la lógica de cálculo/numeración/
   Verifactu en un segundo camino. Ver `docs/03-modelo-datos.md` para el detalle de las tablas.
+
+## Decisión 11 — La importación conversacional reutiliza el pipeline de la 031, no abre un segundo camino de escritura (046-importacion-conversacional-asistente)
+
+El asistente puede recibir un fichero o un documento, analizarlo, corregirlo conversando e
+importarlo. **Quien valida y quien escribe sigue siendo el importador de la feature 031**
+(`DefinicionImportable::validador()` y `::crear()`); el asistente orquesta y conversa.
+
+### Por qué
+
+Ese pipeline ya garantiza tres cosas que sería un disparate reimplementar:
+
+- `validador()` delega en el **FormRequest del alta manual**, así que las reglas son literalmente
+  las mismas y no un juego paralelo más laxo.
+- `crear()` fuerza el `tenant_id` ignorando cualquier columna que pretenda fijarlo (Principio I).
+- La confirmación **revalida desde cero** contra la base de datos en vez de fiarse del análisis
+  previo: entre analizar y confirmar, otra persona del tenant pudo crear un registro que ahora
+  colisiona.
+
+Un camino propio del asistente nacería desalineado del alta manual y se desalinearía más con cada
+cambio. La regla de revisión que queda: **si aparece una regla de negocio escrita dos veces, el
+planteamiento se rompió**.
+
+### Cómo encaja
+
+Lo que hizo falta fue una **costura por filas**, no por fichero: `ImportadorExcel::leerFilas()`
+(fichero → filas normalizadas), `::analizarFilas()` (filas → válidas/rechazadas) e
+`::importarFilas()` (filas → registros, revalidando). La ruta de fichero existente se apoya en esas
+mismas piezas, así que la pantalla de importación y el asistente comparten literalmente el código de
+validación.
+
+La costura era inevitable: la corrección conversacional es imposible sobre un fichero —no se puede
+reescribir el `.xlsx` cuando alguien dice «el NIF de Acme es B12345678»— y el material interpretado
+por IA nunca fue tabular.
+
+### Lo que sí es nuevo
+
+- `InterpretadorMaterialImportable`: único punto que habla con el proveedor, mismo patrón que la 044.
+  Devuelve filas con las claves internas de `ColumnaExcel`, con `null` en todo lo que no leyó y un
+  mapa `leido` que distingue «el documento no lo dice» de «dice que está vacío». **No inventar es el
+  requisito más serio de la feature**: un NIF inventado entra en el maestro y no lo detecta nadie.
+- `BorradorImportacion`: la importación en curso, sin tabla nueva (ver `03-modelo-datos.md`).
+- Tres tools (`analizar_material_importable`, `corregir_filas_importables`, `importar_material`).
+  Las dos primeras son de lectura —la de corrección muta el borrador, no la base de datos—; solo
+  importar es escritura y pasa por la tarjeta de confirmación.
+
+Las tres sirven a los tres módulos importables a la vez, lo que obligó a un cambio pequeño en el
+contrato de las tools: `ToolAsistente::disponiblePara()` (con `permisosAlternativos()`) es ahora el
+criterio único de `CatalogoTools` para filtrar y re-verificar, y el permiso del **módulo concreto**
+se re-exige al ejecutar, con el módulo ya conocido.

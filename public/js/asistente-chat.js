@@ -29,8 +29,28 @@
 	const urlConversaciones = root.dataset.urlConversaciones;
 	const urlAccionBase = root.dataset.urlConfirmar; // .../asistente/accion
 
+	const clip = document.getElementById('asistente-clip');
+	const inputFichero = document.getElementById('asistente-fichero');
+	const adjunto = document.getElementById('asistente-adjunto');
+	const adjuntoNombre = document.getElementById('asistente-adjunto-nombre');
+	const adjuntoQuitar = document.getElementById('asistente-adjunto-quitar');
+	const sugerencias = document.getElementById('asistente-sugerencias');
+	const categoriasEl = document.getElementById('asistente-categorias');
+	const listaSugerenciasEl = document.getElementById('asistente-lista-sugerencias');
+
+	const urlMaterialBase = root.dataset.urlMaterialBase;
+	const urlMaterial = form ? form.dataset.urlMaterial : null;
+	const urlSugerencias = form ? form.dataset.urlSugerencias : null;
+
 	let enviando = false;
 	let conversacionActivaId = null;
+
+	// --- Importación conversacional (feature 046) ---------------------------
+	// El material vive en el servidor bajo un token; acá solo se guarda el token y el módulo del
+	// que va la importación. El fichero nunca viaja dentro del mensaje: se sube aparte (research D5).
+	let materialToken = null;
+	let moduloImportacion = null;
+	let materialPorAnunciar = false;
 
 	// --- Abrir / cerrar el panel (el estado vive en la raíz, así el backdrop lo comparte) ---
 	function estaAbierto() { return root.classList.contains('is-open'); }
@@ -188,6 +208,168 @@
 		});
 	});
 
+	// --- Material para importar ---------------------------------------------
+
+	// Módulos que se pueden importar y cómo los nombra la gente al escribir. El clip solo aparece
+	// cuando se sabe de qué va la importación: adjuntar ficheros para cualquier otra cosa está
+	// fuera de alcance a propósito (research D5).
+	const MODULOS = [
+		{ modulo: 'clientes', patron: /\bclientes?\b/i },
+		{ modulo: 'articulos', patron: /\bart[ií]culos?\b|\bproductos?\b|\bcat[áa]logo\b/i },
+		{ modulo: 'proveedores', patron: /\bproveedor(es)?\b/i },
+	];
+
+	const INTENCION_IMPORTAR = /\bimport(ar|o|ación|acion)\b|\bsubir\b|\bcargar\b|\badjunt|\bexcel\b|\bcsv\b|\bpdf\b|\bfichero\b|\barchivo\b|\bplanilla\b|\bhoja de c[áa]lculo\b/i;
+
+	/**
+	 * Enciende el clip cuando el texto deja claro que se está hablando de importar y de qué. Se
+	 * ejecuta sobre lo que escribe la persona: es el único momento en que sabemos el contexto sin
+	 * inventarlo.
+	 */
+	function detectarContextoImportacion(texto) {
+		if (!texto) return;
+
+		const encontrado = MODULOS.find(function (m) { return m.patron.test(texto); });
+
+		if (!encontrado) return;
+		if (!INTENCION_IMPORTAR.test(texto) && !moduloImportacion) return;
+
+		moduloImportacion = encontrado.modulo;
+		if (clip) clip.hidden = false;
+	}
+
+	function mostrarAdjunto(nombre) {
+		if (!adjunto) return;
+		adjuntoNombre.textContent = nombre;
+		adjunto.hidden = false;
+	}
+
+	function olvidarMaterial() {
+		materialToken = null;
+		if (adjunto) adjunto.hidden = true;
+	}
+
+	if (clip && inputFichero) {
+		clip.addEventListener('click', function () { inputFichero.click(); });
+
+		inputFichero.addEventListener('change', function () {
+			const fichero = inputFichero.files && inputFichero.files[0];
+			inputFichero.value = ''; // permite volver a elegir el mismo fichero
+			if (fichero) subirMaterial(fichero);
+		});
+	}
+
+	if (adjuntoQuitar) {
+		adjuntoQuitar.addEventListener('click', function () {
+			if (!materialToken) { olvidarMaterial(); return; }
+
+			fetch(urlMaterialBase + '/' + materialToken, { method: 'DELETE', headers: cabeceras() })
+				.finally(function () {
+					olvidarMaterial();
+					if (window.showToast) window.showToast('info', 'Material descartado.');
+				});
+		});
+	}
+
+	function subirMaterial(fichero) {
+		if (!urlMaterial || !moduloImportacion) return;
+
+		const datos = new FormData();
+		datos.append('fichero', fichero);
+		datos.append('modulo', moduloImportacion);
+		// Con token, el material se acumula en la importación en curso en vez de empezar otra.
+		if (materialToken) datos.append('token', materialToken);
+
+		mostrarEstado('Subiendo «' + fichero.name + '»…');
+
+		fetch(urlMaterial, {
+			method: 'POST',
+			headers: { 'X-CSRF-TOKEN': csrf, 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+			body: datos,
+		})
+			.then(function (r) { return r.json().then(function (d) { return { ok: r.ok, status: r.status, d: d }; }); })
+			.then(function (res) {
+				ocultarEstado();
+
+				if (!res.ok) {
+					// Todos los rechazos del contrato traen explicación en `mensaje`: tipo no
+					// admitido, más de 5 MB, módulo no importable o token que ya no vale.
+					const mensaje = (res.d && res.d.mensaje)
+						|| (res.d && res.d.errors && res.d.errors.fichero && res.d.errors.fichero[0])
+						|| 'No se pudo subir el material.';
+					if (window.showToast) window.showToast('error', mensaje);
+
+					return;
+				}
+
+				materialToken = res.d.token;
+				materialPorAnunciar = true;
+				mostrarAdjunto(res.d.nombre);
+
+				// Subir no analiza: quien analiza es el asistente, para que el progreso se vea en la
+				// conversación y no en una barra de carga.
+				nuevoMensajeEl('asistente-msg asistente-msg--user', 'Te paso «' + res.d.nombre + '».');
+				enviarMensaje('Te paso «' + res.d.nombre + '» para importar ' + res.d.modulo + '.');
+			})
+			.catch(function () {
+				ocultarEstado();
+				if (window.showToast) window.showToast('error', 'No se pudo subir el material.');
+			});
+	}
+
+	// --- Sugerencias del estado vacío (US4) ---------------------------------
+
+	function cargarSugerencias() {
+		if (!urlSugerencias || !sugerencias) return;
+
+		fetch(urlSugerencias, { headers: cabeceras() })
+			.then(function (r) { return r.json(); })
+			.then(function (d) { pintarSugerencias(d.categorias || []); })
+			.catch(function () { /* sin sugerencias el panel sigue funcionando igual */ });
+	}
+
+	function pintarSugerencias(categorias) {
+		if (!categorias.length) return;
+
+		categoriasEl.textContent = '';
+		listaSugerenciasEl.textContent = '';
+
+		categorias.forEach(function (categoria, i) {
+			const chip = document.createElement('button');
+			chip.type = 'button';
+			chip.className = 'asistente-chat__categoria' + (i === 0 ? ' is-activa' : '');
+			chip.textContent = categoria.etiqueta;
+			chip.addEventListener('click', function () {
+				Array.prototype.forEach.call(categoriasEl.children, function (c) { c.classList.remove('is-activa'); });
+				chip.classList.add('is-activa');
+				pintarListaSugerencias(categoria.sugerencias);
+			});
+			categoriasEl.appendChild(chip);
+		});
+
+		pintarListaSugerencias(categorias[0].sugerencias);
+		sugerencias.hidden = false;
+	}
+
+	function pintarListaSugerencias(textos) {
+		listaSugerenciasEl.textContent = '';
+
+		textos.forEach(function (texto) {
+			const boton = document.createElement('button');
+			boton.type = 'button';
+			boton.className = 'asistente-chat__sugerencia';
+			boton.textContent = texto;
+			// Pulsar una sugerencia la envía como si la hubiera escrito la persona (FR-026), y con
+			// eso las sugerencias desaparecen: ya hay conversación.
+			boton.addEventListener('click', function () {
+				detectarContextoImportacion(texto);
+				nuevoMensajeEl('asistente-msg asistente-msg--user', texto);
+				enviarMensaje(texto);
+			});
+			listaSugerenciasEl.appendChild(boton);
+		});
+	}
+
 	function vaciarPanel(texto) {
 		// Parar el tecleo antes de vaciar: si no, el temporizador sigue escribiendo sobre un elemento
 		// que ya no está en el DOM.
@@ -195,6 +377,19 @@
 		estadoEl = null; // el innerHTML de abajo lo saca del DOM
 		mensajes.innerHTML = '<div class="asistente-chat__bienvenida"></div>';
 		mensajes.firstChild.textContent = texto;
+
+		// Cambiar de hilo deja fuera el material en curso, igual que la propuesta pendiente: el
+		// servidor tampoco lo acepta desde otra conversación, así que el panel no puede sugerir
+		// que sigue ahí.
+		olvidarMaterial();
+		moduloImportacion = null;
+		if (clip) clip.hidden = true;
+
+		// El estado vacío vuelve a ofrecer sugerencias (FR-025).
+		if (sugerencias) {
+			mensajes.firstChild.appendChild(sugerencias);
+			cargarSugerencias();
+		}
 	}
 
 	function cabeceras() {
@@ -221,6 +416,7 @@
 		const texto = input.value.trim();
 		if (!texto) return;
 
+		detectarContextoImportacion(texto);
 		nuevoMensajeEl('asistente-msg asistente-msg--user', texto);
 		input.value = '';
 		input.style.height = 'auto';
@@ -234,10 +430,19 @@
 		let botEl = null;
 		let acumulado = '';
 
+		const cuerpo = { mensaje: texto };
+
+		// El token solo se anuncia en el turno siguiente a la subida: el modelo ya lo tiene en el
+		// contexto de la conversación, y repetirlo en cada mensaje sería ruido.
+		if (materialPorAnunciar && materialToken) {
+			cuerpo.material_token = materialToken;
+			materialPorAnunciar = false;
+		}
+
 		fetch(urlMensaje, {
 			method: 'POST',
 			headers: cabeceras(),
-			body: JSON.stringify({ mensaje: texto }),
+			body: JSON.stringify(cuerpo),
 		})
 			.then(function (resp) {
 				if (resp.status === 409) {
@@ -710,6 +915,7 @@
 				.then(function (d) {
 					const activa = (d.conversaciones || []).find(function (c) { return c.activa; }) || (d.conversaciones || [])[0];
 					if (activa) abrirConversacion(activa.id);
+					else cargarSugerencias(); // estado vacío: es cuando las sugerencias sirven (FR-025)
 				})
 				.catch(function () { /* sin historial disponible: se queda el panel de bienvenida */ });
 		});

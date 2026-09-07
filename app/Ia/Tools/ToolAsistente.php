@@ -2,6 +2,8 @@
 
 namespace App\Ia\Tools;
 
+use App\Models\User;
+
 /**
  * Contrato base de una tool del asistente IA (feature 030, data-model §3).
  *
@@ -29,6 +31,35 @@ abstract class ToolAsistente
 
     /** Clave del CatalogoPermisos que exige la tool (p. ej. `ver-clientes`). */
     abstract public function permisoRequerido(): string;
+
+    /**
+     * Permisos que **también** habilitan la tool. Vacío en la mayoría: solo lo usan las tools que
+     * trabajan sobre varios módulos a la vez (la importación conversacional de la feature 046, que
+     * sirve a clientes, artículos y proveedores con una sola tool). Que la tool esté disponible no
+     * significa que valga para cualquier módulo: el permiso del módulo concreto se re-exige al
+     * ejecutar, con el módulo ya conocido (FR-021).
+     *
+     * @return list<string>
+     */
+    public function permisosAlternativos(): array
+    {
+        return [];
+    }
+
+    /**
+     * Si la tool se le ofrece a esta persona. Es el criterio único de `CatalogoTools`, para que
+     * filtrar y re-verificar usen exactamente la misma regla.
+     */
+    public function disponiblePara(User $usuario): bool
+    {
+        foreach ([$this->permisoRequerido(), ...$this->permisosAlternativos()] as $permiso) {
+            if ($usuario->can($permiso)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     /** true = lectura (ejecuta directo); false = escritura (requiere confirmación). */
     abstract public function esLectura(): bool;

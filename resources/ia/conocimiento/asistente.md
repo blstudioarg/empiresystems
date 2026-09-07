@@ -1,6 +1,7 @@
 # Asistente IA
 
-El asistente es un panel lateral que se abre desde el ícono de chat de la barra superior (topbar),
+El asistente es un panel lateral que se abre desde el ícono de destello (✦, el símbolo habitual de
+IA) de la barra superior (topbar),
 disponible en todas las pantallas salvo la de fichar. Responde dudas de
 funcionamiento, consulta datos con las tools disponibles según los permisos del usuario, y propone
 crear o editar clientes, artículos, presupuestos y facturas en borrador (siempre con confirmación).
@@ -28,3 +29,19 @@ prepara todas juntas y te las muestra en **una sola tarjeta** con la lista compl
 confirmás una vez, no diez. El máximo por tarjeta es 20. Si alguna no se puede completar (datos que
 faltan, un NIF repetido), las demás se crean igual y el asistente te dice cuáles quedaron fuera y
 por qué: nunca se pierde el lote entero por un error en un elemento.
+
+## Importar ficheros conversando
+
+El asistente puede recibir material para importar (clientes, artículos o proveedores): un Excel, un
+CSV, un PDF, una foto o un texto. Lo analiza, dice qué falta, corrige contigo lo que haga falta y lo
+importa cuando lo confirmás, sin pasar por la pantalla de importación. El clip para adjuntar aparece
+en el panel **solo cuando la conversación va de importar algo**; no sirve para adjuntar ficheros a
+cualquier otra cosa. El detalle completo del flujo, los formatos admitidos y sus límites están en la
+guía de importación y exportación.
+
+## Sugerencias del panel vacío
+
+Cuando no hay conversación empezada, el panel ofrece sugerencias agrupadas por categoría (Importar,
+Consultar, Crear, Aprender). Solo se ofrece lo que la persona puede hacer con sus permisos, así que
+dos personas distintas ven listas distintas. Pulsar una la envía como mensaje, y desaparecen en
+cuanto la conversación arranca.

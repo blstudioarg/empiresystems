@@ -37,6 +37,12 @@ class CatalogoTools
         Tools\CrearPresupuesto::class,
         Tools\CrearFacturaBorrador::class,
         Tools\EditarFacturaBorrador::class,
+        // Importación conversacional (feature 046). Las tres sirven a los tres módulos importables
+        // a la vez: se ofrecen a quien pueda importar alguno (`permisosAlternativos`) y el permiso
+        // del módulo concreto se re-exige al ejecutar, con el módulo ya conocido (FR-021).
+        Tools\AnalizarMaterialImportable::class,
+        Tools\CorregirFilasImportables::class,
+        Tools\ImportarMaterial::class,
     ];
 
     /**
@@ -58,7 +64,7 @@ class CatalogoTools
     {
         return array_values(array_filter(
             self::todas(),
-            static fn (ToolAsistente $tool): bool => $usuario->can($tool->permisoRequerido()),
+            static fn (ToolAsistente $tool): bool => $tool->disponiblePara($usuario),
         ));
     }
 
@@ -69,7 +75,7 @@ class CatalogoTools
     public static function resolver(string $nombre, User $usuario): ?ToolAsistente
     {
         foreach (self::todas() as $tool) {
-            if ($tool->nombre() === $nombre && $usuario->can($tool->permisoRequerido())) {
+            if ($tool->nombre() === $nombre && $tool->disponiblePara($usuario)) {
                 return $tool;
             }
         }
