@@ -63,6 +63,27 @@
 			.asistente-msg--user { align-self: flex-end; background: var(--primary, #4361ee); color: #fff; border-bottom-right-radius: 4px; }
 			.asistente-msg--bot { align-self: flex-start; background: #fff; color: #212529; border: 1px solid #e9ecef; border-bottom-left-radius: 4px; }
 			.asistente-msg--actividad { align-self: flex-start; font-size: .8rem; color: #6c757d; font-style: italic; }
+			/* Indicador de progreso (feature 030): cubre el hueco entre que se envía el mensaje y
+			   llega el primer texto del modelo, donde antes no había ningún feedback en pantalla. */
+			.asistente-chat__estado {
+				align-self: flex-start; display: flex; align-items: center; gap: 8px;
+				background: #fff; border: 1px solid #e9ecef; border-radius: 14px; border-bottom-left-radius: 4px;
+				padding: 10px 13px; font-size: .85rem; color: #6c757d;
+			}
+			.asistente-chat__puntos { display: inline-flex; gap: 4px; }
+			.asistente-chat__puntos span {
+				width: 6px; height: 6px; border-radius: 50%; background: var(--primary, #4361ee);
+				animation: asistente-pensando 1.3s infinite ease-in-out both;
+			}
+			.asistente-chat__puntos span:nth-child(2) { animation-delay: .16s; }
+			.asistente-chat__puntos span:nth-child(3) { animation-delay: .32s; }
+			@keyframes asistente-pensando {
+				0%, 70%, 100% { opacity: .25; transform: translateY(0); }
+				35% { opacity: 1; transform: translateY(-3px); }
+			}
+			@media (prefers-reduced-motion: reduce) {
+				.asistente-chat__puntos span { animation: none; opacity: .6; }
+			}
 			.asistente-chat__form { display: flex; gap: 8px; padding: 12px; border-top: 1px solid #e9ecef; background: #fff; }
 			.asistente-chat__input { flex: 1; resize: none; border: 1px solid #ced4da; border-radius: 10px; padding: 9px 12px; font-size: .92rem; max-height: 120px; }
 			.asistente-chat__input:focus { outline: none; border-color: var(--primary, #4361ee); box-shadow: 0 0 0 3px rgba(67, 97, 238, .12); }
@@ -113,7 +134,7 @@
 				<form class="asistente-chat__form" id="asistente-form">
 					<textarea id="asistente-input" class="asistente-chat__input" rows="1" maxlength="4000"
 						placeholder="Escribí tu mensaje…" autocomplete="off"></textarea>
-					<button type="submit" class="asistente-chat__enviar" aria-label="Enviar">
+					<button type="submit" id="asistente-enviar" class="asistente-chat__enviar" aria-label="Enviar">
 						<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
 							stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 							<path d="M22 2 11 13"></path><path d="M22 2 15 22l-4-9-9-4z"></path>

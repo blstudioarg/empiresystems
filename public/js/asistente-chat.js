@@ -18,6 +18,7 @@
 	const form = document.getElementById('asistente-form');
 	const input = document.getElementById('asistente-input');
 	const mensajes = document.getElementById('asistente-mensajes');
+	const botonEnviar = document.getElementById('asistente-enviar');
 
 	const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 	const urlMensaje = root.dataset.urlMensaje;
@@ -57,8 +58,43 @@
 
 	function scrollAbajo() { mensajes.scrollTop = mensajes.scrollHeight; }
 
+	// --- Indicador de progreso ------------------------------------------------
+	// Un único elemento efímero que va contando en qué anda el asistente ("Enviando…",
+	// "Pensando…", "Consultando clientes…"). Sin esto el usuario manda el mensaje y no ve
+	// absolutamente nada hasta que llega el primer fragmento de texto, que con tool use puede
+	// tardar varios segundos. Nunca queda en el historial: se borra al terminar el turno.
+	let estadoEl = null;
+
+	function mostrarEstado(texto) {
+		if (!estadoEl) {
+			const bienvenida = mensajes.querySelector('.asistente-chat__bienvenida');
+			if (bienvenida) bienvenida.remove();
+			estadoEl = document.createElement('div');
+			estadoEl.className = 'asistente-chat__estado';
+			estadoEl.setAttribute('role', 'status');
+			const puntos = document.createElement('span');
+			puntos.className = 'asistente-chat__puntos';
+			puntos.setAttribute('aria-hidden', 'true');
+			puntos.innerHTML = '<span></span><span></span><span></span>';
+			const etiqueta = document.createElement('span');
+			etiqueta.className = 'asistente-chat__estado-texto';
+			estadoEl.appendChild(puntos);
+			estadoEl.appendChild(etiqueta);
+		}
+		estadoEl.querySelector('.asistente-chat__estado-texto').textContent = texto;
+		// Reubicar al final: los mensajes nuevos se agregan por debajo.
+		mensajes.appendChild(estadoEl);
+		scrollAbajo();
+	}
+
+	function ocultarEstado() {
+		if (estadoEl) estadoEl.remove();
+		estadoEl = null;
+	}
+
 	nueva.addEventListener('click', function () {
 		fetch(urlReiniciar, { method: 'POST', headers: cabeceras() }).finally(function () {
+			estadoEl = null; // el innerHTML de abajo lo saca del DOM
 			mensajes.innerHTML = '<div class="asistente-chat__bienvenida">Conversación nueva. ¿En qué te ayudo?</div>';
 		});
 	});
@@ -95,6 +131,8 @@
 
 	function enviarMensaje(texto) {
 		enviando = true;
+		if (botonEnviar) botonEnviar.disabled = true;
+		mostrarEstado('Enviando…');
 		let botEl = null;
 		let acumulado = '';
 
@@ -109,6 +147,8 @@
 					throw new Error('no_configurado');
 				}
 				if (!resp.ok || !resp.body) throw new Error('http');
+
+				mostrarEstado('Pensando…');
 
 				const reader = resp.body.getReader();
 				const decoder = new TextDecoder();
@@ -130,17 +170,21 @@
 
 				function manejarEvento(evento, payload) {
 					if (evento === 'texto') {
+						ocultarEstado();
 						if (!botEl) botEl = nuevoMensajeEl('asistente-msg asistente-msg--bot', '');
 						acumulado += payload.delta || '';
 						botEl.textContent = acumulado;
 						scrollAbajo();
 					} else if (evento === 'actividad') {
 						nuevoMensajeEl('asistente-msg--actividad', 'Consultando ' + payload.tool.replace(/_/g, ' ') + '…');
+						mostrarEstado('Pensando…');
 						botEl = null; acumulado = '';
 					} else if (evento === 'accion_pendiente') {
+						ocultarEstado();
 						botEl = null; acumulado = '';
 						renderAccionPendiente(payload);
 					} else if (evento === 'error') {
+						ocultarEstado();
 						const msg = payload.mensaje + (payload.detalle ? ' (' + payload.detalle + ')' : '');
 						nuevoMensajeEl('asistente-msg asistente-msg--bot', msg);
 						botEl = null; acumulado = '';
@@ -175,7 +219,11 @@
 					nuevoMensajeEl('asistente-msg asistente-msg--bot', 'Hubo un problema al procesar tu mensaje.');
 				}
 			})
-			.finally(function () { enviando = false; });
+			.finally(function () {
+				ocultarEstado();
+				enviando = false;
+				if (botonEnviar) botonEnviar.disabled = false;
+			});
 	}
 
 	function renderAccionPendiente(accion) {

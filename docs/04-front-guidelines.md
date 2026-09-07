@@ -1197,6 +1197,21 @@ reutilizables que introdujo:
 - **Tarjetas de confirmación en el chat**: las escrituras del asistente se muestran como una tarjeta
   con resumen + botones Confirmar/Cancelar que llaman a endpoints AJAX separados; feedback con
   `window.showToast`. La acción se deshabilita al resolverse.
+- **Indicador de progreso durante el turno** (`.asistente-chat__estado`, `asistente-chat.js`): un
+  único elemento efímero al final del hilo que va contando en qué anda el asistente —"Enviando…"
+  al mandar, "Pensando…" en cuanto el endpoint acepta el stream, y otra vez "Pensando…" tras cada
+  tool call mientras el modelo procesa el resultado—. Desaparece al llegar el primer fragmento de
+  texto y en el `finally` del turno, así que **nunca queda en el historial**. Motivo: con tool use
+  pueden pasar varios segundos entre el envío y el primer token, y antes la pantalla no mostraba
+  nada en ese hueco. La traza permanente de qué se consultó sigue siendo el mensaje
+  `.asistente-msg--actividad`, que es otra cosa: el indicador no la duplica (por eso tras una
+  `actividad` el indicador dice "Pensando…" y no el nombre de la tool).
+- **Excepción a `withButtonLoading` en el botón de enviar**: el botón del chat es un icono de 42 px
+  sin texto, y el spinner que antepone `setButtonLoading` le rompe el layout (mismo motivo que la
+  excepción documentada del bottom nav de fichaje). Se deshabilita a mano mientras el turno está en
+  vuelo —con el `:disabled { opacity: .5 }` que ya tenía— y el feedback real de "está trabajando" lo
+  da el indicador de arriba, que es más informativo que un spinner. No copiar esto a botones con
+  texto: ahí sigue mandando `withButtonLoading`.
 - CSS scoped bajo `.asistente-chat__*` en un `@push('styles')` dentro del propio partial; usa
   `var(--primary)` para respetar el color de marca del tenant.
 - **Exclusión por vista, también en servidor**: el `@include('partials.asistente-chat')` en

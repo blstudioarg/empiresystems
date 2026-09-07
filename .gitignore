@@ -39,3 +39,6 @@ tutoriales-video/node_modules/
 
 # Claves de API en local (no versionar)
 /claves.md
+
+# Backups locales (no versionar)
+*.rar

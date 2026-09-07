@@ -73,7 +73,6 @@ class AsistenteIa
      */
     private function ejecutarLoop(User $usuario, array $callbacks): void
     {
-        $cliente = $this->cliente();
         $system = $this->conocimiento->systemPrompt($usuario);
         $tools = array_map(
             static fn ($tool) => $tool->definicion(),
@@ -97,7 +96,7 @@ class AsistenteIa
                 $params['tool_choice'] = 'auto';
             }
 
-            $stream = $cliente->chat()->createStreamed($params);
+            $stream = $this->abrirStream($params);
 
             $contenido = '';
             $toolCalls = [];   // acumulados por índice: ['id' => , 'name' => , 'arguments' => ]
@@ -151,6 +150,14 @@ class AsistenteIa
                 );
 
                 $this->conversacion->agregarMensajeTool($tc['id'] ?? '', $resultado);
+            }
+
+            // Una escritura propuesta cierra el turno: la pelota pasa al usuario, que confirma o
+            // cancela en un request aparte (D4). Sin este corte el loop seguía iterando, el modelo
+            // volvía a hablar sobre lo que acababa de proponer y el usuario veía la misma pregunta
+            // dos veces (la segunda ya sin tarjeta, porque el guard de acción pendiente la frena).
+            if ($this->conversacion->hayAccionPendiente()) {
+                return;
             }
         }
     }
@@ -242,6 +249,20 @@ class AsistenteIa
     private function cliente(): Client
     {
         return \OpenAI::client(IaTenant::apiKey());
+    }
+
+    /**
+     * Abre el stream contra el proveedor. Es el único punto del loop que toca la red, y está
+     * aislado a propósito: `StreamResponse` es final y `ChatContract` la impone como tipo de
+     * retorno, así que no hay forma de doblar el SDK desde afuera. Sobrescribiendo esto, un test
+     * puede ejercitar el loop de tool use entero sin clave de API ni red.
+     *
+     * @param  array<string, mixed>  $params
+     * @return iterable<mixed>
+     */
+    protected function abrirStream(array $params): iterable
+    {
+        return $this->cliente()->chat()->createStreamed($params);
     }
 
     /**

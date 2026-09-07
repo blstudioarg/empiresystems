@@ -227,6 +227,13 @@ Widget de chat flotante (área tenant) conectado a la API de OpenAI (Chat Comple
 - **Escrituras en dos fases**: la tool `proponer()` valida y guarda una acción pendiente en sesión;
   solo `POST /asistente/accion/{id}/confirmar` (request separado, CSRF) ejecuta vía los servicios de
   cálculo del servidor (`CalculadoraFactura`, `RegistroPresupuesto`, `RegistroFacturaBorrador`).
+  - **Proponer cierra el turno**: en cuanto hay una acción pendiente, `AsistenteIa::ejecutarLoop()`
+    corta y devuelve. Si no, el loop de tool use seguía iterando y el modelo volvía a redactar la
+    propuesta que acababa de hacer, así que el usuario veía la misma pregunta dos veces (la
+    segunda sin tarjeta, porque el guard de acción pendiente frena el segundo `proponer` pero el
+    texto ya se emitió). Regresión en `tests/Feature/Asistente/TurnoTerminaAlProponerTest.php`,
+    que ejercita el loop sustituyendo `abrirStream()` —el único punto que toca la red, aislado
+    porque `StreamResponse` es final y no se puede doblar el SDK desde afuera—.
 - **Conversación efímera** en la sesión de Laravel (`app/Ia/ConversacionAsistente.php`): sobrevive a
   la navegación, muere con la sesión, truncado en servidor. Sin tablas nuevas.
   - **Cuidado al escribir en sesión dentro del stream.** `StartSession` guarda la sesión justo
