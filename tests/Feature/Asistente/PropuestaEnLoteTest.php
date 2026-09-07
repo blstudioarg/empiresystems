@@ -106,6 +106,30 @@ class PropuestaEnLoteTest extends TestCase
         $this->assertSame(0, Cliente::count());
     }
 
+    public function test_la_propuesta_lleva_los_campos_completos_para_poder_revisarlos(): void
+    {
+        $acciones = [];
+        $this->asistenteQuePide(['Acme', 'Beta'])->responder($this->usuario, 'Creá dos clientes', [
+            'accionPendiente' => function (array $a) use (&$acciones) {
+                $acciones[] = $a;
+            },
+        ]);
+
+        $detalle = $acciones[0]['detalle'];
+
+        // El resumen de una línea esconde lo que no cabe en él: sin los campos completos, confirmar
+        // diez altas con la misma razón social y distinto NIF es firmar en blanco.
+        $this->assertCount(2, $detalle);
+        $etiquetas = array_column($detalle[0]['campos'], 'etiqueta');
+        $this->assertContains('Nombre', $etiquetas);
+        $this->assertContains('NIF/CIF', $etiquetas);
+
+        $valores = array_column($detalle[0]['campos'], 'valor', 'etiqueta');
+        $this->assertSame('Acme', $valores['Nombre']);
+        // El NIF no lo dio el modelo: se ve el hueco, no se omite la columna.
+        $this->assertSame('—', $valores['NIF/CIF']);
+    }
+
     public function test_confirmar_una_vez_ejecuta_todo_el_lote(): void
     {
         $nombres = array_map(fn (int $i) => "Cliente de Prueba {$i}", range(1, 10));

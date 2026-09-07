@@ -267,9 +267,59 @@ class AsistenteIa
         $this->invocar($callbacks, 'accionPendiente', [
             'id' => $idAccion,
             'resumenes' => array_column($acciones, 'resumen'),
+            // Los campos completos viajan para que el usuario pueda revisarlos antes de confirmar:
+            // el resumen de una línea oculta lo que no cabe en él (diez altas con la misma razón
+            // social y distinto NIF se ven idénticas si solo mirás el resumen).
+            'detalle' => array_map(fn (array $a) => [
+                'resumen' => $a['resumen'],
+                'campos' => self::camposLegibles($a['parametros']),
+            ], $acciones),
         ]);
 
         return true;
+    }
+
+    /**
+     * Convierte los parámetros de una acción en pares etiqueta/valor listos para mostrar. Se hace en
+     * servidor y no en el JS para que el criterio (qué se omite, cómo se rotula) sea uno solo y
+     * pueda cubrirse con tests.
+     *
+     * @param  array<string, mixed>  $parametros
+     * @return array<int, array{etiqueta: string, valor: string}>
+     */
+    public static function camposLegibles(array $parametros): array
+    {
+        $etiquetas = [
+            'tipo' => 'Tipo',
+            'nombre' => 'Nombre',
+            'razon_social' => 'Razón social',
+            'nif' => 'NIF/CIF',
+            'email' => 'Email',
+            'telefono' => 'Teléfono',
+            'ciudad' => 'Ciudad',
+            'direccion' => 'Dirección',
+            'precio' => 'Precio',
+            'referencia' => 'Referencia',
+            'descripcion' => 'Descripción',
+            'cliente_id' => 'Cliente',
+        ];
+
+        $campos = [];
+
+        foreach ($parametros as $clave => $valor) {
+            if (is_array($valor)) {
+                $valor = json_encode($valor, JSON_UNESCAPED_UNICODE);
+            }
+
+            $campos[] = [
+                'etiqueta' => $etiquetas[$clave] ?? ucfirst(str_replace('_', ' ', (string) $clave)),
+                // Un campo vacío se muestra como vacío, no se esconde: que falte el NIF es
+                // justamente lo que el usuario necesita ver.
+                'valor' => ($valor === null || $valor === '') ? '—' : (string) $valor,
+            ];
+        }
+
+        return $campos;
     }
 
     private function ejecutarTool(string $id, string $nombre, array $input, User $usuario, array $callbacks): string

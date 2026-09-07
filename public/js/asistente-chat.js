@@ -344,7 +344,20 @@
 		resumen.className = 'asistente-accion__resumen';
 
 		if (resumenes.length === 1) {
-			resumen.textContent = resumenes[0];
+			const fila = document.createElement('span');
+			fila.className = 'asistente-accion__fila';
+			const texto = document.createElement('span');
+			texto.textContent = resumenes[0];
+			const ojo = document.createElement('button');
+			ojo.type = 'button';
+			ojo.className = 'asistente-accion__ojo';
+			ojo.title = 'Ver todos los campos';
+			ojo.setAttribute('aria-label', 'Ver todos los campos');
+			ojo.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
+			ojo.addEventListener('click', function () { abrirDetalle(accion, 0); });
+			fila.appendChild(texto);
+			fila.appendChild(ojo);
+			resumen.appendChild(fila);
 		} else {
 			// Con varias acciones el usuario tiene que poder revisarlas antes de confirmar: si no,
 			// "confirmar 10 cosas" es un cheque en blanco.
@@ -352,9 +365,26 @@
 			titulo.textContent = resumenes.length + ' acciones a confirmar:';
 			const lista = document.createElement('ul');
 			lista.className = 'asistente-accion__lista';
-			resumenes.forEach(function (r) {
+			resumenes.forEach(function (r, i) {
 				const li = document.createElement('li');
-				li.textContent = r;
+				const fila = document.createElement('span');
+				fila.className = 'asistente-accion__fila';
+
+				const texto = document.createElement('span');
+				texto.textContent = r;
+
+				// El resumen de una línea no alcanza para verificar: el ojo abre la tabla completa.
+				const ojo = document.createElement('button');
+				ojo.type = 'button';
+				ojo.className = 'asistente-accion__ojo';
+				ojo.title = 'Ver todos los campos';
+				ojo.setAttribute('aria-label', 'Ver todos los campos de: ' + r);
+				ojo.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
+				ojo.addEventListener('click', function () { abrirDetalle(accion, i); });
+
+				fila.appendChild(texto);
+				fila.appendChild(ojo);
+				li.appendChild(fila);
 				lista.appendChild(li);
 			});
 			resumen.appendChild(titulo);
@@ -431,6 +461,90 @@
 		}
 	}
 
+	// --- Detalle de una propuesta -------------------------------------------
+	// Tabla con TODOS los campos de cada acción: el resumen de una línea esconde lo que no cabe en
+	// él, y confirmar diez altas sin poder mirar los campos es firmar en blanco.
+
+	function abrirDetalle(accion, indiceDestacado) {
+		const modalEl = document.getElementById('asistente-detalle-modal');
+		if (!modalEl || !window.bootstrap) return;
+
+		const detalle = accion.detalle || [];
+		if (!detalle.length) return;
+
+		pintarTablaDetalle(detalle, indiceDestacado);
+		pintarEstadoAnalisis(accion.analisis);
+
+		window.bootstrap.Modal.getOrCreateInstance(modalEl).show();
+	}
+
+	function pintarTablaDetalle(detalle, indiceDestacado) {
+		const tabla = document.getElementById('asistente-detalle-tabla');
+		const cabecera = tabla.querySelector('thead tr');
+		const cuerpo = tabla.querySelector('tbody');
+
+		cabecera.textContent = '';
+		cuerpo.textContent = '';
+
+		// Las columnas son la unión de los campos de todas las acciones: si una trae un dato que
+		// otra no, tiene que verse igual (y verse vacío donde falta).
+		const columnas = [];
+		detalle.forEach(function (d) {
+			(d.campos || []).forEach(function (c) {
+				if (columnas.indexOf(c.etiqueta) === -1) columnas.push(c.etiqueta);
+			});
+		});
+
+		const thNum = document.createElement('th');
+		thNum.textContent = '#';
+		thNum.style.width = '1%';
+		cabecera.appendChild(thNum);
+
+		columnas.forEach(function (col) {
+			const th = document.createElement('th');
+			th.textContent = col;
+			cabecera.appendChild(th);
+		});
+
+		detalle.forEach(function (d, i) {
+			const tr = document.createElement('tr');
+			if (i === indiceDestacado) tr.className = 'asistente-detalle-destacada';
+
+			const tdNum = document.createElement('td');
+			tdNum.textContent = String(i + 1);
+			tr.appendChild(tdNum);
+
+			const porEtiqueta = {};
+			(d.campos || []).forEach(function (c) { porEtiqueta[c.etiqueta] = c.valor; });
+
+			columnas.forEach(function (col) {
+				const td = document.createElement('td');
+				const valor = porEtiqueta[col];
+				td.textContent = (valor === undefined || valor === '—') ? '—' : valor;
+				// Un hueco se marca, no se disimula: que falte el NIF es justo lo que hay que ver.
+				if (td.textContent === '—') td.className = 'text-muted';
+				tr.appendChild(td);
+			});
+
+			cuerpo.appendChild(tr);
+		});
+	}
+
+	// Estado del análisis cuando la propuesta salió de documentos interpretados. Mientras no exista
+	// esa vía, `analisis` no llega y el aviso queda oculto.
+	function pintarEstadoAnalisis(analisis) {
+		const caja = document.getElementById('asistente-detalle-analisis');
+		if (!caja) return;
+
+		if (!analisis) {
+			caja.hidden = true;
+			caja.textContent = '';
+			return;
+		}
+
+		caja.textContent = analisis;
+		caja.hidden = false;
+	}
 	// --- Historial de conversaciones (feature 045) ---------------------------
 	// Vista deslizante dentro del propio panel: no cabe una segunda columna en 440px (research D10).
 

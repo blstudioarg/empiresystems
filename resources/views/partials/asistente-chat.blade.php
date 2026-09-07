@@ -153,6 +153,13 @@
 			.asistente-accion__botones { display: flex; gap: 8px; }
 			/* Lista de acciones de una propuesta en lote: el usuario debe poder revisarlas antes de
 			   confirmar, si no "confirmar 10 cosas" es un cheque en blanco. */
+			.asistente-accion__fila { display: flex; align-items: flex-start; gap: 6px; }
+			.asistente-accion__ojo {
+				background: transparent; border: none; color: var(--primary, #4361ee);
+				padding: 0 2px; cursor: pointer; flex-shrink: 0; line-height: 1;
+			}
+			.asistente-accion__ojo:hover { opacity: .7; }
+			.asistente-detalle-destacada > td { background: #f2f5ff; }
 			.asistente-accion__lista { margin: 6px 0 0; padding-left: 18px; font-size: .85rem; }
 			.asistente-accion__lista li { margin-bottom: 2px; }
 			.asistente-accion__lista--error { color: #dc3545; }
@@ -231,6 +238,30 @@
 		</div>
 	</div>
 
+	{{-- Detalle de una propuesta: tabla con TODOS los campos a crear/editar, para poder verificarlos
+	     antes de confirmar. Vive fuera de .asistente-chat__panel a propósito: el panel tiene
+	     overflow:hidden y recortaría el modal. --}}
+	<div class="modal fade" id="asistente-detalle-modal" tabindex="-1" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title">Detalle de la propuesta</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+				</div>
+				<div class="modal-body">
+					{{-- Estado del análisis: se rellena cuando la propuesta viene de documentos
+					     interpretados. Vacío y oculto en el resto de casos. --}}
+					<div id="asistente-detalle-analisis" class="alert alert-info py-2 px-3 small" hidden></div>
+					<div class="table-responsive">
+						<table class="table table-sm align-middle mb-0" id="asistente-detalle-tabla">
+							<thead><tr></tr></thead>
+							<tbody></tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
 	@push('scripts')
 		<script src="@assetv('js/asistente-chat.js')"></script>
 	@endpush
