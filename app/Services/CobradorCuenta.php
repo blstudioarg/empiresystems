@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\OrigenMovimientoStock;
 use App\Enums\TipoArticulo;
 use App\Enums\TipoMovimientoStock;
+use App\Models\Factura;
 use App\Models\PosCobro;
 use App\Models\PosCuenta;
 use App\Models\PosCuentaLinea;
@@ -38,7 +39,7 @@ class CobradorCuenta
      * @param  array<int, float>  $seleccion  cuenta_linea_id => unidades a cobrar. Vacío = todo lo pendiente.
      * @param  list<array{metodo: string, importe: mixed}>|null  $pagos
      * @param  array<string, mixed>|null  $receptor
-     * @return array{factura: \App\Models\Factura, cobro: PosCobro, cuenta_cerrada: bool, pendiente: float}
+     * @return array{factura: Factura, cobro: PosCobro, cuenta_cerrada: bool, pendiente: float}
      */
     public function cobrar(
         PosCuenta $cuenta,
@@ -242,7 +243,7 @@ class CobradorCuenta
      * Si el artículo vinculado no gestiona stock no se registra nada — no es un error, es el
      * mismo criterio que ya aplica el resto del sistema. `movimientos_stock` es append-only.
      */
-    private function moverStockDeOpcionesVinculadas(PosCuentaLinea $linea, float $unidades, \App\Models\Factura $factura): void
+    private function moverStockDeOpcionesVinculadas(PosCuentaLinea $linea, float $unidades, Factura $factura): void
     {
         foreach ($linea->opciones as $opcion) {
             $articulo = $opcion->articuloVinculado;

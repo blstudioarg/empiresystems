@@ -7,6 +7,7 @@ use App\Models\PosCuentaLinea;
 use App\Models\PosMesa;
 use App\Models\PosZona;
 use App\Models\Tenant;
+use App\Models\User;
 use App\Support\ConfigPos;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\GestionaRolesDeTenant;
@@ -31,7 +32,7 @@ class SalaPayloadPlanoTest extends TestCase
         'estado', 'olvidada', 'pendiente', 'abierta_hace_min', 'abrir_url',
     ];
 
-    /** @return array{0: Tenant, 1: \App\Models\User} */
+    /** @return array{0: Tenant, 1: User} */
     private function tenantConSala(int $umbralOlvidadaMin = 90): array
     {
         $tenant = Tenant::factory()->create();

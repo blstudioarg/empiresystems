@@ -4,6 +4,7 @@ namespace Tests\Feature\Pos;
 
 use App\Models\Factura;
 use App\Models\PosCobro;
+use App\Models\PosMesa;
 use App\Models\PosZona;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\MontaSalaPos;
@@ -47,7 +48,7 @@ class SuplementoZonaVigenciaTest extends TestCase
         $zonaOrigen->update(['suplemento_porcentaje' => 0]);
 
         $zonaDestino = PosZona::factory()->create(['tenant_id' => $this->tenantPos->id, 'nombre' => 'Terraza', 'suplemento_porcentaje' => 20]);
-        $mesaDestino = \App\Models\PosMesa::factory()->create(['tenant_id' => $this->tenantPos->id, 'zona_id' => $zonaDestino->id, 'nombre' => 'T1']);
+        $mesaDestino = PosMesa::factory()->create(['tenant_id' => $this->tenantPos->id, 'zona_id' => $zonaDestino->id, 'nombre' => 'T1']);
 
         $articulo = $this->articuloPos(10.00, 10);
         $cuenta = $this->abrirCuentaCon([['articulo' => $articulo]]);

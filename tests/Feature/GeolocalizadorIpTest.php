@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Support\GeolocalizadorIp;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
@@ -57,7 +58,7 @@ class GeolocalizadorIpTest extends TestCase
     public function test_timeout_no_rompe_y_devuelve_null(): void
     {
         Http::fake(function () {
-            throw new \Illuminate\Http\Client\ConnectionException('timed out');
+            throw new ConnectionException('timed out');
         });
 
         $this->assertNull(GeolocalizadorIp::ubicacion('203.0.113.40'));

@@ -7,6 +7,7 @@ use App\Services\AlmacenDocumentosCompra;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class AlmacenDocumentosCompraTest extends TestCase
@@ -48,7 +49,7 @@ class AlmacenDocumentosCompraTest extends TestCase
     {
         tenancy()->initialize(Tenant::factory()->create());
 
-        $this->assertNull($this->almacen()->rutaAbsoluta((string) \Illuminate\Support\Str::uuid()));
+        $this->assertNull($this->almacen()->rutaAbsoluta((string) Str::uuid()));
         $this->assertNull($this->almacen()->rutaAbsoluta('no-es-un-uuid'));
     }
 

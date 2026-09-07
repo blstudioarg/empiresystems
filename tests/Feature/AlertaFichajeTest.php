@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Enums\EstadoAlerta;
 use App\Enums\UserRole;
 use App\Models\Alerta;
 use App\Models\Configuracion;

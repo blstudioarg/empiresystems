@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\EstadoCompra;
 use App\Enums\OrigenCompra;
+use App\Models\Articulo;
 use App\Models\Compra;
 use App\Models\LogActividad;
 use App\Models\Proveedor;
@@ -279,7 +280,7 @@ class CompraDocumentoCreacionTest extends TestCase
     {
         [$tenant, , $proveedor, $token] = $this->escenario();
 
-        $articulo = \App\Models\Articulo::factory()->producto()->create([
+        $articulo = Articulo::factory()->producto()->create([
             'tenant_id' => $tenant->id,
             'gestion_stock' => true,
             'stock_actual' => 100,

@@ -2,6 +2,8 @@
 
 namespace App\Support;
 
+use Carbon\Carbon;
+
 /**
  * Divide un {@see RangoFechas} en sub-periodos ("buckets") para series temporales y comparativos:
  * un bucket por día en rangos cortos, o por mes (recortado a los límites del rango) en rangos
@@ -12,7 +14,7 @@ namespace App\Support;
 class BucketsRango
 {
     /**
-     * @return list<array{inicio: \Carbon\Carbon, fin: \Carbon\Carbon, etiqueta: string}>
+     * @return list<array{inicio: Carbon, fin: Carbon, etiqueta: string}>
      */
     public static function bucketsDelRango(RangoFechas $rango): array
     {
@@ -22,7 +24,7 @@ class BucketsRango
     }
 
     /**
-     * @return list<array{inicio: \Carbon\Carbon, fin: \Carbon\Carbon, etiqueta: string}>
+     * @return list<array{inicio: Carbon, fin: Carbon, etiqueta: string}>
      */
     public static function bucketsDiarios(RangoFechas $rango): array
     {
@@ -42,7 +44,7 @@ class BucketsRango
     }
 
     /**
-     * @return list<array{inicio: \Carbon\Carbon, fin: \Carbon\Carbon, etiqueta: string}>
+     * @return list<array{inicio: Carbon, fin: Carbon, etiqueta: string}>
      */
     public static function bucketsMensuales(RangoFechas $rango): array
     {

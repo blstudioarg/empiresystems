@@ -2,8 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Enums\EstadoLead;
-use App\Enums\EstadoPresupuesto;
 use App\Enums\EtapaOportunidad;
 use App\Models\Cliente;
 use App\Models\Factura;
@@ -11,12 +9,15 @@ use App\Models\Lead;
 use App\Models\Oportunidad;
 use App\Models\Presupuesto;
 use App\Models\Tenant;
+use App\Models\User;
 use App\Services\InformeComercial;
 use App\Support\AlcanceInformeComercial;
+use App\Support\CatalogoPermisos;
 use App\Support\FiltrosInforme;
 use App\Support\RangoFechas;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\Concerns\GestionaRolesDeTenant;
 use Tests\TestCase;
 
@@ -27,17 +28,17 @@ class InformeComercialIndicadoresTest extends TestCase
     private function alcanceTenant(Tenant $tenant): AlcanceInformeComercial
     {
         $this->sembrarPermisos();
-        $rol = $this->crearRol($tenant, 'Administrador', \App\Support\CatalogoPermisos::claves());
+        $rol = $this->crearRol($tenant, 'Administrador', CatalogoPermisos::claves());
         $usuario = $this->usuarioConRol($tenant, $rol);
 
-        app(\Spatie\Permission\PermissionRegistrar::class)->setPermissionsTeamId($tenant->getTenantKey());
+        app(PermissionRegistrar::class)->setPermissionsTeamId($tenant->getTenantKey());
 
         return AlcanceInformeComercial::paraUsuario($usuario);
     }
 
     private function generar(RangoFechas $rango, AlcanceInformeComercial $alcance, array $filtros = []): array
     {
-        return (new InformeComercial())->generar($rango, FiltrosInforme::desdePeticion($filtros), $alcance);
+        return (new InformeComercial)->generar($rango, FiltrosInforme::desdePeticion($filtros), $alcance);
     }
 
     public function test_indicadores_de_volumen_del_periodo(): void
@@ -213,7 +214,7 @@ class InformeComercialIndicadoresTest extends TestCase
         tenancy()->initialize($tenant);
         $alcance = $this->alcanceTenant($tenant);
 
-        $comercial = \App\Models\User::factory()->create(['tenant_id' => $tenant->id, 'activo' => false]);
+        $comercial = User::factory()->create(['tenant_id' => $tenant->id, 'activo' => false]);
         $rango = RangoFechas::personalizado(Carbon::parse('2026-06-01'), Carbon::parse('2026-06-30'));
 
         Lead::factory()->create(['tenant_id' => $tenant->id, 'created_at' => '2026-06-05', 'asignado_a' => $comercial->id]);

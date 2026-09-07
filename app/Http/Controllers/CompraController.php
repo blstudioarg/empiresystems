@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\EstadoCompra;
+use App\Enums\OrigenCompra;
 use App\Enums\TipoArticulo;
 use App\Exceptions\CompraNoModificableException;
 use App\Http\Requests\StoreCompraRequest;
@@ -31,7 +32,7 @@ class CompraController extends Controller
                 ->get();
 
             return response()->json([
-                'data' => $compras->map(fn (Compra $compra) => [
+                'data' => $compras->map(fn (Compra $compra) => array_filter([
                     'id' => $compra->id,
                     'proveedor' => $compra->proveedor->razon_social ?: $compra->proveedor->nombre,
                     'numero_documento' => $compra->numero_documento,
@@ -41,7 +42,22 @@ class CompraController extends Controller
                     'estado_b2b' => $compra->estado_b2b?->value,
                     'total' => number_format((float) $compra->total, 2, '.', ''),
                     'show_url' => route('compras.show', $compra),
-                ])->values(),
+                    // URLs de las acciones del dropdown del listado: se emiten solo cuando la
+                    // acción está permitida para esa fila, así el JS decide qué item mostrar sin
+                    // duplicar las reglas de estado (mismas que aplican los controllers al
+                    // ejecutarlas: editar/eliminar solo en borrador, anular solo si confirmada).
+                    'edit_url' => $compra->estado === EstadoCompra::Borrador ? route('compras.edit', $compra) : null,
+                    'confirmar_url' => $compra->estado === EstadoCompra::Borrador ? route('compras.confirmar', $compra) : null,
+                    'delete_url' => $compra->estado === EstadoCompra::Borrador ? route('compras.destroy', $compra) : null,
+                    'anular_url' => $compra->estado === EstadoCompra::Confirmada ? route('compras.anular', $compra) : null,
+                    'estado_b2b_url' => $compra->origen === OrigenCompra::Facturae ? route('compras.estado-b2b.update', $compra) : null,
+                    'facturae_descargar_url' => $compra->origen === OrigenCompra::Facturae ? route('compras.facturae.descargar', $compra) : null,
+                    'documento_descargar_url' => $compra->origen === OrigenCompra::Documento && $compra->archivo_recibido_path
+                        ? route('compras.documentos.descargar', $compra)
+                        : null,
+                // Solo se descartan los nulos (las URLs no aplicables); un 0/'' de los otros
+                // campos tiene que sobrevivir, de ahí el callback en vez del array_filter pelado.
+                ], fn ($valor) => $valor !== null))->values(),
                 'totales' => [
                     'total' => $compras->count(),
                     'confirmadas' => $compras->where('estado', EstadoCompra::Confirmada)->count(),

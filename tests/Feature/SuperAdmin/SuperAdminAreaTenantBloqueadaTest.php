@@ -2,8 +2,12 @@
 
 namespace Tests\Feature\SuperAdmin;
 
+use App\Models\Cliente;
+use App\Models\Factura;
+use App\Models\Provincia;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Support\CatalogoPermisos;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
@@ -43,7 +47,7 @@ class SuperAdminAreaTenantBloqueadaTest extends TestCase
     public function test_descarga_de_documento_de_empresa_queda_bloqueada(): void
     {
         $tenant = Tenant::factory()->create();
-        $factura = \App\Models\Factura::factory()->create(['tenant_id' => $tenant->id]);
+        $factura = Factura::factory()->create(['tenant_id' => $tenant->id]);
 
         $superAdmin = User::factory()->superAdmin()->create(['password' => bcrypt('secret123')]);
         $this->loginAs($superAdmin);
@@ -80,7 +84,7 @@ class SuperAdminAreaTenantBloqueadaTest extends TestCase
 
     public function test_allowlist_perfil_logout_y_localidades_siguen_accesibles(): void
     {
-        $provincia = \App\Models\Provincia::create(['id' => 'M', 'nombre' => 'Madrid']);
+        $provincia = Provincia::create(['id' => 'M', 'nombre' => 'Madrid']);
 
         $superAdmin = User::factory()->superAdmin()->create(['password' => bcrypt('secret123')]);
         $this->loginAs($superAdmin);
@@ -96,7 +100,7 @@ class SuperAdminAreaTenantBloqueadaTest extends TestCase
     {
         $this->sembrarPermisos();
         $tenant = Tenant::factory()->create();
-        $rol = $this->crearRol($tenant, 'Administrador', \App\Support\CatalogoPermisos::claves());
+        $rol = $this->crearRol($tenant, 'Administrador', CatalogoPermisos::claves());
         $usuario = $this->usuarioConRol($tenant, $rol);
 
         $this->loginAs($usuario);
@@ -112,10 +116,10 @@ class SuperAdminAreaTenantBloqueadaTest extends TestCase
         $tenantA = Tenant::factory()->create();
         $tenantB = Tenant::factory()->create();
 
-        \App\Models\Cliente::factory()->create(['tenant_id' => $tenantA->id, 'nombre' => 'Cliente de A']);
-        \App\Models\Cliente::factory()->create(['tenant_id' => $tenantB->id, 'nombre' => 'Cliente de B']);
+        Cliente::factory()->create(['tenant_id' => $tenantA->id, 'nombre' => 'Cliente de A']);
+        Cliente::factory()->create(['tenant_id' => $tenantB->id, 'nombre' => 'Cliente de B']);
 
-        $rol = $this->crearRol($tenantB, 'Administrador', \App\Support\CatalogoPermisos::claves());
+        $rol = $this->crearRol($tenantB, 'Administrador', CatalogoPermisos::claves());
         $usuarioB = $this->usuarioConRol($tenantB, $rol);
 
         $this->loginAs($usuarioB);

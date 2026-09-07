@@ -108,7 +108,7 @@ class AppServiceProvider extends ServiceProvider
                 $visibility,
                 $config['lock'] ?? LOCK_EX,
                 LocalFilesystemAdapter::DISALLOW_LINKS,
-                new ExtensionMimeTypeDetector(),
+                new ExtensionMimeTypeDetector,
             );
 
             return new FilesystemAdapter(new Flysystem($adapter, $config), $adapter, $config);

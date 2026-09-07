@@ -2,6 +2,10 @@
 
 namespace App\Exceptions;
 
+use OpenAI\Exceptions\ErrorException;
+use OpenAI\Exceptions\RateLimitException;
+use OpenAI\Exceptions\TransporterException;
+
 /**
  * Fallo al interpretar un documento de compra (feature 044). Lleva el `codigo` que la UI usa para
  * decidir si sigue con el resto del lote o lo aborta (contracts/endpoints.md, "Resumen de códigos").
@@ -56,7 +60,7 @@ class DocumentoCompraException extends \RuntimeException
      */
     public static function desdeProveedor(\Throwable $e): self
     {
-        if ($e instanceof \OpenAI\Exceptions\ErrorException) {
+        if ($e instanceof ErrorException) {
             $codigo = match ($e->getStatusCode()) {
                 401 => self::CLAVE_INVALIDA,
                 429 => self::LIMITE_EXCEDIDO,
@@ -66,11 +70,11 @@ class DocumentoCompraException extends \RuntimeException
             return new self($codigo, self::mensajeDe($codigo), $e->getMessage(), $e);
         }
 
-        if ($e instanceof \OpenAI\Exceptions\RateLimitException) {
+        if ($e instanceof RateLimitException) {
             return new self(self::LIMITE_EXCEDIDO, self::mensajeDe(self::LIMITE_EXCEDIDO), $e->getMessage(), $e);
         }
 
-        if ($e instanceof \OpenAI\Exceptions\TransporterException) {
+        if ($e instanceof TransporterException) {
             return new self(self::SERVICIO_NO_DISPONIBLE, self::mensajeDe(self::SERVICIO_NO_DISPONIBLE), $e->getMessage(), $e);
         }
 

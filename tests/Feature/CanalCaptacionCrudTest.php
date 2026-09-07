@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Models\CanalCaptacion;
 use App\Models\Lead;
 use App\Models\Tenant;
+use App\Support\CatalogoPermisos;
+use App\Support\SembradorCanalesCaptacion;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\GestionaRolesDeTenant;
 use Tests\TestCase;
@@ -16,7 +18,7 @@ class CanalCaptacionCrudTest extends TestCase
     private function usuarioConfiguracion(Tenant $tenant)
     {
         $this->sembrarPermisos();
-        $rol = $this->crearRol($tenant, 'Administrador', \App\Support\CatalogoPermisos::claves());
+        $rol = $this->crearRol($tenant, 'Administrador', CatalogoPermisos::claves());
 
         return $this->usuarioConRol($tenant, $rol);
     }
@@ -105,10 +107,10 @@ class CanalCaptacionCrudTest extends TestCase
         $tenant = Tenant::factory()->create();
 
         tenancy()->initialize($tenant);
-        \App\Support\SembradorCanalesCaptacion::sembrar($tenant->id);
+        SembradorCanalesCaptacion::sembrar($tenant->id);
         $cantidad = CanalCaptacion::count();
         tenancy()->end();
 
-        $this->assertSame(count(\App\Support\SembradorCanalesCaptacion::NOMBRES), $cantidad);
+        $this->assertSame(count(SembradorCanalesCaptacion::NOMBRES), $cantidad);
     }
 }

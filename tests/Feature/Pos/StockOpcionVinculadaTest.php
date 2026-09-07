@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Pos;
 
+use App\Models\Factura;
 use App\Models\PosOpcion;
 use App\Models\PosOpcionGrupo;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -52,7 +53,7 @@ class StockOpcionVinculadaTest extends TestCase
         $this->assertDatabaseHas('movimientos_stock', ['articulo_id' => $refresco->id, 'cantidad' => 2]);
 
         // …pero el refresco NO aparece como línea propia de la factura.
-        $factura = \App\Models\Factura::first();
+        $factura = Factura::first();
         $this->assertFalse($factura->lineas->contains('articulo_id', $refresco->id));
         $this->assertCount(1, $factura->lineas);
     }

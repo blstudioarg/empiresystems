@@ -6,10 +6,13 @@ use App\Models\Cliente;
 use App\Models\Tenant;
 use App\Services\InformeComercial;
 use App\Support\AlcanceInformeComercial;
+use App\Support\CatalogoPermisos;
 use App\Support\FiltrosInforme;
 use App\Support\RangoFechas;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\Concerns\GestionaRolesDeTenant;
 use Tests\TestCase;
 
@@ -28,9 +31,9 @@ class InformeComercialRendimientoTest extends TestCase
         tenancy()->initialize($tenant);
 
         $this->sembrarPermisos();
-        $rol = $this->crearRol($tenant, 'Administrador', \App\Support\CatalogoPermisos::claves());
+        $rol = $this->crearRol($tenant, 'Administrador', CatalogoPermisos::claves());
         $usuario = $this->usuarioConRol($tenant, $rol);
-        app(\Spatie\Permission\PermissionRegistrar::class)->setPermissionsTeamId($tenant->getTenantKey());
+        app(PermissionRegistrar::class)->setPermissionsTeamId($tenant->getTenantKey());
 
         $cliente = Cliente::factory()->create(['tenant_id' => $tenant->id]);
         $ahora = now();
@@ -74,11 +77,11 @@ class InformeComercialRendimientoTest extends TestCase
             'updated_at' => $ahora,
         ]);
 
-        $rango = RangoFechas::personalizado(\Carbon\Carbon::parse('2026-06-01'), \Carbon\Carbon::parse('2026-06-30'));
+        $rango = RangoFechas::personalizado(Carbon::parse('2026-06-01'), Carbon::parse('2026-06-30'));
         $alcance = AlcanceInformeComercial::paraUsuario($usuario);
 
         $inicio = microtime(true);
-        $datos = (new InformeComercial())->generar($rango, FiltrosInforme::desdePeticion([]), $alcance);
+        $datos = (new InformeComercial)->generar($rango, FiltrosInforme::desdePeticion([]), $alcance);
         $duracion = microtime(true) - $inicio;
 
         $this->assertSame(5000, $datos['indicadores']['leads_captados']);

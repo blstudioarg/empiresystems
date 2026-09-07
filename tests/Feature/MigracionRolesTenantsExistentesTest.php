@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Enums\UserRole;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Support\CatalogoPermisos;

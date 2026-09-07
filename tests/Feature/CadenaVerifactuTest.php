@@ -2,12 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Exceptions\VerifactuNoRegistrableException;
 use App\Models\Cliente;
 use App\Models\Factura;
 use App\Models\Serie;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Services\EmisorFacturas;
+use App\Services\RegistroVerifactu;
 use App\Support\VerifactuTenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
@@ -104,9 +106,9 @@ class CadenaVerifactuTest extends TestCase
         $factura = $emisor->emitir($this->facturaBorradorValida($tenant, $serie));
         $huellaOriginal = $factura->huella;
 
-        $this->expectException(\App\Exceptions\VerifactuNoRegistrableException::class);
+        $this->expectException(VerifactuNoRegistrableException::class);
 
-        app(\App\Services\RegistroVerifactu::class)->registrar($factura);
+        app(RegistroVerifactu::class)->registrar($factura);
 
         $this->assertSame($huellaOriginal, $factura->refresh()->huella);
     }

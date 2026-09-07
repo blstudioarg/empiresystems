@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Pos;
 
+use App\Models\Articulo;
 use App\Models\Serie;
 use App\Models\Tenant;
 use App\Models\User;
@@ -69,7 +70,7 @@ class PosApagadoNoCambiaNadaTest extends TestCase
     public function test_con_el_modulo_apagado_ningun_articulo_declara_tener_opciones(): void
     {
         $user = $this->tenantConTicket();
-        \App\Models\Articulo::factory()->create(['tenant_id' => $user->tenant_id]);
+        Articulo::factory()->create(['tenant_id' => $user->tenant_id]);
 
         $this->loginAs($user);
 

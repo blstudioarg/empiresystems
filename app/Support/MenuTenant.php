@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Http\Middleware\ModuloHosteleriaActivo;
 use App\Models\Configuracion;
 
 /**
@@ -43,7 +44,7 @@ class MenuTenant
      * sidebar para que ninguna vista tenga que acordarse de la regla.
      *
      * Es solo UX: el enforcement real de acceso lo hace el middleware del módulo
-     * ({@see \App\Http\Middleware\ModuloHosteleriaActivo}).
+     * ({@see ModuloHosteleriaActivo}).
      *
      * @param  list<array<string, mixed>>  $elementos
      * @return list<array<string, mixed>>

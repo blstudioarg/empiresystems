@@ -6,6 +6,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 class ProfilePasswordTest extends TestCase
@@ -34,7 +35,7 @@ class ProfilePasswordTest extends TestCase
         ]);
 
         $response->assertOk();
-        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('nueva12345', $user->fresh()->password));
+        $this->assertTrue(Hash::check('nueva12345', $user->fresh()->password));
     }
 
     public function test_error_si_la_contrasena_actual_es_incorrecta(): void

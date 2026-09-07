@@ -6,10 +6,12 @@ use App\Models\Lead;
 use App\Models\Tenant;
 use App\Services\InformeComercial;
 use App\Support\AlcanceInformeComercial;
+use App\Support\CatalogoPermisos;
 use App\Support\FiltrosInforme;
 use App\Support\RangoFechas;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\Concerns\GestionaRolesDeTenant;
 use Tests\TestCase;
 
@@ -20,10 +22,10 @@ class InformeComercialComparativaTest extends TestCase
     private function alcanceTenant(Tenant $tenant): AlcanceInformeComercial
     {
         $this->sembrarPermisos();
-        $rol = $this->crearRol($tenant, 'Administrador', \App\Support\CatalogoPermisos::claves());
+        $rol = $this->crearRol($tenant, 'Administrador', CatalogoPermisos::claves());
         $usuario = $this->usuarioConRol($tenant, $rol);
 
-        app(\Spatie\Permission\PermissionRegistrar::class)->setPermissionsTeamId($tenant->getTenantKey());
+        app(PermissionRegistrar::class)->setPermissionsTeamId($tenant->getTenantKey());
 
         return AlcanceInformeComercial::paraUsuario($usuario);
     }
@@ -39,7 +41,7 @@ class InformeComercialComparativaTest extends TestCase
         Lead::factory()->count(10)->create(['tenant_id' => $tenant->id, 'created_at' => '2026-06-05']);
         Lead::factory()->count(4)->create(['tenant_id' => $tenant->id, 'created_at' => '2025-06-05']);
 
-        $datos = (new InformeComercial())->generar($rango, FiltrosInforme::desdePeticion(['comparar' => '1']), $alcance);
+        $datos = (new InformeComercial)->generar($rango, FiltrosInforme::desdePeticion(['comparar' => '1']), $alcance);
 
         $this->assertNotNull($datos['comparativa']);
         $this->assertSame('2025-06-01', $datos['comparativa']['periodo']['desde']);
@@ -61,7 +63,7 @@ class InformeComercialComparativaTest extends TestCase
 
         Lead::factory()->count(5)->create(['tenant_id' => $tenant->id, 'created_at' => '2026-06-05']);
 
-        $datos = (new InformeComercial())->generar($rango, FiltrosInforme::desdePeticion(['comparar' => '1']), $alcance);
+        $datos = (new InformeComercial)->generar($rango, FiltrosInforme::desdePeticion(['comparar' => '1']), $alcance);
 
         $this->assertSame(0, $datos['comparativa']['indicadores']['leads_captados']);
         $this->assertNull($datos['comparativa']['variaciones']['indicadores']['leads_captados']);
@@ -77,7 +79,7 @@ class InformeComercialComparativaTest extends TestCase
 
         $rango = RangoFechas::personalizado(Carbon::parse('2026-06-01'), Carbon::parse('2026-06-30'));
 
-        $datos = (new InformeComercial())->generar($rango, FiltrosInforme::desdePeticion(['comparar' => '1']), $alcance);
+        $datos = (new InformeComercial)->generar($rango, FiltrosInforme::desdePeticion(['comparar' => '1']), $alcance);
 
         $this->assertSame(count($datos['evolucion']), count($datos['comparativa']['evolucion']));
 

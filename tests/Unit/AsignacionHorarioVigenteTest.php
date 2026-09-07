@@ -2,11 +2,13 @@
 
 namespace Tests\Unit;
 
+use App\Exceptions\AsignacionHorarioSolapadaException;
 use App\Models\AsignacionHorario;
 use App\Models\Horario;
 use App\Models\MiembroEquipo;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Support\AsignadorHorario;
 use App\Support\ResolutorHorario;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -57,7 +59,7 @@ class AsignacionHorarioVigenteTest extends TestCase
             'vigente_hasta' => null,
         ]);
 
-        app(\App\Support\AsignadorHorario::class)->asignar($miembro, $horarioB, Carbon::parse('2026-03-01'));
+        app(AsignadorHorario::class)->asignar($miembro, $horarioB, Carbon::parse('2026-03-01'));
 
         $anterior->refresh();
         $this->assertSame('2026-02-28', $anterior->vigente_hasta->toDateString());
@@ -79,8 +81,8 @@ class AsignacionHorarioVigenteTest extends TestCase
             'vigente_hasta' => '2026-02-28',
         ]);
 
-        $this->expectException(\App\Exceptions\AsignacionHorarioSolapadaException::class);
+        $this->expectException(AsignacionHorarioSolapadaException::class);
 
-        app(\App\Support\AsignadorHorario::class)->asignar($miembro, $horarioB, Carbon::parse('2026-02-15'));
+        app(AsignadorHorario::class)->asignar($miembro, $horarioB, Carbon::parse('2026-02-15'));
     }
 }

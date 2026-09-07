@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Pos;
 
+use App\Models\PosCuenta;
+use App\Models\Tenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\MontaSalaPos;
 use Tests\TestCase;
@@ -43,8 +45,8 @@ class CrearTicketConMesaTest extends TestCase
     public function test_una_cuenta_de_otro_tenant_no_se_precarga_por_query_string(): void
     {
         $this->montarSala();
-        $otroTenant = \App\Models\Tenant::factory()->create();
-        $cuentaAjena = \App\Models\PosCuenta::factory()->create(['tenant_id' => $otroTenant->id]);
+        $otroTenant = Tenant::factory()->create();
+        $cuentaAjena = PosCuenta::factory()->create(['tenant_id' => $otroTenant->id]);
 
         $respuesta = $this->get('/pos/crear?cuenta='.$cuentaAjena->id)->assertOk();
 

@@ -3,6 +3,7 @@
 namespace Tests\Unit;
 
 use App\Support\VerificadorVies;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
@@ -56,7 +57,7 @@ class VerificadorViesTest extends TestCase
     public function test_timeout_de_vies_degrada_sin_excepcion(): void
     {
         Http::fake(function () {
-            throw new \Illuminate\Http\Client\ConnectionException('timeout');
+            throw new ConnectionException('timeout');
         });
 
         $resultado = VerificadorVies::verificar('FR12345678901', 'FR');

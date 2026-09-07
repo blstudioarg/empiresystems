@@ -3,11 +3,14 @@
 namespace Tests\Feature;
 
 use App\Enums\RegimenImpositivo;
+use App\Mail\FacturaMail;
 use App\Models\Cliente;
 use App\Models\Factura;
 use App\Models\FacturaEvento;
+use App\Models\FacturaLinea;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Support\VerificadorFirmaFacturae;
 use DOMDocument;
 use DOMXPath;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -56,7 +59,7 @@ class FacturaeGeneracionTest extends TestCase
 
     private function verificarFirma(string $xml): bool
     {
-        return \App\Support\VerificadorFirmaFacturae::esVerificable($xml);
+        return VerificadorFirmaFacturae::esVerificable($xml);
     }
 
     public function test_xml_generado_valida_estructura_facturae_3_2_2_y_firma_verificable(): void
@@ -64,7 +67,7 @@ class FacturaeGeneracionTest extends TestCase
         $tenant = $this->crearTenantConCertificado();
         $cliente = Cliente::factory()->create(['tenant_id' => $tenant->id, 'nif' => 'B12345674', 'pais' => 'ES']);
         $factura = Factura::factory()->emitida()->create(['tenant_id' => $tenant->id, 'cliente_id' => $cliente->id, 'cliente_nif' => 'B12345674']);
-        \App\Models\FacturaLinea::factory()->create([
+        FacturaLinea::factory()->create([
             'tenant_id' => $tenant->id,
             'factura_id' => $factura->id,
             'base' => 100,
@@ -106,7 +109,7 @@ class FacturaeGeneracionTest extends TestCase
             'cuota_impuesto_total' => 21,
             'total' => 121,
         ]);
-        \App\Models\FacturaLinea::factory()->create([
+        FacturaLinea::factory()->create([
             'tenant_id' => $tenant->id,
             'factura_id' => $factura->id,
             'base' => 100,
@@ -134,7 +137,7 @@ class FacturaeGeneracionTest extends TestCase
         $cliente = Cliente::factory()->create(['tenant_id' => $tenant->id, 'nif' => 'B12345674', 'pais' => 'ES']);
         $factura = Factura::factory()->emitida()->create(['tenant_id' => $tenant->id, 'cliente_id' => $cliente->id, 'cliente_nif' => 'B12345674']);
 
-        \App\Models\FacturaLinea::factory()->create([
+        FacturaLinea::factory()->create([
             'tenant_id' => $tenant->id,
             'factura_id' => $factura->id,
             'concepto' => 'Servicio con ISP',
@@ -144,7 +147,7 @@ class FacturaeGeneracionTest extends TestCase
             'calificacion_operacion' => 'S2',
         ]);
 
-        \App\Models\FacturaLinea::factory()->create([
+        FacturaLinea::factory()->create([
             'tenant_id' => $tenant->id,
             'factura_id' => $factura->id,
             'concepto' => 'Entrega intracomunitaria exenta',
@@ -183,7 +186,7 @@ class FacturaeGeneracionTest extends TestCase
             'cliente_nif' => 'B12345674',
             'regimen_impositivo' => RegimenImpositivo::Igic,
         ]);
-        \App\Models\FacturaLinea::factory()->create([
+        FacturaLinea::factory()->create([
             'tenant_id' => $tenant->id,
             'factura_id' => $factura->id,
             'base' => 100,
@@ -226,7 +229,7 @@ class FacturaeGeneracionTest extends TestCase
             'cliente_id' => $cliente->id,
             'cliente_nif' => 'B12345671', // dígito de control incorrecto (FR-021)
         ]);
-        \App\Models\FacturaLinea::factory()->create(['tenant_id' => $tenant->id, 'factura_id' => $factura->id]);
+        FacturaLinea::factory()->create(['tenant_id' => $tenant->id, 'factura_id' => $factura->id]);
 
         $response = $this->get("/facturas/{$factura->id}/facturae");
 
@@ -251,7 +254,7 @@ class FacturaeGeneracionTest extends TestCase
         $tenant = $this->crearTenantConCertificado();
         $cliente = Cliente::factory()->create(['tenant_id' => $tenant->id, 'nif' => 'B12345674', 'pais' => 'ES']);
         $factura = Factura::factory()->emitida()->create(['tenant_id' => $tenant->id, 'cliente_id' => $cliente->id, 'cliente_nif' => 'B12345674']);
-        \App\Models\FacturaLinea::factory()->create(['tenant_id' => $tenant->id, 'factura_id' => $factura->id]);
+        FacturaLinea::factory()->create(['tenant_id' => $tenant->id, 'factura_id' => $factura->id]);
 
         $primera = $this->get("/facturas/{$factura->id}/facturae")->getContent();
         $segunda = $this->get("/facturas/{$factura->id}/facturae")->getContent();
@@ -265,7 +268,7 @@ class FacturaeGeneracionTest extends TestCase
         $tenantB = $this->crearTenantConCertificado();
         $clienteB = Cliente::factory()->create(['tenant_id' => $tenantB->id, 'nif' => 'B12345674', 'pais' => 'ES']);
         $facturaB = Factura::factory()->emitida()->create(['tenant_id' => $tenantB->id, 'cliente_id' => $clienteB->id, 'cliente_nif' => 'B12345674']);
-        \App\Models\FacturaLinea::factory()->create(['tenant_id' => $tenantB->id, 'factura_id' => $facturaB->id]);
+        FacturaLinea::factory()->create(['tenant_id' => $tenantB->id, 'factura_id' => $facturaB->id]);
 
         $tenantA = Tenant::factory()->create();
         $userA = User::factory()->create(['tenant_id' => $tenantA->id, 'password' => bcrypt('secret123')]);
@@ -283,7 +286,7 @@ class FacturaeGeneracionTest extends TestCase
         $tenant = $this->crearTenantConCertificado();
         $cliente = Cliente::factory()->create(['tenant_id' => $tenant->id, 'nif' => 'B12345674', 'pais' => 'ES', 'email' => 'cliente@destino.test']);
         $factura = Factura::factory()->emitida()->create(['tenant_id' => $tenant->id, 'cliente_id' => $cliente->id, 'cliente_nif' => 'B12345674']);
-        \App\Models\FacturaLinea::factory()->create(['tenant_id' => $tenant->id, 'factura_id' => $factura->id]);
+        FacturaLinea::factory()->create(['tenant_id' => $tenant->id, 'factura_id' => $factura->id]);
 
         $this->put('/configuracion/email', [
             'smtp_host' => 'smtp.hostinger.com',
@@ -301,7 +304,7 @@ class FacturaeGeneracionTest extends TestCase
         $response->assertRedirect();
         $response->assertSessionHas('success');
 
-        Mail::assertSent(\App\Mail\FacturaMail::class, function (\App\Mail\FacturaMail $mail) {
+        Mail::assertSent(FacturaMail::class, function (FacturaMail $mail) {
             return count($mail->build()->rawAttachments) === 2;
         });
 
@@ -319,7 +322,7 @@ class FacturaeGeneracionTest extends TestCase
         $tenant = $this->crearTenantConCertificado();
         $cliente = Cliente::factory()->create(['tenant_id' => $tenant->id, 'nif' => 'B12345674', 'pais' => 'ES', 'email' => null]);
         $factura = Factura::factory()->emitida()->create(['tenant_id' => $tenant->id, 'cliente_id' => $cliente->id, 'cliente_nif' => 'B12345674']);
-        \App\Models\FacturaLinea::factory()->create(['tenant_id' => $tenant->id, 'factura_id' => $factura->id]);
+        FacturaLinea::factory()->create(['tenant_id' => $tenant->id, 'factura_id' => $factura->id]);
 
         $response = $this->post("/facturas/{$factura->id}/facturae");
 

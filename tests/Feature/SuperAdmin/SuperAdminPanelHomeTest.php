@@ -3,11 +3,11 @@
 namespace Tests\Feature\SuperAdmin;
 
 use App\Enums\EstadoFactura;
-use App\Enums\EstadoUsuario;
 use App\Models\Cliente;
 use App\Models\Factura;
 use App\Models\Tenant;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -127,7 +127,7 @@ class SuperAdminPanelHomeTest extends TestCase
         $this->assertCount(5, $datos['ultimos_tenants']);
         $fechas = array_column($datos['ultimos_tenants'], 'alta');
         $ordenadas = $fechas;
-        usort($ordenadas, fn ($a, $b) => \Carbon\Carbon::createFromFormat('d/m/Y', $b) <=> \Carbon\Carbon::createFromFormat('d/m/Y', $a));
+        usort($ordenadas, fn ($a, $b) => Carbon::createFromFormat('d/m/Y', $b) <=> Carbon::createFromFormat('d/m/Y', $a));
         $this->assertSame($ordenadas, $fechas);
     }
 

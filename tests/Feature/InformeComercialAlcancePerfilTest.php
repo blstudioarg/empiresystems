@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\Lead;
 use App\Models\Tenant;
+use App\Models\User;
+use App\Support\CatalogoPermisos;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\GestionaRolesDeTenant;
 use Tests\TestCase;
@@ -16,7 +18,7 @@ class InformeComercialAlcancePerfilTest extends TestCase
     {
         $tenant = Tenant::factory()->create();
         $this->sembrarPermisos();
-        $rol = $this->crearRol($tenant, 'Administrador', \App\Support\CatalogoPermisos::claves());
+        $rol = $this->crearRol($tenant, 'Administrador', CatalogoPermisos::claves());
         $usuario = $this->usuarioConRol($tenant, $rol);
 
         $this->loginAs($usuario);
@@ -35,7 +37,7 @@ class InformeComercialAlcancePerfilTest extends TestCase
             'ver-informes-comerciales', 'ver-informes-equipo', 'ver-leads', 'ver-oportunidades', 'ver-presupuestos',
         ]);
         $jefe = $this->usuarioConRol($tenant, $rol);
-        $comercial = \App\Models\User::factory()->create(['tenant_id' => $tenant->id]);
+        $comercial = User::factory()->create(['tenant_id' => $tenant->id]);
 
         tenancy()->initialize($tenant);
         Lead::factory()->create(['tenant_id' => $tenant->id, 'asignado_a' => $comercial->id, 'created_at' => now()]);
@@ -61,7 +63,7 @@ class InformeComercialAlcancePerfilTest extends TestCase
             'ver-informes-comerciales', 'ver-leads', 'ver-oportunidades', 'ver-presupuestos',
         ]);
         $comercialA = $this->usuarioConRol($tenant, $rol);
-        $comercialB = \App\Models\User::factory()->create(['tenant_id' => $tenant->id]);
+        $comercialB = User::factory()->create(['tenant_id' => $tenant->id]);
 
         tenancy()->initialize($tenant);
         Lead::factory()->create(['tenant_id' => $tenant->id, 'asignado_a' => $comercialA->id, 'created_at' => now()]);
@@ -84,7 +86,7 @@ class InformeComercialAlcancePerfilTest extends TestCase
             'ver-informes-comerciales', 'ver-leads', 'ver-oportunidades', 'ver-presupuestos',
         ]);
         $comercialA = $this->usuarioConRol($tenant, $rol);
-        $comercialB = \App\Models\User::factory()->create(['tenant_id' => $tenant->id]);
+        $comercialB = User::factory()->create(['tenant_id' => $tenant->id]);
 
         tenancy()->initialize($tenant);
         Lead::factory()->count(9)->create(['tenant_id' => $tenant->id, 'asignado_a' => $comercialB->id, 'created_at' => now()]);

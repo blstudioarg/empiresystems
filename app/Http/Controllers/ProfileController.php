@@ -15,6 +15,7 @@ use App\Support\GeolocalizadorIp;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -39,7 +40,7 @@ class ProfileController extends Controller
     }
 
     /**
-     * @return array{puesto: ?string, centroTrabajo: ?string, estado: string, estadoLabel: string, eventosRecientes: \Illuminate\Support\Collection<int, Fichaje>}|null
+     * @return array{puesto: ?string, centroTrabajo: ?string, estado: string, estadoLabel: string, eventosRecientes: Collection<int, Fichaje>}|null
      */
     private function datosEmpleadoFichaje(User $user): ?array
     {
@@ -69,9 +70,9 @@ class ProfileController extends Controller
     }
 
     /**
-     * @return \Illuminate\Support\Collection<int, array{fecha: string, accion_label: string, resultado: string, resultado_label: string, navegador: ?string, ubicacion: ?string}>
+     * @return Collection<int, array{fecha: string, accion_label: string, resultado: string, resultado_label: string, navegador: ?string, ubicacion: ?string}>
      */
-    private function actividadReciente(User $user): \Illuminate\Support\Collection
+    private function actividadReciente(User $user): Collection
     {
         if (! $user->tenant_id) {
             return collect();

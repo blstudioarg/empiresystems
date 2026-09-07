@@ -11,6 +11,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Services\RegistroMovimientoStock;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
 class MovimientoStockTest extends TestCase
@@ -67,8 +68,8 @@ class MovimientoStockTest extends TestCase
         $user = User::factory()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
         $this->loginAs($user);
 
-        $this->assertFalse(\Illuminate\Support\Facades\Route::has('stock.update'));
-        $this->assertFalse(\Illuminate\Support\Facades\Route::has('stock.destroy'));
+        $this->assertFalse(Route::has('stock.update'));
+        $this->assertFalse(Route::has('stock.destroy'));
     }
 
     public function test_rechaza_movimiento_sobre_servicio(): void

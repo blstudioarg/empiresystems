@@ -8,6 +8,7 @@ use App\Models\MiembroEquipo;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Support\ConfigFichajes;
+use App\Support\Haversine;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -46,7 +47,7 @@ class FichajeGeofencingTest extends TestCase
         $user = User::factory()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
         // Distancia máxima exactamente igual a la calculada por Haversine (borde inclusivo).
         $miembro = $this->crearMiembro($tenant, $user, 1000000);
-        $distanciaExacta = \App\Support\Haversine::metros(40.4168, -3.7038, 40.42, -3.7038);
+        $distanciaExacta = Haversine::metros(40.4168, -3.7038, 40.42, -3.7038);
         $miembro->update(['distancia_max_metros' => $distanciaExacta]);
         $this->loginAs($user);
 

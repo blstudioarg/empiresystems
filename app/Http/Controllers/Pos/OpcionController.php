@@ -8,7 +8,6 @@ use App\Models\PosOpcion;
 use App\Models\PosOpcionGrupo;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;

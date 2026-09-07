@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Pos;
 
+use App\Models\PosCobroLinea;
 use App\Models\PosCuentaLinea;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\MontaSalaPos;
@@ -41,7 +42,7 @@ class CobroParcialInvarianteTest extends TestCase
         $this->assertSame(3.0, (float) $linea->cantidad_saldada);
         $this->assertSame(
             3.0,
-            (float) \App\Models\PosCobroLinea::where('cuenta_linea_id', $lineaId)->sum('cantidad'),
+            (float) PosCobroLinea::where('cuenta_linea_id', $lineaId)->sum('cantidad'),
         );
     }
 

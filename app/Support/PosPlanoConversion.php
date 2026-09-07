@@ -2,12 +2,14 @@
 
 namespace App\Support;
 
+use Tests\Feature\Pos\PlanoConversionTest;
+
 /**
  * Conversión de los planos de la feature 039 a ocupación en celdas (feature 040, D8 de research.md).
  *
  * Vive aquí y no dentro de la migración porque es la única parte de la migración con lógica de
  * verdad —qué mesa cede espacio y en qué orden— y así se puede probar como función pura
- * ({@see \Tests\Feature\Pos\PlanoConversionTest}) en vez de a través de un `artisan migrate`.
+ * ({@see PlanoConversionTest}) en vez de a través de un `artisan migrate`.
  *
  * El paso de corrección es imprescindible: el mapeo por forma reproduce el dibujo actual, y el
  * dibujo actual **ya se solapa** (es justo el defecto que la feature corrige), así que aplicarlo a

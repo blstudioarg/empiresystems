@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\Factura;
 use App\Models\Serie;
 use App\Models\Tenant;
 use App\Models\User;

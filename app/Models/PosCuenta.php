@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\CobradorCuenta;
 use Database\Factories\PosCuentaFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -12,7 +13,7 @@ use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 /**
  * Cuenta abierta de mesa (feature 038). **No es una factura en borrador** (FR-017): no tiene
  * número ni serie, no aparece en el listado de tickets y no genera registro Verifactu. Al cobrar,
- * {@see \App\Services\CobradorCuenta} traduce sus unidades pendientes a una emisión normal.
+ * {@see CobradorCuenta} traduce sus unidades pendientes a una emisión normal.
  *
  * Las transiciones válidas son `abierta → cerrada` (al saldarse la última unidad) y
  * `abierta → anulada`. De `cerrada` o `anulada` no se sale.

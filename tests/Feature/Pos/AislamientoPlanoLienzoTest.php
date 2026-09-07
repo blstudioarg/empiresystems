@@ -5,6 +5,7 @@ namespace Tests\Feature\Pos;
 use App\Models\PosMesa;
 use App\Models\PosZona;
 use App\Models\Tenant;
+use App\Models\User;
 use App\Support\ConfigPos;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\GestionaRolesDeTenant;
@@ -22,7 +23,7 @@ class AislamientoPlanoLienzoTest extends TestCase
 {
     use GestionaRolesDeTenant, RefreshDatabase;
 
-    /** @return array{0: Tenant, 1: \App\Models\User} */
+    /** @return array{0: Tenant, 1: User} */
     private function tenantConConfiguracion(string $nombreRol): array
     {
         $tenant = Tenant::factory()->create();

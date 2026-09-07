@@ -6,6 +6,7 @@ use App\Enums\VerifactuEstado;
 use App\Models\Factura;
 use App\Models\FacturaEvento;
 use App\Services\RemisorVerifactu;
+use App\Services\ResultadoRemisionVerifactu;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -80,7 +81,7 @@ class RemitirRegistroVerifactu implements ShouldQueue
         $this->registrarEvento($factura, $resultado);
     }
 
-    private function registrarEvento(Factura $factura, \App\Services\ResultadoRemisionVerifactu $resultado): void
+    private function registrarEvento(Factura $factura, ResultadoRemisionVerifactu $resultado): void
     {
         FacturaEvento::create([
             'tenant_id' => $factura->tenant_id,

@@ -33,10 +33,10 @@ trait MontaSalaPos
     /**
      * @param  array<string, mixed>  $capacidades  flags extra de ConfigPos
      * @param  array<string, mixed>  $atributosTenant  atributos extra del tenant (p. ej. `nif`
-     *   real para tests de Verifactu). **Deben** ir aquí y no fijarse después de `loginAs()`:
-     *   `stancl/tenancy` cachea la instancia del tenant al inicializar el contexto en el primer
-     *   request, así que un cambio hecho a mitad de test (tras el login) queda invisible para
-     *   `tenant()` en las peticiones siguientes.
+     *                                                 real para tests de Verifactu). **Deben** ir aquí y no fijarse después de `loginAs()`:
+     *                                                 `stancl/tenancy` cachea la instancia del tenant al inicializar el contexto en el primer
+     *                                                 request, así que un cambio hecho a mitad de test (tras el login) queda invisible para
+     *                                                 `tenant()` en las peticiones siguientes.
      */
     protected function montarSala(array $capacidades = [], int $mesas = 2, array $atributosTenant = []): void
     {

@@ -3,13 +3,13 @@
 namespace Tests\Feature\SuperAdmin;
 
 use App\Enums\AccionLogActividad;
-use App\Enums\EntidadLogActividad;
 use App\Enums\EstadoUsuario;
 use App\Enums\ResultadoLogActividad;
 use App\Models\LogActividad;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 /**
@@ -20,7 +20,7 @@ class SuperAdminPanelAtencionTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function registrarActividad(Tenant $tenant, \Illuminate\Support\Carbon $ocurridoAt): void
+    private function registrarActividad(Tenant $tenant, Carbon $ocurridoAt): void
     {
         LogActividad::create([
             'tenant_id' => $tenant->id,

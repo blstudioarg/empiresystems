@@ -5,8 +5,11 @@ namespace Tests\Feature;
 use App\Enums\AccionLogActividad;
 use App\Enums\EntidadLogActividad;
 use App\Enums\ResultadoLogActividad;
+use App\Models\Articulo;
 use App\Models\Cliente;
 use App\Models\Factura;
+use App\Models\FacturaImpuesto;
+use App\Models\FacturaLinea;
 use App\Models\LogActividad;
 use App\Models\Serie;
 use App\Models\Tenant;
@@ -135,7 +138,7 @@ class LogActividadRegistroTest extends TestCase
         $this->loginAs($user);
 
         $this->post('/articulos', ['tipo' => 'producto', 'nombre' => 'Articulo Log', 'precio' => 10, 'tipo_impositivo' => 21]);
-        $articulo = \App\Models\Articulo::firstWhere('nombre', 'Articulo Log');
+        $articulo = Articulo::firstWhere('nombre', 'Articulo Log');
         $this->assertNotNull($this->fila(AccionLogActividad::Alta, EntidadLogActividad::Articulo));
 
         $this->put("/articulos/{$articulo->id}", ['tipo' => 'producto', 'nombre' => 'Articulo Log Editado', 'precio' => 12, 'tipo_impositivo' => 21]);
@@ -327,8 +330,8 @@ class LogActividadRegistroTest extends TestCase
             'tenant_id' => $tenant->id,
             'cliente_id' => $cliente->id,
         ]);
-        \App\Models\FacturaLinea::factory()->for($original)->create(['tenant_id' => $tenant->id]);
-        \App\Models\FacturaImpuesto::factory()->for($original)->create(['tenant_id' => $tenant->id]);
+        FacturaLinea::factory()->for($original)->create(['tenant_id' => $tenant->id]);
+        FacturaImpuesto::factory()->for($original)->create(['tenant_id' => $tenant->id]);
 
         $this->loginAs($user);
 

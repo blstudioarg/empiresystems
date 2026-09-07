@@ -17,6 +17,7 @@ use App\Support\RangoFechas;
 use App\Support\VariacionPorcentual;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 
 /**
  * Núcleo de cálculo del informe comercial (feature 033, data-model.md §4). No persiste nada: es
@@ -301,7 +302,7 @@ class InformeComercial
      * (los tests corren sobre SQLite, research D6/SC-007: el volumen de esta subconsulta ya está
      * acotado por el propio periodo, igual que los indicadores de los que deriva).
      *
-     * @param  \Illuminate\Support\Collection<int, object>  $filas
+     * @param  Collection<int, object>  $filas
      */
     private function promedioDiasEntre($filas, string $columnaInicio, string $columnaFin): ?float
     {

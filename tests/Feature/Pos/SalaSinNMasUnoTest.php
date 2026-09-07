@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Pos;
 
-use App\Models\PosMesa;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\Concerns\MontaSalaPos;

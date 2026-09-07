@@ -3,16 +3,19 @@
 namespace Tests\Feature;
 
 use App\Models\Cliente;
+use App\Models\Factura;
 use App\Models\Lead;
 use App\Models\Oportunidad;
 use App\Models\Presupuesto;
 use App\Models\Tenant;
 use App\Services\InformeComercial;
 use App\Support\AlcanceInformeComercial;
+use App\Support\CatalogoPermisos;
 use App\Support\FiltrosInforme;
 use App\Support\RangoFechas;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\Concerns\GestionaRolesDeTenant;
 use Tests\TestCase;
 
@@ -23,17 +26,17 @@ class InformeComercialRatiosTest extends TestCase
     private function alcanceTenant(Tenant $tenant): AlcanceInformeComercial
     {
         $this->sembrarPermisos();
-        $rol = $this->crearRol($tenant, 'Administrador', \App\Support\CatalogoPermisos::claves());
+        $rol = $this->crearRol($tenant, 'Administrador', CatalogoPermisos::claves());
         $usuario = $this->usuarioConRol($tenant, $rol);
 
-        app(\Spatie\Permission\PermissionRegistrar::class)->setPermissionsTeamId($tenant->getTenantKey());
+        app(PermissionRegistrar::class)->setPermissionsTeamId($tenant->getTenantKey());
 
         return AlcanceInformeComercial::paraUsuario($usuario);
     }
 
     private function generar(RangoFechas $rango, AlcanceInformeComercial $alcance): array
     {
-        return (new InformeComercial())->generar($rango, FiltrosInforme::desdePeticion([]), $alcance);
+        return (new InformeComercial)->generar($rango, FiltrosInforme::desdePeticion([]), $alcance);
     }
 
     public function test_ratios_de_eficiencia_coinciden_con_el_calculo_manual(): void
@@ -64,8 +67,8 @@ class InformeComercialRatiosTest extends TestCase
         Presupuesto::factory()->count(6)->create(['tenant_id' => $tenant->id, 'cliente_id' => $cliente->id, 'fecha_emision' => '2026-06-15']);
         Presupuesto::factory()->aceptado()->count(2)->create(['tenant_id' => $tenant->id, 'cliente_id' => $cliente->id, 'fecha_emision' => '2026-06-16']);
 
-        $factura1 = \App\Models\Factura::factory()->emitida()->create(['tenant_id' => $tenant->id, 'cliente_id' => $cliente->id, 'fecha_expedicion' => '2026-06-17']);
-        $factura2 = \App\Models\Factura::factory()->emitida()->create(['tenant_id' => $tenant->id, 'cliente_id' => $cliente->id, 'fecha_expedicion' => '2026-06-17']);
+        $factura1 = Factura::factory()->emitida()->create(['tenant_id' => $tenant->id, 'cliente_id' => $cliente->id, 'fecha_expedicion' => '2026-06-17']);
+        $factura2 = Factura::factory()->emitida()->create(['tenant_id' => $tenant->id, 'cliente_id' => $cliente->id, 'fecha_expedicion' => '2026-06-17']);
         Presupuesto::factory()->facturado()->create(['tenant_id' => $tenant->id, 'cliente_id' => $cliente->id, 'fecha_emision' => '2026-06-17', 'convertido_a_factura_id' => $factura1->id]);
         Presupuesto::factory()->facturado()->create(['tenant_id' => $tenant->id, 'cliente_id' => $cliente->id, 'fecha_emision' => '2026-06-17', 'convertido_a_factura_id' => $factura2->id]);
 

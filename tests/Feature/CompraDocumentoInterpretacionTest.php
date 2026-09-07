@@ -13,6 +13,7 @@ use App\Support\IaTenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
@@ -187,7 +188,7 @@ class CompraDocumentoInterpretacionTest extends TestCase
 
         $this->fingirLectura($this->lecturaValida());
 
-        $this->postJson('/compras/documentos/'.\Illuminate\Support\Str::uuid()->toString().'/interpretar')
+        $this->postJson('/compras/documentos/'.Str::uuid()->toString().'/interpretar')
             ->assertStatus(404);
     }
 }

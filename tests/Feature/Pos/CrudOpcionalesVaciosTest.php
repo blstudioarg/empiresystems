@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Pos;
 
+use App\Models\PosOpcionGrupo;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\MontaSalaPos;
 use Tests\TestCase;
@@ -62,7 +63,7 @@ class CrudOpcionalesVaciosTest extends TestCase
     public function test_crear_opcion_sin_precio_ni_orden_no_revienta(): void
     {
         $this->montarSala(['opciones_activo' => true]);
-        $grupo = \App\Models\PosOpcionGrupo::factory()->create(['tenant_id' => $this->tenantPos->id]);
+        $grupo = PosOpcionGrupo::factory()->create(['tenant_id' => $this->tenantPos->id]);
 
         $this->postJson('/pos/opciones', [
             'grupo_id' => $grupo->id,
