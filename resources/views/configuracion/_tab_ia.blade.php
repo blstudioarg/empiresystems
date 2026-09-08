@@ -34,6 +34,28 @@
 		</div>
 	</div>
 
+	<div class="row">
+		<div class="col-md-6 mb-3">
+			<label class="form-label" for="retencion_dias">Conservar el historial de conversaciones</label>
+			<div class="input-group">
+				<input type="number" class="form-control" id="retencion_dias" name="retencion_dias"
+					min="1" max="3650" value="{{ old('retencion_dias', $iaRetencionDias) }}">
+				<span class="input-group-text">días</span>
+			</div>
+			<small class="text-muted">
+				Las conversaciones sin actividad durante más tiempo se eliminan automáticamente, junto con
+				sus mensajes. Es un requisito de protección de datos: no se conservan indefinidamente.
+			</small>
+			@error('retencion_dias')
+				<div class="text-danger small mt-1">{{ $message }}</div>
+			@enderror
+		</div>
+	</div>
+
+	{{-- Quitar la clave es una acción explícita: sin esto, guardar solo el plazo de retención
+	     borraría la clave, porque el campo es de tipo password y viaja vacío. --}}
+	<input type="hidden" name="quitar_clave" id="quitar_clave" value="0">
+
 	<div class="d-flex gap-2">
 		<button type="submit" class="btn btn-primary">Guardar</button>
 		@if ($iaConfigurada)
@@ -54,6 +76,7 @@
 		if (btnQuitar) {
 			btnQuitar.addEventListener('click', function () {
 				document.getElementById('api_key').value = '';
+				document.getElementById('quitar_clave').value = '1';
 			});
 		}
 

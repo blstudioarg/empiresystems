@@ -20,16 +20,17 @@ use App\Support\ArchivosTenant;
 use App\Support\CertificadoTenant;
 use App\Support\ConfigCrm;
 use App\Support\ConfigFichajes;
+use App\Support\ConfigPos;
 use App\Support\ConfigTenant;
 use App\Support\EmailTenant;
 use App\Support\IaTenant;
 use App\Support\MenuTenant;
+use App\Support\RetencionAsistenteTenant;
 use App\Support\RetencionGeoTenant;
 use App\Support\RetencionMiembroTenant;
-use App\Support\ConfigPos;
 use App\Support\TopeSimplificada;
-use App\Support\VerificadorVies;
 use App\Support\VerifactuTenant;
+use App\Support\VerificadorVies;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -37,6 +38,7 @@ use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use OpenAI\Exceptions\ErrorException;
 use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 
 class ConfiguracionController extends Controller
@@ -90,6 +92,7 @@ class ConfiguracionController extends Controller
             'comercialesDisponibles' => User::where('tenant_id', $tenantId)->orderBy('name')->get(['id', 'name']),
             'iaConfigurada' => IaTenant::configurada($tenantId),
             'iaClaveEnmascarada' => IaTenant::apiKeyEnmascarada($tenantId),
+            'iaRetencionDias' => RetencionAsistenteTenant::dias($tenantId),
             'verifactuConfig' => [
                 'activo' => VerifactuTenant::activo($tenantId),
                 'entorno' => VerifactuTenant::entorno($tenantId)->value,
@@ -238,24 +241,40 @@ class ConfiguracionController extends Controller
     {
         $datos = $request->validate([
             'api_key' => ['nullable', 'string', 'max:255'],
+            // Plazo de conservación del historial del asistente (feature 045, FR-018). Obligatorio
+            // por el Principio II: los datos personales no se guardan indefinidamente.
+            'retencion_dias' => ['nullable', 'integer', 'min:1', 'max:3650'],
         ]);
 
         $apiKey = $datos['api_key'] ?? null;
-        $quitar = $apiKey === null || trim($apiKey) === '';
+        $quitar = (bool) $request->boolean('quitar_clave');
+        $hayClaveNueva = $apiKey !== null && trim($apiKey) !== '';
 
-        IaTenant::guardarApiKey($apiKey);
+        // La clave solo se toca si llega una nueva o si se pidió quitarla explícitamente: el campo
+        // es de tipo password y viaja vacío en cada guardado, así que interpretar "vacío = borrar"
+        // haría que cambiar el plazo de retención borrase la clave sin querer.
+        if ($hayClaveNueva || $quitar) {
+            IaTenant::guardarApiKey($quitar ? null : $apiKey);
+        }
+
+        if (isset($datos['retencion_dias'])) {
+            Configuracion::updateOrCreate(
+                ['tenant_id' => tenant('id'), 'clave' => RetencionAsistenteTenant::CLAVE_RETENCION_DIAS],
+                ['valor' => (string) $datos['retencion_dias'], 'tipo' => 'integer', 'grupo' => RetencionAsistenteTenant::GRUPO]
+            );
+        }
 
         $this->registradorActividad->registrar(
             auth()->user(),
             AccionLogActividad::Modificacion,
             EntidadLogActividad::Configuracion,
             null,
-            $quitar ? 'Quitó la clave de API del asistente IA' : 'Configuró la clave de API del asistente IA',
+            $quitar ? 'Quitó la clave de API del asistente IA' : ($hayClaveNueva ? 'Configuró la clave de API del asistente IA' : 'Actualizó la configuración del asistente IA'),
         );
 
         $mensaje = $quitar
             ? 'Se quitó la clave del asistente IA.'
-            : 'Clave del asistente IA guardada correctamente.';
+            : ($hayClaveNueva ? 'Clave del asistente IA guardada correctamente.' : 'Configuración del asistente IA guardada.');
 
         if ($request->wantsJson()) {
             return response()->json(['message' => $mensaje]);
@@ -277,7 +296,7 @@ class ConfiguracionController extends Controller
                 'max_tokens' => 5,
                 'messages' => [['role' => 'user', 'content' => 'ping']],
             ]);
-        } catch (\OpenAI\Exceptions\ErrorException $e) {
+        } catch (ErrorException $e) {
             if ($e->getStatusCode() === 401) {
                 return response()->json(['ok' => false, 'mensaje' => 'La clave no es válida. Revisá que la copiaste completa.'], 200);
             }

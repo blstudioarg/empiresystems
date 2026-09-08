@@ -4,8 +4,12 @@ namespace Tests\Feature;
 
 use App\Models\Lead;
 use App\Models\Tenant;
+use App\Models\User;
+use App\Support\CatalogoPermisos;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Testing\TestResponse;
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use Tests\Concerns\GestionaRolesDeTenant;
 use Tests\TestCase;
 
@@ -13,7 +17,7 @@ class InformeComercialExportacionTest extends TestCase
 {
     use GestionaRolesDeTenant, RefreshDatabase;
 
-    private function guardarYLeerHoja(\Illuminate\Testing\TestResponse $response, string $hoja): array
+    private function guardarYLeerHoja(TestResponse $response, string $hoja): array
     {
         [$spreadsheet, $ruta] = $this->cargarSpreadsheet($response);
         $filas = $spreadsheet->getSheetByName($hoja)?->toArray() ?? [];
@@ -24,9 +28,9 @@ class InformeComercialExportacionTest extends TestCase
     }
 
     /**
-     * @return array{0: \PhpOffice\PhpSpreadsheet\Spreadsheet, 1: string}
+     * @return array{0: Spreadsheet, 1: string}
      */
-    private function cargarSpreadsheet(\Illuminate\Testing\TestResponse $response): array
+    private function cargarSpreadsheet(TestResponse $response): array
     {
         $ruta = tempnam(sys_get_temp_dir(), 'informe-comercial-').'.xlsx';
         file_put_contents($ruta, $response->streamedContent());
@@ -38,7 +42,7 @@ class InformeComercialExportacionTest extends TestCase
     {
         $tenant = Tenant::factory()->create();
         $this->sembrarPermisos();
-        $rol = $this->crearRol($tenant, 'Administrador', \App\Support\CatalogoPermisos::claves());
+        $rol = $this->crearRol($tenant, 'Administrador', CatalogoPermisos::claves());
         $usuario = $this->usuarioConRol($tenant, $rol);
 
         tenancy()->initialize($tenant);
@@ -65,7 +69,7 @@ class InformeComercialExportacionTest extends TestCase
         $this->sembrarPermisos();
         $rol = $this->crearRol($tenant, 'Comercial', ['ver-informes-comerciales', 'ver-leads', 'ver-oportunidades']);
         $comercialA = $this->usuarioConRol($tenant, $rol);
-        $comercialB = \App\Models\User::factory()->create(['tenant_id' => $tenant->id]);
+        $comercialB = User::factory()->create(['tenant_id' => $tenant->id]);
 
         tenancy()->initialize($tenant);
         Lead::factory()->create(['tenant_id' => $tenant->id, 'asignado_a' => $comercialA->id, 'created_at' => now()]);
@@ -94,7 +98,7 @@ class InformeComercialExportacionTest extends TestCase
         $tenantB = Tenant::factory()->create();
 
         $this->sembrarPermisos();
-        $rolA = $this->crearRol($tenantA, 'Administrador', \App\Support\CatalogoPermisos::claves());
+        $rolA = $this->crearRol($tenantA, 'Administrador', CatalogoPermisos::claves());
         $usuarioA = $this->usuarioConRol($tenantA, $rolA);
 
         tenancy()->initialize($tenantA);
@@ -120,7 +124,7 @@ class InformeComercialExportacionTest extends TestCase
     {
         $tenant = Tenant::factory()->create();
         $this->sembrarPermisos();
-        $rol = $this->crearRol($tenant, 'Administrador', \App\Support\CatalogoPermisos::claves());
+        $rol = $this->crearRol($tenant, 'Administrador', CatalogoPermisos::claves());
         $usuario = $this->usuarioConRol($tenant, $rol);
 
         $this->loginAs($usuario);

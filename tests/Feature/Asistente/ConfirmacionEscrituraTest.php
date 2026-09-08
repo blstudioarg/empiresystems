@@ -4,7 +4,6 @@ namespace Tests\Feature\Asistente;
 
 use App\Ia\ConversacionAsistente;
 use App\Ia\Tools\CrearCliente;
-use App\Models\Cliente;
 use App\Models\LogActividad;
 use App\Models\Tenant;
 use App\Models\User;

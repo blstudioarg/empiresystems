@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Enums\EntornoVerifactu;
 use App\Enums\TipoFactura;
 use App\Enums\VerifactuEstado;
+use App\Exceptions\CadenaVerifactuRotaException;
+use App\Exceptions\VerifactuNoRegistrableException;
 use App\Models\Cliente;
 use App\Models\Factura;
 use App\Models\Serie;
@@ -138,7 +140,7 @@ class RegistroVerifactuTest extends TestCase
         $serie = Serie::factory()->create(['tenant_id' => $tenant->id]);
         $factura = $this->facturaBorradorValida($tenant, $serie);
 
-        $this->expectException(\App\Exceptions\VerifactuNoRegistrableException::class);
+        $this->expectException(VerifactuNoRegistrableException::class);
 
         app(EmisorFacturas::class)->emitir($factura);
     }
@@ -154,7 +156,7 @@ class RegistroVerifactuTest extends TestCase
 
         VerifactuTenant::establecerEntorno($tenant->id, EntornoVerifactu::Produccion);
 
-        $this->expectException(\App\Exceptions\CadenaVerifactuRotaException::class);
+        $this->expectException(CadenaVerifactuRotaException::class);
 
         app(EmisorFacturas::class)->emitir($this->facturaBorradorValida($tenant, $serie));
     }

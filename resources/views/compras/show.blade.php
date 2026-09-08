@@ -14,6 +14,8 @@
 								<span class="badge bg-secondary" id="compra-estado-badge">{{ ucfirst($compra->estado->value) }}</span>
 								@if ($compra->origen->value === 'facturae')
 									<span class="badge bg-info">Facturae</span>
+									@elseif ($compra->origen->value === 'documento')
+										<span class="badge bg-info">{{ $compra->origen->label() }}</span>
 								@endif
 							</h4>
 							<div class="d-flex gap-2" id="compra-acciones">
@@ -29,6 +31,14 @@
 						<div class="card-body">
 							<p><strong>Proveedor:</strong> {{ $compra->proveedor->razon_social ?: $compra->proveedor->nombre }}</p>
 							<p><strong>Fecha:</strong> {{ $compra->fecha->toDateString() }}</p>
+
+							@if ($compra->origen->value === 'documento' && $compra->archivo_recibido_path)
+								<div class="mb-3">
+									<a href="{{ route('compras.documentos.descargar', $compra) }}" class="btn btn-outline-secondary btn-sm">
+										Descargar documento original
+									</a>
+								</div>
+							@endif
 
 							@if ($compra->origen->value === 'facturae')
 								<div class="d-flex align-items-center gap-3 mb-3 flex-wrap">

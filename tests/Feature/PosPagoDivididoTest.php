@@ -25,7 +25,7 @@ class PosPagoDivididoTest extends TestCase
     /**
      * @param  array<int, array<string, mixed>>  $pagos
      */
-    private function payload(array $pagos = null): array
+    private function payload(?array $pagos = null): array
     {
         // Café x2 a 1,50 + 10% IVA = 3,30 €.
         $data = [

@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\PosZona;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -13,7 +14,7 @@ use Illuminate\Support\Facades\Schema;
  * conserva su plano tal cual, sin una sola escritura.
  *
  * `celdas_inactivas` va `nullable` y no `default('[]')` porque MySQL no admite DEFAULT en una
- * columna JSON. El valor ausente se lee como `[]` (ver {@see \App\Models\PosZona::celdasInactivas()}),
+ * columna JSON. El valor ausente se lee como `[]` (ver {@see PosZona::celdasInactivas()}),
  * que es exactamente el default del contrato.
  *
  * El `down()` devuelve la rejilla fija: pierde el diseño de sala (medidas propias y recortes),

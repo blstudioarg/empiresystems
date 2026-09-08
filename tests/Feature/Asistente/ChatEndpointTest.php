@@ -43,13 +43,17 @@ class ChatEndpointTest extends TestCase
         $this->postJson('/asistente/mensaje', ['mensaje' => ''])->assertStatus(422);
     }
 
-    public function test_reiniciar_limpia_la_conversacion(): void
+    /**
+     * La ruta `asistente/reiniciar` desapareció en la feature 045: la sustituye la creación de
+     * conversación, que además ya no descarta el hilo anterior sino que lo deja en el historial.
+     */
+    public function test_conversacion_nueva_deja_el_panel_vacio(): void
     {
         $tenant = Tenant::factory()->create();
         $user = User::factory()->admin()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
         $this->loginAs($user);
 
-        $this->post('/asistente/reiniciar')->assertOk()->assertJson(['ok' => true]);
+        $this->post('/asistente/conversaciones')->assertOk()->assertJson(['ok' => true]);
     }
 
     public function test_widget_visible_para_admin_sin_clave_en_modo_activar(): void

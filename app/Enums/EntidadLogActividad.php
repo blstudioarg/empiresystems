@@ -14,6 +14,7 @@ enum EntidadLogActividad: string
     case Presupuesto = 'presupuesto';
     case Albaran = 'albaran';
     case Proveedor = 'proveedor';
+    case Compra = 'compra';
     case InformeComercial = 'informe_comercial';
     case LogActividad = 'log_actividad';
 
@@ -30,6 +31,7 @@ enum EntidadLogActividad: string
             self::Presupuesto => 'Presupuesto',
             self::Albaran => 'Albarán',
             self::Proveedor => 'Proveedor',
+            self::Compra => 'Compra',
             self::InformeComercial => 'Informe comercial',
             self::LogActividad => 'Log de actividad',
         };

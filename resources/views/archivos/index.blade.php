@@ -128,7 +128,7 @@
 									<h4 class="mb-0" data-metric="archivos">{{ $totales['archivos'] }}</h4>
 								</div>
 								<div>
-									<x-lordicon icon="wired-outline-89-document-plus-hover-swipe" size="45" trigger="hover" target=".card" />
+									<x-lordicon icon="wired-outline-89-document-plus-hover-swipe" size="38" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>
@@ -143,7 +143,7 @@
 									<h4 class="mb-0" data-metric="carpetas">{{ $totales['carpetas'] }}</h4>
 								</div>
 								<div>
-									<x-lordicon icon="box" size="45" trigger="hover" target=".card" />
+									<x-lordicon icon="box" size="38" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>
@@ -158,7 +158,7 @@
 									<h4 class="mb-0" data-metric="espacio">{{ number_format($totales['espacio_bytes'] / 1024 / 1024, 1) }} MB</h4>
 								</div>
 								<div>
-									<x-lordicon icon="wired-outline-1-cloud" size="45" trigger="hover" target=".card" />
+									<x-lordicon icon="wired-outline-1-cloud" size="38" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>

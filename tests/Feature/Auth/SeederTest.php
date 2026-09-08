@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Models\Tenant;
+use App\Models\User;
 use Database\Seeders\AuthSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -22,7 +24,7 @@ class SeederTest extends TestCase
         $response->assertRedirect('/');
         $this->assertAuthenticated();
 
-        $user = \App\Models\User::where('email', 'admin@empiresystems.es')->first();
+        $user = User::where('email', 'admin@empiresystems.es')->first();
         $this->assertTrue($user->isSuperAdmin());
         $this->assertNull($user->tenant_id);
     }
@@ -41,7 +43,7 @@ class SeederTest extends TestCase
         $response->assertRedirect('/');
         $this->assertAuthenticated();
 
-        $user = \App\Models\User::where('email', 'demo@empiresystems.es')->first();
+        $user = User::where('email', 'demo@empiresystems.es')->first();
         $this->assertNotNull($user->tenant_id);
         $this->assertTrue($user->tenant->activo);
     }
@@ -51,8 +53,8 @@ class SeederTest extends TestCase
         $this->seed(AuthSeeder::class);
         $this->seed(AuthSeeder::class);
 
-        $this->assertEquals(1, \App\Models\User::where('email', 'admin@empiresystems.es')->count());
-        $this->assertEquals(1, \App\Models\User::where('email', 'demo@empiresystems.es')->count());
-        $this->assertEquals(1, \App\Models\Tenant::where('nombre_comercial', 'Empresa Demo SL')->count());
+        $this->assertEquals(1, User::where('email', 'admin@empiresystems.es')->count());
+        $this->assertEquals(1, User::where('email', 'demo@empiresystems.es')->count());
+        $this->assertEquals(1, Tenant::where('nombre_comercial', 'Empresa Demo SL')->count());
     }
 }

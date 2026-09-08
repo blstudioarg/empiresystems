@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Tenant;
 use App\Models\User;
+use App\Support\CatalogoPermisos;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\GestionaRolesDeTenant;
 use Tests\TestCase;
@@ -27,7 +28,7 @@ class SuperAdminBypassTest extends TestCase
         $this->sembrarPermisos();
         $tenant = Tenant::factory()->create();
         // Usuario de tenant con TODO el catálogo: aun así no entra a super_admin.*
-        $rol = $this->crearRol($tenant, 'Administrador', \App\Support\CatalogoPermisos::claves());
+        $rol = $this->crearRol($tenant, 'Administrador', CatalogoPermisos::claves());
         $usuario = $this->usuarioConRol($tenant, $rol);
 
         $this->loginAs($usuario);

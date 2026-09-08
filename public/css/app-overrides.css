@@ -170,6 +170,15 @@ table.dataTable {
 	height: calc(100% - 1rem) !important;
 }
 
+/* ...pero ese margin-bottom de .card y el --bs-gutter-y de arriba se suman cuando una fila de
+   cards wrappea (típico en mobile: las cards de métricas pasan de 3 en línea a 2 + 1), dejando
+   2rem de aire vertical donde debería haber 1rem. En una fila de cards el espaciado ya lo pone
+   la propia card, así que anulamos el gutter vertical ahí; las filas de formularios y demás
+   contenido sin card lo conservan. */
+.row:has(> * > .card) {
+	--bs-gutter-y: 0;
+}
+
 /* Logo del tenant en el nav-header: style.css solo oculta .brand-title cuando el sidebar
    está colapsado (#main-wrapper.menu-toggle), pero deja .logo-abbr visible siempre a
    propósito, porque el combo por defecto del template es icono+texto conviviendo en el
@@ -220,31 +229,88 @@ table.dataTable {
 	padding: 1.5rem 1rem 1rem;
 }
 
-/* 96px (antes 80px). El tamaño vive en dos sitios que hay que mover juntos: el
-   contenedor .sidebar-user-avatar y la propia <img>; si se toca solo uno, el botón
-   de "cambiar foto" (posicionado contra el contenedor) queda fuera del círculo.
-   La variante mini/colapsada conserva su 3rem más abajo, a propósito. */
-.sidebar-user-avatar {
+/* Avatar editable (foto + botón de cámara superpuesto): componente compartido por el sidebar y
+   el perfil, ver resources/views/components/avatar-editable.blade.php. El diámetro se pasa por
+   la variable --avatar-editable-size desde el markup; el botón de cámara y su borde escalan a
+   partir de ella, así que NO hay que ajustarlos por vista (era el error del bloque anterior: el
+   tamaño vivía en dos sitios y el botón se salía del círculo si se tocaba solo uno). */
+.avatar-editable {
 	position: relative;
 	display: inline-block;
-	width: 96px;
-	height: 96px;
+	width: var(--avatar-editable-size, 96px);
+	height: var(--avatar-editable-size, 96px);
+	/* La forma vive en el contenedor (y la <img> la repite con `inherit`) para que el velo de
+	   carga la respete: un ::before con `border-radius: inherit` sobre un contenedor sin radio
+	   pintaría un cuadrado sobre una foto redonda. */
+	border-radius: 50%;
 }
 
-.sidebar-user-avatar img {
-	width: 96px;
-	height: 96px;
-	border-radius: 50%;
+.avatar-editable img {
+	width: 100%;
+	height: 100%;
+	border-radius: inherit;
 	object-fit: cover;
 	border: 3px solid var(--rgba-primary-1, #fff);
 }
 
-.sidebar-user-avatar-edit {
+/* Subida en curso: velo + spinner encima de la foto (public/js/avatar-upload.js pone
+   .is-uploading en TODOS los avatares de la página, porque todos muestran la misma imagen).
+   El disparador es un <input type="file">, no un botón, así que no aplica withButtonLoading;
+   esto cumple la misma regla de "nunca dejar una petición en vuelo sin feedback".
+   `border-radius: inherit` para que el velo respete la forma del avatar en cada vista (círculo
+   en el sidebar, esquinas redondeadas en el perfil). */
+.avatar-editable.is-uploading::before,
+.avatar-editable.is-uploading::after {
+	content: "";
+	position: absolute;
+	pointer-events: none;
+}
+
+.avatar-editable.is-uploading::before {
+	inset: 0;
+	border-radius: inherit;
+	background: rgba(255, 255, 255, 0.65);
+}
+
+.avatar-editable.is-uploading::after {
+	/* Centrado y proporcional al avatar, con un piso para que se vea en el sidebar comprimido. */
+	width: max(20px, calc(var(--avatar-editable-size, 96px) * 0.3));
+	height: max(20px, calc(var(--avatar-editable-size, 96px) * 0.3));
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	border: 3px solid color-mix(in srgb, var(--primary, #1D69D6) 25%, transparent);
+	border-top-color: var(--primary, #1D69D6);
+	border-radius: 50%;
+	animation: avatar-editable-spin 700ms linear infinite;
+}
+
+@keyframes avatar-editable-spin {
+	to {
+		transform: translate(-50%, -50%) rotate(360deg);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.avatar-editable.is-uploading::after {
+		animation-duration: 2.5s;
+	}
+}
+
+/* Mientras sube no tiene sentido ofrecer el botón de cambiar foto (su input está deshabilitado). */
+.avatar-editable.is-uploading .avatar-editable-edit {
+	opacity: 0.5;
+	pointer-events: none;
+}
+
+.avatar-editable-edit {
 	position: absolute;
 	right: 0;
 	bottom: 0;
-	width: 28px;
-	height: 28px;
+	/* Proporcional al avatar, con un piso de 28px para que siga siendo tocable en el tamaño
+	   chico del sidebar colapsado. */
+	width: max(28px, calc(var(--avatar-editable-size, 96px) * 0.28));
+	height: max(28px, calc(var(--avatar-editable-size, 96px) * 0.28));
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -253,10 +319,9 @@ table.dataTable {
 	border-radius: 50%;
 	border: 2px solid #fff;
 	cursor: pointer;
-	font-size: 0.75rem;
+	font-size: max(0.75rem, calc(var(--avatar-editable-size, 96px) * 0.1));
 	margin: 0;
 }
-
 .sidebar-user-name {
 	margin-top: 0.75rem;
 	font-weight: 600;
@@ -284,12 +349,11 @@ table.dataTable {
 	padding: 1rem 0.5rem;
 }
 
-[data-sidebar-style="mini"] .sidebar-user-avatar,
-[data-sidebar-style="mini"] .sidebar-user-avatar img,
-[data-sidebar-style="full"][data-layout="vertical"] .menu-toggle .sidebar-user-avatar,
-[data-sidebar-style="full"][data-layout="vertical"] .menu-toggle .sidebar-user-avatar img {
-	width: 3rem;
-	height: 3rem;
+/* Basta con pisar la variable: el componente deriva de ella el alto, el ancho y el botón
+   de cámara (que mantiene su piso de 28px para seguir siendo tocable). */
+[data-sidebar-style="mini"] .sidebar-user-card .avatar-editable,
+[data-sidebar-style="full"][data-layout="vertical"] .menu-toggle .sidebar-user-card .avatar-editable {
+	--avatar-editable-size: 3rem;
 }
 
 /* Ítem activo del menú lateral (li.mm-active, clase que metismenu asigna al link de la
@@ -579,6 +643,25 @@ table.dataTable {
 
 .help-desk .ayuda-trigger:hover .ayuda-trigger-chevron {
 	transform: translateX(2px);
+}
+
+/* Sidebar comprimido (toggle sobre `full`, o `mini`): el template solo contempla el `.help-btn`
+   original del banco (`.help-desk .help-btn span { display: none }`), no este trigger custom, así
+   que el texto seguía ahí y se partía en varias líneas dentro de los 5rem de ancho. En comprimido
+   el botón queda cuadrado, centrado y solo con el icono; el nombre lo da el `title`/`aria-label`
+   del propio botón. `icon-hover` no necesita nada: style.css ya oculta el bloque entero. */
+[data-sidebar-style="full"][data-layout="vertical"] .menu-toggle .help-desk .ayuda-trigger,
+[data-sidebar-style="mini"] .deznav .help-desk .ayuda-trigger {
+	justify-content: center;
+	gap: 0;
+	padding: 0.5rem;
+}
+
+[data-sidebar-style="full"][data-layout="vertical"] .menu-toggle .help-desk .ayuda-trigger-text,
+[data-sidebar-style="full"][data-layout="vertical"] .menu-toggle .help-desk .ayuda-trigger-chevron,
+[data-sidebar-style="mini"] .deznav .help-desk .ayuda-trigger-text,
+[data-sidebar-style="mini"] .deznav .help-desk .ayuda-trigger-chevron {
+	display: none;
 }
 
 /* --- Modal --- */
@@ -1149,8 +1232,8 @@ table.dataTable thead > tr > th.sorting_desc::after {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	width: 4.5rem;
-	height: 4.5rem;
+	width: 4rem;
+	height: 4rem;
 	border-radius: 1rem;
 	background-color: var(--metric-accent-soft);
 }
@@ -1301,4 +1384,112 @@ table.dataTable thead > tr > th.sorting_desc::after {
 	height: 4rem;
 	border-radius: 1rem;
 	background-color: var(--rgba-primary-1, rgba(29, 105, 214, 0.1));
+}
+
+/* Botonera del card-header en móvil: los headers de listado son `title + <div class="d-flex gap-2">`
+   con filtros y botones. En pantallas chicas ese grupo se comprime en columnas angostas y los
+   botones quedan de anchos distintos y con el texto partido en varias líneas ("Importar
+   document/o"). Por debajo de 576px la botonera pasa a ocupar el ancho completo y apila sus
+   controles uno debajo del otro, cada uno a w-100 (el `!important` es para ganarle a los
+   `style="width: auto"` inline de los selects de filtro). Se aplica solo a los grupos que
+   contienen controles, para no tocar headers con otro tipo de contenido en flex. */
+@media only screen and (max-width: 35.9375rem) {
+	.card-header:has(> .d-flex .btn) {
+		flex-wrap: wrap;
+	}
+
+	.card-header > .d-flex:has(.btn, .form-control, .form-select, .dropdown) {
+		width: 100%;
+		flex-direction: column;
+		align-items: stretch;
+		gap: 0.5rem;
+	}
+
+	.card-header > .d-flex:has(.btn, .form-control, .form-select, .dropdown) > * {
+		width: 100% !important;
+	}
+}
+
+/* Avatar de "Mi perfil": usa el mismo componente editable que el sidebar, con su propio tamaño.
+   Reemplaza a `.profile-overview .profile-avatar` de style.css (160/100/80px según ancho), que
+   solo dimensionaba la <img>: acá el tamaño va en el contenedor vía la variable, si no el botón
+   de cámara queda descolocado. Un escalón más grande que el del template en cada breakpoint. */
+.profile-avatar-editor .avatar-editable {
+	--avatar-editable-size: 200px;
+	/* Equivalente a `rounded-4` de Bootstrap, en el contenedor: la <img> lo hereda y el velo de
+	   carga también, así el perfil mantiene su avatar cuadrado de esquinas redondeadas. */
+	border-radius: var(--bs-border-radius-xl, 1rem);
+}
+
+@media only screen and (max-width: 61.9375rem) {
+	.profile-avatar-editor .avatar-editable {
+		--avatar-editable-size: 160px;
+	}
+}
+
+@media only screen and (max-width: 35.9375rem) {
+	.profile-avatar-editor .avatar-editable {
+		--avatar-editable-size: 130px;
+	}
+}
+
+/* ==========================================================================
+   Iconos de la barra superior
+   --------------------------------------------------------------------------
+   style.css maquetaba cada `.notification_dropdown .nav-link` como una caja de
+   45x45 centrada con `line-height: 25px` + `text-align: center`, no con flex:
+   un <svg> dentro no se centra vertical con line-height, así que quedaban
+   descolgados y cada uno a distinta altura según su alto propio (24, 19, 25px).
+   Además los SVG traían `fill="black"` a mano, que sobre un topbar de marca
+   oscuro se ve casi invisible.
+
+   Acá: caja cuadrada real con flex, todos los iconos al mismo tamaño, y el
+   color heredado del header (--topbar-contraste, calculado por luminancia en
+   AparienciaTenant) vía currentColor — legible con topbar clara u oscura.
+   ========================================================================== */
+.header-right .notification_dropdown .nav-link {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 42px;
+	height: 42px;
+	margin: 0 2px;
+	padding: 0;
+	line-height: 1;
+	color: inherit;
+	transition: background-color 160ms ease;
+}
+
+.header-right .notification_dropdown .nav-link svg {
+	width: 22px;
+	height: 22px;
+	display: block;
+}
+
+/* El realce del hover se construye con el color del propio contenido, así que
+   funciona igual sobre una barra oscura (aclara) que sobre una clara (oscurece),
+   sin fijar un blanco o un negro que solo sirve para la mitad de los tenants. */
+.header-right .notification_dropdown .nav-link:hover,
+.header-right .notification_dropdown .nav-link:focus-visible,
+.header-right .notification_dropdown .show > .nav-link {
+	background-color: color-mix(in srgb, currentColor 15%, transparent);
+	color: inherit;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.header-right .notification_dropdown .nav-link {
+		transition: none;
+	}
+}
+
+@media only screen and (max-width: 35.9375rem) {
+	.header-right .notification_dropdown .nav-link {
+		width: 36px;
+		height: 36px;
+	}
+
+	.header-right .notification_dropdown .nav-link svg {
+		width: 20px;
+		height: 20px;
+	}
 }

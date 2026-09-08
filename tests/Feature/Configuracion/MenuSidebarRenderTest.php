@@ -9,6 +9,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Support\CatalogoMenu;
 use App\Support\CatalogoPermisos;
+use App\Support\ConfigPos;
 use App\Support\MenuTenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\GestionaRolesDeTenant;
@@ -75,7 +76,7 @@ class MenuSidebarRenderTest extends TestCase
         $tenant = Tenant::factory()->create();
         // Módulo de hostelería activo (feature 038): con "todo el catálogo" también se espera ver
         // Sala y Opciones de artículo, que además del permiso exigen el módulo encendido.
-        \App\Support\ConfigPos::guardar($tenant->id, ['hosteleria_activo' => true]);
+        ConfigPos::guardar($tenant->id, ['hosteleria_activo' => true]);
         $permisos = CatalogoPermisos::claves();
         $rol = $this->crearRol($tenant, 'Administrador', $permisos);
         $usuario = $this->usuarioConRol($tenant, $rol, ['rol' => UserRole::Admin]);

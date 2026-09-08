@@ -473,7 +473,7 @@
 											<h4 class="mb-0" data-metric="total">0</h4>
 										</div>
 										<div>
-											<x-lordicon icon="home" size="45" trigger="hover" target=".card" />
+											<x-lordicon icon="home" size="38" trigger="hover" target=".card" />
 										</div>
 									</div>
 								</div>
@@ -488,7 +488,7 @@
 											<h4 class="mb-0" data-metric="libres">0</h4>
 										</div>
 										<div>
-											<x-lordicon icon="box" size="45" trigger="hover" target=".card" />
+											<x-lordicon icon="box" size="38" trigger="hover" target=".card" />
 										</div>
 									</div>
 								</div>
@@ -503,7 +503,7 @@
 											<h4 class="mb-0 text-success" data-metric="ocupadas">0</h4>
 										</div>
 										<div>
-											<x-lordicon icon="people" size="45" trigger="hover" target=".card" />
+											<x-lordicon icon="people" size="38" trigger="hover" target=".card" />
 										</div>
 									</div>
 								</div>
@@ -518,7 +518,7 @@
 											<h4 class="mb-0 text-danger" data-metric="olvidadas">0</h4>
 										</div>
 										<div>
-											<x-lordicon icon="wired-outline-3627-mail-open-warning-hover-pinch" size="45" trigger="hover" target=".card" />
+											<x-lordicon icon="wired-outline-3627-mail-open-warning-hover-pinch" size="38" trigger="hover" target=".card" />
 										</div>
 									</div>
 								</div>

@@ -5,11 +5,16 @@ namespace App\Http\Controllers;
 use App\Enums\AccionLogActividad;
 use App\Ia\CatalogoTools;
 use App\Ia\ConversacionAsistente;
+use App\Ia\SugerenciasAsistente;
+use App\Models\User;
+use App\Services\AlmacenImportaciones;
 use App\Services\AsistenteIa;
 use App\Services\RegistradorActividad;
 use App\Support\IaTenant;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -30,6 +35,7 @@ class AsistenteChatController extends Controller
     {
         $datos = $request->validate([
             'mensaje' => ['required', 'string', 'max:4000'],
+            'material_token' => ['nullable', 'string'],
         ]);
 
         if (! IaTenant::configurada()) {
@@ -39,7 +45,11 @@ class AsistenteChatController extends Controller
         $usuario = $request->user();
         $mensaje = $datos['mensaje'];
 
-        $respuesta = new StreamedResponse(function () use ($usuario, $mensaje) {
+        $this->anunciarMaterial($usuario, $datos['material_token'] ?? null);
+
+        $idPrevio = $this->conversacion->idActivo();
+
+        $respuesta = new StreamedResponse(function () use ($request, $usuario, $mensaje, $idPrevio) {
             $emitir = function (string $evento, array $datos): void {
                 echo 'event: '.$evento."\n";
                 echo 'data: '.json_encode($datos, JSON_UNESCAPED_UNICODE)."\n\n";
@@ -52,6 +62,7 @@ class AsistenteChatController extends Controller
             $this->asistente->responder($usuario, $mensaje, [
                 'texto' => fn (string $delta) => $emitir('texto', ['delta' => $delta]),
                 'actividad' => fn (string $tool) => $emitir('actividad', ['tool' => $tool]),
+                'compactando' => fn () => $emitir('compactando', []),
                 'accionPendiente' => fn (array $accion) => $emitir('accion_pendiente', $accion),
                 'error' => function (string $codigo, string $mensaje, ?string $detalle) use ($emitir) {
                     $payload = ['codigo' => $codigo, 'mensaje' => $mensaje];
@@ -62,7 +73,21 @@ class AsistenteChatController extends Controller
                 },
             ]);
 
+            // La conversación puede haber nacido con este mismo mensaje (FR-008): el panel necesita
+            // su id para el historial sin tener que recargar la lista.
+            $nueva = $this->conversacion->activa();
+            if ($nueva !== null && $idPrevio !== $nueva->id) {
+                $emitir('conversacion', ['id' => $nueva->id, 'titulo' => $nueva->titulo]);
+            }
+
             $emitir('fin', []);
+
+            // `StartSession` ya guardó la sesión cuando este callback empieza a correr (se ejecuta
+            // en `send()`, después del middleware), así que todo lo que el asistente escribió aquí
+            // —los turnos de la conversación y la acción pendiente— vive solo en memoria y se
+            // perdería al terminar el request: sin este guardado explícito, cada mensaje arranca
+            // sin contexto y el endpoint de confirmación no encuentra la acción propuesta.
+            $request->session()->save();
         });
 
         $respuesta->headers->set('Content-Type', 'text/event-stream');
@@ -84,41 +109,145 @@ class AsistenteChatController extends Controller
         }
 
         $usuario = $request->user();
-        $tool = CatalogoTools::resolver($pendiente['tool'], $usuario);
 
-        if ($tool === null) {
-            $this->conversacion->limpiarAccion();
+        $hechas = [];
+        $rechazadas = [];
+        $ultimaUrl = null;
+        $fallosPorPermiso = 0;
 
-            return response()->json(['ok' => false, 'mensaje' => 'Ya no tenés permiso para esta acción.'], 403);
-        }
+        // Se ejecutan todas y se informa de las que fallaron, en vez de abortar el lote entero por
+        // una: es el mismo criterio que ya aplican `ImportadorExcel` e `ImportadorLeads` ("nunca
+        // aborta por filas inválidas; importa las válidas y reporta las rechazadas"). Si una de diez
+        // altas trae un NIF repetido, perder las otras nueve sería peor que informar del rechazo.
+        foreach ($pendiente['acciones'] as $accion) {
+            $tool = CatalogoTools::resolver($accion['tool'], $usuario);
 
-        try {
-            $resultado = $tool->ejecutar($pendiente['parametros']);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json(['ok' => false, 'mensaje' => $e->getMessage()], 422);
-        } catch (\Throwable $e) {
-            report($e);
+            if ($tool === null) {
+                $fallosPorPermiso++;
+                $rechazadas[] = $accion['resumen'].': ya no tenés permiso para esta acción.';
 
-            return response()->json(['ok' => false, 'mensaje' => 'No se pudo completar la acción.'], 422);
+                continue;
+            }
+
+            try {
+                $resultado = $tool->ejecutar($accion['parametros']);
+            } catch (ValidationException $e) {
+                // Rechazo legítimo (datos incompletos, NIF duplicado…). Se registra para poder
+                // diagnosticarlo después: sin esto el fallo no dejaba rastro en ningún sitio.
+                Log::warning('asistente.accion.rechazada', [
+                    'tool' => $accion['tool'],
+                    'motivo' => $e->getMessage(),
+                    'parametros' => $accion['parametros'],
+                    'user_id' => $usuario?->id,
+                ]);
+
+                $rechazadas[] = $accion['resumen'].': '.$e->getMessage();
+
+                continue;
+            } catch (\Throwable $e) {
+                report($e);
+                $rechazadas[] = $accion['resumen'].': no se pudo completar.';
+
+                continue;
+            }
+
+            $hechas[] = $resultado['descripcion'] ?? $accion['resumen'];
+            $ultimaUrl = $resultado['url'] ?? $accion['url'] ?? $ultimaUrl;
+
+            // Una acción puede completarse **y** dejar cosas fuera: importar un fichero crea las
+            // filas válidas y reporta las rechazadas sin abortar el lote (feature 046, FR-018).
+            foreach ($resultado['rechazadas'] ?? [] as $rechazada) {
+                $rechazadas[] = $rechazada;
+            }
+
+            $this->registradorActividad->registrar(
+                $usuario,
+                AccionLogActividad::Alta,
+                $resultado['entidad_tipo'] ?? null,
+                $resultado['id'] ?? null,
+                'Asistente IA: '.($resultado['descripcion'] ?? $accion['resumen']),
+            );
         }
 
         $this->conversacion->limpiarAccion();
 
-        $this->registradorActividad->registrar(
-            $usuario,
-            AccionLogActividad::Alta,
-            null,
-            $resultado['id'] ?? null,
-            'Asistente IA: '.($resultado['descripcion'] ?? $pendiente['resumen']),
+        // El modelo necesita saber qué salió y qué no, o en el turno siguiente da por hecho que se
+        // hizo todo.
+        $this->conversacion->agregarNotaInterna(
+            'Resultado de la propuesta: '.count($hechas).' acción(es) ejecutada(s)'
+            .($rechazadas === [] ? '.' : '; rechazadas: '.implode(' | ', $rechazadas))
         );
 
-        // Informar el resultado al modelo para el próximo turno.
-        $this->conversacion->agregar('user', 'La acción "'.$pendiente['resumen'].'" fue confirmada y ejecutada correctamente.');
+        if ($hechas === []) {
+            // Perder el permiso es una condición distinta de que los datos no valgan, y merece su
+            // propio código: 403 solo si TODO el lote se cayó por eso.
+            $codigo = $fallosPorPermiso === count($pendiente['acciones']) ? 403 : 422;
+
+            return response()->json([
+                'ok' => false,
+                'mensaje' => $codigo === 403
+                    ? 'Ya no tenés permiso para esta acción.'
+                    : ($rechazadas[0] ?? 'No se pudo completar la acción.'),
+                'rechazadas' => $rechazadas,
+            ], $codigo);
+        }
+
+        $mensaje = count($hechas) === 1
+            ? ($hechas[0].' — hecho.')
+            : count($hechas).' acciones completadas.';
+
+        if ($rechazadas !== []) {
+            $mensaje .= ' '.count($rechazadas).' no se pudieron completar.';
+        }
 
         return response()->json([
             'ok' => true,
-            'mensaje' => $resultado['mensaje'] ?? 'Acción realizada correctamente.',
-            'url' => $resultado['url'] ?? $pendiente['url'] ?? null,
+            'mensaje' => $mensaje,
+            'hechas' => $hechas,
+            'rechazadas' => $rechazadas,
+            // Solo se ofrece "Ver" cuando hay una única acción: con varias, a cuál llevaría.
+            'url' => count($hechas) === 1 ? $ultimaUrl : null,
+        ]);
+    }
+
+    /**
+     * Le dice al modelo que hay material adjunto y con qué token trabajarlo (feature 046).
+     *
+     * Va como nota interna y no dentro del mensaje de la persona porque el token es fontanería: el
+     * modelo lo necesita para llamar a sus tools, pero nadie tiene por qué leer un UUID en su propia
+     * conversación.
+     */
+    private function anunciarMaterial(?User $usuario, ?string $token): void
+    {
+        if ($usuario === null || $token === null || $token === '') {
+            return;
+        }
+
+        $borrador = app(AlmacenImportaciones::class)
+            ->borrador($token, (int) $usuario->tenant_id, (int) $usuario->id);
+
+        // Un token que no es suyo simplemente no existe: no se avisa de nada y el turno sigue.
+        if ($borrador === null) {
+            return;
+        }
+
+        $this->conversacion->agregarNotaInterna(
+            "La persona adjuntó material para importar {$borrador->modulo}. "
+            ."El token del material es {$borrador->token}. "
+            .'Analizalo con analizar_material_importable antes de responder, y contale qué encontraste.'
+        );
+    }
+
+    /**
+     * GET /asistente/sugerencias — lo que el panel ofrece cuando todavía no hay conversación.
+     *
+     * Se filtra en servidor (FR-027): ofrecer algo que al pulsarlo responde «no tenés permiso» es
+     * peor que no ofrecer nada.
+     */
+    public function sugerencias(Request $request): JsonResponse
+    {
+        return response()->json([
+            'categorias' => (new SugerenciasAsistente)->paraUsuario($request->user()),
         ]);
     }
 
@@ -131,18 +260,8 @@ class AsistenteChatController extends Controller
 
         if ($pendiente !== null && $pendiente['id'] === $id) {
             $this->conversacion->limpiarAccion();
-            $this->conversacion->agregar('user', 'El usuario canceló la acción propuesta.');
+            $this->conversacion->agregarNotaInterna('El usuario canceló la acción propuesta.');
         }
-
-        return response()->json(['ok' => true]);
-    }
-
-    /**
-     * POST /asistente/reiniciar — conversación nueva.
-     */
-    public function reiniciar(): JsonResponse
-    {
-        $this->conversacion->reiniciar();
 
         return response()->json(['ok' => true]);
     }

@@ -20,6 +20,47 @@ class TiposImpositivos
         return null;
     }
 
+    /**
+     * Tipos habituales de cada régimen según `docs/02-facturacion-espana.md` §5, **solo como
+     * referencia informativa**: sirven para avisar de una lectura sospechosa (un 21 % en un tenant
+     * de Canarias suele ser IVA leído por error), nunca para validar ni bloquear. La validación
+     * sigue siendo `esTipoValido()`, deliberadamente permisiva.
+     *
+     * IPSI devuelve `null`: cada ciudad autónoma fija sus propios tipos, así que no hay lista
+     * contra la que avisar sin arriesgar falsos positivos.
+     *
+     * @return array<int, float>|null
+     */
+    public static function tiposHabitualesPara(RegimenImpositivo $regimen): ?array
+    {
+        return match ($regimen) {
+            RegimenImpositivo::Iva => [0, 4, 10, 21],
+            RegimenImpositivo::Igic => [0, 3, 7, 9.5, 15, 20],
+            RegimenImpositivo::Ipsi => null,
+        };
+    }
+
+    /**
+     * `true` si el tipo es uno de los habituales del régimen (o si el régimen no tiene lista de
+     * referencia). Informativo: un `false` se muestra como aviso revisable, no impide guardar.
+     */
+    public static function esTipoHabitual(RegimenImpositivo $regimen, float $tipoImpositivo): bool
+    {
+        $habituales = self::tiposHabitualesPara($regimen);
+
+        if ($habituales === null) {
+            return true;
+        }
+
+        foreach ($habituales as $habitual) {
+            if (abs($habitual - $tipoImpositivo) < 0.001) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public static function recargoParaTipoIva(float $tipoIva): float
     {
         return match ($tipoIva) {

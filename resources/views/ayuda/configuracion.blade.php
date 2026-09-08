@@ -11,7 +11,9 @@
 	<li><strong>Asistente IA</strong>: activá el chat de ayuda pegando tu clave de API de OpenAI
 		(la obtenés en platform.openai.com). Se guarda cifrada y solo se muestra enmascarada.
 		Con el botón <em>Probar conexión</em> verificás que la clave funciona. El coste del uso
-		corre por cuenta de tu clave.</li>
+		corre por cuenta de tu clave. Aquí también decidís <strong>cuántos días se conservan las
+		conversaciones</strong> del historial del asistente (90 por defecto): pasado ese tiempo sin
+		usarlas se eliminan solas, junto con sus mensajes.</li>
 	<li><strong>Menú</strong>: renombrá el texto de cualquier sección de tu menú lateral y
 		reordená arrastrando (grupos entre sí, y entradas dentro de su propio grupo). Nada se
 		aplica hasta que pulsás <em>Guardar</em>. El botón <em>Restaurar valores por defecto</em>
@@ -26,6 +28,12 @@
 	usuarios y los datos que el asistente consulta (nombres de clientes, importes, etc.) se envían a
 	la API de OpenAI bajo tu clave y tu responsabilidad. El asistente nunca emite facturas, cobra
 	ni borra: solo consulta y propone borradores que vos confirmás.</p>
+
+<p class="ayuda-nota"><strong>Historial de conversaciones:</strong> cada persona tiene el suyo y
+	nadie más lo ve, ni sus compañeros ni quien administra la empresa. Se conserva el plazo que
+	fijes arriba y luego se borra automáticamente; cualquiera puede borrar sus propias
+	conversaciones antes desde el icono de historial del panel. En conversaciones muy largas, la
+	parte más antigua se resume automáticamente para no perder el hilo.</p>
 
 <p class="ayuda-nota">Los datos de General y el Certificado son los que usa la facturación legal:
 revisalos bien antes de empezar a emitir.</p>

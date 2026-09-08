@@ -34,7 +34,7 @@
 									<h4 class="mb-0" data-metric="total">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="invoice" size="45" trigger="hover" target=".card" />
+									<x-lordicon icon="invoice" size="38" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>
@@ -49,7 +49,7 @@
 									<h4 class="mb-0" data-metric="importe_total">0,00 €</h4>
 								</div>
 								<div>
-									<x-lordicon icon="euro" size="45" trigger="hover" target=".card" />
+									<x-lordicon icon="euro" size="38" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>

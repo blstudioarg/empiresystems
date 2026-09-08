@@ -109,7 +109,7 @@ class RemisorVerifactu
         $registroFactura = $doc->createElement('sum1:RegistroFactura');
         $regFactu->appendChild($registroFactura);
 
-        $interno = new \DOMDocument();
+        $interno = new \DOMDocument;
         $interno->loadXML($xmlRegistro);
         $registroFactura->appendChild($doc->importNode($interno->documentElement, true));
 
@@ -123,7 +123,7 @@ class RemisorVerifactu
      */
     private function parsear(string $cuerpo): ResultadoRemisionVerifactu
     {
-        $doc = new \DOMDocument();
+        $doc = new \DOMDocument;
 
         if ($cuerpo === '' || ! @$doc->loadXML($cuerpo)) {
             return ResultadoRemisionVerifactu::errorTransporte('La respuesta de la AEAT no es un XML válido.');

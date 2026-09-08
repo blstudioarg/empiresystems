@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Enums\EstadoCompra;
+use App\Enums\OrigenCompra;
+use App\Enums\TipoArticulo;
 use App\Exceptions\CompraNoModificableException;
 use App\Http\Requests\StoreCompraRequest;
 use App\Http\Requests\UpdateCompraRequest;
@@ -10,6 +12,7 @@ use App\Models\Articulo;
 use App\Models\Compra;
 use App\Models\Proveedor;
 use App\Services\RegistroCompra;
+use App\Support\IaTenant;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -29,7 +32,7 @@ class CompraController extends Controller
                 ->get();
 
             return response()->json([
-                'data' => $compras->map(fn (Compra $compra) => [
+                'data' => $compras->map(fn (Compra $compra) => array_filter([
                     'id' => $compra->id,
                     'proveedor' => $compra->proveedor->razon_social ?: $compra->proveedor->nombre,
                     'numero_documento' => $compra->numero_documento,
@@ -39,7 +42,22 @@ class CompraController extends Controller
                     'estado_b2b' => $compra->estado_b2b?->value,
                     'total' => number_format((float) $compra->total, 2, '.', ''),
                     'show_url' => route('compras.show', $compra),
-                ])->values(),
+                    // URLs de las acciones del dropdown del listado: se emiten solo cuando la
+                    // acción está permitida para esa fila, así el JS decide qué item mostrar sin
+                    // duplicar las reglas de estado (mismas que aplican los controllers al
+                    // ejecutarlas: editar/eliminar solo en borrador, anular solo si confirmada).
+                    'edit_url' => $compra->estado === EstadoCompra::Borrador ? route('compras.edit', $compra) : null,
+                    'confirmar_url' => $compra->estado === EstadoCompra::Borrador ? route('compras.confirmar', $compra) : null,
+                    'delete_url' => $compra->estado === EstadoCompra::Borrador ? route('compras.destroy', $compra) : null,
+                    'anular_url' => $compra->estado === EstadoCompra::Confirmada ? route('compras.anular', $compra) : null,
+                    'estado_b2b_url' => $compra->origen === OrigenCompra::Facturae ? route('compras.estado-b2b.update', $compra) : null,
+                    'facturae_descargar_url' => $compra->origen === OrigenCompra::Facturae ? route('compras.facturae.descargar', $compra) : null,
+                    'documento_descargar_url' => $compra->origen === OrigenCompra::Documento && $compra->archivo_recibido_path
+                        ? route('compras.documentos.descargar', $compra)
+                        : null,
+                // Solo se descartan los nulos (las URLs no aplicables); un 0/'' de los otros
+                // campos tiene que sobrevivir, de ahí el callback en vez del array_filter pelado.
+                ], fn ($valor) => $valor !== null))->values(),
                 'totales' => [
                     'total' => $compras->count(),
                     'confirmadas' => $compras->where('estado', EstadoCompra::Confirmada)->count(),
@@ -48,7 +66,29 @@ class CompraController extends Controller
             ]);
         }
 
-        return view('compras.index');
+        return view('compras.index', [
+            // Para el modal de importación por IA (feature 044): el select de proveedor de la
+            // propuesta y el botón, que se deshabilita si el tenant no tiene clave de IA.
+            // Ya mapeados aquí y no en la vista: un array multilínea dentro de `@json(...)` rompe
+            // el parser de directivas de Blade ("Unclosed '[' ... does not match ')'").
+            'proveedoresImportacion' => Proveedor::orderBy('nombre')
+                ->get(['id', 'nombre', 'razon_social'])
+                ->map(fn (Proveedor $p) => [
+                    'id' => $p->id,
+                    'nombre' => $p->razon_social ?: $p->nombre,
+                ])
+                ->values(),
+            'articulosImportacion' => Articulo::where('activo', true)
+                ->orderBy('nombre')
+                ->get(['id', 'nombre', 'tipo', 'gestion_stock'])
+                ->map(fn (Articulo $a) => [
+                    'id' => $a->id,
+                    'nombre' => $a->nombre,
+                    'mueve_stock' => $a->tipo === TipoArticulo::Producto && (bool) $a->gestion_stock,
+                ])
+                ->values(),
+            'iaConfigurada' => IaTenant::configurada(),
+        ]);
     }
 
     public function create(): View

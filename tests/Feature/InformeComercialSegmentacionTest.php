@@ -5,12 +5,15 @@ namespace Tests\Feature;
 use App\Models\CanalCaptacion;
 use App\Models\Lead;
 use App\Models\Tenant;
+use App\Models\User;
 use App\Services\InformeComercial;
 use App\Support\AlcanceInformeComercial;
+use App\Support\CatalogoPermisos;
 use App\Support\FiltrosInforme;
 use App\Support\RangoFechas;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\Concerns\GestionaRolesDeTenant;
 use Tests\TestCase;
 
@@ -21,17 +24,17 @@ class InformeComercialSegmentacionTest extends TestCase
     private function alcanceTenant(Tenant $tenant): AlcanceInformeComercial
     {
         $this->sembrarPermisos();
-        $rol = $this->crearRol($tenant, 'Administrador', \App\Support\CatalogoPermisos::claves());
+        $rol = $this->crearRol($tenant, 'Administrador', CatalogoPermisos::claves());
         $usuario = $this->usuarioConRol($tenant, $rol);
 
-        app(\Spatie\Permission\PermissionRegistrar::class)->setPermissionsTeamId($tenant->getTenantKey());
+        app(PermissionRegistrar::class)->setPermissionsTeamId($tenant->getTenantKey());
 
         return AlcanceInformeComercial::paraUsuario($usuario);
     }
 
     private function generar(RangoFechas $rango, AlcanceInformeComercial $alcance, array $filtros = []): array
     {
-        return (new InformeComercial())->generar($rango, FiltrosInforme::desdePeticion($filtros), $alcance);
+        return (new InformeComercial)->generar($rango, FiltrosInforme::desdePeticion($filtros), $alcance);
     }
 
     public function test_filtro_por_canal_los_segmentos_suman_el_total(): void
@@ -89,8 +92,8 @@ class InformeComercialSegmentacionTest extends TestCase
         tenancy()->initialize($tenant);
         $alcance = $this->alcanceTenant($tenant);
 
-        $comercialA = \App\Models\User::factory()->create(['tenant_id' => $tenant->id]);
-        $comercialB = \App\Models\User::factory()->create(['tenant_id' => $tenant->id]);
+        $comercialA = User::factory()->create(['tenant_id' => $tenant->id]);
+        $comercialB = User::factory()->create(['tenant_id' => $tenant->id]);
         $canal = CanalCaptacion::factory()->create(['tenant_id' => $tenant->id]);
 
         $rango = RangoFechas::personalizado(Carbon::parse('2026-06-01'), Carbon::parse('2026-06-30'));

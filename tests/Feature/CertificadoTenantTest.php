@@ -2,11 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Models\Configuracion;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
 class CertificadoTenantTest extends TestCase
@@ -27,7 +30,7 @@ class CertificadoTenantTest extends TestCase
         return file_get_contents(base_path("tests/Fixtures/facturae/{$nombre}"));
     }
 
-    private function subirCertificado(string $nombre, string $password): \Illuminate\Testing\TestResponse
+    private function subirCertificado(string $nombre, string $password): TestResponse
     {
         $archivo = UploadedFile::fake()->createWithContent($nombre, $this->contenidoFixture($nombre));
 
@@ -54,13 +57,13 @@ class CertificadoTenantTest extends TestCase
             'clave' => 'certificado.archivo_path',
         ]);
 
-        $passwordGuardada = \App\Models\Configuracion::query()
+        $passwordGuardada = Configuracion::query()
             ->where('tenant_id', $tenant->id)
             ->where('clave', 'certificado.password')
             ->value('valor');
 
         $this->assertNotSame(self::PASSWORD, $passwordGuardada);
-        $this->assertSame(self::PASSWORD, \Illuminate\Support\Facades\Crypt::decryptString($passwordGuardada));
+        $this->assertSame(self::PASSWORD, Crypt::decryptString($passwordGuardada));
 
         $show = $this->get('/configuracion');
         $show->assertOk();

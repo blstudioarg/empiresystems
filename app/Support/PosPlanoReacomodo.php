@@ -27,7 +27,7 @@ use Illuminate\Validation\ValidationException;
 class PosPlanoReacomodo
 {
     /**
-     * @param  array{columnas: int, filas: int, celdas_inactivas: array<int, string>}  $geometria geometría **propuesta**
+     * @param  array{columnas: int, filas: int, celdas_inactivas: array<int, string>}  $geometria  geometría **propuesta**
      * @param  array<int, array{id: int|string, fila: int, columna: int, ancho_celdas: int, alto_celdas: int, forma: string}>  $mesasPayload
      * @return Collection<int, PosMesa> mesas activas de la zona, indexadas por id, listas para actualizar
      *

@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Configuracion;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Support\AparienciaTenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -62,11 +63,11 @@ class ConfiguracionAparienciaTest extends TestCase
             ['tenant_id' => $tenant->id, 'clave' => 'apariencia.color_primario'],
             ['valor' => '#1D69D6', 'tipo' => 'string', 'grupo' => 'apariencia'],
         );
-        \App\Support\AparienciaTenant::invalidarCache($tenant->id);
+        AparienciaTenant::invalidarCache($tenant->id);
 
         $this->assertStringContainsString(
             '--primary-contraste: #FFFFFF',
-            \App\Support\AparienciaTenant::variablesCss($tenant->id),
+            AparienciaTenant::variablesCss($tenant->id),
             'Un primario oscuro debe dar texto blanco.',
         );
 
@@ -74,11 +75,11 @@ class ConfiguracionAparienciaTest extends TestCase
             ['tenant_id' => $tenant->id, 'clave' => 'apariencia.color_primario'],
             ['valor' => '#FFD400', 'tipo' => 'string', 'grupo' => 'apariencia'],
         );
-        \App\Support\AparienciaTenant::invalidarCache($tenant->id);
+        AparienciaTenant::invalidarCache($tenant->id);
 
         $this->assertStringContainsString(
             '--primary-contraste: #1F2937',
-            \App\Support\AparienciaTenant::variablesCss($tenant->id),
+            AparienciaTenant::variablesCss($tenant->id),
             'Un primario claro debe dar texto oscuro.',
         );
     }

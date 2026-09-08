@@ -25,7 +25,7 @@
 										<small class="text-muted" data-kpi="cumplimiento-detalle">&nbsp;</small>
 									</div>
 									<div>
-										<x-lordicon icon="wired-outline-2764-reliable-alt-hover-pinch" size="45" trigger="hover" target=".card" />
+										<x-lordicon icon="wired-outline-2764-reliable-alt-hover-pinch" size="38" trigger="hover" target=".card" />
 									</div>
 								</div>
 							</div>
@@ -41,7 +41,7 @@
 										<small data-kpi="horas-diferencia">&nbsp;</small>
 									</div>
 									<div>
-										<x-lordicon icon="wired-outline-1846-employee-working-hover-working" size="45" trigger="hover" target=".card" />
+										<x-lordicon icon="wired-outline-1846-employee-working-hover-working" size="38" trigger="hover" target=".card" />
 									</div>
 								</div>
 							</div>
@@ -57,7 +57,7 @@
 										<small class="text-muted" data-kpi="retrasos-detalle">&nbsp;</small>
 									</div>
 									<div>
-										<x-lordicon icon="wired-outline-3097-pause-circle-hover-pinch" size="45" trigger="hover" target=".card" />
+										<x-lordicon icon="wired-outline-3097-pause-circle-hover-pinch" size="38" trigger="hover" target=".card" />
 									</div>
 								</div>
 							</div>
@@ -73,7 +73,7 @@
 										<small class="text-muted" data-kpi="ausencias-detalle">&nbsp;</small>
 									</div>
 									<div>
-										<x-lordicon icon="wired-outline-309-avatar-icon-cross-hover-click" size="45" trigger="hover" target=".card" />
+										<x-lordicon icon="wired-outline-309-avatar-icon-cross-hover-click" size="38" trigger="hover" target=".card" />
 									</div>
 								</div>
 							</div>

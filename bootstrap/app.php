@@ -39,6 +39,14 @@ return Application::configure(basePath: dirname(__DIR__))
         // (RGPD — minimización, feature 031).
         $schedule->command('importaciones:purgar')->daily();
 
+        // Documentos de compra huérfanos: propuestas nunca confirmadas ni descartadas
+        // (RGPD — minimización, feature 044).
+        $schedule->command('compras-documentos:purgar')->daily();
+
+        // Retención de las conversaciones del asistente IA sin actividad (RGPD — minimización,
+        // feature 045). Hasta la 045 la conversación era efímera y no había nada que purgar.
+        $schedule->command('asistente:purgar')->daily();
+
         // Reintento automático de envíos Verifactu en error, con tope de intentos (research R6,
         // feature 032). El registro local ya está sellado; esto solo reintenta la remisión.
         $schedule->command('verifactu:reintentar')->everyFiveMinutes();

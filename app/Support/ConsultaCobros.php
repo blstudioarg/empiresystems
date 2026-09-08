@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Enums\TipoFactura;
+use App\Models\Factura;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 
@@ -107,7 +108,7 @@ class ConsultaCobros
         $diasRetrasoExpr = $e['diasRetraso'];
         $estadoCobroExpr = $e['estadoCobro'];
 
-        $query = \App\Models\Factura::query()
+        $query = Factura::query()
             ->from('facturas')
             ->leftJoin('facturas as r', function ($join) {
                 $join->on('r.factura_rectificada_id', '=', 'facturas.id')

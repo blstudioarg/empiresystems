@@ -37,6 +37,22 @@ class RegistroDefiniciones
         $this->definiciones[$definicion->modulo()] = $definicion;
     }
 
+    /**
+     * Módulos que admiten importación, resueltos por el contrato y no por una lista escrita a mano
+     * (FR-010): si una definición no implementa `DefinicionImportable`, no aparece aquí y por tanto
+     * no se puede importar, pase lo que pase por prompt. Añadir un módulo importable no obliga a
+     * tocar esta clase.
+     *
+     * @return array<string, DefinicionImportable>
+     */
+    public function importables(): array
+    {
+        return array_filter(
+            $this->definiciones,
+            static fn (DefinicionExcel $d): bool => $d instanceof DefinicionImportable,
+        );
+    }
+
     public function resolver(string $modulo): DefinicionExcel
     {
         return $this->definiciones[$modulo] ?? throw new NotFoundHttpException("Módulo desconocido: {$modulo}.");

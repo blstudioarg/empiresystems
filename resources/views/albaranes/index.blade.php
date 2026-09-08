@@ -29,7 +29,7 @@
 									<h4 class="mb-0" data-metric="total">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="box" size="45" trigger="hover" target=".card" />
+									<x-lordicon icon="box" size="38" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>
@@ -44,7 +44,7 @@
 									<h4 class="mb-0" data-metric="entregados">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="wired-outline-56-document-hover-swipe" size="45" trigger="hover" target=".card" />
+									<x-lordicon icon="wired-outline-56-document-hover-swipe" size="38" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>
@@ -59,7 +59,7 @@
 									<h4 class="mb-0" data-metric="pendientes_facturar">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="euro" size="45" trigger="hover" target=".card" />
+									<x-lordicon icon="euro" size="38" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>

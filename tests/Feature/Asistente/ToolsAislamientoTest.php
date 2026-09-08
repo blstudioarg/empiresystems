@@ -3,9 +3,9 @@
 namespace Tests\Feature\Asistente;
 
 use App\Ia\CatalogoTools;
+use App\Ia\Tools\BuscarClientes;
 use App\Models\Cliente;
 use App\Models\Tenant;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
@@ -33,7 +33,7 @@ class ToolsAislamientoTest extends TestCase
         Cliente::factory()->for($tenantB)->create(['nombre' => 'Cliente-de-B', 'nif' => 'B22222222']);
 
         $this->activar($tenantA);
-        $resultado = (new \App\Ia\Tools\BuscarClientes)->ejecutar(['texto' => 'Cliente']);
+        $resultado = (new BuscarClientes)->ejecutar(['texto' => 'Cliente']);
 
         $nombres = array_column($resultado['clientes'], 'nombre');
         $this->assertContains('Cliente-de-A', $nombres);

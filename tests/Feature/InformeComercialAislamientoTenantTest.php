@@ -9,10 +9,12 @@ use App\Models\Presupuesto;
 use App\Models\Tenant;
 use App\Services\InformeComercial;
 use App\Support\AlcanceInformeComercial;
+use App\Support\CatalogoPermisos;
 use App\Support\FiltrosInforme;
 use App\Support\RangoFechas;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\Concerns\GestionaRolesDeTenant;
 use Tests\TestCase;
 
@@ -23,10 +25,10 @@ class InformeComercialAislamientoTenantTest extends TestCase
     private function alcanceTenant(Tenant $tenant): AlcanceInformeComercial
     {
         $this->sembrarPermisos();
-        $rol = $this->crearRol($tenant, 'Administrador', \App\Support\CatalogoPermisos::claves());
+        $rol = $this->crearRol($tenant, 'Administrador', CatalogoPermisos::claves());
         $usuario = $this->usuarioConRol($tenant, $rol);
 
-        app(\Spatie\Permission\PermissionRegistrar::class)->setPermissionsTeamId($tenant->getTenantKey());
+        app(PermissionRegistrar::class)->setPermissionsTeamId($tenant->getTenantKey());
 
         return AlcanceInformeComercial::paraUsuario($usuario);
     }
@@ -54,11 +56,11 @@ class InformeComercialAislamientoTenantTest extends TestCase
         tenancy()->end();
 
         tenancy()->initialize($tenantA);
-        $datosA = (new InformeComercial())->generar($rango, FiltrosInforme::desdePeticion([]), $alcanceA);
+        $datosA = (new InformeComercial)->generar($rango, FiltrosInforme::desdePeticion([]), $alcanceA);
         tenancy()->end();
 
         tenancy()->initialize($tenantB);
-        $datosB = (new InformeComercial())->generar($rango, FiltrosInforme::desdePeticion([]), $alcanceB);
+        $datosB = (new InformeComercial)->generar($rango, FiltrosInforme::desdePeticion([]), $alcanceB);
         tenancy()->end();
 
         $this->assertSame(5, $datosA['indicadores']['leads_captados']);

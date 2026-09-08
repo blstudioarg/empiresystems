@@ -12,6 +12,7 @@ use App\Models\HorarioTramo;
 use App\Models\MiembroEquipo;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Support\ConfigTenant;
 use App\Support\Cumplimiento\ServicioCumplimiento;
 use App\Support\RangoFechas;
 use Carbon\Carbon;
@@ -483,7 +484,7 @@ class CalendarioEventosTest extends TestCase
         // El endpoint interpreta `ocurrido_at` en la zona del tenant, así que se envía la
         // representación local de ese instante (mismo contrato que el modal de /jornada).
         $ocurridoLocal = Carbon::parse('2026-08-03 09:00', 'UTC')
-            ->setTimezone(\App\Support\ConfigTenant::zonaHoraria($tenant->id))
+            ->setTimezone(ConfigTenant::zonaHoraria($tenant->id))
             ->format('Y-m-d\TH:i');
         $this->post('/fichajes/'.$entrada->id.'/corregir', [
             'tipo' => 'entrada',

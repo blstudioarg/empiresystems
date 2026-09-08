@@ -42,7 +42,7 @@ class InformeComercialExport implements WithMultipleSheets
     public function __construct(private readonly array $datos) {}
 
     /**
-     * @return list<\App\Excel\Informes\HojaInformeComercial>
+     * @return list<HojaInformeComercial>
      */
     public function sheets(): array
     {

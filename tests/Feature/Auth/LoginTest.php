@@ -5,6 +5,7 @@ namespace Tests\Feature\Auth;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Tests\TestCase;
 
@@ -219,7 +220,7 @@ class LoginTest extends TestCase
         ]);
 
         $response->assertRedirect('/');
-        $response->assertCookie(\Illuminate\Support\Facades\Auth::getRecallerName());
+        $response->assertCookie(Auth::getRecallerName());
     }
 
     public function test_login_sin_remember_no_genera_cookie_recordable(): void
@@ -237,6 +238,6 @@ class LoginTest extends TestCase
         ]);
 
         $response->assertRedirect('/');
-        $response->assertCookieMissing(\Illuminate\Support\Facades\Auth::getRecallerName());
+        $response->assertCookieMissing(Auth::getRecallerName());
     }
 }

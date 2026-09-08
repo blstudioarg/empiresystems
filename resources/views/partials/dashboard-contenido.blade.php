@@ -17,7 +17,7 @@
 						@endif
 					</div>
 					<div>
-						<x-lordicon icon="invoice" size="45" trigger="hover" target=".card" />
+						<x-lordicon icon="invoice" size="38" trigger="hover" target=".card" />
 					</div>
 				</div>
 			</div>
@@ -40,7 +40,7 @@
 						@endif
 					</div>
 					<div>
-						<x-lordicon icon="euro" size="45" trigger="hover" target=".card" />
+						<x-lordicon icon="euro" size="38" trigger="hover" target=".card" />
 					</div>
 				</div>
 			</div>
@@ -56,7 +56,7 @@
 						<small class="text-muted">Compras confirmadas del periodo</small>
 					</div>
 					<div>
-						<x-lordicon icon="wired-outline-153-bar-chart" size="45" trigger="hover" target=".card" />
+						<x-lordicon icon="wired-outline-153-bar-chart" size="38" trigger="hover" target=".card" />
 					</div>
 				</div>
 			</div>
@@ -74,7 +74,7 @@
 						<small class="text-muted">Facturado − gastos</small>
 					</div>
 					<div>
-						<x-lordicon icon="ticket" size="45" trigger="hover" target=".card" />
+						<x-lordicon icon="ticket" size="38" trigger="hover" target=".card" />
 					</div>
 				</div>
 			</div>

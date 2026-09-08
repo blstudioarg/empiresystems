@@ -9,6 +9,7 @@ use App\Http\Requests\StoreArticuloRequest;
 use App\Http\Requests\UpdateArticuloRequest;
 use App\Models\Articulo;
 use App\Services\RegistradorActividad;
+use App\Support\ConfigPos;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -63,7 +64,7 @@ class ArticuloController extends Controller
         return view('articulos.index', [
             // Sub-listado de opciones de artículo (feature 038, US3): solo se ofrece si el
             // tenant tiene la capacidad activa, para no exponer un módulo apagado.
-            'opcionesActivas' => \App\Support\ConfigPos::opcionesActivo((int) tenant()->getTenantKey()),
+            'opcionesActivas' => ConfigPos::opcionesActivo((int) tenant()->getTenantKey()),
         ]);
     }
 

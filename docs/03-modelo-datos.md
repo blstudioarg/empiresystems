@@ -533,8 +533,8 @@ Registra la factura recibida del proveedor. Al confirmarla, genera **entradas** 
 | total | decimal(12,2) | |
 | notas | text | |
 | **Recepción electrónica (factura electrónica B2B — `02` §2):** | | |
-| origen | enum | `manual` (default) / `facturae` (importada de un XML recibido) / `otro` |
-| formato_recepcion | varchar(20), nullable | `facturae`, `ubl`, `cii`… cuando `origen != manual` |
+| origen | enum | `manual` (default) / `facturae` (importada de un XML recibido) / `documento` (PDF o imagen interpretado por IA, feature 044) / `otro` |
+| formato_recepcion | varchar(20), nullable | `facturae`, `ubl`, `cii`… cuando `origen != manual`; `pdf` o `imagen` cuando `origen = documento` |
 | archivo_recibido_path | varchar, nullable | ruta del XML/documento electrónico recibido del proveedor (se conserva) |
 | estado_b2b | enum, nullable | ciclo comercial del lado receptor: `recibida`, `aceptada`, `rechazada`, `pagada` |
 | estado_b2b_fecha | datetime, nullable | fecha del último cambio de `estado_b2b` (reportable en 4 días hábiles) |
@@ -547,6 +547,16 @@ Registra la factura recibida del proveedor. Al confirmarla, genera **entradas** 
 > guardando el archivo en `archivo_recibido_path`. El `estado_b2b` permite **reportar** al emisor si
 > la factura fue aceptada/rechazada/pagada dentro del plazo legal. La carga **manual** existente sigue
 > igual (`origen=manual`); la recepción electrónica es un canal adicional, no la reemplaza.
+
+> **Compras desde documentos interpretados por IA (feature 044):** un PDF o una foto de una factura
+> de proveedor se manda al modelo, que devuelve una lectura; el usuario la revisa y al confirmar se
+> crea la compra con `origen=documento`, `formato_recepcion` = `pdf`/`imagen` y el documento original
+> guardado en `archivo_recibido_path` (disco `documentos`, misma convención que Facturae).
+> `estado_b2b` queda **null**: el ciclo B2B es propio de Facturae, no de un escaneo.
+> **No hubo migración**: `origen` ya era `string(20)` y las otras dos columnas ya existían de la
+> feature 022. Mientras la propuesta no se confirma, el documento vive en un temporal segmentado por
+> tenant (`storage/app/private/compras-documentos/{tenant_id}/`) que se purga a las 24 h con
+> `compras-documentos:purgar` (RGPD — minimización, Principio II).
 
 ### `compra_lineas` — (implementado)
 Detalle de la compra. Igual que las líneas de factura, con `articulo_id` opcional.
@@ -640,6 +650,7 @@ Almacén clave-valor por tenant para parámetros ajustables sin tocar código (t
 | `articulo.precio_incluye_iva` | facturacion | `false` (precios sin IVA) / `true` (IVA incluido, retail) |
 | `verifactu.activo` | verifactu | `false` |
 | `verifactu.entorno` | verifactu | `pruebas` / `produccion` |
+| `asistente.retencion_dias` | ia | `90` — días sin actividad antes de purgar una conversación del asistente (comando `asistente:purgar`, RGPD, feature 045) |
 | `logs.retencion_dias` | seguridad | `730` (2 años, referencia RD 1720/2007); plazo de retención del registro de accesos antes de purgar |
 | `email.smtp_host` | email | `smtp.hostinger.com` (default en `EmailTenant::DEFAULT_SMTP_HOST`, `''`) |
 | `email.smtp_port` | email | `465` (default en `EmailTenant::DEFAULT_SMTP_PORT`) |
@@ -1173,16 +1184,56 @@ stock ya se movió al confirmar cada albarán como entregado.
 - **Numeración:** asignar `numero` dentro de una transacción con bloqueo (evitar huecos/duplicados en concurrencia).
 - **Verifactu:** el cálculo de huella y encadenamiento se hace al **emitir** (pasar de borrador a emitida), en un servicio dedicado; a partir de ahí la factura es inmutable.
 
-## Asistente IA (feature 030) — sin tablas nuevas
+## Asistente IA (features 030 y 045)
 
 - **`configuraciones`, grupo `ia`**: fila `ia.api_key` con la API key de OpenAI del tenant,
   cifrada con `Crypt::encryptString` (patrón `email.smtp_password`). Acceso solo vía
   `App\Support\IaTenant`; a la vista se entrega enmascarada (`sk-ant-…XXXX`). Guardar/quitar la clave
   se registra en `logs_actividad`.
-- **Conversación del asistente**: estado efímero en la sesión de Laravel (clave
-  `asistente.conversacion`), no persistido en BD. Formato Chat Completions de OpenAI (roles user/assistant/tool, con
-  tool_calls) + una acción pendiente opcional (máx. 1). Se destruye con la sesión (RGPD:
-  efímero por diseño, sin retención adicional).
+- **Conversación del asistente**: **persistida desde la feature 045**. Hasta entonces era estado
+  efímero en la sesión, "efímero por diseño, sin retención adicional"; esa decisión se invirtió a
+  propósito para poder ofrecer historial. Dos tablas:
+  - **`asistente_conversaciones`**: `tenant_id`, `user_id` (el hilo es privado de cada persona, no
+    del tenant), `titulo` (primer mensaje recortado a 60), `resumen` + `resumido_hasta_mensaje_id`
+    (parte ya compactada), `ultima_actividad_en`. Sin `softDeletes`: lo que se borra, se borra.
+  - **`asistente_mensajes`**: `tenant_id`, `conversacion_id`, `rol` (user/assistant/tool),
+    `contenido` (nullable: un `assistant` que solo pide herramientas no lleva texto) y `metadatos`
+    JSON con `tool_calls` o `tool_call_id`. Se guarda en el formato que consume Chat Completions
+    para que reconstruir el contexto sea un `map` sobre filas.
+  - En sesión solo quedan el id de la conversación activa y la acción pendiente (máx. 1), que
+    sigue siendo efímera y se descarta al cambiar de hilo.
+  - **Compactación**: al superar `ia.max_mensajes` (30) los turnos viejos se sustituyen por un
+    resumen pedido al proveedor, dejando los 10 últimos literales. El corte nunca parte un par
+    `assistant(tool_calls)`/`tool`. Si el resumen falla se recurre al recorte simple: el turno
+    responde igual.
+  - **Retención (RGPD — minimización, Principio II):** `configuraciones` → `asistente.retencion_dias`
+    (default **90 días** desde la última actividad), leído por `App\Support\RetencionAsistenteTenant`
+    y aplicado por el comando `asistente:purgar` (diario). Se purga por `ultima_actividad_en` y no
+    por `created_at`: un hilo empezado hace un año pero usado ayer está vivo.
+- **Material de importación aportado al asistente (feature 046): sin tablas nuevas.** El asistente
+  puede recibir un fichero o un documento para importar clientes, artículos o proveedores. Una
+  importación en curso es **efímera por diseño** —vive mientras dura la conversación y desaparece al
+  confirmarse, descartarse o caducar—, así que persistirla obligaría a un plazo de retención y una
+  purga propios para un dato que no aporta nada una vez terminado el proceso.
+  - Vive en el **almacén de ficheros de importación de la feature 031**
+    (`storage/app/private/importaciones/`), y con él hereda la purga `importaciones:purgar` que ya
+    corre a diario a las 24 h. El borrador es un `{token}.borrador.json` junto al material, así que
+    la purga se lo lleva sin saber que existe.
+  - Contenido del borrador (`App\Excel\BorradorImportacion`): `token`, `tenant_id`, `user_id` —el
+    material es de **la persona**, no de la empresa: el scope de tenant no separa a dos compañeros—,
+    `conversacion_id` (cambiar de hilo lo deja fuera de juego, igual que una propuesta pendiente),
+    `modulo`, `origen` (`hoja` o `documento`), `filas` de trabajo ya normalizadas a las claves
+    internas de `ColumnaExcel`, `descartadas`, `correcciones`, `analisis_origen` (lo que no se pudo
+    leer de un documento) y `pendientes` (material subido y aún no leído, que es lo que permite
+    acumular varios documentos en la misma importación).
+  - **`estado` y `motivo` de una fila no se guardan**: se recalculan en cada análisis. Guardarlos
+    sería arriesgarse a mostrar un veredicto viejo.
+  - **Qué NO se guarda**: el documento original más allá de lo necesario —una vez interpretado y con
+    las filas en el borrador se borra—, el resultado crudo de la interpretación, y nada del material
+    en los mensajes de la conversación.
+  - Es dato personal de terceros (Principio II, minimización): 5 MB por fichero, 2.000 filas por
+    importación —ambos de la 031— y un tope de páginas por documento interpretado en
+    `config/importacion.php` (`material.max_paginas`, 20 por defecto).
 
 ## POS con mesas y opciones — módulo de hostelería (feature 038)
 

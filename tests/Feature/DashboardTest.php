@@ -90,11 +90,11 @@ class DashboardTest extends TestCase
         tenancy()->end();
 
         tenancy()->initialize($tenantA);
-        $resumenA = (new DashboardEstadisticas())->resumen(RangoFechas::mesEnCurso());
+        $resumenA = (new DashboardEstadisticas)->resumen(RangoFechas::mesEnCurso());
         tenancy()->end();
 
         tenancy()->initialize($tenantB);
-        $resumenB = (new DashboardEstadisticas())->resumen(RangoFechas::mesEnCurso());
+        $resumenB = (new DashboardEstadisticas)->resumen(RangoFechas::mesEnCurso());
         tenancy()->end();
 
         $this->assertEquals(500.0, $resumenA['kpis']['facturado']['valor']);
@@ -142,7 +142,7 @@ class DashboardTest extends TestCase
             'total' => 777,
         ]);
 
-        $resumen = (new DashboardEstadisticas())->resumen($rango);
+        $resumen = (new DashboardEstadisticas)->resumen($rango);
 
         $this->assertEquals(121.0, $resumen['kpis']['facturado']['valor']);
         $this->assertEquals(21.0, $resumen['kpis']['facturado']['variacion_pct']);
@@ -161,7 +161,7 @@ class DashboardTest extends TestCase
         $tenant = Tenant::factory()->create();
         tenancy()->initialize($tenant);
 
-        $resumen = (new DashboardEstadisticas())->resumen(RangoFechas::mesEnCurso());
+        $resumen = (new DashboardEstadisticas)->resumen(RangoFechas::mesEnCurso());
 
         $this->assertEquals(0.0, $resumen['kpis']['facturado']['valor']);
         $this->assertNull($resumen['kpis']['facturado']['variacion_pct']);
@@ -189,7 +189,7 @@ class DashboardTest extends TestCase
             'total' => 300,
         ]);
 
-        $resumen = (new DashboardEstadisticas())->resumen($rango);
+        $resumen = (new DashboardEstadisticas)->resumen($rango);
 
         $this->assertSame('dia', $rango->granularidad());
         $this->assertCount(5, $resumen['serie_facturacion']);
@@ -214,7 +214,7 @@ class DashboardTest extends TestCase
             'total' => 300,
         ]);
 
-        $resumen = (new DashboardEstadisticas())->resumen($rango);
+        $resumen = (new DashboardEstadisticas)->resumen($rango);
 
         $this->assertSame('mes', $rango->granularidad());
         // Un bucket por cada mes que toca el rango (~4 meses), no un punto por día.
@@ -245,7 +245,7 @@ class DashboardTest extends TestCase
             'importe' => 80,
         ]);
 
-        $resumen = (new DashboardEstadisticas())->resumen($rango);
+        $resumen = (new DashboardEstadisticas)->resumen($rango);
 
         $ultimoBucket = collect($resumen['comparativo'])->last();
         $this->assertEquals(200.0, $ultimoBucket['facturado']);
@@ -279,7 +279,7 @@ class DashboardTest extends TestCase
             'total' => 50,
         ]);
 
-        $resumen = (new DashboardEstadisticas())->resumen($rango);
+        $resumen = (new DashboardEstadisticas)->resumen($rango);
 
         $this->assertEquals(100.0, $resumen['kpis']['facturado']['valor']);
         $this->assertEquals(100.0, $resumen['kpis']['facturado']['variacion_pct']);
@@ -303,7 +303,7 @@ class DashboardTest extends TestCase
             ]);
         }
 
-        $resumen = (new DashboardEstadisticas())->resumen(RangoFechas::mesEnCurso());
+        $resumen = (new DashboardEstadisticas)->resumen(RangoFechas::mesEnCurso());
 
         $conteos = collect($resumen['distribucion_estados'])->pluck('cantidad', 'estado');
 
@@ -330,7 +330,7 @@ class DashboardTest extends TestCase
             ]);
         }
 
-        $resumen = (new DashboardEstadisticas())->resumen(RangoFechas::mesEnCurso());
+        $resumen = (new DashboardEstadisticas)->resumen(RangoFechas::mesEnCurso());
 
         $this->assertCount(5, $resumen['top_clientes']);
         $this->assertEquals('Cliente 6', $resumen['top_clientes'][0]['nombre']);
@@ -352,7 +352,7 @@ class DashboardTest extends TestCase
             'stock_minimo' => 5,
         ]);
 
-        $resumen = (new DashboardEstadisticas())->resumen(RangoFechas::mesEnCurso());
+        $resumen = (new DashboardEstadisticas)->resumen(RangoFechas::mesEnCurso());
 
         $this->assertTrue($resumen['alertas_stock']['gestiona_stock']);
         $this->assertCount(1, $resumen['alertas_stock']['items']);
@@ -368,7 +368,7 @@ class DashboardTest extends TestCase
 
         Articulo::factory()->create(['tenant_id' => $tenant->id, 'gestion_stock' => false]);
 
-        $resumen = (new DashboardEstadisticas())->resumen(RangoFechas::mesEnCurso());
+        $resumen = (new DashboardEstadisticas)->resumen(RangoFechas::mesEnCurso());
 
         $this->assertFalse($resumen['alertas_stock']['gestiona_stock']);
         $this->assertEmpty($resumen['alertas_stock']['items']);
@@ -392,7 +392,7 @@ class DashboardTest extends TestCase
         }
 
         $rango = RangoFechas::personalizado(now()->copy()->subDays(30), now());
-        $resumen = (new DashboardEstadisticas())->resumen($rango);
+        $resumen = (new DashboardEstadisticas)->resumen($rango);
 
         $this->assertCount(8, $resumen['facturas_recientes']);
         $this->assertEquals(now()->toDateString(), $resumen['facturas_recientes'][0]['fecha_expedicion']);
@@ -435,7 +435,7 @@ class DashboardTest extends TestCase
         $original = $this->crearOriginalRectificada($tenant, $cliente, 100, now()->toDateString());
         $this->crearRectificativa($tenant, $cliente, $original, 'sustitucion', 75);
 
-        $resumen = (new DashboardEstadisticas())->resumen(RangoFechas::mesEnCurso());
+        $resumen = (new DashboardEstadisticas)->resumen(RangoFechas::mesEnCurso());
 
         $this->assertEquals(75.0, $resumen['kpis']['facturado']['valor']);
 
@@ -451,7 +451,7 @@ class DashboardTest extends TestCase
         $original = $this->crearOriginalRectificada($tenant, $cliente, 100, now()->toDateString());
         $this->crearRectificativa($tenant, $cliente, $original, 'diferencias', -25);
 
-        $resumen = (new DashboardEstadisticas())->resumen(RangoFechas::mesEnCurso());
+        $resumen = (new DashboardEstadisticas)->resumen(RangoFechas::mesEnCurso());
 
         $this->assertEquals(75.0, $resumen['kpis']['facturado']['valor']);
 
@@ -489,7 +489,7 @@ class DashboardTest extends TestCase
             'total' => 500,
         ]);
 
-        $resumen = (new DashboardEstadisticas())->resumen(RangoFechas::mesEnCurso());
+        $resumen = (new DashboardEstadisticas)->resumen(RangoFechas::mesEnCurso());
 
         $this->assertEquals(0.0, $resumen['kpis']['facturado']['valor']);
 
@@ -506,7 +506,7 @@ class DashboardTest extends TestCase
         $original->update(['cliente_razon_social' => 'Cliente Neto']);
         $this->crearRectificativa($tenant, $cliente, $original, 'sustitucion', 75);
 
-        $resumen = (new DashboardEstadisticas())->resumen(RangoFechas::mesEnCurso());
+        $resumen = (new DashboardEstadisticas)->resumen(RangoFechas::mesEnCurso());
 
         $this->assertCount(1, $resumen['top_clientes']);
         $this->assertEquals(75.0, $resumen['top_clientes'][0]['total_facturado']);
@@ -536,11 +536,11 @@ class DashboardTest extends TestCase
         tenancy()->end();
 
         tenancy()->initialize($tenantA);
-        $resumenA = (new DashboardEstadisticas())->resumen(RangoFechas::mesEnCurso());
+        $resumenA = (new DashboardEstadisticas)->resumen(RangoFechas::mesEnCurso());
         tenancy()->end();
 
         tenancy()->initialize($tenantB);
-        $resumenB = (new DashboardEstadisticas())->resumen(RangoFechas::mesEnCurso());
+        $resumenB = (new DashboardEstadisticas)->resumen(RangoFechas::mesEnCurso());
         tenancy()->end();
 
         $this->assertEquals(75.0, $resumenA['kpis']['facturado']['valor']);
@@ -761,7 +761,7 @@ class DashboardTest extends TestCase
             'total' => 999,
         ]);
 
-        $resumen = (new DashboardEstadisticas())->resumen($rango);
+        $resumen = (new DashboardEstadisticas)->resumen($rango);
 
         $this->assertEquals(200.0, $resumen['kpis']['gastos']['valor']);
         $this->assertEquals(300.0, $resumen['kpis']['resultado']['valor']);
@@ -791,7 +791,7 @@ class DashboardTest extends TestCase
             'cuota_impuesto_total' => 42,
         ]);
 
-        $resumen = (new DashboardEstadisticas())->resumen($rango);
+        $resumen = (new DashboardEstadisticas)->resumen($rango);
 
         $this->assertEquals(21.0, $resumen['impuestos']['repercutido']);
         $this->assertEquals(42.0, $resumen['impuestos']['soportado']);
@@ -822,7 +822,7 @@ class DashboardTest extends TestCase
             'total' => 200,
         ]);
 
-        $resumen = (new DashboardEstadisticas())->resumen($rango);
+        $resumen = (new DashboardEstadisticas)->resumen($rango);
 
         $this->assertEquals(60.0, $resumen['kpis']['ventas_pos']['valor']);
         $this->assertEquals(200.0, $resumen['kpis']['facturado']['valor']);
@@ -860,7 +860,7 @@ class DashboardTest extends TestCase
             'total' => 60,
         ]);
 
-        $resumen = (new DashboardEstadisticas())->resumen($rango);
+        $resumen = (new DashboardEstadisticas)->resumen($rango);
 
         // Misma lógica que FacturaController::index (totales.importe_total): no simplificadas,
         // no rectificativas, estados facturados, totalCobrable().

@@ -28,7 +28,7 @@
 									<h4 class="mb-0" data-metric="articulos_gestionados">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="box" size="45" trigger="hover" target=".card" />
+									<x-lordicon icon="box" size="38" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>
@@ -43,7 +43,7 @@
 									<h4 class="mb-0" data-metric="movimientos">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="wired-outline-153-bar-chart" size="45" trigger="hover" target=".card" />
+									<x-lordicon icon="wired-outline-153-bar-chart" size="38" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>
@@ -58,7 +58,7 @@
 									<h4 class="mb-0" data-metric="alertas">0</h4>
 								</div>
 								<div>
-									<x-lordicon icon="wired-outline-50-minus-circle" size="45" trigger="hover" target=".card" />
+									<x-lordicon icon="wired-outline-50-minus-circle" size="38" trigger="hover" target=".card" />
 								</div>
 							</div>
 						</div>

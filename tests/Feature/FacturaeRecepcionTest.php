@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
 class FacturaeRecepcionTest extends TestCase
@@ -22,7 +23,7 @@ class FacturaeRecepcionTest extends TestCase
         Storage::fake('documentos');
     }
 
-    private function subirXml(string $nombre): \Illuminate\Testing\TestResponse
+    private function subirXml(string $nombre): TestResponse
     {
         $archivo = UploadedFile::fake()->createWithContent(
             $nombre,

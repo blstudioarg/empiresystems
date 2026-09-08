@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Fichaje;
 use App\Models\MiembroEquipo;
 use App\Models\Tenant;
 use App\Models\User;
@@ -39,7 +40,7 @@ class FichajeRegistroTest extends TestCase
         $response->assertRedirect('/fichajes');
         $this->assertDatabaseCount('fichajes', 1);
 
-        $fichaje = \App\Models\Fichaje::first();
+        $fichaje = Fichaje::first();
         // La columna es DATETIME (sin microsegundos): tolerancia de 1s para el truncado de
         // fracción de segundo entre $antes y el guardado real.
         $this->assertTrue($fichaje->ocurrido_at->between($antes->copy()->subSecond(), now()->addSecond()));
@@ -59,7 +60,7 @@ class FichajeRegistroTest extends TestCase
 
         $response->assertRedirect('/fichajes');
         $this->assertDatabaseCount('fichajes', 2);
-        $this->assertSame('salida', \App\Models\Fichaje::latest('id')->first()->tipo->value);
+        $this->assertSame('salida', Fichaje::latest('id')->first()->tipo->value);
     }
 
     public function test_no_existe_ruta_de_edicion_ni_borrado_de_fichajes(): void
@@ -79,7 +80,7 @@ class FichajeRegistroTest extends TestCase
         $response = $this->post('/fichajes', ['tipo' => 'entrada']);
 
         $response->assertRedirect('/fichajes');
-        $fichaje = \App\Models\Fichaje::first();
+        $fichaje = Fichaje::first();
         $this->assertSame('sin_ubicacion', $fichaje->resultado_ubicacion->value);
         $this->assertNull($fichaje->distancia_metros);
     }

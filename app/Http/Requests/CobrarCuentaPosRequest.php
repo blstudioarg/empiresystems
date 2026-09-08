@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Services\CobradorCuenta;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -10,7 +11,7 @@ use Illuminate\Validation\Rule;
  *
  * Un solo endpoint para los dos casos porque el parcial es un total con menos unidades: `lineas`
  * ausente o vacío significa "todo lo pendiente". La pertenencia de cada línea a la cuenta y el
- * tope de unidades pendientes NO se validan aquí sino en {@see \App\Services\CobradorCuenta},
+ * tope de unidades pendientes NO se validan aquí sino en {@see CobradorCuenta},
  * que es quien tiene la cuenta delante — validarlo en dos sitios sería duplicar la regla.
  */
 class CobrarCuentaPosRequest extends FormRequest

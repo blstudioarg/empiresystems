@@ -20,6 +20,43 @@ input, dentro de la misma columna** — no en una columna separada al lado. Refe
 </div>
 ```
 
+## Cambiar la foto de perfil: componente `<x-avatar-editable>`
+
+**Excepción deliberada a la sección anterior.** La foto de perfil no usa el patrón
+`preview + <input type="file"> + botón Guardar`: va con el avatar y un **botón de cámara
+superpuesto**, y elegir el archivo **lo guarda al momento** (una sola acción, sin submit). Es el
+patrón que ya tenía el sidebar y ahora también "Mi perfil", vía
+`resources/views/components/avatar-editable.blade.php`:
+
+```blade
+<x-avatar-editable />                                        {{-- sidebar: 96px por CSS --}}
+<x-avatar-editable img-class="rounded-4" class="profile-avatar-editor">
+	{{-- el slot va encima del avatar: p. ej. el punto de estado del usuario --}}
+</x-avatar-editable>
+```
+
+Detalles que importan al reutilizarlo:
+
+- **El tamaño va en el contenedor, no en la `<img>`**, mediante `--avatar-editable-size`: el botón
+  de cámara se posiciona contra el contenedor y escala a partir de esa variable. Dimensionar solo
+  la imagen (lo que hacía `.profile-overview .profile-avatar` de `style.css`) deja el botón
+  descolocado.
+- **La prop `size` se emite como estilo inline y gana a cualquier hoja.** Cuando el tamaño depende
+  del breakpoint hay que omitirla y fijar la variable por CSS (ver `.profile-avatar-editor`); si se
+  pasa `size`, los media queries no se aplican nunca. Sin `size`, el CSS usa 96px.
+- **La subida es un único handler delegado** (`public/js/avatar-upload.js`, cargado en el layout),
+  no un script por vista: al terminar refresca **todas** las imágenes del avatar de la página
+  (`[data-avatar-preview]`, la del header y la del listado de miembros), que si no quedan
+  desincronizadas entre sí.
+- **Mientras la foto sube hay velo + spinner sobre el avatar** (clase `is-uploading`, puesta por el
+  mismo JS en todos los `.avatar-editable` de la página) y los inputs quedan deshabilitados. Es la
+  misma regla de "ninguna petición en vuelo sin feedback" que la sección "Estado de carga en
+  botones", resuelta aparte porque acá el disparador es un `<input type="file">` y no un botón, así
+  que `withButtonLoading` no aplica.
+- **La forma del avatar va como `border-radius` del contenedor**, no en la `<img>`: la imagen la
+  hereda y el velo de carga también. Si se pone solo en la imagen (p. ej. con `rounded-4`), el velo
+  se pinta cuadrado sobre una foto redondeada.
+
 ## Input de contraseña: ojo mostrar/ocultar (obligatorio)
 
 **Todo `<input type="password">` nuevo DEBE llevar el ojo mostrar/ocultar.** Sin excepción,
@@ -73,6 +110,31 @@ apariencia del tenant (`resources/views/partials/apariencia-tenant.blade.php`, v
 `--topbar-bg`) gane, hay que doblar la clase (`.header.header { ... }`) para igualar o superar esa
 especificidad. Si se añade un override de color sobre cualquier elemento que el template también
 tematiza vía `[data-algo="..."]`, revisar primero si hace falta el mismo truco.
+
+## Iconos de la barra superior
+
+Los iconos del `header-right` (`partials/header.blade.php`) van **siempre**:
+
+- dentro de un `<li class="nav-item dropdown notification_dropdown">`, aunque el item no abra un
+  dropdown (es el caso del asistente IA): esa clase es la que le da la caja de 42x42 y el hover.
+  Un `nav-item` pelado queda de otro tamaño y desalineado respecto a sus vecinos;
+- con **`stroke="currentColor"` / `fill="currentColor"`**, nunca `black` ni un hex: el color lo
+  hereda del header, que lo toma de `--topbar-contraste` —calculado por luminancia en
+  `AparienciaTenant::contraste()`, igual que `--primary-contraste`—, así el icono se lee tanto con
+  un topbar oscuro como con uno claro. Un `fill="black"` fijo desaparece en cuanto el tenant elige
+  una barra oscura;
+- **a 22px**, dejando que el CSS los dimensione (`app-overrides.css`, bloque "Iconos de la barra
+  superior"), no con anchos sueltos por icono en el markup.
+
+El centrado lo da flex en ese bloque, no el `line-height: 25px` + `text-align: center` de
+`style.css`: un `<svg>` no se centra vertical con line-height, y ese era el motivo de que los
+iconos quedaran a distinta altura entre sí.
+
+**Enlaces del desplegable de usuario**: solo entran los que llevan a una pantalla real de la app.
+No dejar los del banco NexaDash apuntando a `javascript:void(0);` o a rutas de demo que no existen
+(`url('email-inbox')`) — un menú con opciones muertas hace dudar de todo el resto. Los que
+dependen de un permiso van envueltos en el `@can` del mismo permiso que protege su ruta, para no
+ofrecer un enlace que solo puede terminar en 403.
 
 ## Padding del content-body vs padding interno de las cards
 
@@ -154,6 +216,14 @@ fila de abajo → ~2rem de separación en vez de 1rem, doble espacio vertical en
 Corregido en `_form.blade.php` (clientes y artículos): las columnas de formulario ya no llevan
 `mb-3`, el espaciado vertical lo da el gutter de `.row` solo. Si una vista nueva se ve con
 demasiado aire entre filas, buscar `mb-3`/`mt-3` sueltos en columnas de ese `.row` y sacarlos.
+
+
+**Filas de cards: el gutter vertical va en 0.** El mismo doble espaciado ocurre sin `mb-3` a mano,
+cuando una fila de **cards** wrappea (típico en mobile: las 3 cards de métricas pasan a 2 + 1): la
+card ya trae su `margin-bottom: 1rem` y el gutter le suma otro `margin-top: 1rem` a la columna de
+la segunda línea → 2rem. Corregido globalmente en `app-overrides.css` con
+`.row:has(> * > .card) { --bs-gutter-y: 0; }`: en una fila de cards el espaciado lo pone la card;
+las filas de formularios y demás contenido sin card conservan el gutter vertical de 1rem.
 
 ## Fondo de la app y elevación de las superficies
 
@@ -258,7 +328,7 @@ piensan en un ícono de fuente (`<i class="...">`) chico dentro de una caja, no 
 Se corrigió puntualmente antes agregando un override CSS por vista para anular `border`/
 `background` de `.icon-box` — quedó feo (`!important` peleando contra `!important`) y no arregla
 el `height`/`width` fijo. La solución correcta es no poner esas clases desde el principio: dejar
-el `<div>` contenedor limpio y que el tamaño del ícono lo controle solo `size="45"` del
+el `<div>` contenedor limpio y que el tamaño del ícono lo controle solo `size="38"` del
 `<x-lordicon>` — y el valor de la métrica va en `<h4 class="mb-0">` (no `<h3>`), debajo del
 `<h6 class="mb-1">` del título. Si el valor lleva color condicional (ej. "Resultado" en
 `dashboard-contenido.blade.php`, verde/rojo según el signo) y el `<h4>` queda multilínea por el
@@ -442,6 +512,24 @@ funciones:
   	window.setButtonLoading($(this).find('button[type="submit"]'), true);
   });
   ```
+
+- **`data-loading-form`** — para ese mismo caso de form plano, cuando no hace falta nada más que
+  lo de arriba, **no escribas el handler**: marcá el `<form>` con el atributo y listo
+  (`public/js/form-loading.js`, cargado en los dos layouts, `app` y `guest`). Es lo que usan el
+  login y el registro:
+
+  ```html
+  <form method="POST" action="{{ route('login.attempt') }}" data-loading-form>
+  	<button type="submit" data-loading-text="Ingresando...">Iniciar sesión</button>
+  ```
+
+  El script además restaura el botón en el evento `pageshow` cuando la página vuelve de la
+  **bfcache** (botón "atrás" del navegador): si no, el usuario se encuentra el formulario con el
+  botón deshabilitado y girando para siempre, sin poder reenviarlo.
+
+**El layout `guest` también carga `button-loading.js`**: las pantallas sin sesión (login, registro)
+no son una excepción a esta regla — un login lento sin feedback es justo donde el usuario vuelve a
+hacer clic y manda el formulario dos veces.
 
 **Texto de carga opcional**: si el botón debe cambiar de texto mientras carga (p. ej. "Enviar" →
 "Enviando..."), agregar `data-loading-text="Enviando..."` al `<button>` en el Blade — no hace falta
@@ -884,6 +972,20 @@ Si una acción necesita separarse en dos (ej. "Ver" vs "Editar" en vez de un ún
 "Ver/Editar"), se agregan como dos `<li>` distintos dentro del mismo dropdown — no se sale del
 patrón dropdown para eso.
 
+**Qué items se muestran lo decide el backend, no el JS**: el endpoint del listado emite la `*_url`
+de cada acción solo cuando esa acción es válida para la fila (`edit_url`/`delete_url` solo en
+borrador, `anular_url` solo en confirmada, etc.) y `renderAcciones()` hace `if (row.x_url)`. Así
+las reglas de estado viven en un solo sitio —el mismo controller que las vuelve a aplicar al
+ejecutar la acción— en vez de duplicarse en el navegador. Referencia: `CompraController@index` +
+`compras-datatable.init.js`.
+
+**Cambiar un estado con varios valores posibles** (ej. el estado B2B de una compra) va como **un
+item por valor destino** ("Marcar como aceptada", "Marcar como pagada"…, omitiendo el actual) bajo
+un `<hr class="dropdown-divider">` y un `<li><h6 class="dropdown-header">`, **no** como un `<select>`
+embebido en el dropdown: el select obligaría a un segundo clic para "aplicar" y rompe el patrón de
+items. Y como no es destructivo ni irreversible, se ejecuta directo, sin modal de confirmación
+(ver "Confirmación de acciones irreversibles").
+
 ## Botón "Exportar"/"Importar" en la cabecera de un DataTable (feature 031)
 
 Los listados con exportación a Excel (`clientes`, `articulos`, `facturas`, `albaranes`, `leads`)
@@ -968,6 +1070,25 @@ input`) que replican los mismos valores de tamaño que `.form-control`/`.form-se
 regla global, no hace falta repetirla por vista — cualquier tabla nueva (`<table
 class="display responsive">` + `.DataTable(...)`) hereda el estilo "sm" automáticamente.
 
+## Ajustes globales a todos los DataTables (`js/datatables-init-hooks.js`)
+
+Cuando hay que aplicar algo a **todas** las tablas de la app, no se toca uno por uno los ~24
+`plugins-init/*-datatable.init.js`: va en `public/js/datatables-init-hooks.js`, cargado desde
+`layouts/app.blade.php`.
+
+Ese archivo **no** usa `$.fn.dataTable.defaults`, y no es un detalle estético: el layout carga sus
+scripts antes del `@stack(scripts)` donde cada vista carga `jquery.dataTables.min.js`, así que en
+ese punto `$.fn.dataTable` todavía no existe. Se usan handlers delegados en `document` sobre los
+eventos del plugin (`init.dt`, `draw.dt`), que burbujean hasta ahí y se pueden registrar antes de
+que el plugin exista.
+
+Usar **`draw.dt` además de `init.dt`** siempre que se agreguen clases o markup al wrapper:
+DataTables regenera esos controles en cada redibujado (paginar, buscar, `ajax.reload()`) y lo que
+se haya agregado a mano se pierde.
+
+Hoy contiene: `mb-0` en `.dataTables_paginate` (es el último elemento del wrapper y su
+`margin-bottom` se suma al padding del `card-body`, dejando un hueco extra bajo cada tabla).
+
 ## Nunca imprimir directo un campo `decimal:N` de Eloquent en Blade
 
 Los casts `decimal:4`/`decimal:2` de Eloquent devuelven un **string de punto fijo** ("100.0000",
@@ -1018,6 +1139,15 @@ un `<p>` de intro, un `<ol>` de pasos (los números salen en círculos con el co
 `counter`), `<strong>` para los términos, y un `<p class="ayuda-nota">` final para el error común a
 evitar (se renderiza como callout con ícono de info). Estilos en `app-overrides.css`, bloque
 "Ayuda contextual"; light/dark cubiertos.
+
+**Sidebar comprimido**: el template solo colapsa el `.help-btn` original del banco NexaDash
+(`.help-desk .help-btn span { display: none }`), no este trigger custom. En `app-overrides.css`
+se agregaron las reglas equivalentes para `.ayuda-trigger` en los dos estados comprimidos
+(`[data-sidebar-style="full"] .menu-toggle` y `[data-sidebar-style="mini"]`): se ocultan
+`.ayuda-trigger-text` y `.ayuda-trigger-chevron`, y queda solo el icono centrado; el nombre lo
+aporta el `title`/`aria-label` del botón. `icon-hover` no necesita nada porque `style.css` ya
+oculta el `.help-desk` entero. Si algún día se agrega otro control propio al `help-desk`, hay que
+darle su propia variante comprimida: el template no la cubre.
 
 **Qué tan largo debe ser**: la prueba práctica es que casi no debería hacer falta scrollear (el
 cuerpo tiene `max-height` con scroll como red de seguridad, no como norma). Responder solo tres
@@ -1197,6 +1327,21 @@ reutilizables que introdujo:
 - **Tarjetas de confirmación en el chat**: las escrituras del asistente se muestran como una tarjeta
   con resumen + botones Confirmar/Cancelar que llaman a endpoints AJAX separados; feedback con
   `window.showToast`. La acción se deshabilita al resolverse.
+- **Indicador de progreso durante el turno** (`.asistente-chat__estado`, `asistente-chat.js`): un
+  único elemento efímero al final del hilo que va contando en qué anda el asistente —"Enviando…"
+  al mandar, "Pensando…" en cuanto el endpoint acepta el stream, y otra vez "Pensando…" tras cada
+  tool call mientras el modelo procesa el resultado—. Desaparece al llegar el primer fragmento de
+  texto y en el `finally` del turno, así que **nunca queda en el historial**. Motivo: con tool use
+  pueden pasar varios segundos entre el envío y el primer token, y antes la pantalla no mostraba
+  nada en ese hueco. La traza permanente de qué se consultó sigue siendo el mensaje
+  `.asistente-msg--actividad`, que es otra cosa: el indicador no la duplica (por eso tras una
+  `actividad` el indicador dice "Pensando…" y no el nombre de la tool).
+- **Excepción a `withButtonLoading` en el botón de enviar**: el botón del chat es un icono de 42 px
+  sin texto, y el spinner que antepone `setButtonLoading` le rompe el layout (mismo motivo que la
+  excepción documentada del bottom nav de fichaje). Se deshabilita a mano mientras el turno está en
+  vuelo —con el `:disabled { opacity: .5 }` que ya tenía— y el feedback real de "está trabajando" lo
+  da el indicador de arriba, que es más informativo que un spinner. No copiar esto a botones con
+  texto: ahí sigue mandando `withButtonLoading`.
 - CSS scoped bajo `.asistente-chat__*` en un `@push('styles')` dentro del propio partial; usa
   `var(--primary)` para respetar el color de marca del tenant.
 - **Exclusión por vista, también en servidor**: el `@include('partials.asistente-chat')` en
@@ -1675,3 +1820,167 @@ modal de cobros de una factura, usado tanto desde `facturas/index.blade.php` com
 - **Verificación de "a comportamiento constante"**: la suite de tests ya existente de la pantalla
   origen debe seguir en verde **sin modificar ni un test**. Si hay que tocar un test para que pase,
   la extracción cambió comportamiento y hay que revertirla y rehacerla.
+
+## Cola de propuestas revisables en un modal (feature 044)
+
+Cuando un flujo produce **varias propuestas que el usuario debe revisar una por una** antes de que
+se persista nada (importar compras desde documentos interpretados por IA), el patrón es una **cola
+dentro del mismo modal**, no un modal por documento ni una pantalla aparte:
+
+- **Cuatro estados alternados con `d-none`** en el mismo modal, igual que el de importación de
+  Excel: `subir` → `interpretando` → `propuesta` → `resumen`. El fichero no se vuelve a pedir: el
+  token que devuelve la subida viaja hasta el final.
+- **Contador «n de N»** visible mientras haya más de un documento, para que el usuario sepa cuánto
+  falta. Sin él, una cola larga parece colgada.
+- **Las peticiones caras van en serie, nunca en paralelo.** Cada interpretación es una llamada al
+  modelo; lanzarlas a la vez revienta el `max_execution_time` del hosting compartido. El navegador
+  encadena token a token.
+- **Avanzar al crear o descartar** sin cerrar el modal: confirmar una propuesta pasa a la siguiente.
+- **Un fallo parcial no aborta la cola.** Un documento ilegible se marca como fallido y se sigue con
+  el siguiente. Solo se aborta ante un fallo que afecta a todo el lote por igual (clave de API
+  inválida, cuota agotada): ahí seguir intentando solo gasta tiempo del usuario.
+- **Resumen final** con cuántas se crearon, cuántas se descartaron y **cuáles fallaron y por qué**,
+  identificando cada documento por su **nombre de archivo** — un índice («documento 3») no le dice
+  nada a quien subió diez ficheros. Al cerrar, recargar tabla y métricas.
+
+**La tabla de líneas de la propuesta NO es un DataTable**, y no contradice la regla «listados:
+siempre DataTable». Esa regla es para *listados*; esta es una tabla de **edición**, con un input por
+celda, igual que `compras/_form_lineas.blade.php` o las líneas del alta de facturas. Un DataTable
+aquí estorbaría (paginación y buscador sobre filas que se están editando).
+
+**Los totales que se recalculan en vivo al editar son solo UX.** El importe que se guarda lo calcula
+el servidor a partir de las líneas (Principio III de la constitución); el número que se pinta
+mientras el usuario teclea es una aproximación para que vea el efecto de su cambio, y jamás se envía
+como fuente de verdad.
+
+## Botonera del card-header en móvil
+
+Los listados usan el header como `<h4 class="card-title">` + `<div class="d-flex gap-2">` con el
+filtro y los botones de acción. En pantallas chicas ese grupo se comprime: los botones quedan de
+anchos distintos y con el texto partido a mitad de palabra.
+
+Corregido globalmente en `app-overrides.css` (no hace falta clase por vista): **por debajo de
+576px la botonera del `card-header` pasa a ancho completo, en columna, con cada control a `w-100`**
+(`.card-header > .d-flex:has(.btn, .form-control, .form-select, .dropdown)`). El `!important` del
+ancho es para ganarle a los `style="width: auto"` inline de los selects de filtro.
+
+Implicaciones al escribir una vista nueva:
+
+- Mantener el patrón `card-header` → `h4.card-title` + un único `div.d-flex.gap-2` con los
+  controles como **hijos directos**: la regla apila los hijos directos de ese div. Si se anidan los
+  botones en otro wrapper, el wrapper se estira pero los botones no.
+- No hace falta agregar `w-100`, `d-grid` ni clases responsive a mano en los botones del header.
+
+## Peso y cacheo de assets (diagnóstico de rendimiento, 2026-09-07)
+
+El template NexaDash vive entero en `public/` (fuera del pipeline de Vite), y eso tiene un coste
+que conviene tener presente al añadir plugins a una vista. Medición real del dashboard:
+
+| Métrica | Valor |
+|---|---|
+| Recursos CSS+JS pedidos | 28 |
+| Peso total sin comprimir | ~2,3 MB |
+| `public/css/style.css` (solo él) | 1,35 MB |
+| Backend (TTFB, warm) | 200–300 ms |
+
+Es decir: el cuello de botella del front **no es PHP**, es el número y el peso de los assets.
+
+**Reglas al tocar una vista:**
+
+1. **`@stack('scripts')` por vista, nunca en `layouts/app.blade.php`.** Un plugin que solo usa una
+   pantalla no puede pagarlo toda la app. (Ya se cumple; no romperlo.)
+2. **Antes de vendorizar una librería, comprobar si ya hay una equivalente cargada.** Hoy el
+   dashboard e `informes-comerciales` cargan **dos** motores de gráficos a la vez —
+   `raphael` + `morris` (126 KB) para la serie de facturación y `chartjs` (201 KB) para el resto.
+   Funciona, pero es deuda: al rehacer cualquiera de esos dos gráficos, unificar en Chart.js y
+   dejar de cargar Raphael/Morris en esa vista.
+3. **Los assets propios (`css/*`, `js/*`) van SIEMPRE con `@assetv(...)`**, no con `asset(...)`.
+   `@assetv` añade `?v=<mtime>`, que es lo que permite cachear un mes en el navegador sin que un
+   cambio quede atascado. Los de `public/vendor/*` van con `asset()` sin versión: si se
+   re-vendoriza una librería, hay que **renombrar el archivo**, o el cliente puede seguir con la
+   copia vieja hasta 30 días.
+4. **Recordar el orden de CSS** (ver CLAUDE.md): `@stack('styles')` va ANTES de `css/style.css`.
+
+**Compresión y caducidad: `public/.htaccess`.** Ahí están los bloques `mod_deflate`/`mod_brotli`
+(bajan los 2,3 MB a ~250 KB en tránsito) y `mod_expires` (1 año para imágenes y fuentes, 1 mes
+para CSS/JS, 0 para HTML). También se deniegan los `.map`: `style.css.map` pesa otros 1,4 MB y
+solo lo pide DevTools. Todo va envuelto en `<IfModule>`, así que un hosting sin esos módulos
+ignora el bloque en vez de devolver un 500.
+
+**En producción, `route:cache` y `view:cache` no son opcionales** (además de `config:cache`); están
+en la skill `deploy-empiresass`. Ojo con la consecuencia operativa: con `view:cache` activo, una
+vista `.blade.php` subida por FTP **no se ve reflejada** hasta volver a cachear.
+
+**En local, `php artisan serve` es mono-hilo**: sirve un asset a la vez, ~350 ms cada uno, así que
+esos 28 recursos tardan **~9 s** aunque el navegador abra 6 conexiones. No es un problema de la
+app y no hay flag que lo arregle (`PHP_CLI_SERVER_WORKERS` no existe en Windows). Para desarrollar
+cómodo hace falta un servidor real con php-fpm — Laravel Herd o Laragon. Si alguien reporta que
+"la app va lentísima en local", **sospechar de esto antes que del código**.
+
+## Vista deslizante dentro del panel del asistente (feature 045)
+
+El historial de conversaciones del asistente **no** abre una segunda columna al estilo del sidebar
+de Claude: se muestra como una capa deslizante *dentro* del propio panel
+(`.asistente-chat__historial`, `position: absolute; inset: 56px 0 0 0`), que tapa la lista de
+mensajes y se cierra con "Volver".
+
+El motivo es de espacio, no estético: el panel mide 440 px fijos y el 100 % del ancho por debajo de
+480 px, así que una segunda columna obligaría a rehacer el layout entero del widget. Si aparece otra
+necesidad de "pantalla secundaria" dentro del panel (ajustes, adjuntos), seguir este mismo patrón en
+vez de ensanchar el panel.
+
+Detalles que conviene respetar al replicarlo:
+
+- Se alterna con `el.hidden`, no con `display` en línea.
+- El borrado usa `window.confirmDelete(...)` —el mecanismo estándar, que ya trae su propio estado de
+  carga en el botón de confirmar— y `window.showToast` para el resultado.
+- La marca de conversación compactada (`.asistente-chat__resumido`) es una píldora centrada, no un
+  mensaje más: el usuario tiene que distinguir "esto es un resumen del sistema" de "esto lo dijo
+  alguien".
+
+## Adjuntar material al asistente: el clip solo existe en su contexto (feature 046)
+
+El panel del asistente gana un clip para adjuntar ficheros, pero **no está siempre visible**: solo
+aparece cuando la conversación va de importar algo y ya se sabe de qué módulo. Adjuntar ficheros
+para cualquier otra cosa está fuera de alcance a propósito, y un clip permanente prometería una
+capacidad que no existe.
+
+- El contexto lo enciende `detectarContextoImportacion()` en `public/js/asistente-chat.js`, sobre lo
+  que **escribe la persona** (intención + módulo) o sobre la sugerencia que pulsa. Nunca se adivina
+  un módulo: sin módulo, no hay clip.
+- **La subida va por su propio endpoint** (`POST /asistente/material`), no dentro del mensaje: el de
+  mensaje es SSE por streaming y meterle un `multipart` con un PDF de 5 MB complica el flujo sin
+  ganar nada. El mensaje viaja con el token del material, no con el fichero.
+- El progreso reutiliza `.asistente-chat__estado` (el indicador de la 030) en vez de inventar otro
+  spinner, y **todos** los rechazos del servidor —tipo no admitido, más de 5 MB, módulo no
+  importable, token caducado— se muestran con `window.showToast('error', …)` usando el texto que
+  manda el servidor. El cliente no redacta mensajes de error: los redacta quien conoce el motivo.
+- El material adjunto se muestra en una franja `.asistente-chat__adjunto` entre la conversación y el
+  formulario, con su nombre y una cruz para quitarlo. Cambiar de conversación lo olvida en cliente y
+  el servidor tampoco lo acepta desde otro hilo: las dos capas dicen lo mismo.
+
+### La caja de estado del modal de detalle ya no está vacía
+
+`#asistente-detalle-analisis` se creó en la 045 preparada para esto y se rellena desde
+`pintarEstadoAnalisis()` con lo que manda el servidor en el evento `accion_pendiente` (`analisis`).
+El texto lo compone el backend, no el JS: el criterio de qué contar —origen, leídas, válidas,
+descartadas, no interpretado— es uno solo y se puede cubrir con tests.
+
+Del mismo evento sale también `detalle`: una acción puede aportar **sus propias filas** de la tabla
+cuando sus parámetros no son lo revisable. Importar un fichero se propone con un token, pero lo que
+la persona tiene que poder mirar antes de confirmar son las filas que se van a crear.
+
+## Chips de categoría en el estado vacío del panel (feature 046)
+
+Cuando no hay conversación, el panel ofrece sugerencias agrupadas por categoría: una fila de chips
+(`.asistente-chat__categoria`, píldoras con la activa marcada) y debajo la lista de frases de esa
+categoría. Pulsar una la envía como mensaje.
+
+- **El filtrado por permisos se hace en servidor** (`GET /asistente/sugerencias`), igual que
+  `CatalogoTools::paraUsuario`: ofrecer algo que al pulsarlo responde «no tenés permiso» es peor que
+  no ofrecer nada. El JS pinta lo que llega, no decide.
+- Una categoría que se queda sin sugerencias no se muestra vacía: desaparece.
+- Los textos son fijos. Generarlos con IA costaría una llamada en cada apertura del panel para un
+  beneficio nulo.
+- Viven **dentro** de `.asistente-chat__bienvenida`, así que el primer mensaje se las lleva por
+  delante con el resto del estado vacío. `vaciarPanel()` las vuelve a montar y recargar.

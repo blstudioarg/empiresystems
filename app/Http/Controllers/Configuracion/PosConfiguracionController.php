@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Configuracion;
 use App\Http\Controllers\Controller;
 use App\Models\PosCuenta;
 use App\Support\ConfigPos;
+use App\Support\MenuTenant;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -51,7 +52,7 @@ class PosConfiguracionController extends Controller
         // conservan intactos y reaparecen al reactivarla.
         ConfigPos::guardar($tenantId, $datos);
 
-        \App\Support\MenuTenant::invalidarCache($tenantId);
+        MenuTenant::invalidarCache($tenantId);
 
         $mensaje = 'Configuración del POS guardada correctamente.';
 

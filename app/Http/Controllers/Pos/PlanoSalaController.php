@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Guardado del plano de una zona (feature 039): batch por zona con bloqueo optimista, mismo patrón
- * `version` que {@see \App\Http\Controllers\Pos\CuentaController}.
+ * `version` que {@see CuentaController}.
  *
  * Desde la feature 042 el cuerpo trae también el **lienzo** de la zona (medidas y celdas
  * recortadas), que se persiste en la MISMA transacción y con el MISMO bump de `version` que las

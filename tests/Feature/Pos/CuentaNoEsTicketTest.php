@@ -4,6 +4,7 @@ namespace Tests\Feature\Pos;
 
 use App\Models\Factura;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Schema;
 use Tests\Concerns\MontaSalaPos;
 use Tests\TestCase;
 
@@ -40,8 +41,8 @@ class CuentaNoEsTicketTest extends TestCase
 
         // Garantía estructural de FR-017: si alguien añadiera estas columnas, abrir una cuenta
         // podría empezar a consumir numeración y el resto de tests no lo detectaría.
-        $this->assertFalse(\Illuminate\Support\Facades\Schema::hasColumn('pos_cuentas', 'numero'));
-        $this->assertFalse(\Illuminate\Support\Facades\Schema::hasColumn('pos_cuentas', 'serie_id'));
-        $this->assertFalse(\Illuminate\Support\Facades\Schema::hasColumn('pos_cuentas', 'numero_completo'));
+        $this->assertFalse(Schema::hasColumn('pos_cuentas', 'numero'));
+        $this->assertFalse(Schema::hasColumn('pos_cuentas', 'serie_id'));
+        $this->assertFalse(Schema::hasColumn('pos_cuentas', 'numero_completo'));
     }
 }

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Compra;
 use App\Models\Proveedor;
 use App\Models\Tenant;
 use App\Models\User;
@@ -76,7 +77,7 @@ class ProveedorCrudTest extends TestCase
         $tenant = Tenant::factory()->create();
         $user = User::factory()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
         $proveedor = Proveedor::factory()->for($tenant)->create();
-        $compra = \App\Models\Compra::factory()->for($tenant)->for($proveedor)->create();
+        $compra = Compra::factory()->for($tenant)->for($proveedor)->create();
         $this->loginAs($user);
 
         $response = $this->delete("/proveedores/{$proveedor->id}");

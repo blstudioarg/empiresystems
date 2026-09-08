@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Tenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Exceptions\RoleDoesNotExist;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\Concerns\GestionaRolesDeTenant;
@@ -45,8 +46,8 @@ class RolesAislamientoTest extends TestCase
         $usuarioB = $this->usuarioConRol($tenantB, null);
 
         // Con el team de B, el rol de A no está en scope: asignarlo lanza excepción de spatie.
-        $this->enTeam($tenantB, function () use ($usuarioB, $rolA) {
-            $this->expectException(\Spatie\Permission\Exceptions\RoleDoesNotExist::class);
+        $this->enTeam($tenantB, function () use ($usuarioB) {
+            $this->expectException(RoleDoesNotExist::class);
             $usuarioB->assignRole('Ventas');
 
             // Además el permiso de A no cruza aunque se referencie por id.

@@ -22,5 +22,8 @@
 
 	.header.header, .nav-header.nav-header {
 		background: var(--topbar-bg, {{ $__topbarFallback }});
+		/* Color de contenido legible sobre esa barra, calculado por luminancia igual que
+		   --primary-contraste. Los iconos del header lo heredan con currentColor. */
+		color: var(--topbar-contraste, {{ \App\Support\AparienciaTenant::contraste($__topbarFallback) }});
 	}
 </style>

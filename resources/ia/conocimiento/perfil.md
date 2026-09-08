@@ -5,7 +5,9 @@ permiso especial). Ahí puede:
 
 - Ver su **rol real y permisos efectivos** (agrupados por módulo), no un valor desactualizado.
   El Super Admin ve un aviso de acceso total en vez de un listado de permisos.
-- Cambiar su **foto de perfil** y su **nombre** (se aplica de inmediato).
+- Cambiar su **foto de perfil** y su **nombre** (se aplica de inmediato). La foto se cambia con el
+  botón de cámara que aparece sobre ella, y se guarda al elegir el archivo, sin botón de confirmar;
+  el mismo control está en el menú lateral y en «Mi perfil», y ambos muestran la misma foto.
 - Cambiar su **contraseña** (pide la actual + la nueva, mínimo 8 caracteres): al guardar se cierran
   automáticamente sus sesiones activas en otros dispositivos.
 - Cambiar su **email**: pide la contraseña actual y envía un enlace de confirmación válido 24h al

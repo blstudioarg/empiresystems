@@ -6,6 +6,8 @@ use App\Http\Controllers\ArchivoController;
 use App\Http\Controllers\ArticuloController;
 use App\Http\Controllers\AsignacionHorarioController;
 use App\Http\Controllers\AsistenteChatController;
+use App\Http\Controllers\AsistenteConversacionController;
+use App\Http\Controllers\AsistenteMaterialController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\BancoController;
@@ -17,6 +19,7 @@ use App\Http\Controllers\CategoriaArticuloController;
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\CobroController;
 use App\Http\Controllers\CompraController;
+use App\Http\Controllers\CompraDocumentoController;
 use App\Http\Controllers\CompraFacturaeController;
 use App\Http\Controllers\Configuracion\PosConfiguracionController;
 use App\Http\Controllers\Configuracion\PosMesaController;
@@ -353,7 +356,23 @@ Route::middleware(['tenant.context', 'auth', 'sin_super_admin'])->group(function
     Route::post('/asistente/mensaje', [AsistenteChatController::class, 'mensaje'])->name('asistente.mensaje');
     Route::post('/asistente/accion/{id}/confirmar', [AsistenteChatController::class, 'confirmar'])->name('asistente.accion.confirmar');
     Route::post('/asistente/accion/{id}/cancelar', [AsistenteChatController::class, 'cancelar'])->name('asistente.accion.cancelar');
-    Route::post('/asistente/reiniciar', [AsistenteChatController::class, 'reiniciar'])->name('asistente.reiniciar');
+
+    // Material de una importación conversacional (feature 046). El permiso del módulo no se puede
+    // poner como middleware `can:` porque el módulo llega en el cuerpo de la petición: lo exige el
+    // controlador con la definición ya resuelta, que además es lo que hace que un módulo no
+    // importable dé 404 por construcción (FR-010, FR-021).
+    Route::post('/asistente/material', [AsistenteMaterialController::class, 'store'])->name('asistente.material.store');
+    Route::delete('/asistente/material/{token}', [AsistenteMaterialController::class, 'destroy'])->name('asistente.material.destroy');
+
+    // Sugerencias del estado vacío del panel (feature 046, US4), filtradas por permisos en servidor.
+    Route::get('/asistente/sugerencias', [AsistenteChatController::class, 'sugerencias'])->name('asistente.sugerencias');
+
+    // Historial de conversaciones (feature 045). `conversaciones.store` sustituye a la antigua
+    // `asistente.reiniciar`: "conversación nueva" ya no descarta el hilo, lo deja guardado.
+    Route::get('/asistente/conversaciones', [AsistenteConversacionController::class, 'index'])->name('asistente.conversaciones.index');
+    Route::post('/asistente/conversaciones', [AsistenteConversacionController::class, 'store'])->name('asistente.conversaciones.store');
+    Route::get('/asistente/conversaciones/{id}', [AsistenteConversacionController::class, 'show'])->whereNumber('id')->name('asistente.conversaciones.show');
+    Route::delete('/asistente/conversaciones/{id}', [AsistenteConversacionController::class, 'destroy'])->whereNumber('id')->name('asistente.conversaciones.destroy');
 
     Route::middleware('can:ver-stock')->group(function () {
         Route::get('/stock', [MovimientoStockController::class, 'index'])->name('stock.index');
@@ -382,7 +401,16 @@ Route::middleware(['tenant.context', 'auth', 'sin_super_admin'])->group(function
         Route::get('/compras', [CompraController::class, 'index'])->name('compras.index');
         Route::get('/compras/crear', [CompraController::class, 'create'])->name('compras.create');
         Route::post('/compras', [CompraController::class, 'store'])->name('compras.store');
+
+        // Importación desde PDF/imagen interpretados por IA (feature 044). Van ANTES de
+        // `/compras/{compra}` o `documentos` se resolvería como un id de compra.
+        Route::post('/compras/documentos', [CompraDocumentoController::class, 'subir'])->name('compras.documentos.subir');
+        Route::post('/compras/documentos/{token}/interpretar', [CompraDocumentoController::class, 'interpretar'])->name('compras.documentos.interpretar');
+        Route::post('/compras/documentos/{token}/crear', [CompraDocumentoController::class, 'crear'])->name('compras.documentos.crear');
+        Route::delete('/compras/documentos/{token}', [CompraDocumentoController::class, 'descartar'])->name('compras.documentos.descartar');
+
         Route::get('/compras/{compra}', [CompraController::class, 'show'])->name('compras.show');
+        Route::get('/compras/{compra}/documento', [CompraDocumentoController::class, 'descargar'])->name('compras.documentos.descargar');
         Route::get('/compras/{compra}/editar', [CompraController::class, 'edit'])->name('compras.edit');
         Route::match(['put', 'patch'], '/compras/{compra}', [CompraController::class, 'update'])->name('compras.update');
         Route::post('/compras/{compra}/confirmar', [CompraController::class, 'confirmar'])->name('compras.confirmar');

@@ -34,6 +34,10 @@
 	<script src="{{ asset('vendor/global/global.min.js') }}"></script>
 	<script src="{{ asset('vendor/bootstrap-select/dist/js/bootstrap-select.min.js') }}"></script>
 	<script src="@assetv('js/custom.js')"></script>
+	{{-- Estado de carga de los botones (login/registro): el mismo mecanismo que en el layout
+	     autenticado, ver docs/04-front-guidelines.md, "Estado de carga en botones". --}}
+	<script src="@assetv('js/button-loading.js')"></script>
+	<script src="@assetv('js/form-loading.js')"></script>
 	<script src="@assetv('js/plugins-init/password-toggle.init.js')"></script>
 
 	@stack('scripts')

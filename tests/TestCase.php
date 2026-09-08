@@ -7,6 +7,8 @@ use App\Models\User;
 use App\Support\MenuTenant;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Uri;
+use Illuminate\Testing\TestResponse;
 
 abstract class TestCase extends BaseTestCase
 {
@@ -62,7 +64,7 @@ abstract class TestCase extends BaseTestCase
      * login<->dominio de SetTenantContext/LoginController (007-super-admin-tenants). Deja el
      * host fijado para las peticiones siguientes del test.
      */
-    protected function loginAs(User $user, string $password = 'secret123'): \Illuminate\Testing\TestResponse
+    protected function loginAs(User $user, string $password = 'secret123'): TestResponse
     {
         $host = $user->tenant_id
             ? $this->domainFor($user->tenant()->first())
@@ -77,11 +79,11 @@ abstract class TestCase extends BaseTestCase
     }
 
     /**
-     * @param  \Illuminate\Support\Uri|string  $uri
+     * @param  Uri|string  $uri
      */
     protected function prepareUrlForRequest($uri)
     {
-        $uri = $uri instanceof \Illuminate\Support\Uri ? $uri->value() : $uri;
+        $uri = $uri instanceof Uri ? $uri->value() : $uri;
 
         if ($this->testHost && ! preg_match('#^https?://#i', $uri)) {
             $uri = 'http://'.$this->testHost.'/'.ltrim($uri, '/');

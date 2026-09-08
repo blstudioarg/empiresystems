@@ -173,7 +173,7 @@ class RemisionVerifactuTest extends TestCase
 
         $this->assertSame(
             1,
-            \App\Models\Factura::where('tenant_id', $tenant->id)->whereNotNull('huella')->count(),
+            Factura::where('tenant_id', $tenant->id)->whereNotNull('huella')->count(),
             'El reintento no debe crear ningún eslabón nuevo en la cadena.',
         );
     }

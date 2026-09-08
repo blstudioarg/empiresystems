@@ -76,7 +76,7 @@
 							<h3 class="title">Iniciar sesión</h3>
 							<p>Ingresá con tu email y contraseña para acceder al panel</p>
 						</div>
-						<form method="POST" action="{{ route('login.attempt') }}">
+						<form method="POST" action="{{ route('login.attempt') }}" data-loading-form>
 							@csrf
 							<div class="mb-4">
 								<label class="mb-1">Email<span class="text-danger"> *</span></label>
@@ -109,7 +109,7 @@
 								</div>
 							</div>
 							<div class="text-center mb-4 d-grid">
-								<button type="submit" class="btn btn-primary">Iniciar sesión</button>
+								<button type="submit" class="btn btn-primary" data-loading-text="Ingresando...">Iniciar sesión</button>
 							</div>
 						</form>
 						<div class="text-center mb-4">

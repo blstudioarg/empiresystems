@@ -4,6 +4,7 @@ namespace Tests\Feature\Pos;
 
 use App\Models\Tenant;
 use App\Support\ConfigPos;
+use App\Support\MenuTenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\GestionaRolesDeTenant;
 use Tests\TestCase;
@@ -100,7 +101,7 @@ class ModuloApagadoTest extends TestCase
         $this->get('/perfil')->assertOk()->assertDontSee('/pos/sala');
 
         ConfigPos::guardar($tenant->id, ['hosteleria_activo' => true]);
-        \App\Support\MenuTenant::invalidarCache($tenant->id);
+        MenuTenant::invalidarCache($tenant->id);
 
         $this->get('/perfil')->assertOk()->assertSee('/pos/sala');
     }

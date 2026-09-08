@@ -134,6 +134,10 @@ class AparienciaTenant
 
         if ($valores['color_topbar']) {
             $declaraciones[] = "--topbar-bg: {$valores['color_topbar']};";
+            // Color legible sobre ese fondo (mismo criterio que --primary-contraste): los iconos y
+            // el texto del topbar lo toman con currentColor, así funcionan igual con una barra
+            // oscura que con una clara sin hardcodear ni blanco ni negro en el markup.
+            $declaraciones[] = '--topbar-contraste: '.self::contraste($valores['color_topbar']).';';
         }
 
         if ($declaraciones === []) {
@@ -184,7 +188,7 @@ class AparienciaTenant
      * habitual de 0.179, que es el punto donde el contraste contra blanco y contra negro se
      * cruzan.
      */
-    private static function contraste(string $hex): string
+    public static function contraste(string $hex): string
     {
         [$r, $g, $b] = self::hexARgb($hex);
 

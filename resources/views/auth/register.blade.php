@@ -76,7 +76,7 @@
 							<h3 class="title">Crear cuenta</h3>
 							<p>Registrá tu solicitud de acceso. Un administrador deberá aprobarla.</p>
 						</div>
-						<form method="POST" action="{{ route('register.store') }}">
+						<form method="POST" action="{{ route('register.store') }}" data-loading-form>
 							@csrf
 							<div class="mb-4">
 								<label class="mb-1">Nombre<span class="text-danger"> *</span></label>
@@ -119,7 +119,7 @@
 								</div>
 							</div>
 							<div class="text-center mb-4 d-grid">
-								<button type="submit" class="btn btn-primary">Solicitar acceso</button>
+								<button type="submit" class="btn btn-primary" data-loading-text="Enviando...">Solicitar acceso</button>
 							</div>
 						</form>
 						<div class="text-center mb-4">

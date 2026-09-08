@@ -7,6 +7,7 @@ use App\Models\LogActividad;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Support\IaTenant;
+use App\Support\RetencionAsistenteTenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Crypt;
 use Tests\TestCase;
@@ -55,9 +56,25 @@ class ConfiguracionIaTest extends TestCase
         IaTenant::guardarApiKey('sk-ant-a-borrar', $tenant->id);
         $this->loginAs($user);
 
-        $this->put('/configuracion/ia', ['api_key' => '']);
+        // Quitar la clave es una acción explícita desde la feature 045: antes bastaba con enviar
+        // `api_key` vacía, pero el campo es de tipo password y viaja vacío en cada guardado, así que
+        // ese contrato hacía que guardar el plazo de retención borrase la clave sin querer.
+        $this->put('/configuracion/ia', ['api_key' => '', 'quitar_clave' => '1']);
 
         $this->assertFalse(IaTenant::configurada($tenant->id));
+    }
+
+    public function test_guardar_solo_el_plazo_de_retencion_no_borra_la_clave(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $user = User::factory()->admin()->create(['tenant_id' => $tenant->id, 'password' => bcrypt('secret123')]);
+        IaTenant::guardarApiKey('sk-ant-que-debe-sobrevivir', $tenant->id);
+        $this->loginAs($user);
+
+        $this->put('/configuracion/ia', ['api_key' => '', 'retencion_dias' => 30]);
+
+        $this->assertTrue(IaTenant::configurada($tenant->id));
+        $this->assertSame(30, RetencionAsistenteTenant::dias($tenant->id));
     }
 
     public function test_endpoints_exigen_ver_configuracion(): void

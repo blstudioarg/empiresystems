@@ -25,16 +25,24 @@ Para cambios de código que no tocan `composer.json`/`composer.lock` ni assets d
 
 1. Subir cada archivo modificado por FTP a la ruta equivalente dentro de
    `/empiresass.gestionley.com/` (mismo path relativo que en el repo).
-2. Si el cambio toca algo que Laravel cachea (`config/`, `routes/`, providers, vistas si hay
-   `view:cache` activo), correr en el Terminal de cPanel (dar el comando exacto al usuario, no se
-   puede ejecutar por FTP):
+2. Si el cambio toca algo que Laravel cachea (`config/`, `routes/`, providers o cualquier vista
+   Blade), correr en el Terminal de cPanel (dar el comando exacto al usuario, no se puede
+   ejecutar por FTP). Produccion cachea config, rutas Y vistas — ver la nota de rendimiento al
+   final de esta seccion:
    ```bash
    cd /home/gestionley/empiresass.gestionley.com
    /opt/cpanel/ea-php82/root/usr/bin/php artisan optimize:clear
    /opt/cpanel/ea-php82/root/usr/bin/php artisan config:cache
+   /opt/cpanel/ea-php82/root/usr/bin/php artisan route:cache
+   /opt/cpanel/ea-php82/root/usr/bin/php artisan view:cache
    ```
-   Si el cambio es solo en `app/` (controllers, models, services) sin tocar config/rutas, alcanza
-   con subir el archivo — no hace falta cachear nada.
+   Solo si el cambio se limita a `app/` (controllers, models, services) sin tocar config, rutas
+   ni Blade alcanza con subir el archivo. **Una vista `.blade.php` subida por FTP sin correr
+   `view:cache` no se ve reflejada**, porque queda la version compilada anterior.
+
+   Rendimiento: `route:cache` y `view:cache` no son opcionales en produccion. Sin ellas Laravel
+   recompila rutas y Blade en cada request; con el numero de rutas de esta app son decenas de ms
+   por peticion regalados (diagnostico de rendimiento del 2026-09-07).
 3. Verificar (Chrome DevTools o pidiéndole al usuario que pruebe) antes de dar por cerrado.
 
 ## B) Deploy completo (composer.json cambió, o primer deploy)
@@ -74,6 +82,8 @@ Para cambios de código que no tocan `composer.json`/`composer.lock` ni assets d
    /opt/cpanel/ea-php82/root/usr/bin/php artisan migrate --force
    /opt/cpanel/ea-php82/root/usr/bin/php artisan optimize:clear
    /opt/cpanel/ea-php82/root/usr/bin/php artisan config:cache
+   /opt/cpanel/ea-php82/root/usr/bin/php artisan route:cache
+   /opt/cpanel/ea-php82/root/usr/bin/php artisan view:cache
    ```
 7. Si es la primera vez que se puebla esta base de datos: pedir que corran también
    `php artisan db:seed --class=DeploySeeder --force` (ver docs/08, sección de seeds).

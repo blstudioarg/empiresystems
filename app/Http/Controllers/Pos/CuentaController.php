@@ -7,6 +7,7 @@ use App\Exceptions\TicketFueraDeTopeException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CobrarCuentaPosRequest;
 use App\Http\Requests\GuardarCuentaPosRequest;
+use App\Models\Articulo;
 use App\Models\PosCuenta;
 use App\Models\PosCuentaLinea;
 use App\Models\PosMesa;
@@ -279,7 +280,7 @@ class CuentaController extends Controller
             $existente = isset($datos['id']) ? $saldadasPorId->get((int) $datos['id']) : null;
 
             $articulo = ! empty($datos['articulo_id'])
-                ? \App\Models\Articulo::query()->find($datos['articulo_id'])
+                ? Articulo::query()->find($datos['articulo_id'])
                 : null;
 
             $opcionesElegidas = $opcionesActivas
@@ -342,7 +343,7 @@ class CuentaController extends Controller
      *
      * @param  list<array{opcion_id: int}>  $opcionesElegidas
      */
-    private function validarReglasDeGrupo(\App\Models\Articulo $articulo, array $opcionesElegidas): void
+    private function validarReglasDeGrupo(Articulo $articulo, array $opcionesElegidas): void
     {
         $grupos = $articulo->posGrupos()->where('pos_opcion_grupos.obligatorio', true)->get();
 

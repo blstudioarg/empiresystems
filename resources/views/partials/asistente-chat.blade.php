@@ -63,6 +63,118 @@
 			.asistente-msg--user { align-self: flex-end; background: var(--primary, #4361ee); color: #fff; border-bottom-right-radius: 4px; }
 			.asistente-msg--bot { align-self: flex-start; background: #fff; color: #212529; border: 1px solid #e9ecef; border-bottom-left-radius: 4px; }
 			.asistente-msg--actividad { align-self: flex-start; font-size: .8rem; color: #6c757d; font-style: italic; }
+			/* Indicador de progreso (feature 030): cubre el hueco entre que se envía el mensaje y
+			   llega el primer texto del modelo, donde antes no había ningún feedback en pantalla. */
+			.asistente-chat__estado {
+				align-self: flex-start; display: flex; align-items: center; gap: 8px;
+				background: #fff; border: 1px solid #e9ecef; border-radius: 14px; border-bottom-left-radius: 4px;
+				padding: 10px 13px; font-size: .85rem; color: #6c757d;
+			}
+			.asistente-chat__puntos { display: inline-flex; gap: 4px; }
+			.asistente-chat__puntos span {
+				width: 6px; height: 6px; border-radius: 50%; background: var(--primary, #4361ee);
+				animation: asistente-pensando 1.3s infinite ease-in-out both;
+			}
+			.asistente-chat__puntos span:nth-child(2) { animation-delay: .16s; }
+			.asistente-chat__puntos span:nth-child(3) { animation-delay: .32s; }
+			@keyframes asistente-pensando {
+				0%, 70%, 100% { opacity: .25; transform: translateY(0); }
+				35% { opacity: 1; transform: translateY(-3px); }
+			}
+			/* El texto se escribe y se borra letra a letra (máquina de escribir), con un cursor que
+			   parpadea. No lleva animación de opacidad: latir Y teclear a la vez es ruido. */
+			.asistente-chat__estado-texto {
+				border-right: 1.5px solid var(--primary, #4361ee);
+				padding-right: 2px;
+				animation: asistente-cursor 1s step-end infinite;
+			}
+			@keyframes asistente-cursor {
+				0%, 100% { border-right-color: var(--primary, #4361ee); }
+				50% { border-right-color: transparent; }
+			}
+			/* Etiqueta estable para lectores de pantalla: el texto que se teclea va con aria-hidden,
+			   porque un aria-live que cambia letra a letra es insoportable de escuchar. */
+			.asistente-chat__estado-sr {
+				position: absolute; width: 1px; height: 1px; margin: -1px;
+				overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+			}
+			@media (prefers-reduced-motion: reduce) {
+				.asistente-chat__puntos span { animation: none; opacity: .6; }
+				.asistente-chat__estado-texto { animation: none; border-right-color: transparent; }
+			}
+			/* Historial (feature 045): se desliza sobre la lista de mensajes dentro del propio panel. */
+			.asistente-chat__historial {
+				position: absolute; inset: 56px 0 0 0; background: #f7f8fc; z-index: 2;
+				display: flex; flex-direction: column;
+			}
+			.asistente-chat__historial-cabecera {
+				display: flex; align-items: center; justify-content: space-between;
+				padding: 12px 16px; border-bottom: 1px solid #e9ecef; background: #fff;
+				font-size: .9rem; font-weight: 600; color: #212529;
+			}
+			.asistente-chat__historial-volver {
+				background: transparent; border: none; color: var(--primary, #4361ee);
+				font-size: .85rem; cursor: pointer; padding: 2px 4px;
+			}
+			.asistente-chat__historial-lista { flex: 1; overflow-y: auto; padding: 8px; }
+			.asistente-chat__hilo {
+				display: flex; align-items: center; gap: 8px; width: 100%;
+				background: #fff; border: 1px solid #e9ecef; border-radius: 10px;
+				padding: 10px 12px; margin-bottom: 8px; text-align: left; cursor: pointer;
+			}
+			.asistente-chat__hilo:hover { border-color: var(--primary, #4361ee); }
+			.asistente-chat__hilo.is-activo { border-color: var(--primary, #4361ee); background: #f2f5ff; }
+			.asistente-chat__hilo-datos { flex: 1; min-width: 0; }
+			.asistente-chat__hilo-titulo {
+				display: block; font-size: .88rem; color: #212529;
+				overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+			}
+			.asistente-chat__hilo-fecha { font-size: .75rem; color: #6c757d; }
+			.asistente-chat__hilo-borrar {
+				background: transparent; border: none; color: #adb5bd; cursor: pointer; padding: 4px;
+				border-radius: 6px; flex-shrink: 0;
+			}
+			.asistente-chat__hilo-borrar:hover { color: #dc3545; background: #f8d7da; }
+			.asistente-chat__historial-vacio { color: #6c757d; font-size: .85rem; text-align: center; padding: 24px 12px; }
+			/* Marca de la parte compactada (FR-012): el usuario debe ver que hay hilo anterior resumido. */
+			.asistente-chat__resumido {
+				align-self: center; font-size: .75rem; color: #6c757d; text-transform: uppercase;
+				letter-spacing: .04em; padding: 4px 10px; background: #eceef5; border-radius: 999px;
+			}
+
+			/* Sugerencias del estado vacío (feature 046, US4): chips de categoría + una lista de
+			   frases que se envían al pulsarlas. Desaparecen en cuanto hay conversación. */
+			.asistente-chat__sugerencias { margin-top: 18px; display: flex; flex-direction: column; gap: 10px; align-items: center; }
+			.asistente-chat__categorias { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+			.asistente-chat__categoria {
+				background: #fff; border: 1px solid #e9ecef; border-radius: 999px;
+				padding: 4px 12px; font-size: .78rem; color: #6c757d; cursor: pointer;
+			}
+			.asistente-chat__categoria.is-activa { border-color: var(--primary, #4361ee); color: var(--primary, #4361ee); background: #f2f5ff; }
+			.asistente-chat__lista-sugerencias { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+			.asistente-chat__sugerencia {
+				background: #fff; border: 1px solid #e9ecef; border-radius: 10px;
+				padding: 8px 12px; font-size: .85rem; color: #212529; text-align: left; cursor: pointer;
+			}
+			.asistente-chat__sugerencia:hover { border-color: var(--primary, #4361ee); background: #f7f8fc; }
+
+			/* Material adjunto (feature 046). El clip solo aparece en el contexto de una
+			   importación: adjuntar ficheros para cualquier otra cosa queda fuera de alcance
+			   (research D5). */
+			.asistente-chat__clip {
+				border: none; background: transparent; color: #6c757d; cursor: pointer;
+				padding: 0 6px; display: flex; align-items: center;
+			}
+			.asistente-chat__clip:hover { color: var(--primary, #4361ee); }
+			.asistente-chat__clip[hidden] { display: none !important; }
+			.asistente-chat__adjunto {
+				display: flex; align-items: center; gap: 8px; padding: 8px 12px;
+				border-top: 1px solid #e9ecef; background: #f7f8fc; font-size: .82rem; color: #495057;
+			}
+			.asistente-chat__adjunto-nombre { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+			.asistente-chat__adjunto-quitar { background: transparent; border: none; color: #adb5bd; cursor: pointer; padding: 2px 4px; border-radius: 6px; }
+			.asistente-chat__adjunto-quitar:hover { color: #dc3545; background: #f8d7da; }
+
 			.asistente-chat__form { display: flex; gap: 8px; padding: 12px; border-top: 1px solid #e9ecef; background: #fff; }
 			.asistente-chat__input { flex: 1; resize: none; border: 1px solid #ced4da; border-radius: 10px; padding: 9px 12px; font-size: .92rem; max-height: 120px; }
 			.asistente-chat__input:focus { outline: none; border-color: var(--primary, #4361ee); box-shadow: 0 0 0 3px rgba(67, 97, 238, .12); }
@@ -72,12 +184,25 @@
 			.asistente-accion { align-self: flex-start; max-width: 92%; background: #fff; border: 1px solid #e9ecef; border-radius: 14px; padding: 12px; }
 			.asistente-accion__resumen { font-size: .9rem; margin-bottom: 10px; }
 			.asistente-accion__botones { display: flex; gap: 8px; }
+			/* Lista de acciones de una propuesta en lote: el usuario debe poder revisarlas antes de
+			   confirmar, si no "confirmar 10 cosas" es un cheque en blanco. */
+			.asistente-accion__fila { display: flex; align-items: flex-start; gap: 6px; }
+			.asistente-accion__ojo {
+				background: transparent; border: none; color: var(--primary, #4361ee);
+				padding: 0 2px; cursor: pointer; flex-shrink: 0; line-height: 1;
+			}
+			.asistente-accion__ojo:hover { opacity: .7; }
+			.asistente-detalle-destacada > td { background: #f2f5ff; }
+			.asistente-accion__lista { margin: 6px 0 0; padding-left: 18px; font-size: .85rem; }
+			.asistente-accion__lista li { margin-bottom: 2px; }
+			.asistente-accion__lista--error { color: #dc3545; }
 		</style>
 
 	<div id="asistente-chat" class="asistente-chat" data-configurada="{{ $iaConfigurada ? '1' : '0' }}"
 		data-url-mensaje="{{ route('asistente.mensaje') }}"
-		data-url-reiniciar="{{ route('asistente.reiniciar') }}"
-		data-url-confirmar="{{ url('asistente/accion') }}">
+		data-url-conversaciones="{{ route('asistente.conversaciones.index') }}"
+		data-url-confirmar="{{ url('asistente/accion') }}"
+		data-url-material-base="{{ url('asistente/material') }}">
 
 		{{-- Backdrop: click cierra el panel. --}}
 		<div class="asistente-chat__backdrop" id="asistente-backdrop" aria-hidden="true"></div>
@@ -89,6 +214,12 @@
 					Asistente IA
 				</div>
 				<div class="asistente-chat__actions">
+					<button type="button" class="asistente-chat__icon-btn" id="asistente-historial-abrir" title="Historial" aria-label="Historial de conversaciones">
+						<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+							stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+							<path d="M3 3v5h5"></path><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"></path><path d="M12 7v5l4 2"></path>
+						</svg>
+					</button>
 					<button type="button" class="asistente-chat__icon-btn" id="asistente-nueva" title="Conversación nueva" aria-label="Conversación nueva">
 						<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
 							stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -107,13 +238,62 @@
 			@if ($iaConfigurada)
 				<div class="asistente-chat__mensajes" id="asistente-mensajes" aria-live="polite">
 					<div class="asistente-chat__bienvenida">
-						¡Hola! Preguntame cómo funciona la app o pedime que consulte tus datos.
+						¡Hola! Preguntame cómo funciona la app, pedime que consulte tus datos o pasame un
+						fichero para importarlo.
+						{{-- Sugerencias por categoría: las rellena asistente-chat.js con lo que el
+						     servidor deja pasar según los permisos de la persona (FR-025, FR-027). --}}
+						<div class="asistente-chat__sugerencias" id="asistente-sugerencias" hidden>
+							<div class="asistente-chat__categorias" id="asistente-categorias" role="tablist"></div>
+							<div class="asistente-chat__lista-sugerencias" id="asistente-lista-sugerencias"></div>
+						</div>
 					</div>
 				</div>
-				<form class="asistente-chat__form" id="asistente-form">
+				{{-- Historial: vista deslizante DENTRO del panel (research D10). El panel mide 440px
+				     fijos y 100% en móvil, así que una segunda columna al estilo del sidebar de Claude no
+				     cabe sin rehacer el layout. --}}
+				<div class="asistente-chat__historial" id="asistente-historial" hidden>
+					<div class="asistente-chat__historial-cabecera">
+						<span>Tus conversaciones</span>
+						<button type="button" class="asistente-chat__historial-volver" id="asistente-historial-cerrar">Volver</button>
+					</div>
+					<div class="asistente-chat__historial-lista" id="asistente-historial-lista"></div>
+				</div>
+
+				{{-- Material adjunto de una importación en curso: se muestra entre la conversación y
+				     el formulario, con su nombre y la forma de quitarlo. --}}
+				<div class="asistente-chat__adjunto" id="asistente-adjunto" hidden>
+					<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
+						stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+					</svg>
+					<span class="asistente-chat__adjunto-nombre" id="asistente-adjunto-nombre"></span>
+					<button type="button" class="asistente-chat__adjunto-quitar" id="asistente-adjunto-quitar"
+						title="Quitar el material" aria-label="Quitar el material">
+						<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+							stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+							<path d="M18 6 6 18"></path><path d="m6 6 12 12"></path>
+						</svg>
+					</button>
+				</div>
+
+				<form class="asistente-chat__form" id="asistente-form"
+					data-url-material="{{ route('asistente.material.store') }}"
+					data-url-sugerencias="{{ route('asistente.sugerencias') }}"
+					data-tipos-material="{{ implode(',', \App\Support\MaterialImportable::tiposAdmitidos()) }}">
+					{{-- El clip solo se muestra cuando la conversación va de una importación: lo
+					     enciende el JS al detectar el contexto, no está siempre disponible. --}}
+					<button type="button" class="asistente-chat__clip" id="asistente-clip" hidden
+						title="Adjuntar material para importar" aria-label="Adjuntar material para importar">
+						<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+							stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+							<path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+						</svg>
+					</button>
+					<input type="file" id="asistente-fichero" class="d-none"
+						accept="{{ collect(\App\Support\MaterialImportable::tiposAdmitidos())->map(fn ($t) => '.'.$t)->implode(',') }}">
 					<textarea id="asistente-input" class="asistente-chat__input" rows="1" maxlength="4000"
 						placeholder="Escribí tu mensaje…" autocomplete="off"></textarea>
-					<button type="submit" class="asistente-chat__enviar" aria-label="Enviar">
+					<button type="submit" id="asistente-enviar" class="asistente-chat__enviar" aria-label="Enviar">
 						<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
 							stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 							<path d="M22 2 11 13"></path><path d="M22 2 15 22l-4-9-9-4z"></path>
@@ -130,6 +310,30 @@
 		</div>
 	</div>
 
+	{{-- Detalle de una propuesta: tabla con TODOS los campos a crear/editar, para poder verificarlos
+	     antes de confirmar. Vive fuera de .asistente-chat__panel a propósito: el panel tiene
+	     overflow:hidden y recortaría el modal. --}}
+	<div class="modal fade" id="asistente-detalle-modal" tabindex="-1" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title">Detalle de la propuesta</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+				</div>
+				<div class="modal-body">
+					{{-- Estado del análisis: se rellena cuando la propuesta viene de documentos
+					     interpretados. Vacío y oculto en el resto de casos. --}}
+					<div id="asistente-detalle-analisis" class="alert alert-info py-2 px-3 small" hidden></div>
+					<div class="table-responsive">
+						<table class="table table-sm align-middle mb-0" id="asistente-detalle-tabla">
+							<thead><tr></tr></thead>
+							<tbody></tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
 	@push('scripts')
 		<script src="@assetv('js/asistente-chat.js')"></script>
 	@endpush

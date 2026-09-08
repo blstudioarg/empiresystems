@@ -39,7 +39,7 @@
 										<h4 class="mb-0" data-metric="tenants">{{ $datos['totales']['tenants'] }}</h4>
 									</div>
 									<div>
-										<x-lordicon icon="empresa" size="45" trigger="hover" target=".card" />
+										<x-lordicon icon="empresa" size="38" trigger="hover" target=".card" />
 									</div>
 								</div>
 							</div>
@@ -54,7 +54,7 @@
 										<h4 class="mb-0 text-success" data-metric="activos">{{ $datos['totales']['activos'] }}</h4>
 									</div>
 									<div>
-										<x-lordicon icon="wired-outline-267-like-thumb-up-hover-up" size="45" trigger="hover" target=".card" />
+										<x-lordicon icon="wired-outline-267-like-thumb-up-hover-up" size="38" trigger="hover" target=".card" />
 									</div>
 								</div>
 							</div>
@@ -69,7 +69,7 @@
 										<h4 class="mb-0 {{ $datos['totales']['inactivos'] > 0 ? 'text-danger' : '' }}" data-metric="inactivos">{{ $datos['totales']['inactivos'] }}</h4>
 									</div>
 									<div>
-										<x-lordicon icon="wired-outline-50-minus-circle" size="45" trigger="hover" target=".card" />
+										<x-lordicon icon="wired-outline-50-minus-circle" size="38" trigger="hover" target=".card" />
 									</div>
 								</div>
 							</div>
@@ -86,7 +86,7 @@
 										<h4 class="mb-0" data-metric="altas_mes">{{ $datos['totales']['altas_mes'] }}</h4>
 									</div>
 									<div>
-										<x-lordicon icon="wired-outline-49-plus-circle" size="45" trigger="hover" target=".card" />
+										<x-lordicon icon="wired-outline-49-plus-circle" size="38" trigger="hover" target=".card" />
 									</div>
 								</div>
 							</div>
@@ -101,7 +101,7 @@
 										<h4 class="mb-0" data-metric="usuarios">{{ $datos['totales']['usuarios'] }}</h4>
 									</div>
 									<div>
-										<x-lordicon icon="people" size="45" trigger="hover" target=".card" />
+										<x-lordicon icon="people" size="38" trigger="hover" target=".card" />
 									</div>
 								</div>
 							</div>

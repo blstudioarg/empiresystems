@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\EstadoFactura;
 use App\Http\Requests\FiltroCobrosRequest;
 use App\Models\Cliente;
 use App\Models\Serie;
 use App\Support\ConsultaCobros;
 use App\Support\RangoFechas;
+use Carbon\CarbonInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
@@ -128,7 +130,7 @@ class CobroController extends Controller
     {
         // $fila->estado puede llegar como el enum EstadoFactura (fila hidratada como modelo
         // Factura) o como string plano según el driver/consulta; se admiten ambas formas.
-        $estadoValor = $fila->estado instanceof \App\Enums\EstadoFactura ? $fila->estado->value : $fila->estado;
+        $estadoValor = $fila->estado instanceof EstadoFactura ? $fila->estado->value : $fila->estado;
         $esRectificada = $estadoValor === 'rectificada';
         $saldoPendiente = (float) $fila->saldo_pendiente;
 
@@ -137,10 +139,10 @@ class CobroController extends Controller
         // Igual que fecha_expedicion/fecha_vencimiento: la fila hidrata como modelo Factura, cuyo
         // cast 'date' las devuelve como Carbon — hay que formatearlas, nunca serializarlas crudas
         // (guía "Nunca imprimir directo un campo decimal/fecha sin formatear").
-        $fechaExpedicion = $fila->fecha_expedicion instanceof \Carbon\CarbonInterface
+        $fechaExpedicion = $fila->fecha_expedicion instanceof CarbonInterface
             ? $fila->fecha_expedicion->toDateString()
             : $fila->fecha_expedicion;
-        $fechaVencimiento = $fila->fecha_vencimiento instanceof \Carbon\CarbonInterface
+        $fechaVencimiento = $fila->fecha_vencimiento instanceof CarbonInterface
             ? $fila->fecha_vencimiento->toDateString()
             : $fila->fecha_vencimiento;
 

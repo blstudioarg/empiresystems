@@ -227,8 +227,45 @@ Widget de chat flotante (área tenant) conectado a la API de OpenAI (Chat Comple
 - **Escrituras en dos fases**: la tool `proponer()` valida y guarda una acción pendiente en sesión;
   solo `POST /asistente/accion/{id}/confirmar` (request separado, CSRF) ejecuta vía los servicios de
   cálculo del servidor (`CalculadoraFactura`, `RegistroPresupuesto`, `RegistroFacturaBorrador`).
-- **Conversación efímera** en la sesión de Laravel (`app/Ia/ConversacionAsistente.php`): sobrevive a
-  la navegación, muere con la sesión, truncado en servidor. Sin tablas nuevas.
+  - **Propuestas en lote (feature 045)**: varias escrituras del mismo turno se acumulan y se
+    presentan en **una sola tarjeta** con la lista completa, que el usuario confirma una vez (tope
+    de 20). Antes solo se admitía una escritura por turno: pedir "creá 10 clientes" creaba uno y
+    las otras nueve chocaban con el guard, sin que confirmar reanudara al modelo. La garantía de D4
+    no se relaja —nada se escribe sin confirmación explícita y la lista se revisa antes—, lo que
+    cambia es que confirmar diez tarjetas seguidas no era más seguro, solo más tedioso.
+    Al ejecutar el lote se aplica el criterio de los importadores (`ImportadorExcel`,
+    `ImportadorLeads`): se ejecutan las válidas y **se reportan las rechazadas**, nunca se aborta
+    todo por una. Los rechazos quedan en el log (`asistente.accion.rechazada`), que antes era un
+    punto ciego: la confirmación devolvía 422 sin dejar rastro y no había forma de saber por qué.
+  - **Proponer cierra el turno**: en cuanto hay una acción pendiente, `AsistenteIa::ejecutarLoop()`
+    corta y devuelve. Si no, el loop de tool use seguía iterando y el modelo volvía a redactar la
+    propuesta que acababa de hacer, así que el usuario veía la misma pregunta dos veces (la
+    segunda sin tarjeta, porque el guard de acción pendiente frena el segundo `proponer` pero el
+    texto ya se emitió). Regresión en `tests/Feature/Asistente/TurnoTerminaAlProponerTest.php`,
+    que ejercita el loop sustituyendo `abrirStream()` —el único punto que toca la red, aislado
+    porque `StreamResponse` es final y no se puede doblar el SDK desde afuera—.
+- **Conversación persistida** en `asistente_conversaciones` / `asistente_mensajes`
+  (`app/Ia/ConversacionAsistente.php`). **Cambio deliberado de la feature 045**: hasta entonces era
+  efímera en sesión y moría con ella. La clase conservó su interfaz pública y cambió el respaldo por
+  dentro, así que `AsistenteIa` no se enteró. En sesión quedan solo el id de la conversación activa
+  y la acción pendiente.
+  - **Historial** por persona (no por tenant): lista, retomar y borrar, en una vista deslizante
+    dentro del propio panel.
+  - **Compactación** por resumen al superar el umbral, en `CompactadorConversacion` (única pieza
+    que habla con el proveedor para esto), síncrona y con recorte simple como fallback.
+  - **Retención de 90 días** configurable + `asistente:purgar` diario: al dejar de ser efímera, la
+    conversación pasa a ser dato personal conservado y el Principio II exige plazo y purga.
+  - **Cuidado al escribir en sesión dentro del stream.** `StartSession` guarda la sesión justo
+    después de que el controlador devuelve la respuesta, pero la closure de una
+    `StreamedResponse` no corre hasta `send()`: todo lo que se escriba en sesión ahí dentro
+    (turnos de la conversación, acción pendiente) queda solo en memoria y se pierde. Por eso
+    `AsistenteChatController::mensaje()` cierra el stream con un `$request->session()->save()`
+    explícito. Se detectó porque el asistente arrancaba sin contexto en cada mensaje y la
+    confirmación de escrituras respondía "La acción ya no está disponible".
+  - Los tests HTTP **no** detectan esto por sí solos: con `SESSION_DRIVER=array` (phpunit.xml)
+    se reutiliza la misma instancia de `Store` entre requests y los datos sobreviven aunque no
+    se guarden nunca. La regresión (`tests/Feature/Asistente/PersistenciaConversacionTest.php`)
+    comprueba lo que ve un handler de sesión espía, no el estado en memoria.
 - **Base de conocimiento modular** en `resources/ia/conocimiento/*.md` (un archivo por módulo);
   `ConocimientoAsistente` los ensambla en el system prompt. Añadir feature = añadir archivo (SC-007).
 
@@ -267,3 +304,52 @@ feature.
   un servicio nuevo traduce sus propios datos al contrato que el servicio de emisión ya espera
   (`CobradorCuenta` → `RegistroTicket`), en vez de duplicar la lógica de cálculo/numeración/
   Verifactu en un segundo camino. Ver `docs/03-modelo-datos.md` para el detalle de las tablas.
+
+## Decisión 11 — La importación conversacional reutiliza el pipeline de la 031, no abre un segundo camino de escritura (046-importacion-conversacional-asistente)
+
+El asistente puede recibir un fichero o un documento, analizarlo, corregirlo conversando e
+importarlo. **Quien valida y quien escribe sigue siendo el importador de la feature 031**
+(`DefinicionImportable::validador()` y `::crear()`); el asistente orquesta y conversa.
+
+### Por qué
+
+Ese pipeline ya garantiza tres cosas que sería un disparate reimplementar:
+
+- `validador()` delega en el **FormRequest del alta manual**, así que las reglas son literalmente
+  las mismas y no un juego paralelo más laxo.
+- `crear()` fuerza el `tenant_id` ignorando cualquier columna que pretenda fijarlo (Principio I).
+- La confirmación **revalida desde cero** contra la base de datos en vez de fiarse del análisis
+  previo: entre analizar y confirmar, otra persona del tenant pudo crear un registro que ahora
+  colisiona.
+
+Un camino propio del asistente nacería desalineado del alta manual y se desalinearía más con cada
+cambio. La regla de revisión que queda: **si aparece una regla de negocio escrita dos veces, el
+planteamiento se rompió**.
+
+### Cómo encaja
+
+Lo que hizo falta fue una **costura por filas**, no por fichero: `ImportadorExcel::leerFilas()`
+(fichero → filas normalizadas), `::analizarFilas()` (filas → válidas/rechazadas) e
+`::importarFilas()` (filas → registros, revalidando). La ruta de fichero existente se apoya en esas
+mismas piezas, así que la pantalla de importación y el asistente comparten literalmente el código de
+validación.
+
+La costura era inevitable: la corrección conversacional es imposible sobre un fichero —no se puede
+reescribir el `.xlsx` cuando alguien dice «el NIF de Acme es B12345678»— y el material interpretado
+por IA nunca fue tabular.
+
+### Lo que sí es nuevo
+
+- `InterpretadorMaterialImportable`: único punto que habla con el proveedor, mismo patrón que la 044.
+  Devuelve filas con las claves internas de `ColumnaExcel`, con `null` en todo lo que no leyó y un
+  mapa `leido` que distingue «el documento no lo dice» de «dice que está vacío». **No inventar es el
+  requisito más serio de la feature**: un NIF inventado entra en el maestro y no lo detecta nadie.
+- `BorradorImportacion`: la importación en curso, sin tabla nueva (ver `03-modelo-datos.md`).
+- Tres tools (`analizar_material_importable`, `corregir_filas_importables`, `importar_material`).
+  Las dos primeras son de lectura —la de corrección muta el borrador, no la base de datos—; solo
+  importar es escritura y pasa por la tarjeta de confirmación.
+
+Las tres sirven a los tres módulos importables a la vez, lo que obligó a un cambio pequeño en el
+contrato de las tools: `ToolAsistente::disponiblePara()` (con `permisosAlternativos()`) es ahora el
+criterio único de `CatalogoTools` para filtrar y re-verificar, y el permiso del **módulo concreto**
+se re-exige al ejecutar, con el módulo ya conocido.
