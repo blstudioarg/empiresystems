@@ -34,9 +34,16 @@ por qué: nunca se pierde el lote entero por un error en un elemento.
 
 El asistente puede recibir material para importar (clientes, artículos o proveedores): un Excel, un
 CSV, un PDF, una foto o un texto. Lo analiza, dice qué falta, corrige contigo lo que haga falta y lo
-importa cuando lo confirmás, sin pasar por la pantalla de importación. El clip para adjuntar aparece
-en el panel **solo cuando la conversación va de importar algo**; no sirve para adjuntar ficheros a
-cualquier otra cosa. El detalle completo del flujo, los formatos admitidos y sus límites están en la
+importa cuando lo confirmás, sin pasar por la pantalla de importación.
+
+Hay tres formas de entregarle el material, todas con las mismas reglas de formato, tamaño y
+permisos: el **clip** del panel, **pegar con Ctrl+V** en el campo de escribir (lo más cómodo para
+una captura de pantalla, que no hace falta guardar a disco antes) y **arrastrar y soltar** el
+fichero sobre el panel del chat. El clip aparece **solo cuando la conversación va de importar
+algo**; pegar y arrastrar funcionan siempre, y si todavía no se dijo de qué módulo va la
+importación, el asistente retiene el fichero y pregunta si es de clientes, artículos o proveedores
+antes de subirlo. Se toma un fichero por gesto: si llegan varios, se adjunta el primero y se avisa
+de los demás. El detalle completo del flujo, los formatos admitidos y sus límites están en la
 guía de importación y exportación.
 
 ## Sugerencias del panel vacío

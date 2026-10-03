@@ -18,9 +18,30 @@ class ActualizarUsuarioTenantRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($this->route('usuario'))],
+            // Único dentro del tenant del propio usuario, no en toda la plataforma (el mismo
+            // correo puede existir en otras empresas).
+            'email' => [
+                'required',
+                'email',
+                'max:255',
+                Rule::unique('users', 'email')
+                    ->where(fn ($query) => $query->where('tenant_id', $this->tenantIdDeLaRuta()))
+                    ->ignore($this->route('usuario')),
+            ],
             'password' => ['nullable', 'string', 'min:8'],
         ];
+    }
+
+    /**
+     * El tenant al que pertenece el usuario que se edita, tomado del propio segmento `{tenant}`
+     * de la ruta (`tenants/{tenant}/usuarios/{usuario}`). Es el ámbito dentro del cual el correo
+     * debe ser único.
+     */
+    private function tenantIdDeLaRuta(): ?int
+    {
+        $tenant = $this->route('tenant');
+
+        return $tenant instanceof \App\Models\Tenant ? $tenant->id : (is_numeric($tenant) ? (int) $tenant : null);
     }
 
     /**

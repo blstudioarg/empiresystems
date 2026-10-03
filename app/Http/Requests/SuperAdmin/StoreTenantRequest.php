@@ -39,7 +39,16 @@ class StoreTenantRequest extends FormRequest
             'regimen_impositivo' => ['required', Rule::enum(RegimenImpositivo::class)],
             'email' => ['required', 'email', 'max:255'],
             'activo' => ['boolean'],
-            'admin_email' => ['required', 'email', 'max:255'],
+            // El correo del administrador solo tiene que ser único DENTRO del tenant que se está
+            // creando, y el tenant todavía no existe: por definición no puede chocar con nadie.
+            // La comprobación que sí hace falta es contra los super admins (`tenant_id` NULL),
+            // que comparten el espacio central de correos.
+            'admin_email' => [
+                'required',
+                'email',
+                'max:255',
+                Rule::unique('users', 'email')->whereNull('tenant_id'),
+            ],
             'admin_password' => ['required', 'string', 'min:8'],
         ];
     }
@@ -66,6 +75,7 @@ class StoreTenantRequest extends FormRequest
             'nif.unique' => 'Ese NIF ya está registrado por otro tenant.',
             'admin_email.required' => 'El email del administrador es obligatorio.',
             'admin_email.email' => 'El email del administrador no tiene un formato válido.',
+            'admin_email.unique' => 'Ese email ya pertenece a un super admin de la plataforma. Usá otro para el administrador del tenant.',
             'admin_password.required' => 'La contraseña del administrador es obligatoria.',
             'admin_password.min' => 'La contraseña del administrador debe tener al menos 8 caracteres.',
         ];

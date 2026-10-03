@@ -103,6 +103,39 @@ class TenantCrudTest extends TestCase
         $this->assertEquals('nuevo-tenant.test', $tenant->dominio()?->domain);
     }
 
+    /**
+     * Regresión del 2026-09-24: el alta reventaba con "Duplicate entry ... for key
+     * 'users_email_unique'" cuando el correo del administrador ya pertenecía a un usuario de otro
+     * tenant. El índice único de `users.email` era global (venía de la migración original de
+     * Laravel, anterior al multi-tenant) y toda la transacción hacía rollback, así que el super
+     * admin solo veía "Ocurrió un error inesperado".
+     */
+    public function test_alta_con_email_de_administrador_ya_usado_en_otro_tenant_funciona(): void
+    {
+        $otroTenant = Tenant::factory()->create();
+        User::factory()->create(['tenant_id' => $otroTenant->id, 'email' => 'repetido@ejemplo.test']);
+
+        $this->actingAsSuperAdmin();
+
+        $this->post('http://localhost/super_admin/tenants', [
+            'dominio' => 'otro-tenant.test',
+            'nombre_comercial' => 'Otro Tenant SL',
+            'razon_social' => 'Otro Tenant Sociedad Limitada',
+            'nif' => 'B12345674',
+            'regimen_impositivo' => 'iva',
+            'email' => 'contacto@otro-tenant.test',
+            'admin_email' => 'repetido@ejemplo.test',
+            'admin_password' => 'password123',
+        ])->assertRedirect(route('super_admin.tenants.index'));
+
+        $tenant = Tenant::where('nombre_comercial', 'Otro Tenant SL')->first();
+        $this->assertNotNull($tenant);
+        $this->assertDatabaseHas('users', [
+            'tenant_id' => $tenant->id,
+            'email' => 'repetido@ejemplo.test',
+        ]);
+    }
+
     public function test_alta_crea_usuario_administrador_activo_y_aprobado(): void
     {
         $this->actingAsSuperAdmin();
@@ -648,11 +681,11 @@ class TenantCrudTest extends TestCase
         $this->assertEquals($hashOriginal, $usuario->fresh()->password);
     }
 
-    public function test_email_ya_usado_por_otro_usuario_falla_la_validacion(): void
+    public function test_email_ya_usado_por_otro_usuario_del_mismo_tenant_falla_la_validacion(): void
     {
         $tenant = Tenant::factory()->create();
         $usuario = User::factory()->create(['tenant_id' => $tenant->id]);
-        $otro = User::factory()->create(['email' => 'ocupado@ejemplo.com']);
+        $otro = User::factory()->create(['tenant_id' => $tenant->id, 'email' => 'ocupado@ejemplo.com']);
 
         $this->actingAsSuperAdmin();
 
@@ -663,6 +696,27 @@ class TenantCrudTest extends TestCase
 
         $response->assertStatus(422);
         $response->assertJsonValidationErrors('email');
+    }
+
+    /**
+     * El correo es único POR TENANT, no en toda la plataforma: la misma persona puede ser usuaria
+     * de varias empresas con el mismo email. Antes este caso chocaba contra el índice único global
+     * `users_email_unique` y hacía fallar hasta el alta de un tenant nuevo.
+     */
+    public function test_email_usado_en_otro_tenant_si_se_permite(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $usuario = User::factory()->create(['tenant_id' => $tenant->id]);
+        User::factory()->create(['tenant_id' => Tenant::factory(), 'email' => 'compartido@ejemplo.com']);
+
+        $this->actingAsSuperAdmin();
+
+        $this->putJson("http://localhost/super_admin/tenants/{$tenant->id}/usuarios/{$usuario->id}", [
+            'email' => 'compartido@ejemplo.com',
+            'password' => '',
+        ])->assertOk();
+
+        $this->assertSame('compartido@ejemplo.com', $usuario->fresh()->email);
     }
 
     public function test_contrasena_nueva_demasiado_corta_falla_la_validacion(): void

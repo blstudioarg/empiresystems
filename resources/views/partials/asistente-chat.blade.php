@@ -48,6 +48,19 @@
 			}
 			@media (max-width: 480px) { .asistente-chat__panel { width: 100vw; border-radius: 0; } }
 
+			/* Zona de destino de arrastre (feature 047). El overlay va en un ::after con
+			   pointer-events: none: si capturara el puntero, dispararía `dragleave` sobre el panel
+			   en cuanto apareciera y la marca parpadearía sin parar. `var(--primary)` respeta el
+			   color de marca del tenant. */
+			.asistente-chat__panel.is-dropzone::after {
+				content: 'Soltá el fichero para adjuntarlo';
+				position: absolute; inset: 8px; z-index: 5; pointer-events: none;
+				display: flex; align-items: center; justify-content: center;
+				border: 2px dashed var(--primary); border-radius: 12px;
+				background: rgba(255, 255, 255, .88);
+				color: var(--primary); font-weight: 600; font-size: 15px; text-align: center;
+			}
+
 			.asistente-chat__header {
 				display: flex; align-items: center; justify-content: space-between;
 				padding: 14px 16px; background: var(--primary, #4361ee); color: #fff;
