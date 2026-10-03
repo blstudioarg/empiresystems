@@ -4,6 +4,7 @@ namespace Tests\Feature\Pos;
 
 use App\Models\PosCuenta;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\ConCajaAbierta;
 use Tests\Concerns\MontaSalaPos;
 use Tests\TestCase;
 
@@ -13,7 +14,7 @@ use Tests\TestCase;
  */
 class CobroParcialCierreTest extends TestCase
 {
-    use MontaSalaPos, RefreshDatabase;
+    use ConCajaAbierta, MontaSalaPos, RefreshDatabase;
 
     public function test_tras_un_cobro_parcial_la_mesa_sigue_ocupada_con_el_pendiente(): void
     {

@@ -52,6 +52,13 @@
 	let moduloImportacion = null;
 	let materialPorAnunciar = false;
 
+	// --- Gestos de entrada de material (feature 047) ------------------------
+	// Pegar o soltar son gestos que la persona hace ANTES de explicar de qué va la importación,
+	// que es el orden inverso al que exige `subirMaterial()` (research D2). Para no descartar el
+	// fichero en silencio —el peor fallo posible: no se distingue de "está roto"— se retiene aquí
+	// y se pide el módulo; en cuanto se resuelve, sube solo.
+	let materialRetenido = null;
+
 	// --- Abrir / cerrar el panel (el estado vive en la raíz, así el backdrop lo comparte) ---
 	function estaAbierto() { return root.classList.contains('is-open'); }
 	function abrir() {
@@ -225,17 +232,29 @@
 	 * Enciende el clip cuando el texto deja claro que se está hablando de importar y de qué. Se
 	 * ejecuta sobre lo que escribe la persona: es el único momento en que sabemos el contexto sin
 	 * inventarlo.
+	 *
+	 * Devuelve true si, al resolverse el módulo, se liberó material retenido y con eso ya se envió
+	 * un turno: quien llama no debe mandar otro encima.
 	 */
 	function detectarContextoImportacion(texto) {
-		if (!texto) return;
+		if (!texto) return false;
 
 		const encontrado = MODULOS.find(function (m) { return m.patron.test(texto); });
 
-		if (!encontrado) return;
-		if (!INTENCION_IMPORTAR.test(texto) && !moduloImportacion) return;
+		if (!encontrado) return false;
+
+		// Con material retenido ya preguntamos "¿de clientes, artículos o proveedores?", así que la
+		// respuesta esperada es el nombre del módulo a secas. Exigirle además un verbo de importación
+		// dejaba el fichero retenido para siempre ante respuestas naturales como "son cuatro clientes
+		// que quiero que me agregues": el turno salía sin la imagen y el asistente pedía los datos a
+		// mano, como si nunca hubiera recibido nada.
+		if (!materialRetenido && !INTENCION_IMPORTAR.test(texto) && !moduloImportacion) return false;
 
 		moduloImportacion = encontrado.modulo;
 		if (clip) clip.hidden = false;
+
+		// Ya sabemos el módulo: lo que llegó antes por un gesto puede subir (contrato G3).
+		return liberarMaterialRetenido(texto);
 	}
 
 	function mostrarAdjunto(nombre) {
@@ -259,9 +278,152 @@
 		});
 	}
 
+	// --- Gestos de entrada: pegar y arrastrar (feature 047) -----------------
+	// Los tres gestos (clip, pegar, soltar) convergen en `subirMaterial()`, que es el único punto
+	// de subida del cliente: tipo, tamaño, permisos y mensajes de rechazo salen de ahí por
+	// construcción, no por disciplina (contrato G5, invariante 1). No crear un segundo camino.
+
+	/**
+	 * Avisa cuando un gesto aportó varios ficheros. Se toma el primero, como ya hace el clip, pero
+	 * los sobrantes nunca se descartan en silencio (FR-011, contrato G4).
+	 */
+	function avisarSobrantes(cantidad) {
+		if (cantidad <= 1) return;
+		if (window.showToast) {
+			window.showToast('warning', 'Se adjuntó solo el primer fichero. Añadí el resto de a uno.');
+		}
+	}
+
+	/**
+	 * Una captura del portapapeles llega sin nombre propio (o con un `image.png` genérico), así que
+	 * dos seguidas serían indistinguibles en la conversación. Se le pone un sello temporal
+	 * (FR-005). La extensión es obligatoria: el servidor valida el tipo por
+	 * `getClientOriginalExtension()`, y sin ella el fichero se rechazaría (research D4).
+	 */
+	function nombrarCaptura(fichero) {
+		if (fichero.name && /\.[a-z0-9]{2,5}$/i.test(fichero.name) && !/^image\.[a-z]+$/i.test(fichero.name)) {
+			return fichero;
+		}
+
+		const tipo = fichero.type || '';
+		const ext = tipo.indexOf('/') !== -1 ? tipo.split('/')[1].split('+')[0].toLowerCase() : '';
+		if (!ext) return fichero;
+
+		const d = new Date();
+		function dd(n) { return String(n).padStart(2, '0'); }
+		const sello = String(d.getFullYear()) + dd(d.getMonth() + 1) + dd(d.getDate())
+			+ '-' + dd(d.getHours()) + dd(d.getMinutes()) + dd(d.getSeconds());
+
+		try {
+			return new File([fichero], 'captura-' + sello + '.' + (ext === 'jpeg' ? 'jpg' : ext), {
+				type: fichero.type,
+				lastModified: fichero.lastModified,
+			});
+		} catch (e) {
+			return fichero; // navegador sin constructor de File: mejor el nombre feo que nada
+		}
+	}
+
+	// G1 — Pegar. El listener va sobre el campo de escribir, nunca sobre `document`: un listener
+	// global capturaría pegados de cualquier formulario de la aplicación (FR-004, research D3).
+	if (input) {
+		input.addEventListener('paste', function (e) {
+			const datos = e.clipboardData;
+			if (!datos) return;
+
+			const ficheros = [];
+			const items = datos.items || [];
+			for (let i = 0; i < items.length; i++) {
+				if (items[i].kind === 'file') {
+					const f = items[i].getAsFile();
+					if (f) ficheros.push(f);
+				}
+			}
+
+			// Sin ficheros el evento no se toca: el texto se inserta como siempre (FR-003, SC-004).
+			if (!ficheros.length) return;
+
+			// Contenido mixto (imagen + texto, típico al copiar de un documento): se adjunta la
+			// imagen y NO se cancela el evento, para que el texto acompañante entre por el camino
+			// normal. Nada se pierde en silencio.
+			const hayTexto = (datos.getData('text/plain') || '').length > 0;
+			if (!hayTexto) e.preventDefault();
+
+			avisarSobrantes(ficheros.length);
+			subirMaterial(nombrarCaptura(ficheros[0]));
+		});
+	}
+
+	// G2 — Arrastrar y soltar sobre el panel.
+	if (panel) {
+		// `dragleave` también dispara al pasar sobre elementos hijos del panel, lo que haría
+		// parpadear la marca. El contador de entradas/salidas la mantiene estable (research D5).
+		let arrastres = 0;
+
+		function marcarZona(activa) {
+			panel.classList.toggle('is-dropzone', activa);
+		}
+
+		function tieneFicheros(e) {
+			const t = e.dataTransfer;
+			if (!t) return false;
+			if (t.types) {
+				for (let i = 0; i < t.types.length; i++) {
+					if (t.types[i] === 'Files') return true;
+				}
+				return false;
+			}
+			return true;
+		}
+
+		panel.addEventListener('dragenter', function (e) {
+			if (!tieneFicheros(e)) return;
+			e.preventDefault();
+			arrastres++;
+			marcarZona(true);
+		});
+
+		// Sin `preventDefault` en `dragover` el navegador abre el fichero y descarta la página,
+		// llevándose lo que la persona tuviera escrito sin enviar (FR-008, SC-005).
+		panel.addEventListener('dragover', function (e) {
+			if (!tieneFicheros(e)) return;
+			e.preventDefault();
+			if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+		});
+
+		panel.addEventListener('dragleave', function () {
+			arrastres = Math.max(0, arrastres - 1);
+			if (arrastres === 0) marcarZona(false);
+		});
+
+		panel.addEventListener('drop', function (e) {
+			e.preventDefault();
+			arrastres = 0;
+			marcarZona(false);
+
+			const ficheros = (e.dataTransfer && e.dataTransfer.files) || [];
+			// Arrastrar texto seleccionado o un enlace no adjunta nada, y la marca ya se apagó.
+			if (!ficheros.length) return;
+
+			avisarSobrantes(ficheros.length);
+			subirMaterial(ficheros[0]);
+		});
+
+		// Un arrastre cancelado (Escape, soltar fuera) no siempre emite `dragleave` sobre el panel.
+		document.addEventListener('dragend', function () { arrastres = 0; marcarZona(false); });
+		document.addEventListener('drop', function () { arrastres = 0; marcarZona(false); });
+	}
+
 	if (adjuntoQuitar) {
 		adjuntoQuitar.addEventListener('click', function () {
-			if (!materialToken) { olvidarMaterial(); return; }
+			// Descartar el adjunto también se lleva lo retenido: no sobrevive a un descarte (G3).
+			if (!materialToken) {
+				const habiaRetenido = materialRetenido !== null;
+				olvidarRetenido();
+				olvidarMaterial();
+				if (habiaRetenido && window.showToast) window.showToast('info', 'Material descartado.');
+				return;
+			}
 
 			fetch(urlMaterialBase + '/' + materialToken, { method: 'DELETE', headers: cabeceras() })
 				.finally(function () {
@@ -271,8 +433,61 @@
 		});
 	}
 
-	function subirMaterial(fichero) {
-		if (!urlMaterial || !moduloImportacion) return;
+	/**
+	 * Guarda el fichero a la espera de saber a qué módulo va la importación y lo pide en una sola
+	 * frase (contrato G3). No se infiere el módulo del contenido: eso gastaría una llamada al
+	 * proveedor antes de validar permisos y contradice la decisión de la feature 046.
+	 */
+	function retenerMaterial(fichero) {
+		materialRetenido = fichero;
+		mostrarAdjunto(fichero.name);
+		nuevoMensajeEl(
+			'asistente-msg asistente-msg--bot',
+			'Recibí «' + fichero.name + '». ¿Esto es de clientes, artículos o proveedores?'
+		);
+	}
+
+	function olvidarRetenido() {
+		materialRetenido = null;
+	}
+
+	/**
+	 * El fichero sigue esperando módulo. Se insiste nombrando las opciones, porque quedarse callado
+	 * con el indicador de adjunto encendido es indistinguible de estar roto.
+	 */
+	function repreguntarModulo() {
+		nuevoMensajeEl(
+			'asistente-msg asistente-msg--bot',
+			'Sigo con «' + materialRetenido.name + '» esperando. Decime si es de clientes, artículos '
+			+ 'o proveedores, o quitá el adjunto con la ✕ si preferís seguir con otra cosa.'
+		);
+	}
+
+	/**
+	 * Sube el material retenido en cuanto se conoce el módulo. Se llama desde
+	 * `detectarContextoImportacion()`, que es el único punto donde `moduloImportacion` se asigna.
+	 */
+	function liberarMaterialRetenido(textoUsuario) {
+		if (!materialRetenido) return false;
+
+		const fichero = materialRetenido;
+		materialRetenido = null;
+		// La frase con la que la persona resolvió el módulo ES su instrucción ("creame esos cuatro
+		// clientes de la tabla..."). Viaja como el turno de la subida: si se descartara a favor del
+		// texto genérico de la 046, el modelo nunca la vería.
+		subirMaterial(fichero, textoUsuario);
+
+		// Devuelve true para que quien la llamó NO envíe además su propio turno: `subirMaterial()`
+		// ya manda uno, y dos turnos a la vez se pisarían (`enviando` es un único estado compartido
+		// y el segundo se perdería en silencio).
+		return true;
+	}
+
+	function subirMaterial(fichero, instruccion) {
+		if (!urlMaterial) return;
+
+		// Sin módulo no se puede subir todavía, pero tampoco se descarta: se retiene y se pregunta.
+		if (!moduloImportacion) { retenerMaterial(fichero); return; }
 
 		const datos = new FormData();
 		datos.append('fichero', fichero);
@@ -308,6 +523,17 @@
 
 				// Subir no analiza: quien analiza es el asistente, para que el progreso se vea en la
 				// conversación y no en una barra de carga.
+				//
+				// Si la subida viene de material retenido, la persona ya escribió su instrucción y
+				// esa frase ya se pintó en el hilo: se manda tal cual, sin repetirla en pantalla ni
+				// nombrar el fichero. Nombrarlo hacía que el modelo lo tomara por un SEGUNDO adjunto
+				// distinto del token, lo buscara y pidiera volver a adjuntarlo.
+				if (instruccion) {
+					enviarMensaje(instruccion);
+
+					return;
+				}
+
 				nuevoMensajeEl('asistente-msg asistente-msg--user', 'Te paso «' + res.d.nombre + '».');
 				enviarMensaje('Te paso «' + res.d.nombre + '» para importar ' + res.d.modulo + '.');
 			})
@@ -362,9 +588,9 @@
 			// Pulsar una sugerencia la envía como si la hubiera escrito la persona (FR-026), y con
 			// eso las sugerencias desaparecen: ya hay conversación.
 			boton.addEventListener('click', function () {
-				detectarContextoImportacion(texto);
+				const absorbido = detectarContextoImportacion(texto);
 				nuevoMensajeEl('asistente-msg asistente-msg--user', texto);
-				enviarMensaje(texto);
+				if (!absorbido) enviarMensaje(texto);
 			});
 			listaSugerenciasEl.appendChild(boton);
 		});
@@ -382,6 +608,7 @@
 		// servidor tampoco lo acepta desde otra conversación, así que el panel no puede sugerir
 		// que sigue ahí.
 		olvidarMaterial();
+		olvidarRetenido();
 		moduloImportacion = null;
 		if (clip) clip.hidden = true;
 
@@ -416,10 +643,17 @@
 		const texto = input.value.trim();
 		if (!texto) return;
 
-		detectarContextoImportacion(texto);
+		const absorbido = detectarContextoImportacion(texto);
 		nuevoMensajeEl('asistente-msg asistente-msg--user', texto);
 		input.value = '';
 		input.style.height = 'auto';
+		if (absorbido) return;
+
+		// Sigue habiendo material retenido y esta frase tampoco nombró un módulo. Repreguntar en vez
+		// de mandar el turno: el modelo no sabe que hay un fichero esperando (el aviso de "Recibí…"
+		// se pinta solo en el DOM), así que respondería como si nunca hubiera llegado nada.
+		if (materialRetenido) { repreguntarModulo(); return; }
+
 		enviarMensaje(texto);
 	});
 

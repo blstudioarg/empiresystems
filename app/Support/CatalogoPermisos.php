@@ -44,6 +44,9 @@ class CatalogoPermisos
         ['clave' => 'ver-cobros', 'etiqueta' => 'Cobros', 'modulo' => 'Facturas'],
         ['clave' => 'ver-pos', 'etiqueta' => 'POS', 'modulo' => 'POS'],
         ['clave' => 'ver-pos-crear', 'etiqueta' => 'Crear ticket', 'modulo' => 'POS'],
+        // Caja (feature 048): apertura, movimientos, arqueo e informe Z. No depende del módulo de
+        // hostelería. Abrir la caja lo puede hacer además quien crea tickets (gate `abrir-caja`).
+        ['clave' => 'ver-pos-caja', 'etiqueta' => 'Caja', 'modulo' => 'POS'],
         // Módulo de hostelería (feature 038). Tener el permiso NO basta: las rutas llevan además
         // el middleware `modulo.hosteleria`, porque permiso de usuario y módulo activo en el
         // tenant son cosas distintas (research.md D6).

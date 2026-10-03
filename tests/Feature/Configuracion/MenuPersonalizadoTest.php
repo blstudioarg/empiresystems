@@ -198,7 +198,7 @@ class MenuPersonalizadoTest extends TestCase
 
         // Ni etiquetas ni orden completos: el servidor no confía en la petición (D4), la
         // estructura resultante sigue teniendo los elementos del catálogo (36 + `cobros` de la
-        // feature 043 = 27 hijos).
+        // feature 043 + `pos-caja` de la feature 048 = 28 hijos).
         $this->putJson(route('configuracion.menu.update'), [
             'orden' => ['control-fichaje' => ['alertas']],
         ])->assertOk();
@@ -207,7 +207,7 @@ class MenuPersonalizadoTest extends TestCase
         $totalHijos = array_sum(array_map(fn ($g) => count($g['hijos']), $estructura));
 
         $this->assertCount(10, $estructura);
-        $this->assertSame(27, $totalHijos);
+        $this->assertSame(28, $totalHijos);
     }
 
     // -- Restaurar (US3) -----------------------------------------------------------------------

@@ -24,6 +24,7 @@ articulos ──< movimientos_stock   (kardex, solo producto con stock)
 facturas ──< movimientos_stock    (salida al emitir)
 proveedores ──< compras ──< compra_lineas
 compras ──< movimientos_stock     (entrada al confirmar)
+facturas ──< ticket_pagos >── caja_sesiones ──< caja_movimientos   (caja del POS, feature 048)
 tenants ──< carpetas ──< carpetas   (árbol autorreferenciado, gestor documental)
 carpetas ──< archivos
 users ──< archivos                (subido_por, opcional)
@@ -73,6 +74,22 @@ Se añade `tenant_id` (fk, nullable solo para `super_admin`) + `rol` (`super_adm
 tenants y no pertenece a ninguno (`tenant_id` null). Desde la feature 027, `rol` deja de ser la
 fuente de verdad del acceso a vistas de un tenant (eso lo dan los roles dinámicos de spatie, ver
 más abajo); se conserva solo para distinguir el `super_admin` central del resto.
+
+**`email` es único POR TENANT, no global** (migración `2026_09_24_100000`): índice
+`unique(tenant_id, email)` en lugar del `users_email_unique` que traía la migración original de
+Laravel. La misma persona puede ser usuaria de varias empresas con el mismo correo, que es lo
+normal en un SaaS multi-tenant. Consecuencias a tener presentes:
+
+- **El login filtra por tenant dentro del `Auth::attempt`**, no solo en el gate posterior
+  (`LoginController`): con correos repetidos, un attempt que busque solo por email resolvería un
+  usuario cualquiera de entre los que lo comparten. El tenant sale del host de la petición
+  (`SetTenantContext`); `tenant_id` null para el super admin en contexto central.
+- **Toda validación de unicidad de correo debe acotarse al tenant** (`RegisterRequest`,
+  `SuperAdmin\ActualizarUsuarioTenantRequest`, `Profile\SolicitarCambioEmailRequest`). Una regla
+  `unique:users,email` a secas vuelve a imponer la unicidad global de facto.
+- **El super admin (`tenant_id` null) queda fuera del índice**: MySQL ignora las filas con NULL en
+  una columna del índice único, así que su unicidad se cubre en validación
+  (`Rule::unique(...)->whereNull('tenant_id')` en `StoreTenantRequest`), no en el esquema.
 
 Registro y aprobación: `estado` (enum `pendiente`/`aprobado`/`rechazado`, default `pendiente`) +
 `aprobado_por` (fk nullable a `users`) + `aprobado_en` (timestamp nullable). El auto-registro
@@ -378,6 +395,11 @@ Un ticket sin reparto explícito recibe una fila única (`efectivo` = total). El
 (único, mostrado en el PDF) se fija al método de **mayor importe** del reparto; el desglose completo
 solo vive aquí y se consulta desde la datatable de tickets (`pos.index`, relación `Factura::pagosTicket`).
 
+**Feature 048 (caja):** `ticket_pagos` gana `caja_sesion_id` (fk → `caja_sesiones`, nullable,
+`nullOnDelete`, índice `(tenant_id, caja_sesion_id)`), que `RegistroTicket` escribe al emitir. Es la
+atribución de cada cobro a su sesión de caja y lo que lee el arqueo. Va aquí y no en `facturas` para
+no tocar la tabla fiscal. `NULL` en los tickets anteriores a la caja (sin backfill). Ver "Caja del POS".
+
 ### `pagos` (cont.)
 
 El **estado de cobro** (`pendiente` / `parcial` / `cobrada`) y el **saldo pendiente** son
@@ -673,6 +695,7 @@ Almacén clave-valor por tenant para parámetros ajustables sin tocar código (t
 | `leads.asignacion_comerciales` | crm | `[]` (json de ids de `users`) — comerciales del reparto round-robin |
 | `leads.asignacion_ultimo_indice` | crm | `0` — puntero interno del round-robin (`App\Services\AsignadorLeads`, bloqueo transaccional); no editable en UI |
 | `presupuesto.dias_validez` | crm | `30` (default en `ConfigCrm::DEFAULT_DIAS_VALIDEZ_PRESUPUESTO`) — validez por defecto de un presupuesto nuevo |
+| `pos.caja_umbral_descuadre` | pos | `5.00` (default en `ConfigPos::DEFAULT_CAJA_UMBRAL_DESCUADRE`) — diferencia de arqueo, en €, a partir de la cual cerrar la caja exige una observación (feature 048). **No** depende del módulo de hostelería. Se edita en Configuración → POS |
 | `menu.personalizacion` | menu | `tipo: json` (feature 036) — `{"etiquetas": {clave: nombre}, "orden": {nivel: [claves]}}`, solo lo que difiere del catálogo (`App\Support\CatalogoMenu`); ausencia de la fila = tenant sin personalizar. Resuelto/fusionado por `App\Support\MenuTenant::estructura()`, consumido por `partials/sidebar.blade.php`. Sin migración ni tabla nueva |
 
 > **Zona horaria (convención transversal).** Todos los timestamps se **guardan y calculan en UTC**
@@ -1183,6 +1206,61 @@ stock ya se movió al confirmar cada albarán como entregado.
 - **Global scope de tenant:** aplicar en un `TenantScope` sobre un `BaseModel`; todas las consultas filtran por `tenant_id` automáticamente. Cubrir con tests para evitar fugas entre tenants.
 - **Numeración:** asignar `numero` dentro de una transacción con bloqueo (evitar huecos/duplicados en concurrencia).
 - **Verifactu:** el cálculo de huella y encadenamiento se hace al **emitir** (pasar de borrador a emitida), en un servicio dedicado; a partir de ahí la factura es inmutable.
+
+## Caja del POS (feature 048)
+
+Control del efectivo del día en el POS: apertura con fondo, movimientos manuales, arqueo ciego y
+cierre con informe Z congelado. Prefijo `caja_` por la misma razón que `pos_` (agrupar un módulo de un
+vistazo). Es **control interno**, no un documento fiscal: no toca numeración, importes ni Verifactu.
+
+### `caja_sesiones` — una sesión = de la apertura al cierre
+
+| Campo | Tipo | Notas |
+|-------|------|-------|
+| id, tenant_id | | `BelongsToTenant` |
+| estado | varchar | `abierta` → `cerrada` (terminal) |
+| abierta_marca | tinyint nullable | `1` si abierta, `NULL` si cerrada. `UNIQUE (tenant_id, abierta_marca)`: como mucho una caja abierta por tenant |
+| fondo_inicial | decimal(12,2) | ≥ 0 |
+| conteo_apertura, conteo_cierre | json nullable | `{"5000": 3, "1": 7}` (céntimos → cantidad), catálogo en `App\Support\DenominacionesEuro` |
+| abierta_por / abierta_at, cerrada_por / cerrada_at | fk users / datetime | |
+| num_tickets, total_facturado, efectivo_ventas, entradas, salidas, efectivo_esperado, efectivo_contado, descuadre | int / decimal(12,2) | **congeladas al cerrar**; null mientras está abierta |
+| observacion | text nullable | obligatoria si `|descuadre| > pos.caja_umbral_descuadre` |
+| resumen | json nullable | desglose congelado: `por_metodo` (los 4 métodos siempre), `por_impuesto` (`tipo_impuesto`+`porcentaje`), `primer_ticket`/`ultimo_ticket`, `anulados`, `movimientos` |
+
+Índices: `UNIQUE (tenant_id, abierta_marca)`, `(tenant_id, abierta_at)`. Sin `softDeletes`.
+
+### `caja_movimientos` — entradas/salidas manuales (solo alta)
+
+`caja_sesion_id`, `tipo` (`entrada`/`salida`), `importe` (> 0), `motivo` (≤ 160), `usuario_id`,
+timestamps. Ledger append-only como `movimientos_stock`: una corrección es un movimiento del tipo
+contrario; el modelo lanza excepción en `update`/`delete`.
+
+### Invariantes (cubiertos por tests en `tests/Feature/Caja/`)
+
+- **C1** — como mucho una sesión abierta por tenant (índice único + `lockForUpdate`).
+- **C2** — una sesión cerrada no admite `update` ni `delete`.
+- **C3** — `efectivo_esperado = fondo_inicial + efectivo_ventas + entradas − salidas`;
+  `descuadre = efectivo_contado − efectivo_esperado`, al céntimo, calculados en servidor.
+- **C4** — `total_facturado` = suma de `resumen.por_metodo` = suma de `facturas.total` no anuladas de
+  la sesión.
+
+### Reglas de servicio
+
+- **Cobrar exige caja abierta**: `RegistroTicket` (único punto de emisión de tickets, también para
+  cuentas de mesa vía `CobradorCuenta`) lee la sesión abierta con `lockForUpdate` dentro de su
+  transacción; sin sesión lanza `CajaCerradaException` → 409 `caja_cerrada`. El mismo bloqueo
+  serializa emisión y cierre: un ticket nunca cae entre dos sesiones.
+- **Un solo cálculo**: `App\Services\ResumenCaja` alimenta el informe X (en vivo), el cierre
+  (`CierreCaja`, que congela su salida) y el PDF del informe Z.
+- **Arqueo ciego**: ningún endpoint devuelve el efectivo esperado con la sesión abierta.
+- Un ticket **anulado** después del cierre no cambia ese cierre (cifras congeladas).
+
+### Conservación (RGPD)
+
+Solo referencias a `users` y textos escritos por el negocio (motivo, observación): no hay IP, user
+agent ni datos de clientes. Son registros de control contable que acompañan a los tickets, con la
+misma vocación de conservación que la documentación contable (art. 30 Código de Comercio, 6 años),
+así que **no tienen purga**: purgar un cierre dejaría tickets sin su arqueo.
 
 ## Asistente IA (features 030 y 045)
 

@@ -6,6 +6,7 @@ use App\Models\Factura;
 use App\Models\PosZona;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Tests\Concerns\ConCajaAbierta;
 use Tests\Concerns\MontaSalaPos;
 use Tests\TestCase;
 
@@ -16,7 +17,7 @@ use Tests\TestCase;
  */
 class SuplementoZonaRegimenTest extends TestCase
 {
-    use MontaSalaPos, RefreshDatabase;
+    use ConCajaAbierta, MontaSalaPos, RefreshDatabase;
 
     /** @return array<string, array{string}> */
     public static function regimenes(): array

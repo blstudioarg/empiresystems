@@ -6,6 +6,7 @@ use App\Models\Factura;
 use App\Models\PosOpcion;
 use App\Models\PosOpcionGrupo;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\ConCajaAbierta;
 use Tests\Concerns\MontaSalaPos;
 use Tests\TestCase;
 
@@ -16,7 +17,7 @@ use Tests\TestCase;
  */
 class StockOpcionVinculadaTest extends TestCase
 {
-    use MontaSalaPos, RefreshDatabase;
+    use ConCajaAbierta, MontaSalaPos, RefreshDatabase;
 
     public function test_vender_la_opcion_descuenta_stock_del_articulo_vinculado_sin_linea_propia(): void
     {

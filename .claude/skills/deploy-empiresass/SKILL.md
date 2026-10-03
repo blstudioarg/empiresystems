@@ -1,12 +1,14 @@
 ---
 name: deploy-empiresass
-description: "Desplegar cambios al servidor de pruebas cPanel de empiresass.gestionley.com (FTP + Terminal). Usar cuando el usuario pida subir/desplegar/deployar cambios a ese servidor, a empiresass, a pruebapos o a cualquier subdominio de tenant que viva ahí."
+description: "Desplegar cambios al servidor cPanel de empiresass.gestionley.com (único destino de despliegue) (FTP + Terminal). Usar cuando el usuario pida subir/desplegar/deployar cambios a ese servidor, a empiresass, a pruebapos o a cualquier subdominio de tenant que viva ahí."
 allowed-tools: Bash, mcp__ftp__*
 ---
 
 # Deploy a empiresass.gestionley.com (servidor de pruebas cPanel)
 
-Servidor de pruebas, no el de producción real (ese es Railway, `docs/05-despliegue-railway.md`).
+Único destino de despliegue del proyecto (Railway, `docs/05-despliegue-railway.md`, quedó
+obsoleto). Hosting compartido con clientes reales: cuidado con cualquier acción destructiva.
+El código se integra antes en `main` y se pushea; el push no despliega nada por sí solo.
 Contexto completo y las particularidades del hosting: `docs/08-despliegue-empiresass.md` — leerlo
 si algo de este skill no cuadra con lo que se observa, puede haber cambiado.
 

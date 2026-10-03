@@ -22,6 +22,7 @@ class TicketPago extends Model
     protected $fillable = [
         'tenant_id',
         'factura_id',
+        'caja_sesion_id',
         'metodo',
         'importe',
     ];
@@ -42,5 +43,11 @@ class TicketPago extends Model
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class);
+    }
+
+    /** Sesión de caja en la que se cobró (feature 048); null en tickets anteriores a la caja. */
+    public function cajaSesion(): BelongsTo
+    {
+        return $this->belongsTo(CajaSesion::class, 'caja_sesion_id');
     }
 }

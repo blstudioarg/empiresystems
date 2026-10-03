@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\TipoArticulo;
 use App\Enums\TipoFactura;
+use App\Exceptions\CajaCerradaException;
 use App\Exceptions\PagoTicketDescuadradoException;
 use App\Exceptions\TicketFueraDeTopeException;
 use App\Http\Requests\StoreTicketRequest;
@@ -12,6 +13,7 @@ use App\Models\Cliente;
 use App\Models\Factura;
 use App\Models\PosCuenta;
 use App\Models\PosMesa;
+use App\Services\AperturaCaja;
 use App\Services\RegistroTicket;
 use App\Support\ConfigPos;
 use App\Support\TiposImpositivos;
@@ -21,6 +23,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -145,6 +148,10 @@ class PosController extends Controller
             'cobroDivididoActivo' => ConfigPos::cobroDivididoActivo($tenantId),
             'suplementoZonaActivo' => ConfigPos::suplementoZonaActivo($tenantId),
             'cuentaPrecargada' => $cuenta,
+            // Caja (feature 048): cobrar exige caja abierta. El TPV lo muestra en un chip y, si
+            // está cerrada, ofrece abrirla ahí mismo al tocar Cobrar (FR-020).
+            'cajaAbierta' => AperturaCaja::sesionAbierta() !== null,
+            'puedeAbrirCaja' => Gate::allows('abrir-caja'),
             'mesaPreseleccionada' => $mesaPreseleccionada,
             // Payloads ya en forma de array plano para el `@json(...)` de la vista: construir
             // arrays con arrow functions dentro de un directivo Blade confunde su extractor de
@@ -221,6 +228,14 @@ class PosController extends Controller
     {
         try {
             $ticket = $this->registroTicket->registrar($request->validated());
+        } catch (CajaCerradaException $e) {
+            // 409 y no 422: no es un dato mal enviado, es el estado de la caja (feature 048). El
+            // `codigo` permite al TPV ofrecer abrirla sin perder el ticket armado.
+            if ($request->wantsJson()) {
+                return response()->json(['message' => $e->getMessage(), 'codigo' => CajaCerradaException::CODIGO], 409);
+            }
+
+            return redirect()->back()->with('error', $e->getMessage());
         } catch (TicketFueraDeTopeException|PagoTicketDescuadradoException $e) {
             if ($request->wantsJson()) {
                 return response()->json(['message' => $e->getMessage()], 422);

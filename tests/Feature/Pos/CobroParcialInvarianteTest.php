@@ -5,6 +5,7 @@ namespace Tests\Feature\Pos;
 use App\Models\PosCobroLinea;
 use App\Models\PosCuentaLinea;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\ConCajaAbierta;
 use Tests\Concerns\MontaSalaPos;
 use Tests\TestCase;
 
@@ -15,7 +16,7 @@ use Tests\TestCase;
  */
 class CobroParcialInvarianteTest extends TestCase
 {
-    use MontaSalaPos, RefreshDatabase;
+    use ConCajaAbierta, MontaSalaPos, RefreshDatabase;
 
     public function test_la_suma_de_cobro_lineas_iguala_la_cantidad_saldada(): void
     {

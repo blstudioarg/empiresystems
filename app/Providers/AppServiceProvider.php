@@ -46,6 +46,10 @@ class AppServiceProvider extends ServiceProvider
         // del resto de usuarios; las rutas super_admin.* mantienen además EnsureSuperAdmin.
         Gate::before(fn (User $user) => $user->isSuperAdmin() ? true : null);
 
+        // Abrir la caja (feature 048): quien gestiona la caja, o quien cobra en el TPV — un cajero
+        // tiene que poder abrirla desde la pantalla de venta sin acceso al resto de la caja.
+        Gate::define('abrir-caja', fn (User $user) => $user->can('ver-pos-caja') || $user->can('ver-pos-crear'));
+
         // Convierte un datetime (guardado en UTC) a la zona horaria del tenant activo, solo para
         // mostrarlo. Azúcar para vistas/JSON dentro de contexto de tenant: `$fecha->enZonaTenant()`.
         // Sin tenant activo (contexto central) cae al default. Solo para datetimes reales, no para

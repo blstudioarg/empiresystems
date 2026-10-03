@@ -18,6 +18,14 @@ clientes, artículos o proveedores desde tu propia hoja de cálculo.</p>
 	los das escribiendo en el chat y él los aplica; también podés pedirle que deje fuera registros
 	concretos. Antes de confirmar ves la tabla con todos los campos de todo lo que se va a crear.</p>
 
+<p>Para entregarle el fichero tenés tres gestos, todos equivalentes: el <strong>clip</strong> del
+	panel, <strong>pegarlo con Ctrl+V</strong> en el campo de escribir —la vía más rápida para una
+	captura de pantalla, que así no hace falta guardar a disco— y <strong>arrastrarlo y soltarlo</strong>
+	sobre el panel del chat. Si todavía no dijiste de qué módulo va la importación, el asistente se
+	queda con el fichero y te lo pregunta; no se pierde. Se adjunta un fichero por gesto: si soltás
+	varios, se toma el primero y te avisa del resto. Los límites de formato y tamaño son los mismos
+	sea cual sea el gesto.</p>
+
 <p>Por esa vía además se admiten cosas que no son hojas de cálculo: un PDF, una foto de un listado o
 	un texto pegado. El asistente los interpreta, pero <strong>nunca inventa un dato que no aparezca
 	en el documento</strong>: si no lo lee con seguridad, lo deja vacío y te lo pregunta.</p>

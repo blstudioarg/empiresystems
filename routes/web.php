@@ -47,6 +47,8 @@ use App\Http\Controllers\OportunidadController;
 use App\Http\Controllers\PagoController;
 use App\Http\Controllers\PlantillaEmailController;
 use App\Http\Controllers\Pos\ArticuloOpcionController as PosArticuloOpcionController;
+use App\Http\Controllers\Pos\CajaCierreController;
+use App\Http\Controllers\Pos\CajaController;
 use App\Http\Controllers\Pos\CuentaController as PosCuentaController;
 use App\Http\Controllers\Pos\OpcionController as PosOpcionController;
 use App\Http\Controllers\Pos\OpcionGrupoController as PosOpcionGrupoController;
@@ -218,6 +220,18 @@ Route::middleware(['tenant.context', 'auth', 'sin_super_admin'])->group(function
         Route::post('/exportar/albaranes', [ExportacionController::class, 'exportar'])
             ->defaults('modulo', 'albaranes')->name('albaranes.exportar');
     });
+
+    // POS — caja (feature 048). Declarada ANTES de `/pos/{factura}/pdf` para que "caja" nunca se
+    // lea como el id de un ticket. Abrir admite además a quien crea tickets (gate `abrir-caja`).
+    Route::middleware('can:ver-pos-caja')->group(function () {
+        Route::get('/pos/caja', [CajaController::class, 'index'])->name('pos.caja');
+        Route::post('/pos/caja/movimientos', [CajaController::class, 'movimiento'])->name('pos.caja.movimientos.store');
+        Route::post('/pos/caja/cerrar', [CajaController::class, 'cerrar'])->name('pos.caja.cerrar');
+        Route::get('/pos/caja/cierres', [CajaCierreController::class, 'index'])->name('pos.caja.cierres');
+        Route::get('/pos/caja/sesiones/{sesion}/informe', [CajaCierreController::class, 'informe'])->name('pos.caja.informe');
+    });
+    Route::post('/pos/caja/abrir', [CajaController::class, 'abrir'])
+        ->middleware('can:abrir-caja')->name('pos.caja.abrir');
 
     // POS — facturas simplificadas (tickets). "Crear ticket" con permiso propio (doc 09, Cambio 3).
     Route::middleware('can:ver-pos-crear')->group(function () {

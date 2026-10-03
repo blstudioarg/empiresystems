@@ -28,6 +28,8 @@ class PosConfiguracionController extends Controller
             'cobro_dividido_activo' => ['required', 'boolean'],
             'suplemento_zona_activo' => ['required', 'boolean'],
             'mesa_olvidada_min' => ['required', 'integer', 'min:1', 'max:1440'],
+            // Caja (feature 048): `sometimes` para no romper a quien guarda solo la hostelería.
+            'caja_umbral_descuadre' => ['sometimes', 'numeric', 'min:0', 'max:9999.99'],
         ]);
 
         // FR-006: apagar el módulo con cuentas abiertas dejaría consumo real inaccesible y mesas

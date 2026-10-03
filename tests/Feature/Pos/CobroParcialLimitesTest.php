@@ -3,6 +3,7 @@
 namespace Tests\Feature\Pos;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\ConCajaAbierta;
 use Tests\Concerns\MontaSalaPos;
 use Tests\TestCase;
 
@@ -12,7 +13,7 @@ use Tests\TestCase;
  */
 class CobroParcialLimitesTest extends TestCase
 {
-    use MontaSalaPos, RefreshDatabase;
+    use ConCajaAbierta, MontaSalaPos, RefreshDatabase;
 
     public function test_pedir_mas_unidades_de_las_pendientes_responde_422(): void
     {

@@ -3,6 +3,7 @@
 namespace Tests\Feature\Pos;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\ConCajaAbierta;
 use Tests\Concerns\MontaSalaPos;
 use Tests\TestCase;
 
@@ -12,7 +13,7 @@ use Tests\TestCase;
  */
 class CobroParcialTopeTest extends TestCase
 {
-    use MontaSalaPos, RefreshDatabase;
+    use ConCajaAbierta, MontaSalaPos, RefreshDatabase;
 
     public function test_un_cobro_parcial_por_debajo_del_tope_se_emite_aunque_la_cuenta_total_lo_supere(): void
     {

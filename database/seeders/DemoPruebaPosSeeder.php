@@ -13,6 +13,8 @@ use App\Models\Factura;
 use App\Models\Lead;
 use App\Models\Presupuesto;
 use App\Models\Tenant;
+use App\Models\User;
+use App\Services\AperturaCaja;
 use App\Services\EntregadorAlbaran;
 use App\Services\RegistroAlbaran;
 use App\Services\RegistroFacturaBorrador;
@@ -404,6 +406,15 @@ class DemoPruebaPosSeeder extends Seeder
     {
         $registro = app(RegistroTicket::class);
 
+        // Desde la feature 048 cobrar exige caja abierta. Se reutiliza la que haya; si no hay, se
+        // abre una (fondo 0) a nombre del primer usuario del tenant y se deja abierta: la demo
+        // muestra así la caja del día con estos tickets. Idempotente como el resto del seeder.
+        if (! $this->asegurarCajaAbierta()) {
+            $this->command?->warn('Sin usuarios en el tenant: no se puede abrir caja, se omiten los tickets.');
+
+            return;
+        }
+
         // Sin desglose de pagos: `RegistroTicket` asume un único cobro íntegro en efectivo.
         $definiciones = [
             't1' => ['lineas' => [[0, 1], [2, 2]]],
@@ -428,6 +439,23 @@ class DemoPruebaPosSeeder extends Seeder
     // ---------------------------------------------------------------------
     // Utilidades
     // ---------------------------------------------------------------------
+
+    private function asegurarCajaAbierta(): bool
+    {
+        if (AperturaCaja::sesionAbierta()) {
+            return true;
+        }
+
+        $usuario = User::where('tenant_id', tenant()->getTenantKey())->orderBy('id')->first();
+
+        if (! $usuario) {
+            return false;
+        }
+
+        app(AperturaCaja::class)->abrir($usuario, '0');
+
+        return true;
+    }
 
     /**
      * Construye líneas de documento a partir de índices del catálogo: [[indiceArticulo, cantidad]].

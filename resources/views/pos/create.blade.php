@@ -1,8 +1,9 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 
 @section('title', 'POS · Crear ticket')
 
 @push('styles')
+	<link href="@assetv('css/pos-caja.css')" rel="stylesheet">
 	<style>
 		/* ── POS TPV: pensado tablet-first (landscape), 3 zonas: catálogo · ticket · botonera.
 		   El "verde dinero" (--pos-money) marca el total y el botón Cobrar; el primario del tenant
@@ -658,6 +659,13 @@
 							<span class="titulo">
 								<h4 class="card-title mb-0">Ticket</h4>
 								<span class="pos-ticket-count d-none" id="pos-ticket-count">0</span>
+								{{-- Estado de la caja (feature 048). Cerrada, es un botón: abre la caja ahí mismo. --}}
+								<button type="button" class="pos-caja-chip {{ $cajaAbierta ? 'abierta' : 'cerrada' }}" id="pos-caja-chip"
+									@if ($cajaAbierta) tabindex="-1" aria-disabled="true" @endif
+									aria-label="{{ $cajaAbierta ? 'Caja abierta' : 'Caja cerrada. Toca para abrirla' }}">
+									<span class="dot" aria-hidden="true"></span>
+									<span data-caja-chip-texto>{{ $cajaAbierta ? 'Caja abierta' : 'Caja cerrada' }}</span>
+								</button>
 								{{-- Contexto de mesa (FR-060): solo visible con el módulo de hostelería activo
 								     y una mesa de por medio; venta directa no la muestra nunca. --}}
 								@if ($hosteleriaActiva ?? false)
@@ -1052,6 +1060,29 @@
 @section('ayuda-titulo', 'Crear ticket (POS)')
 @section('ayuda')
 	@include('ayuda.pos-crear')
+	{{-- Abrir caja desde el TPV (feature 048, FR-020): el mismo panel que la pantalla de caja. --}}
+	<div class="modal fade caja-modal" id="posCajaAperturaModal" tabindex="-1" aria-labelledby="posCajaAperturaTitulo" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered modal-xl">
+			<div class="modal-content caja">
+				<div class="modal-header">
+					<h5 class="modal-title" id="posCajaAperturaTitulo">La caja está cerrada</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+				</div>
+				<div class="modal-body">
+					@if ($puedeAbrirCaja)
+						<p class="text-muted mb-3">Para cobrar hay que abrir la caja. El ticket que estás armando no se pierde.</p>
+						@include('pos._caja-apertura', ['id' => 'pos-caja-apertura', 'cancelable' => true])
+					@else
+						<div class="text-center py-4">
+							<x-lordicon icon="wired-outline-2510-money-safety-hover-pinch" size="64" trigger="loop" />
+							<p class="fs-5 fw-bold mt-3 mb-1">La caja está cerrada</p>
+							<p class="text-muted mb-0">Pide a un responsable que la abra para poder cobrar. El ticket no se pierde.</p>
+						</div>
+					@endif
+				</div>
+			</div>
+		</div>
+	</div>
 @endsection
 
 @push('scripts')
@@ -1061,6 +1092,7 @@
 			indexUrl: @json(route('pos.index')),
 			pdfUrlTemplate: @json(route('pos.pdf', ['factura' => '__ID__', 'formato' => 'ticket'])),
 			tope: {{ $topeAplicable }},
+			caja: { abierta: @json($cajaAbierta), puedeAbrir: @json($puedeAbrirCaja), abrirUrl: @json(route('pos.caja.abrir')) },
 			regimen: @json($regimen),
 			@if ($hosteleriaActiva ?? false)
 			salaUrl: @json($salaUrlPayload),
@@ -1078,10 +1110,15 @@
 	{{-- Orden obligatorio: `pos-form.js` crea `window.PosApp` (estado compartido + registro de
 	     módulos); los demás se registran contra él. La inicialización real ocurre en
 	     DOMContentLoaded y en dos pasadas, así que entre los tres módulos el orden no importa. --}}
+	{{-- `pos-teclado.js` (regla de tecleo compartida con la caja, feature 048) antes que nadie. --}}
+	<script src="@assetv('js/pos-teclado.js')"></script>
 	<script src="@assetv('js/pos-form.js')"></script>
 	<script src="@assetv('js/pos-ticket.js')"></script>
 	<script src="@assetv('js/pos-catalogo.js')"></script>
 	<script src="@assetv('js/pos-cobro.js')"></script>
+	<script src="@assetv('js/pos-caja-bandeja.js')"></script>
+	<script src="@assetv('js/pos-caja-apertura.js')"></script>
+	<script src="@assetv('js/pos-caja-tpv.js')"></script>
 	@if ($hosteleriaActiva ?? false)
 		<script src="@assetv('js/pos-cuenta.js')"></script>
 	@endif

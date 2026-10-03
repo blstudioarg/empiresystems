@@ -40,6 +40,7 @@ class RutasPermisosTest extends TestCase
             'ver-cobros' => '/cobros',
             'ver-pos' => '/pos',
             'ver-pos-crear' => '/pos/crear',
+            'ver-pos-caja' => '/pos/caja',
             // Módulo de hostelería (feature 038). Estas dos rutas llevan además el middleware
             // `modulo.hosteleria`, así que el test activa el módulo en el tenant antes del bucle;
             // el caso "permiso sí, módulo apagado" se cubre en ModuloApagadoTest.

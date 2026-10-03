@@ -7,11 +7,11 @@ use PHPUnit\Framework\TestCase;
 
 class CatalogoPermisosTest extends TestCase
 {
-    public function test_expone_las_34_claves_del_catalogo(): void
+    public function test_expone_las_35_claves_del_catalogo(): void
     {
         // 31 + `ver-pos-sala` y `ver-pos-opciones` del módulo de hostelería (feature 038)
-        // + `ver-cobros` del módulo de Cobros (feature 043).
-        $this->assertCount(34, CatalogoPermisos::claves());
+        // + `ver-cobros` del módulo de Cobros (feature 043) + `ver-pos-caja` (feature 048).
+        $this->assertCount(35, CatalogoPermisos::claves());
     }
 
     public function test_no_hay_claves_duplicadas(): void
@@ -107,6 +107,8 @@ class CatalogoPermisosTest extends TestCase
         $this->assertContains('ver-pos-opciones', $base);
         // ver-cobros no está excluido: todo usuario base con acceso a facturas también cobra.
         $this->assertContains('ver-cobros', $base);
-        $this->assertCount(24, $base);
+        // ver-pos-caja tampoco: en un POS real el cajero que cobra es quien abre y cierra la caja.
+        $this->assertContains('ver-pos-caja', $base);
+        $this->assertCount(25, $base);
     }
 }

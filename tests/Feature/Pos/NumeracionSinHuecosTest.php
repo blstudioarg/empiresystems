@@ -4,6 +4,7 @@ namespace Tests\Feature\Pos;
 
 use App\Models\Factura;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\ConCajaAbierta;
 use Tests\Concerns\MontaSalaPos;
 use Tests\TestCase;
 
@@ -17,7 +18,7 @@ use Tests\TestCase;
  */
 class NumeracionSinHuecosTest extends TestCase
 {
-    use MontaSalaPos, RefreshDatabase;
+    use ConCajaAbierta, MontaSalaPos, RefreshDatabase;
 
     public function test_abrir_y_anular_cuentas_no_deja_huecos_en_la_serie(): void
     {

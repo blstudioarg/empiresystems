@@ -8,11 +8,12 @@ use App\Models\Serie;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\ConCajaAbierta;
 use Tests\TestCase;
 
 class TicketStockTest extends TestCase
 {
-    use RefreshDatabase;
+    use ConCajaAbierta, RefreshDatabase;
 
     public function test_emision_de_ticket_pos_descuenta_stock_igual_que_ordinaria(): void
     {

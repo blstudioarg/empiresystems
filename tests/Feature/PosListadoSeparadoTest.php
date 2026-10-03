@@ -8,11 +8,12 @@ use App\Models\Serie;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\ConCajaAbierta;
 use Tests\TestCase;
 
 class PosListadoSeparadoTest extends TestCase
 {
-    use RefreshDatabase;
+    use ConCajaAbierta, RefreshDatabase;
 
     public function test_pos_index_solo_muestra_simplificadas_y_facturas_index_las_excluye(): void
     {

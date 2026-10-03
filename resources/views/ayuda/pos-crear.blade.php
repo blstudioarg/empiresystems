@@ -13,6 +13,10 @@ tablet o pantalla táctil. Tocás productos y se van sumando al ticket de la der
 		emite como factura simplificada al instante.</li>
 </ol>
 
+<p class="ayuda-nota">Para cobrar, la <strong>caja tiene que estar abierta</strong> (lo ves en el
+chip junto a «Ticket»). Si está cerrada, al tocar <em>Cobrar</em> te la deja abrir ahí mismo con el
+fondo de cambio y seguís cobrando; el ticket que armaste no se pierde.</p>
+
 <p class="ayuda-nota">El reparto por métodos es <strong>interno</strong>: sirve para tu control de
 caja y se consulta en el listado de tickets. No aparece en el PDF del ticket que recibe el cliente.</p>
 

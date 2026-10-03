@@ -51,6 +51,19 @@ para gestionar el stock más allá de un contador suelto:
 > Ver `docs/03-modelo-datos.md` (secciones `proveedores`, `compras`, `compra_lineas`,
 > `movimientos_stock`) para el modelo de datos de esta fase.
 
+## Alcance ampliado — Caja del POS (feature 048)
+El POS (tickets / facturas simplificadas) incluye **control de caja** como un TPV real:
+- **Apertura** con fondo de cambio; **cobrar exige caja abierta** (una caja por negocio, compartida
+  por todas las tablets).
+- **Entradas y salidas** manuales de efectivo durante el turno (ledger de solo alta).
+- **Cierre con arqueo ciego** por billetes y monedas: esperado vs. contado y diferencia, con
+  explicación obligatoria por encima de un umbral configurable.
+- **Informe Z** (80 mm / A4) congelado al cerrar e **historial** de cierres.
+
+Es control interno del negocio, no un requisito fiscal: no toca numeración, importes ni Verifactu.
+Fuera de alcance: varias cajas/terminales por negocio, cierre por empleado, conciliación con
+datáfono o banco, apertura física del cajón. Modelo en `docs/03-modelo-datos.md` ("Caja del POS").
+
 ## Alcance ampliado — Gestor documental (incorporado al MVP)
 El producto incluye un **espacio de archivos por tenant** tipo "Drive": carpetas anidadas y
 archivos ligeros (PDF, imágenes, ofimática, texto/csv), sin permisos por carpeta ni versionado —

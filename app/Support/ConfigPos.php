@@ -30,6 +30,14 @@ class ConfigPos
 
     public const DEFAULT_MESA_OLVIDADA_MIN = 45;
 
+    /**
+     * Caja (feature 048): diferencia de arqueo, en euros, a partir de la cual cerrar exige escribir
+     * qué pasó. **No** depende del módulo de hostelería: la caja aplica a todo POS.
+     */
+    public const CLAVE_CAJA_UMBRAL_DESCUADRE = 'pos.caja_umbral_descuadre';
+
+    public const DEFAULT_CAJA_UMBRAL_DESCUADRE = 5.00;
+
     public const GRUPO = 'pos';
 
     public static function hosteleriaActivo(int $tenantId): bool
@@ -57,13 +65,20 @@ class ConfigPos
         return self::entero($tenantId, self::CLAVE_MESA_OLVIDADA_MIN, self::DEFAULT_MESA_OLVIDADA_MIN);
     }
 
+    public static function cajaUmbralDescuadre(int $tenantId): float
+    {
+        $valor = self::fila($tenantId, self::CLAVE_CAJA_UMBRAL_DESCUADRE);
+
+        return $valor !== null ? round((float) $valor, 2) : self::DEFAULT_CAJA_UMBRAL_DESCUADRE;
+    }
+
     /**
      * Estado completo del módulo, para la pestaña de configuración y para el payload de las
      * vistas del POS. Las capacidades se devuelven **crudas** (tal cual están guardadas), no
      * cruzadas con el interruptor maestro: la pantalla de configuración tiene que poder mostrar
      * cómo quedarán al reactivar el módulo (FR-007).
      *
-     * @return array{hosteleria_activo: bool, opciones_activo: bool, cobro_dividido_activo: bool, suplemento_zona_activo: bool, mesa_olvidada_min: int}
+     * @return array{hosteleria_activo: bool, opciones_activo: bool, cobro_dividido_activo: bool, suplemento_zona_activo: bool, mesa_olvidada_min: int, caja_umbral_descuadre: float}
      */
     public static function todo(int $tenantId): array
     {
@@ -73,6 +88,7 @@ class ConfigPos
             'cobro_dividido_activo' => self::flag($tenantId, self::CLAVE_COBRO_DIVIDIDO_ACTIVO),
             'suplemento_zona_activo' => self::flag($tenantId, self::CLAVE_SUPLEMENTO_ZONA_ACTIVO),
             'mesa_olvidada_min' => self::mesaOlvidadaMin($tenantId),
+            'caja_umbral_descuadre' => self::cajaUmbralDescuadre($tenantId),
         ];
     }
 
@@ -80,7 +96,7 @@ class ConfigPos
      * Persiste los flags del módulo. Nunca borra zonas, mesas, grupos ni opciones: apagar una
      * capacidad solo la oculta (FR-007), de modo que reactivarla recupera los datos intactos.
      *
-     * @param  array{hosteleria_activo?: bool, opciones_activo?: bool, cobro_dividido_activo?: bool, suplemento_zona_activo?: bool, mesa_olvidada_min?: int}  $valores
+     * @param  array{hosteleria_activo?: bool, opciones_activo?: bool, cobro_dividido_activo?: bool, suplemento_zona_activo?: bool, mesa_olvidada_min?: int, caja_umbral_descuadre?: float|string}  $valores
      */
     public static function guardar(int $tenantId, array $valores): void
     {
@@ -99,6 +115,10 @@ class ConfigPos
 
         if (array_key_exists('mesa_olvidada_min', $valores)) {
             self::escribir($tenantId, self::CLAVE_MESA_OLVIDADA_MIN, (string) (int) $valores['mesa_olvidada_min'], 'integer');
+        }
+
+        if (array_key_exists('caja_umbral_descuadre', $valores)) {
+            self::escribir($tenantId, self::CLAVE_CAJA_UMBRAL_DESCUADRE, number_format((float) $valores['caja_umbral_descuadre'], 2, '.', ''), 'decimal');
         }
     }
 

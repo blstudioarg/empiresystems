@@ -46,10 +46,16 @@ class LoginController extends Controller
 
         $remember = $request->boolean('remember');
 
+        // El tenant entra en las credenciales, no solo en el gate posterior: desde que el correo
+        // es único POR TENANT, el mismo email puede existir en varias empresas, y un attempt que
+        // busque solo por email resolvería un usuario cualquiera de entre los que lo comparten
+        // (el primero que devuelva la BD). Filtrando por el tenant del dominio se autentica
+        // siempre al usuario correcto. Super admin: `tenant_id` NULL en contexto central.
         $attempted = Auth::attempt([
             'email' => $credentials['email'],
             'password' => $credentials['password'],
             'activo' => true,
+            'tenant_id' => tenancy()->initialized ? tenant('id') : null,
         ], $remember);
 
         if ($attempted && ! $this->tenantIsUsable(Auth::user())) {
@@ -65,7 +71,12 @@ class LoginController extends Controller
         if (! $attempted) {
             RateLimiter::hit($throttleKey, 60);
 
+            // Mismo criterio que el attempt: el aviso de "cuenta pendiente/no habilitada" tiene
+            // que mirar al usuario de ESTE tenant, no a otro que comparta el correo.
             $pendienteORechazado = User::where('email', $credentials['email'])
+                ->where(fn ($query) => tenancy()->initialized
+                    ? $query->where('tenant_id', tenant('id'))
+                    : $query->whereNull('tenant_id'))
                 ->whereIn('estado', [EstadoUsuario::Pendiente, EstadoUsuario::Rechazado])
                 ->first();
 
