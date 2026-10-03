@@ -1,10 +1,24 @@
-# Despliegue en el servidor de pruebas (empiresass.gestionley.com)
+# Despliegue en empiresass.gestionley.com (único destino de despliegue)
 
 Este documento es la referencia técnica de cómo está desplegada la app en el hosting cPanel
 compartido de `empiresass.gestionley.com` (dominio del panel de super admin) y sus subdominios de
-tenant (ej. `pruebapos.gestionley.com`). Es un servidor de **pruebas**, no el destino final de
-producción real (ese sigue siendo Railway, ver `05-despliegue-railway.md`), pero se trabaja sobre
-él de forma continua, así que el procedimiento tiene que ser rápido y repetible.
+tenant (ej. `pruebapos.gestionley.com`). **Es el único destino de despliegue del proyecto**: Railway
+(`05-despliegue-railway.md`) quedó obsoleto y ya no se usa (aclarado por el usuario el 2026-10-03).
+Es un hosting compartido con clientes reales (ver CLAUDE.md): se trabaja sobre él de forma
+continua, así que el procedimiento tiene que ser rápido, repetible y cuidadoso.
+
+## Flujo de un deploy
+
+1. El código se integra en **`main`** (merge de la rama de la feature) y se pushea a GitHub. El
+   push **no despliega nada por sí solo**: no hay CI ni auto-deploy conectado.
+2. Se suben al servidor los archivos cambiados (procedimiento en el skill `deploy-empiresass`;
+   "archivos sueltos" en el caso normal, paquete completo solo si cambió `composer.json`/
+   `composer.lock` o es un primer deploy).
+3. En el Terminal de cPanel, siempre con el PHP explícito (punto 5 de abajo): `migrate --force` si
+   hay migraciones nuevas — revisando antes con `migrate:status` que las pendientes sean las
+   esperadas —, los seeders que pida la feature (p. ej. `PermisosSeeder` si hay permisos nuevos) y
+   `optimize:clear` + `config:cache` + `route:cache` + `view:cache`.
+4. Verificar en la app (y en `storage/logs/laravel.log` si algo falla).
 
 **Credenciales de FTP, base de datos, SSH y accesos de la app**: siempre en `ftp.txt` (raíz del
 repo, gitignored). Este documento no las repite.

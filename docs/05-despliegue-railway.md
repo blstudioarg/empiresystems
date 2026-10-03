@@ -1,4 +1,8 @@
-# Despliegue en Railway
+# Despliegue en Railway (OBSOLETO)
+
+> **Obsoleto (2026-10-03): Railway ya no se usa.** El único destino de despliegue es
+> `empiresass.gestionley.com` — ver `08-despliegue-empiresass.md` y el skill `deploy-empiresass`.
+> Este documento se conserva solo como referencia histórica del contenedor Docker.
 
 Guía para servir Empire Systems CRM (Laravel 12, multi-tenant single-database) en
 [Railway](https://railway.com). El proyecto se despliega como **un contenedor Docker**
