@@ -7,6 +7,7 @@ use App\Models\PosCobro;
 use App\Models\PosMesa;
 use App\Models\PosZona;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\ConCajaAbierta;
 use Tests\Concerns\MontaSalaPos;
 use Tests\TestCase;
 
@@ -17,7 +18,7 @@ use Tests\TestCase;
  */
 class SuplementoZonaVigenciaTest extends TestCase
 {
-    use MontaSalaPos, RefreshDatabase;
+    use ConCajaAbierta, MontaSalaPos, RefreshDatabase;
 
     public function test_se_aplica_el_valor_vigente_de_la_zona_al_momento_de_cobrar(): void
     {

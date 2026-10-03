@@ -5,8 +5,10 @@ namespace App\Services;
 use App\Enums\EstadoFactura;
 use App\Enums\FormaPago;
 use App\Enums\TipoFactura;
+use App\Exceptions\CajaCerradaException;
 use App\Exceptions\PagoTicketDescuadradoException;
 use App\Exceptions\TicketFueraDeTopeException;
+use App\Models\CajaSesion;
 use App\Models\Cliente;
 use App\Models\Factura;
 use App\Models\Serie;
@@ -20,6 +22,11 @@ use Illuminate\Support\Facades\DB;
  * Reutiliza el motor fiscal existente: cálculo server-side (CalculadoraFactura), numeración con
  * bloqueo por serie/año e inmutabilidad/eventos (EmisorFacturas). Añade la regla propia de la
  * simplificada: bloqueo duro de tope de importe (TopeSimplificada) y receptor opcional.
+ *
+ * Caja (feature 048, FR-020): **cobrar exige una caja abierta**. Es aquí, y no en cada controlador,
+ * porque este es el único punto por el que pasa toda emisión de ticket (el TPV y el cobro de
+ * cuentas de mesa vía CobradorCuenta). La sesión abierta se lee con bloqueo dentro de la misma
+ * transacción que emite, así que un ticket nunca cae "entre" una sesión cerrándose y la siguiente.
  */
 class RegistroTicket
 {
@@ -73,6 +80,17 @@ class RegistroTicket
         $formaPago = $this->formaPagoPredominante($pagos);
 
         return DB::transaction(function () use ($datos, $receptor, $cliente, $regimen, $aplicaRecargo, $resultado, $pagos, $formaPago) {
+            // Antes de crear nada: sin caja abierta no se toca la numeración (FR-020).
+            $sesion = CajaSesion::query()
+                ->where('tenant_id', (int) tenant()->getTenantKey())
+                ->abierta()
+                ->lockForUpdate()
+                ->first();
+
+            if ($sesion === null) {
+                throw CajaCerradaException::paraCobrar();
+            }
+
             $serie = Serie::activaPorTipo(TipoFactura::Simplificada);
             $hoy = now()->toDateString();
 
@@ -136,6 +154,7 @@ class RegistroTicket
             // Desglose interno de cómo se cobró en caja (uno o varios métodos).
             foreach ($pagos as $pago) {
                 $factura->pagosTicket()->create([
+                    'caja_sesion_id' => $sesion->id,
                     'metodo' => $pago['metodo'],
                     'importe' => $pago['importe'],
                 ]);

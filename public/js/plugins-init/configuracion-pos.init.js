@@ -45,6 +45,7 @@
 						cobro_dividido_activo: $('#pos_cobro_dividido_activo').is(':checked') ? 1 : 0,
 						suplemento_zona_activo: $('#pos_suplemento_zona_activo').is(':checked') ? 1 : 0,
 						mesa_olvidada_min: $('#pos_mesa_olvidada_min').val(),
+						caja_umbral_descuadre: $('#pos_caja_umbral_descuadre').val(),
 					},
 				});
 			})

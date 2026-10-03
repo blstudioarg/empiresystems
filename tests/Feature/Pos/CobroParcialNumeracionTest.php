@@ -4,6 +4,7 @@ namespace Tests\Feature\Pos;
 
 use App\Models\Factura;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\ConCajaAbierta;
 use Tests\Concerns\MontaSalaPos;
 use Tests\TestCase;
 
@@ -13,7 +14,7 @@ use Tests\TestCase;
  */
 class CobroParcialNumeracionTest extends TestCase
 {
-    use MontaSalaPos, RefreshDatabase;
+    use ConCajaAbierta, MontaSalaPos, RefreshDatabase;
 
     public function test_tres_cobros_parciales_producen_tres_documentos_correlativos(): void
     {

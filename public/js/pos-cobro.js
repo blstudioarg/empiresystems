@@ -154,8 +154,7 @@ window.PosApp.registrar('cobro', function (PosApp) {
 
 	// Importe tecleado (coma decimal es-ES) → número.
 	function aNumero(str) {
-		var val = parseFloat((str || '0').replace(',', '.'));
-		return isNaN(val) ? 0 : Math.round(val * 100) / 100;
+		return window.PosTeclado.aNumero(str);
 	}
 
 	function montoKeypad() {
@@ -330,25 +329,11 @@ window.PosApp.registrar('cobro', function (PosApp) {
 
 
 	/**
-	 * Aplica una tecla a una cadena de importe. Devuelve `null` si la pulsación no cambia nada
-	 * (tercer decimal, coma repetida): así quien llama no repinta de más.
-	 *
-	 * Es la MISMA regla para el importe cobrado y para "Entregado" — dos cajas de teclado que se
-	 * comportan distinto al teclear serían un error de bulto en una pantalla táctil de servicio.
+	 * La regla de tecleo es la compartida de `pos-teclado.js` (feature 048): la MISMA para el
+	 * importe cobrado, para "Entregado" y para los teclados de la caja.
 	 */
 	function aplicarTecla(str, key, prellenado) {
-		if (key === 'del') {
-			return prellenado ? '' : str.slice(0, -1);
-		}
-		// La primera pulsación tras prellenar arranca de cero (el cajero teclea su importe).
-		if (prellenado) { str = ''; }
-		if (key === ',') {
-			return str.indexOf(',') === -1 ? (str || '0') + ',' : null;
-		}
-		// Máximo 2 decimales.
-		var partes = str.split(',');
-		if (partes[1] && partes[1].length >= 2) { return null; }
-		return str + key;
+		return window.PosTeclado.aplicarTecla(str, key, prellenado);
 	}
 
 	function pulsarTecla(key) {
@@ -438,7 +423,16 @@ window.PosApp.registrar('cobro', function (PosApp) {
 		}
 
 		if ($cobroModalEl) {
-			$cobroModalEl.addEventListener('show.bs.modal', resetCobro);
+			$cobroModalEl.addEventListener('show.bs.modal', function () {
+				// Tras abrir la caja por un 409 al emitir (feature 048), se vuelve al cobro con los
+				// pagos que ya estaban tecleados: no se le hace repetir el trabajo al cajero.
+				if (PosApp.state.conservarCobro) {
+					PosApp.state.conservarCobro = false;
+					renderCobro();
+					return;
+				}
+				resetCobro();
+			});
 		}
 
 		Array.prototype.forEach.call($cobroMetodos, function (btn) {
@@ -550,8 +544,9 @@ window.PosApp.registrar('cobro', function (PosApp) {
 						},
 						body: JSON.stringify(payload()),
 					})
-						.then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); })
+						.then(function (r) { return r.json().then(function (data) { return { ok: r.ok, status: r.status, data: data }; }); })
 						.then(function (res) {
+							if (cajaCerrada(res)) { return; }
 							if (!res.ok) {
 								window.showToast('error', res.data.message || 'No se pudo emitir el ticket.');
 								return;
@@ -570,6 +565,31 @@ window.PosApp.registrar('cobro', function (PosApp) {
 
 		function csrf() {
 			return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+		}
+
+		/**
+		 * 409 `caja_cerrada` (feature 048): otra tablet cerró la caja mientras se armaba el ticket.
+		 * No se vacía nada: se ofrece abrir la caja y, al abrirla, se vuelve al cobro tal cual estaba.
+		 */
+		function cajaCerrada(res) {
+			if (res.status !== 409 || !res.data || res.data.codigo !== 'caja_cerrada') { return false; }
+			var caja = PosApp.modulos.caja;
+			if (!caja || !$cobroModalEl) {
+				window.showToast('error', res.data.message);
+				return true;
+			}
+			caja.marcarCerrada();
+			// Primero se cierra el cobro y después se abre la apertura: dos modales de Bootstrap a la
+			// vez pelean por el backdrop.
+			$cobroModalEl.addEventListener('hidden.bs.modal', function una() {
+				$cobroModalEl.removeEventListener('hidden.bs.modal', una);
+				caja.pedirApertura(function () {
+					PosApp.state.conservarCobro = true;
+					cobroModal.show();
+				});
+			});
+			cobroModal.hide();
+			return true;
 		}
 
 		// Guarda primero las líneas actuales (crea la cuenta si todavía no existía, p. ej. al
@@ -604,6 +624,7 @@ window.PosApp.registrar('cobro', function (PosApp) {
 				})
 					.then(function (r) { return r.json().then(function (data) { return { ok: r.ok, status: r.status, data: data }; }); })
 					.then(function (res) {
+						if (cajaCerrada(res)) { return; }
 						if (res.status === 409) {
 							window.showToast('error', res.data.message || 'Otro dispositivo modificó esta cuenta.');
 							return;

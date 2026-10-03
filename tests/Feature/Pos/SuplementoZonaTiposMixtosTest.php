@@ -5,6 +5,7 @@ namespace Tests\Feature\Pos;
 use App\Models\Factura;
 use App\Models\PosZona;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\ConCajaAbierta;
 use Tests\Concerns\MontaSalaPos;
 use Tests\TestCase;
 
@@ -16,7 +17,7 @@ use Tests\TestCase;
  */
 class SuplementoZonaTiposMixtosTest extends TestCase
 {
-    use MontaSalaPos, RefreshDatabase;
+    use ConCajaAbierta, MontaSalaPos, RefreshDatabase;
 
     public function test_el_desglose_por_tipo_suma_exactamente_el_total_con_suplemento_y_tipos_mixtos(): void
     {

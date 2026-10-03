@@ -11,6 +11,7 @@ use App\Models\Lead;
 use App\Models\MovimientoStock;
 use App\Models\Presupuesto;
 use App\Models\Tenant;
+use App\Models\User;
 use Database\Seeders\DemoPruebaPosSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -27,6 +28,9 @@ class DemoPruebaPosSeederTest extends TestCase
     {
         $tenant = Tenant::factory()->create(['nombre_comercial' => 'Prueba POS']);
         $tenant->domains()->create(['domain' => 'pruebapos.gestionley.com']);
+        // Desde la feature 048 los tickets exigen caja abierta, y el seeder la abre a nombre del
+        // primer usuario del tenant (un tenant de demo real siempre tiene su admin).
+        User::factory()->create(['tenant_id' => $tenant->id]);
 
         return $tenant;
     }

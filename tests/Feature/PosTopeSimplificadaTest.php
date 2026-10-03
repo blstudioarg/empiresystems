@@ -9,11 +9,12 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Support\TopeSimplificada;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\ConCajaAbierta;
 use Tests\TestCase;
 
 class PosTopeSimplificadaTest extends TestCase
 {
-    use RefreshDatabase;
+    use ConCajaAbierta, RefreshDatabase;
 
     private function prepararTenant(bool $sectorAmpliado = false): User
     {

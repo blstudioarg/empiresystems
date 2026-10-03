@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Pos;
 
+use App\Exceptions\CajaCerradaException;
 use App\Exceptions\PagoTicketDescuadradoException;
 use App\Exceptions\TicketFueraDeTopeException;
 use App\Http\Controllers\Controller;
@@ -203,6 +204,10 @@ class CuentaController extends Controller
                 receptor: $request->validated('receptor'),
                 usuarioId: $request->user()?->id,
             );
+        } catch (CajaCerradaException $e) {
+            // Feature 048: la transacción del cobro se revierte entera, así que la cuenta queda tal
+            // cual estaba; el 409 con `codigo` deja al TPV ofrecer abrir la caja y reintentar.
+            return response()->json(['message' => $e->getMessage(), 'codigo' => CajaCerradaException::CODIGO], 409);
         } catch (TicketFueraDeTopeException|PagoTicketDescuadradoException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         }

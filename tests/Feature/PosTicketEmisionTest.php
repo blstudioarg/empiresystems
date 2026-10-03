@@ -9,11 +9,12 @@ use App\Models\Serie;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\ConCajaAbierta;
 use Tests\TestCase;
 
 class PosTicketEmisionTest extends TestCase
 {
-    use RefreshDatabase;
+    use ConCajaAbierta, RefreshDatabase;
 
     private function prepararTenant(): array
     {

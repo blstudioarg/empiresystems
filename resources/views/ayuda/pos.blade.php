@@ -10,6 +10,9 @@
 		varios métodos, verás el chip <em>Dividido</em> con el detalle de cada método y su importe.</li>
 </ol>
 
+<p class="ayuda-nota">El total del día, cómo te pagaron y el arqueo del efectivo están en
+<strong>POS → Caja</strong>, que también guarda el historial de cierres.</p>
+
 <p class="ayuda-nota">Un ticket es una factura simplificada: se emite en el acto y, como toda
 factura emitida, no se edita después. Para importes altos o clientes que necesitan factura
 completa con sus datos, usá <strong>Facturas</strong>.</p>

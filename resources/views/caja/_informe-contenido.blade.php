@@ -1,0 +1,123 @@
+{{--
+	Informe Z de una sesión de caja (feature 048, FR-015). Contenido común a 80 mm y A4.
+	Se pinta SIEMPRE desde lo congelado al cerrar (`CajaController::payloadInforme`), nunca
+	recalculando: el informe de un día cerrado no puede cambiar (FR-017).
+	Variables: $informe (array), $tenant (Tenant).
+--}}
+@php
+	$m = fn ($v) => \App\Support\Formato::moneda($v);
+	$veredicto = match ($informe['estado']) {
+		'sobra' => 'SOBRANTE',
+		'falta' => 'FALTANTE',
+		default => 'CUADRA',
+	};
+	$signo = (float) $informe['descuadre'] > 0 ? '+' : '';
+@endphp
+
+<div class="cab">
+	<div class="bold grande">{{ $tenant->nombre_comercial ?: $tenant->razon_social }}</div>
+	@if ($tenant->nif)<div class="muted">NIF: {{ $tenant->nif }}</div>@endif
+	<div class="titulo">CIERRE DE CAJA · Nº {{ $informe['numero'] }}</div>
+	<div class="muted">Informe Z · control interno, no es documento fiscal</div>
+</div>
+
+<div class="sep"></div>
+<table>
+	<tr><td>Apertura</td><td class="right">{{ $informe['abierta_at'] }}</td></tr>
+	<tr><td class="muted" colspan="2">{{ $informe['abierta_por'] }}</td></tr>
+	<tr><td>Cierre</td><td class="right">{{ $informe['cerrada_at'] }}</td></tr>
+	<tr><td class="muted" colspan="2">{{ $informe['cerrada_por'] }}</td></tr>
+</table>
+
+<div class="sep"></div>
+<div class="sec">VENTAS</div>
+<table>
+	<tr><td>Tickets</td><td class="right">{{ $informe['num_tickets'] }}</td></tr>
+	@if ($informe['primer_ticket'])
+		<tr><td class="muted" colspan="2">{{ $informe['primer_ticket'] }} → {{ $informe['ultimo_ticket'] }}</td></tr>
+	@endif
+	<tr class="total"><td>TOTAL FACTURADO</td><td class="right">{{ $m($informe['total_facturado']) }} €</td></tr>
+</table>
+
+<div class="sep"></div>
+<div class="sec">POR MÉTODO DE PAGO</div>
+<table>
+	@foreach ($informe['por_metodo'] as $metodo)
+		<tr>
+			<td>{{ $metodo['label'] }} <span class="muted">({{ $metodo['tickets'] }})</span></td>
+			<td class="right">{{ $m($metodo['importe']) }} €</td>
+		</tr>
+	@endforeach
+</table>
+
+@if (count($informe['por_impuesto']))
+	<div class="sep"></div>
+	<div class="sec">IMPUESTOS</div>
+	<table>
+		<tr class="muted"><td>Tipo</td><td class="right">Base</td><td class="right">Cuota</td></tr>
+		@foreach ($informe['por_impuesto'] as $imp)
+			<tr>
+				<td>{{ strtoupper($imp['tipo_impuesto']) }} {{ \App\Support\Formato::porcentaje($imp['porcentaje']) }}%</td>
+				<td class="right">{{ $m($imp['base']) }}</td>
+				<td class="right">{{ $m($imp['cuota']) }}</td>
+			</tr>
+		@endforeach
+	</table>
+@endif
+
+@if (count($informe['anulados']))
+	<div class="sep"></div>
+	<div class="sec">ANULADOS (no suman)</div>
+	<table>
+		@foreach ($informe['anulados'] as $anulado)
+			<tr><td>{{ $anulado['numero'] }}</td><td class="right">{{ $m($anulado['total']) }} €</td></tr>
+		@endforeach
+	</table>
+@endif
+
+@if (count($informe['movimientos']))
+	<div class="sep"></div>
+	<div class="sec">MOVIMIENTOS DE EFECTIVO</div>
+	<table>
+		@foreach ($informe['movimientos'] as $mov)
+			<tr>
+				<td>{{ $mov['hora'] }} {{ $mov['motivo'] }}</td>
+				<td class="right">{{ $mov['tipo'] === 'entrada' ? '+' : '−' }}{{ $m($mov['importe']) }} €</td>
+			</tr>
+		@endforeach
+	</table>
+@endif
+
+<div class="sep"></div>
+<div class="sec">ARQUEO DE EFECTIVO</div>
+<table>
+	<tr><td>Fondo inicial</td><td class="right">{{ $m($informe['fondo_inicial']) }} €</td></tr>
+	<tr><td>+ Ventas en efectivo</td><td class="right">{{ $m($informe['efectivo_ventas']) }} €</td></tr>
+	<tr><td>+ Entradas</td><td class="right">{{ $m($informe['entradas']) }} €</td></tr>
+	<tr><td>− Salidas</td><td class="right">{{ $m($informe['salidas']) }} €</td></tr>
+	<tr class="bold"><td>Esperado</td><td class="right">{{ $m($informe['efectivo_esperado']) }} €</td></tr>
+	<tr class="bold"><td>Contado</td><td class="right">{{ $m($informe['efectivo_contado']) }} €</td></tr>
+	<tr class="total"><td>{{ $veredicto }}</td><td class="right">{{ $signo }}{{ $m($informe['descuadre']) }} €</td></tr>
+</table>
+
+@if (count($informe['conteo']))
+	<div class="sep"></div>
+	<div class="sec">CONTEO</div>
+	<table>
+		@foreach ($informe['conteo'] as $fila)
+			<tr>
+				<td>{{ $fila['cantidad'] }} × {{ $fila['centimos'] >= 100 ? $m($fila['centimos'] / 100).' €' : $fila['centimos'].' cént.' }}</td>
+				<td class="right">{{ $m($fila['subtotal']) }} €</td>
+			</tr>
+		@endforeach
+	</table>
+@endif
+
+@if ($informe['observacion'])
+	<div class="sep"></div>
+	<div class="sec">OBSERVACIÓN</div>
+	<div>{{ $informe['observacion'] }}</div>
+@endif
+
+<div class="sep"></div>
+<div class="center muted">Firma ______________________</div>

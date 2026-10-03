@@ -3,6 +3,7 @@
 namespace Tests\Feature\Pos;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\ConCajaAbierta;
 use Tests\Concerns\MontaSalaPos;
 use Tests\TestCase;
 
@@ -15,7 +16,7 @@ use Tests\TestCase;
  */
 class TopeCuentaTest extends TestCase
 {
-    use MontaSalaPos, RefreshDatabase;
+    use ConCajaAbierta, MontaSalaPos, RefreshDatabase;
 
     public function test_la_cuenta_expone_el_pendiente_para_que_la_interfaz_avise_antes_de_cobrar(): void
     {

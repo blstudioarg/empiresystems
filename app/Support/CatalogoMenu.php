@@ -87,6 +87,9 @@ class CatalogoMenu
             'hijos' => [
                 ['clave' => 'pos-listado', 'etiqueta' => 'Facturas simplificadas', 'icono' => null, 'ruta' => 'pos.index', 'permiso' => 'ver-pos', 'hijos' => []],
                 ['clave' => 'pos-crear', 'etiqueta' => 'Crear ticket', 'icono' => null, 'ruta' => 'pos.create', 'permiso' => 'ver-pos-crear', 'hijos' => []],
+                // Caja (feature 048): para todo POS, sin `modulo`. El histórico de cierres se
+                // alcanza desde la propia pantalla de caja, no tiene entrada propia.
+                ['clave' => 'pos-caja', 'etiqueta' => 'Caja', 'icono' => null, 'ruta' => 'pos.caja', 'permiso' => 'ver-pos-caja', 'hijos' => []],
                 // Módulo de hostelería (feature 038): además del permiso, estas dos entradas solo
                 // se muestran si el tenant tiene el módulo activo — ver `modulo` y
                 // {@see MenuTenant::estructura()}. El enforcement real es el middleware.

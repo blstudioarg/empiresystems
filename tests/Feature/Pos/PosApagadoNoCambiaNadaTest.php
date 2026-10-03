@@ -7,6 +7,7 @@ use App\Models\Serie;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\ConCajaAbierta;
 use Tests\TestCase;
 
 /**
@@ -18,7 +19,7 @@ use Tests\TestCase;
  */
 class PosApagadoNoCambiaNadaTest extends TestCase
 {
-    use RefreshDatabase;
+    use ConCajaAbierta, RefreshDatabase;
 
     private function tenantConTicket(): User
     {

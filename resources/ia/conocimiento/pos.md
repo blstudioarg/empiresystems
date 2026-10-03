@@ -13,6 +13,9 @@ módulo, separadas de las facturas ordinarias.
   en sectores con tope ampliado, según configuración del tenant). Por encima hay que emitir una
   factura ordinaria; el POS lo bloquea.
 
+- **Caja**: para cobrar, la caja del día tiene que estar abierta (POS → Caja). Si está cerrada, el
+  TPV deja abrirla al tocar Cobrar. Ver `pos-caja.md` para apertura, arqueo y cierre.
+
 ## Pago dividido (métodos de cobro)
 
 Al cobrar, se elige con qué método se pagó: **efectivo, tarjeta, transferencia o domiciliación**.
@@ -20,7 +23,7 @@ El importe puede **dividirse entre varios métodos** (por ejemplo, parte en efec
 tarjeta): se elige un método, se teclea su importe y se añade; el "Restante" baja hasta cero y
 recién ahí se puede emitir. El reparto siempre cuadra al céntimo con el total del ticket.
 
-Este desglose es **interno** (control de caja): se consulta en el listado de tickets —con un chip
+Este desglose es **interno** (control de caja): alimenta el cierre de caja y se consulta en el listado de tickets —con un chip
 "Dividido" cuando hay más de un método— pero **no aparece en el PDF** del ticket que recibe el
 cliente, y no interviene en el módulo de cobros de facturas ni en los KPIs del dashboard. Si no se
 especifica reparto, el ticket se registra como cobrado íntegro en efectivo.

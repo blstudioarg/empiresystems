@@ -8,11 +8,12 @@ use App\Models\Serie;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\ConCajaAbierta;
 use Tests\TestCase;
 
 class PosTicketRegimenTest extends TestCase
 {
-    use RefreshDatabase;
+    use ConCajaAbierta, RefreshDatabase;
 
     private function prepararTenant(string $regimen): array
     {

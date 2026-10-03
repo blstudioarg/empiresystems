@@ -68,6 +68,20 @@
 		</div>
 	</div>
 
+	{{-- Caja (feature 048): aplica a todo POS, con o sin hostelería, por eso va fuera del bloque
+	     dependiente. --}}
+	<hr class="my-4">
+	<h5 class="mb-1">Caja</h5>
+	<p class="text-muted small mb-3">Apertura, arqueo y cierre del efectivo del día desde POS → Caja.</p>
+	<div class="row">
+		<div class="col-md-4 mb-3">
+			<label class="form-label" for="pos_caja_umbral_descuadre">Diferencia máxima sin explicación (€)</label>
+			<input type="number" class="form-control" id="pos_caja_umbral_descuadre" min="0" max="9999.99" step="0.01"
+				value="{{ number_format($posConfig['caja_umbral_descuadre'], 2, '.', '') }}">
+			<small class="form-text text-muted">Si al cerrar la caja el efectivo contado se aparta más que esto de lo esperado, hay que escribir qué pasó.</small>
+		</div>
+	</div>
+
 	<button type="submit" class="btn btn-primary" id="pos-config-guardar">Guardar</button>
 </form>
 

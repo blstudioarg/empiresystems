@@ -1,0 +1,498 @@
+/*
+ * Caja del POS (feature 048) — apertura, turno en curso, arqueo y cierre. Tablet-first.
+ *
+ * Dirección (specs/048-cierre-caja-pos/research.md D11): hereda el lenguaje del TPV
+ * (verde dinero, primario del tenant, teclas grandes) para que vender y cerrar caja se lean como
+ * un mismo producto. La pieza firma es la BANDEJA: billetes con el color de su billete real y
+ * monedas con su metal — el color de esta pantalla lo pone el propio dinero.
+ *
+ * Movimiento (D11 "Ajustes tras skills"): las fichas y las teclas se pulsan decenas de veces por
+ * cierre, así que solo llevan feedback de pulsación; la única secuencia con intención es el
+ * revelado del resultado, que ocurre una vez al día.
+ *
+ * Este archivo entra por @stack('styles'), ANTES que css/style.css: donde una regla compite con
+ * `.card`/`.btn` del template va con doble clase (docs/04, "Corolario .btn de color propio").
+ */
+
+.caja {
+	--caja-money: #16a34a;
+	--caja-money-2: #22c55e;
+	--caja-primary: var(--primary, #1d69d6);
+	--caja-tinta: #1f2430;
+	--caja-gris: #5b6472;
+	--caja-linea: #e6e8ec;
+	--caja-fondo-suave: #f6f7f9;
+	--caja-papel: #fbfaf7;
+	--caja-falta: #dc2626;
+	--caja-falta-bg: #fdecec;
+	--caja-falta-tx: #b91c1c;
+	--caja-sobra: #d97706;
+	--caja-sobra-bg: #fff4e0;
+	--caja-sobra-tx: #a35207;
+	--caja-cuadra-bg: #e8f7ee;
+	--caja-cuadra-tx: #15803d;
+	--caja-ease: cubic-bezier(.23, 1, .32, 1);
+	--caja-mono: ui-monospace, "SFMono-Regular", "Cascadia Mono", "Roboto Mono", Menlo, Consolas, monospace;
+	color: var(--caja-tinta);
+}
+
+.caja .tabular,
+.caja [data-importe] { font-variant-numeric: tabular-nums; }
+
+.caja-vista[hidden],
+.caja [hidden] { display: none !important; } /* `hidden` pierde contra cualquier `display` de autor */
+
+/* Todo lo pulsable: anillo visible con teclado físico, nunca con el dedo. */
+.caja button:focus-visible,
+.caja .caja-ficha:focus-visible {
+	outline: 3px solid color-mix(in srgb, var(--caja-primary) 55%, transparent);
+	outline-offset: 2px;
+}
+
+/* ── Botones grandes de acción ──────────────────────────────────────────────── */
+
+.caja .btn.caja-cta {
+	--bs-btn-bg: var(--caja-primary);
+	--bs-btn-border-color: var(--caja-primary);
+	--bs-btn-color: var(--primary-contraste, #fff);
+	--bs-btn-hover-bg: color-mix(in srgb, var(--caja-primary) 88%, #000);
+	--bs-btn-hover-border-color: color-mix(in srgb, var(--caja-primary) 88%, #000);
+	--bs-btn-hover-color: var(--primary-contraste, #fff);
+	--bs-btn-active-bg: color-mix(in srgb, var(--caja-primary) 80%, #000);
+	--bs-btn-active-border-color: color-mix(in srgb, var(--caja-primary) 80%, #000);
+	--bs-btn-active-color: var(--primary-contraste, #fff);
+	--bs-btn-disabled-bg: #c9ccd1;
+	--bs-btn-disabled-border-color: #c9ccd1;
+	--bs-btn-disabled-color: #fff;
+	min-height: 64px !important;
+	padding: .9rem 1.4rem !important;
+	border-radius: 16px !important;
+	font-size: 1.08rem !important;
+	font-weight: 700;
+	letter-spacing: -.005em;
+	display: inline-flex; align-items: center; justify-content: center; gap: .6rem;
+	box-shadow: 0 10px 24px -10px color-mix(in srgb, var(--caja-primary) 70%, transparent);
+	transition: transform 160ms var(--caja-ease), box-shadow 160ms var(--caja-ease), background-color 160ms ease;
+}
+.caja .btn.caja-cta:active:not(:disabled) { transform: scale(.97); }
+.caja .btn.caja-cta.caja-cta-xl { min-height: 76px !important; font-size: 1.2rem !important; }
+.caja .btn.caja-cta.caja-cta-dinero {
+	--bs-btn-bg: var(--caja-money);
+	--bs-btn-border-color: var(--caja-money);
+	--bs-btn-color: #fff;
+	--bs-btn-hover-bg: #15803d;
+	--bs-btn-hover-border-color: #15803d;
+	--bs-btn-hover-color: #fff;
+	--bs-btn-active-bg: #136f35;
+	--bs-btn-active-border-color: #136f35;
+	--bs-btn-active-color: #fff;
+	box-shadow: 0 10px 24px -10px rgba(22, 163, 74, .6);
+}
+.caja .btn.caja-cta.caja-cta-cerrar {
+	--bs-btn-bg: var(--caja-tinta);
+	--bs-btn-border-color: var(--caja-tinta);
+	--bs-btn-color: #fff;
+	--bs-btn-hover-bg: #10141c;
+	--bs-btn-hover-border-color: #10141c;
+	--bs-btn-hover-color: #fff;
+	--bs-btn-active-bg: #000;
+	--bs-btn-active-border-color: #000;
+	--bs-btn-active-color: #fff;
+	box-shadow: 0 10px 24px -12px rgba(16, 20, 28, .55);
+}
+
+.caja .btn.caja-sec {
+	min-height: 56px !important;
+	padding: .75rem 1.1rem !important;
+	border-radius: 14px !important;
+	font-size: 1rem !important;
+	font-weight: 600;
+	display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+	transition: transform 160ms var(--caja-ease);
+}
+.caja .btn.caja-sec:active:not(:disabled) { transform: scale(.97); }
+
+/* ── Estado A: caja cerrada ─────────────────────────────────────────────────── */
+
+/* La card de caja cerrada ocupa todo el alto visible y centra su contenido: en ese estado la
+   pantalla tiene una sola idea (abrir), y una card corta pegada arriba la dejaba como un aviso
+   más. Misma geometría que el TPV (pos/create): header fijo 4rem + 1rem de padding arriba y 1rem
+   de aire abajo ⇒ 100vh − 6rem. `min-height` y no `height`: con el panel de apertura desplegado
+   el contenido puede pedir más alto que la pantalla. `!important` por el
+   `.card { height: calc(100% - 1rem) !important }` de app-overrides.css. */
+.caja-cerrada-card.card {
+	overflow: hidden;
+	display: flex; flex-direction: column;
+	height: auto !important;
+	min-height: calc(100vh - 6rem);
+	min-height: calc(100dvh - 6rem);
+	margin-bottom: 0 !important;
+}
+.caja-cerrada-card > .caja-hero,
+.caja-cerrada-card > #caja-apertura-wrap { flex: 1 1 auto; }
+#caja-apertura-wrap:not([hidden]) { display: flex; flex-direction: column; justify-content: center; }
+.caja-hero {
+	display: grid; place-content: center; justify-items: center; text-align: center;
+	padding: clamp(2rem, 6vh, 4rem) 1.5rem clamp(1.5rem, 4vh, 2.5rem);
+	background:
+		radial-gradient(120% 80% at 50% 0%, color-mix(in srgb, var(--caja-primary) 7%, transparent), transparent 70%);
+}
+.caja-hero-icono {
+	width: 104px; height: 104px; border-radius: 28px; display: grid; place-items: center;
+	background: #fff; border: 1px solid var(--caja-linea);
+	box-shadow: 0 1px 2px rgba(16, 24, 40, .05), 0 14px 32px -12px rgba(16, 24, 40, .18);
+	margin-bottom: 1.4rem;
+}
+.caja-hero h2 { font-size: clamp(1.6rem, 2.6vw, 2.1rem); font-weight: 800; letter-spacing: -.02em; margin: 0 0 .4rem; color: var(--caja-tinta); }
+.caja-hero p { color: var(--caja-gris); font-size: 1.05rem; margin: 0 0 1.8rem; }
+.caja-hero .btn.caja-cta { min-width: min(360px, 100%); }
+
+.caja-ultimo {
+	display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem 1.25rem;
+	border-top: 1px solid var(--caja-linea);
+	padding: 1rem 1.5rem; background: var(--caja-fondo-suave);
+}
+.caja-ultimo-txt { display: flex; flex-direction: column; gap: .15rem; min-width: 0; }
+.caja-ultimo-txt .eyebrow { font-size: .72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--caja-gris); }
+.caja-ultimo-txt strong { font-size: 1.05rem; }
+.caja-ultimo-acciones { display: flex; gap: .5rem; flex-wrap: wrap; }
+
+/* ── Panel de apertura (en la card de caja y en el modal del TPV) ──────────── */
+
+.caja-apertura-cab { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.caja-apertura-cab h3 { font-size: 1.35rem; font-weight: 800; letter-spacing: -.01em; margin: 0; }
+.caja-apertura-cab p { color: var(--caja-gris); margin: .15rem 0 0; }
+/* La fila de acciones bajo la bandeja usa la MISMA rejilla que la bandeja (contenido | 300px de
+   teclado): el botón principal mide exactamente lo que el teclado que tiene encima y la acción
+   secundaria queda a su izquierda. Así los dos bloques se leen como una sola columna de mando. */
+.caja-acciones {
+	display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 1.25rem;
+	align-items: stretch; margin-top: 1.25rem;
+}
+.caja-acciones > .btn:not(.caja-cta) { justify-self: end; }
+.caja-acciones > .btn.caja-cta { grid-column: 2; width: 100%; }
+@media (max-width: 991.98px) {
+	.caja-acciones { grid-template-columns: 1fr; gap: .75rem; }
+	.caja-acciones > .btn.caja-cta { grid-column: 1; }
+	.caja-acciones > .btn:not(.caja-cta) { justify-self: stretch; order: 2; }
+}
+
+/* ── Bandeja de denominaciones (elemento firma) ─────────────────────────────── */
+
+.caja-bandeja { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 1.25rem; align-items: start; }
+@media (max-width: 991.98px) { .caja-bandeja { grid-template-columns: 1fr; } }
+
+.caja-bandeja-tray {
+	background: linear-gradient(#f3f4f7, #eceef2);
+	border: 1px solid #e1e4e9; border-radius: 20px;
+	padding: 1rem;
+	box-shadow: inset 0 2px 6px rgba(16, 24, 40, .06);
+}
+.caja-tray-eyebrow { font-size: .72rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--caja-gris); margin: 0 0 .55rem .2rem; }
+.caja-tray-billetes { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: .6rem; margin-bottom: 1.1rem; }
+.caja-tray-monedas { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: .6rem; }
+
+.caja-ficha {
+	position: relative; border: 0; padding: 0; cursor: pointer; text-align: left;
+	-webkit-tap-highlight-color: transparent; color: var(--caja-tinta);
+	transition: transform 140ms var(--caja-ease);
+}
+.caja-ficha:active { transform: scale(.97); }
+
+/* Billete: apaisado, tinte de su color real, franja saturada a la izquierda y la "ventana
+   holográfica" como marca de agua. Nada de fotos: se reconoce por color y proporción. */
+.caja-billete {
+	--tinte: #eef0f2; --tono: #7a8590;
+	min-height: 84px; border-radius: 14px;
+	background:
+		radial-gradient(circle at 82% 38%, color-mix(in srgb, var(--tono) 16%, transparent) 0 18px, transparent 19px),
+		linear-gradient(135deg, var(--tinte), color-mix(in srgb, var(--tinte) 70%, #fff));
+	box-shadow: inset 6px 0 0 var(--tono), 0 1px 0 rgba(255, 255, 255, .7) inset, 0 1px 2px rgba(16, 24, 40, .08);
+	padding: .55rem .7rem .5rem 1rem;
+	display: flex; flex-direction: column; justify-content: space-between;
+}
+.caja-billete[data-tono="gris"] { --tinte: #eef0f2; --tono: #7a8590; }
+.caja-billete[data-tono="rojo"] { --tinte: #fbe9e6; --tono: #c8553d; }
+.caja-billete[data-tono="azul"] { --tinte: #e6eefb; --tono: #3d6fc8; }
+.caja-billete[data-tono="naranja"] { --tinte: #fdefe1; --tono: #e07b22; }
+.caja-billete[data-tono="verde"] { --tinte: #e4f3e9; --tono: #2f8f57; }
+.caja-billete[data-tono="amarillo"] { --tinte: #fbf3d9; --tono: #c79a12; }
+.caja-billete[data-tono="violeta"] { --tinte: #f1e8f7; --tono: #8a4fb3; }
+
+.caja-ficha-valor { font-size: 1.55rem; font-weight: 800; letter-spacing: -.02em; line-height: 1; }
+.caja-ficha-valor small { font-size: .62em; font-weight: 700; margin-left: .1em; color: color-mix(in srgb, var(--caja-tinta) 70%, transparent); }
+.caja-ficha-pie { display: flex; align-items: baseline; justify-content: space-between; gap: .4rem; min-height: 1.3rem; }
+.caja-ficha-cant {
+	font-size: .8rem; font-weight: 800; padding: .08rem .45rem; border-radius: 999px;
+	background: rgba(255, 255, 255, .85); color: var(--caja-tinta); visibility: hidden;
+}
+.caja-ficha-sub { font-size: .8rem; font-weight: 700; color: var(--caja-gris); font-variant-numeric: tabular-nums; visibility: hidden; }
+.caja-ficha.tiene .caja-ficha-cant,
+.caja-ficha.tiene .caja-ficha-sub { visibility: visible; }
+
+/* Moneda: círculo con el metal; el texto va debajo para no pelear con el gradiente. */
+.caja-moneda {
+	background: transparent; display: flex; flex-direction: column; align-items: center; gap: .3rem;
+	padding: .25rem 0;
+}
+.caja-moneda-disco {
+	--metal-a: #f6dd8f; --metal-b: #c49a2c;
+	width: 66px; height: 66px; border-radius: 50%; display: grid; place-items: center;
+	background: radial-gradient(circle at 35% 30%, var(--metal-a), var(--metal-b) 78%);
+	box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--metal-b) 60%, #fff), 0 2px 4px rgba(16, 24, 40, .18);
+	font-weight: 800; font-size: 1.05rem; color: #2a1d05; letter-spacing: -.02em;
+}
+.caja-moneda[data-tono="cobre"] .caja-moneda-disco { --metal-a: #f6c09b; --metal-b: #b8673b; color: #3b1a07; width: 58px; height: 58px; font-size: .95rem; }
+.caja-moneda[data-tono="oro"] .caja-moneda-disco { --metal-a: #f6dd8f; --metal-b: #c49a2c; }
+.caja-moneda[data-tono="bimetal"] .caja-moneda-disco {
+	background:
+		radial-gradient(circle at 35% 30%, #f1f3f5, #a7adb4 70%) center / 62% 62% no-repeat,
+		radial-gradient(circle at 35% 30%, #f6dd8f, #c49a2c 78%);
+	width: 70px; height: 70px;
+}
+.caja-moneda[data-tono="bimetal-inv"] .caja-moneda-disco {
+	background:
+		radial-gradient(circle at 35% 30%, #f6dd8f, #c49a2c 70%) center / 62% 62% no-repeat,
+		radial-gradient(circle at 35% 30%, #f1f3f5, #a7adb4 78%);
+}
+.caja-moneda .caja-ficha-pie { flex-direction: column; align-items: center; gap: 0; min-height: 2.1rem; }
+
+/* Seleccionada: anillo del primario + leve elevación. Instantáneo a propósito (se toca decenas
+   de veces por cierre). */
+.caja-billete.sel { box-shadow: inset 6px 0 0 var(--tono), 0 0 0 3px var(--caja-primary), 0 10px 20px -10px rgba(16, 24, 40, .35); transform: translateY(-2px); }
+.caja-moneda.sel .caja-moneda-disco { box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--metal-b) 60%, #fff), 0 0 0 3px #fff, 0 0 0 6px var(--caja-primary); }
+
+/* Modo "importe total": la bandeja se sustituye por un display único. */
+.caja-importe-total {
+	background: #fff; border: 1px solid var(--caja-linea); border-radius: 20px;
+	padding: clamp(1.5rem, 5vh, 3rem) 1.25rem; text-align: center;
+}
+.caja-importe-total .lbl { font-size: .78rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--caja-gris); }
+.caja-importe-total .val { font-size: clamp(2.6rem, 6vw, 3.8rem); font-weight: 800; letter-spacing: -.03em; line-height: 1.05; margin: .35rem 0; font-variant-numeric: tabular-nums; }
+.caja-importe-total .hint { color: var(--caja-gris); margin: 0; }
+
+/* ── Teclado propio (misma familia que .pos-key del TPV) ───────────────────── */
+
+.caja-teclado {
+	background: #fff; border: 1px solid var(--caja-linea); border-radius: 20px; padding: 1rem;
+	box-shadow: 0 1px 2px rgba(16, 24, 40, .04), 0 8px 24px -6px rgba(16, 24, 40, .10);
+}
+.caja-teclado-sel { display: flex; align-items: baseline; justify-content: space-between; gap: .5rem; margin-bottom: .5rem; min-height: 1.5rem; }
+.caja-teclado-sel .lbl { font-size: .78rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--caja-gris); }
+.caja-teclado-sel .den { font-weight: 800; font-size: 1.05rem; }
+.caja-teclado-display {
+	background: var(--caja-fondo-suave); border-radius: 14px; padding: .55rem .9rem; margin-bottom: .75rem;
+	font-size: 2rem; font-weight: 800; text-align: right; letter-spacing: -.02em; font-variant-numeric: tabular-nums;
+	min-height: 64px; display: flex; align-items: center; justify-content: flex-end;
+}
+.caja-teclado-display.vacio { color: #a8aeb8; }
+.caja-teclado-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .55rem; }
+.caja-key {
+	min-height: 64px; border-radius: 14px; border: 1px solid var(--caja-linea); background: #fff;
+	font-size: 1.55rem; font-weight: 700; color: var(--caja-tinta); cursor: pointer;
+	-webkit-tap-highlight-color: transparent; display: inline-flex; align-items: center; justify-content: center;
+	transition: transform 100ms var(--caja-ease), background-color 120ms ease;
+}
+.caja-key:active { transform: scale(.94); background: color-mix(in srgb, var(--caja-primary) 10%, #fff); }
+.caja-key.sec { font-size: 1.15rem; color: var(--caja-gris); background: var(--caja-fondo-suave); }
+.caja-total-vivo { margin-top: .9rem; padding-top: .85rem; border-top: 1px dashed var(--caja-linea); display: flex; align-items: baseline; justify-content: space-between; gap: .5rem; }
+.caja-total-vivo .lbl { font-size: .78rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--caja-gris); }
+.caja-total-vivo .val { font-size: 1.9rem; font-weight: 800; letter-spacing: -.02em; color: var(--caja-money); font-variant-numeric: tabular-nums; }
+
+@media (hover: hover) and (pointer: fine) {
+	.caja-key:hover { border-color: var(--caja-primary); }
+	.caja-billete:hover { filter: saturate(1.08) brightness(.99); }
+	.caja-moneda:hover .caja-moneda-disco { filter: brightness(1.04); }
+}
+
+/* ── Estado B: caja abierta ─────────────────────────────────────────────────── */
+
+.caja-estado.card { margin-bottom: 1rem !important; height: auto !important; }
+.caja-estado .card-body { display: flex; align-items: center; justify-content: space-between; gap: .75rem 1.25rem; flex-wrap: wrap; padding: .9rem 1.1rem; }
+.caja-estado-txt { display: flex; align-items: center; gap: .9rem; min-width: 0; }
+.caja-pulso { position: relative; width: 14px; height: 14px; flex: none; }
+.caja-pulso::before, .caja-pulso::after { content: ""; position: absolute; inset: 0; border-radius: 50%; background: var(--caja-money); }
+.caja-pulso::after { animation: caja-pulso 2.2s var(--caja-ease) infinite; opacity: .5; }
+@keyframes caja-pulso { 0% { transform: scale(1); opacity: .5; } 80%, 100% { transform: scale(2.6); opacity: 0; } }
+.caja-estado-titulo { font-size: 1.15rem; font-weight: 800; letter-spacing: -.01em; margin: 0; }
+.caja-estado-meta { color: var(--caja-gris); font-size: .92rem; margin: 0; }
+.caja-estado-meta strong { color: var(--caja-tinta); font-weight: 700; }
+.caja-estado-acciones { display: flex; gap: .5rem; flex-wrap: wrap; }
+.caja-estado.caja-estado-antigua { box-shadow: inset 4px 0 0 var(--caja-sobra), 0 1px 2px rgba(16, 24, 40, .04), 0 8px 24px -6px rgba(16, 24, 40, .10) !important; }
+.caja-estado.caja-estado-antigua .caja-pulso::before,
+.caja-estado.caja-estado-antigua .caja-pulso::after { background: var(--caja-sobra); }
+.caja-aviso-antigua { display: none; color: var(--caja-sobra-tx); font-weight: 700; font-size: .92rem; margin: .1rem 0 0; }
+.caja-estado-antigua .caja-aviso-antigua { display: block; }
+
+.caja-metodos-barra { display: flex; height: 14px; border-radius: 999px; overflow: hidden; background: var(--caja-fondo-suave); margin: .35rem 0 1.1rem; }
+.caja-metodos-barra span { display: block; height: 100%; transition: width 260ms var(--caja-ease); }
+.caja-metodos-lista { list-style: none; padding: 0; margin: 0; }
+.caja-metodos-lista li { display: grid; grid-template-columns: 14px minmax(0, 1fr) auto auto; align-items: center; gap: .75rem; padding: .7rem 0; border-top: 1px solid var(--caja-linea); }
+.caja-metodos-lista li:first-child { border-top: 0; }
+.caja-punto { width: 12px; height: 12px; border-radius: 4px; }
+.caja-metodos-lista .nombre { font-weight: 700; }
+.caja-metodos-lista .tickets { color: var(--caja-gris); font-size: .9rem; white-space: nowrap; }
+.caja-metodos-lista .importe { font-weight: 800; font-size: 1.12rem; font-variant-numeric: tabular-nums; min-width: 6.5rem; text-align: right; }
+.caja-metodos-lista li.cero .nombre, .caja-metodos-lista li.cero .importe { color: #9aa1ab; font-weight: 600; }
+.caja [data-metodo="efectivo"] { --metodo: var(--caja-money); }
+.caja [data-metodo="tarjeta"] { --metodo: var(--caja-primary); }
+.caja [data-metodo="transferencia"] { --metodo: #64748b; }
+.caja [data-metodo="domiciliacion"] { --metodo: #a78bfa; }
+.caja-punto, .caja-metodos-barra span { background: var(--metodo); }
+
+/* Columna de acciones: sticky como .pos-cobro del TPV, con "Cerrar caja" anclado abajo. */
+/* `height: auto` porque app-overrides fuerza `.card { height: calc(100% - 1rem) !important }`: con
+   la altura de toda la fila, la card no tendría recorrido y el sticky no haría nada. */
+.caja-rail.card { height: auto !important; }
+@media (min-width: 1200px) {
+	.caja-rail.card { position: sticky; top: 5rem; }
+}
+.caja-rail .card-body { display: flex; flex-direction: column; gap: 1rem; }
+.caja-mov-botones { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; }
+.caja-mov-btn {
+	border: 1.5px solid var(--caja-linea); background: #fff; border-radius: 16px; min-height: 84px;
+	display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .3rem;
+	font-weight: 700; font-size: 1rem; color: var(--caja-tinta); cursor: pointer;
+	transition: transform 140ms var(--caja-ease), border-color 140ms ease;
+	-webkit-tap-highlight-color: transparent;
+}
+.caja-mov-btn i { font-size: 1.35rem; }
+.caja-mov-btn.entrada i { color: var(--caja-money); }
+.caja-mov-btn.salida i { color: var(--caja-falta); }
+.caja-mov-btn:active { transform: scale(.97); }
+@media (hover: hover) and (pointer: fine) { .caja-mov-btn:hover { border-color: var(--caja-primary); } }
+
+.caja-mov-titulo { display: flex; align-items: baseline; justify-content: space-between; }
+.caja-mov-titulo h5 { margin: 0; font-size: 1rem; font-weight: 800; }
+.caja-mov-titulo span { color: var(--caja-gris); font-size: .85rem; }
+.caja-mov-lista { list-style: none; padding: 0; margin: 0; max-height: 280px; overflow-y: auto; }
+.caja-mov-lista li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: .65rem; align-items: baseline; padding: .55rem 0; border-top: 1px solid var(--caja-linea); }
+.caja-mov-lista li:first-child { border-top: 0; }
+.caja-mov-lista .hora { color: var(--caja-gris); font-size: .85rem; font-variant-numeric: tabular-nums; }
+.caja-mov-lista .motivo { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.caja-mov-lista .imp { font-weight: 800; font-variant-numeric: tabular-nums; }
+.caja-mov-lista .imp.entrada { color: var(--caja-cuadra-tx); }
+.caja-mov-lista .imp.salida { color: var(--caja-falta-tx); }
+.caja-mov-vacio { color: var(--caja-gris); font-size: .92rem; margin: 0; padding: .5rem 0; }
+.caja-fondo-linea { display: flex; justify-content: space-between; align-items: baseline; padding: .7rem .9rem; border-radius: 12px; background: var(--caja-fondo-suave); }
+.caja-fondo-linea span { color: var(--caja-gris); font-weight: 600; }
+.caja-fondo-linea strong { font-variant-numeric: tabular-nums; }
+.caja-rail .btn.caja-cta { width: 100%; }
+
+/* Modal de movimiento */
+.caja-modal .modal-content { border-radius: 22px; border: 0; }
+.caja-modal .modal-body { padding: 1.1rem !important; }
+.caja-mov-tipo { margin-bottom: .9rem; }
+.caja-chips { display: flex; flex-wrap: wrap; gap: .45rem; margin-top: .55rem; }
+.caja-chip {
+	border: 1px solid var(--caja-linea); background: #fff; border-radius: 999px; padding: .5rem .9rem; min-height: 44px;
+	font-weight: 600; font-size: .92rem; color: var(--caja-tinta); cursor: pointer; -webkit-tap-highlight-color: transparent;
+	transition: transform 120ms var(--caja-ease);
+}
+.caja-chip:active { transform: scale(.96); }
+.caja-modal .caja-motivo { min-height: 52px !important; font-size: 1rem !important; border-radius: 12px; }
+
+/* ── Estado C: cierre (Contar → Resultado) ──────────────────────────────────── */
+
+.caja-cierre.card { height: auto !important; }
+.caja-pasos { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; }
+.caja-paso { display: inline-flex; align-items: center; gap: .5rem; color: #9aa1ab; font-weight: 700; }
+.caja-paso .n { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; border: 2px solid currentColor; font-size: .9rem; font-variant-numeric: tabular-nums; }
+.caja-paso.activo { color: var(--caja-tinta); }
+.caja-paso.activo .n { background: var(--caja-tinta); border-color: var(--caja-tinta); color: #fff; }
+.caja-paso.hecho { color: var(--caja-cuadra-tx); }
+.caja-paso.hecho .n { background: var(--caja-cuadra-bg); border-color: var(--caja-cuadra-tx); }
+.caja-pasos .guion { width: 28px; height: 2px; background: var(--caja-linea); border-radius: 2px; }
+.caja-ciego { display: inline-flex; align-items: center; gap: .45rem; color: var(--caja-gris); font-size: .9rem; margin: .35rem 0 0; }
+
+/* Paso 2: resultado */
+/* Dos columnas siempre (resultado | tira de papel), pero la del papel mide 0 mientras no hay
+   papel: el resultado provisional (pidiendo la explicación) ocupa todo el ancho, y al cerrar la
+   columna se abre y el resultado se desplaza a la izquierda para hacerle sitio al informe, en vez
+   de aparecer de golpe junto a un hueco. Se anima `grid-template-columns` (mismo número de
+   pistas en los dos estados, así que interpola); el papel entra después con su propio fundido. */
+.caja-resultado {
+	display: grid; grid-template-columns: minmax(0, 1fr) 340px; column-gap: 2rem; row-gap: 2rem; align-items: start;
+	transition: grid-template-columns 360ms var(--caja-ease), column-gap 360ms var(--caja-ease);
+}
+.caja-resultado:has(> .caja-papel-wrap[hidden]) { grid-template-columns: minmax(0, 1fr) 0px; column-gap: 0px; }
+@media (max-width: 1199.98px) and (min-width: 992px) { .caja-resultado { grid-template-columns: minmax(0, 1fr) 300px; } }
+@media (max-width: 991.98px) {
+	.caja-resultado,
+	.caja-resultado:has(> .caja-papel-wrap[hidden]) { grid-template-columns: minmax(0, 1fr); column-gap: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .caja-resultado { transition: none; } }
+.caja-cifras { list-style: none; padding: 0; margin: 0 0 1.1rem; }
+.caja-cifras li { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; padding: .85rem 0; border-bottom: 1px solid var(--caja-linea); }
+.caja-cifras .lbl { font-size: 1.05rem; color: var(--caja-gris); font-weight: 600; }
+.caja-cifras .val { font-size: 1.7rem; font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+
+.caja-veredicto {
+	display: flex; align-items: center; gap: 1rem; border-radius: 20px; padding: 1.2rem 1.35rem; margin-bottom: 1.25rem;
+	background: var(--caja-cuadra-bg); color: var(--caja-cuadra-tx);
+}
+.caja-veredicto i { font-size: 2.3rem; flex: none; }
+.caja-veredicto .titulo { font-size: clamp(1.7rem, 3.2vw, 2.3rem); font-weight: 800; letter-spacing: -.025em; line-height: 1.05; margin: 0; font-variant-numeric: tabular-nums; }
+.caja-veredicto .sub { margin: .2rem 0 0; font-weight: 600; opacity: .85; }
+.caja-veredicto[data-estado="sobra"] { background: var(--caja-sobra-bg); color: var(--caja-sobra-tx); }
+.caja-veredicto[data-estado="falta"] { background: var(--caja-falta-bg); color: var(--caja-falta-tx); }
+
+.caja-observacion { border: 1.5px solid color-mix(in srgb, var(--caja-falta) 35%, var(--caja-linea)); border-radius: 16px; padding: 1rem; margin-bottom: 1.1rem; }
+.caja-observacion label { font-weight: 800; margin-bottom: .4rem; display: block; }
+.caja-observacion textarea { min-height: 96px !important; height: auto !important; font-size: 1rem !important; border-radius: 12px; }
+.caja-resultado-acciones { display: flex; flex-wrap: wrap; gap: .6rem; }
+.caja-resultado-acciones .btn { flex: 1 1 180px; }
+
+/* El revelado: la única secuencia con intención de la pantalla (ocurre una vez al día).
+   Esperado → contado → veredicto, escalonado corto, desde 8px y opacidad (nunca scale(0)). */
+.caja-revelar { opacity: 0; transform: translateY(8px); }
+.caja-revelado .caja-revelar { opacity: 1; transform: none; transition: opacity 260ms var(--caja-ease), transform 260ms var(--caja-ease); }
+.caja-revelado .caja-revelar:nth-child(2) { transition-delay: 60ms; }
+.caja-revelado .caja-revelar:nth-child(3) { transition-delay: 120ms; }
+.caja-revelado .caja-veredicto.caja-revelar { transition-delay: 200ms; }
+.caja-revelado .caja-papel-wrap.caja-revelar { transition-delay: 300ms; } /* entra cuando la columna ya casi se abrió */
+
+/* El informe Z como tira de papel térmico: lo que se ve es lo que sale por la impresora. */
+.caja-papel-wrap { filter: drop-shadow(0 12px 22px rgba(16, 24, 40, .16)) drop-shadow(0 1px 1px rgba(16, 24, 40, .08)); }
+.caja-papel {
+	position: relative; background: var(--caja-papel); font-family: var(--caja-mono); font-size: .8rem; line-height: 1.5;
+	color: #1b1b1b; padding: 1.2rem 1.1rem 1.6rem; max-height: 62vh; overflow-y: auto;
+	border-radius: 4px 4px 0 0;
+}
+.caja-papel-borde { height: 10px; background:
+	linear-gradient(-45deg, transparent 7px, var(--caja-papel) 0) 0 0 / 14px 10px repeat-x,
+	linear-gradient(45deg, transparent 7px, var(--caja-papel) 0) 0 0 / 14px 10px repeat-x; }
+.caja-papel .c { text-align: center; }
+.caja-papel .b { font-weight: 700; }
+.caja-papel .t { font-size: .92rem; font-weight: 700; letter-spacing: .04em; }
+.caja-papel .m { color: #666; }
+.caja-papel .sep { border-top: 1px dashed #9a9a9a; margin: .55rem 0; }
+.caja-papel .sec { font-weight: 700; letter-spacing: .06em; margin-bottom: .15rem; }
+.caja-papel .f { display: flex; justify-content: space-between; gap: .75rem; }
+.caja-papel .f span:last-child { white-space: nowrap; }
+.caja-papel .tot { font-size: .95rem; font-weight: 700; }
+
+@media (prefers-reduced-motion: reduce) {
+	.caja-revelar { transform: none; }
+	.caja-revelado .caja-revelar { transition: opacity 200ms ease; transition-delay: 0ms !important; }
+	.caja-pulso::after { animation: none; }
+	.caja-ficha, .caja-key, .caja .btn.caja-cta, .caja-mov-btn, .caja-chip { transition: none; }
+	.caja-billete.sel { transform: none; }
+}
+
+/* ── Chip de estado de caja en el TPV ───────────────────────────────────────── */
+
+.pos-caja-chip {
+	display: inline-flex; align-items: center; gap: .4rem; border-radius: 999px; padding: .25rem .65rem;
+	font-size: .78rem; font-weight: 700; white-space: nowrap; border: 0; cursor: default;
+}
+.pos-caja-chip .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.pos-caja-chip.abierta { background: #e8f7ee; color: #15803d; }
+.pos-caja-chip.cerrada { background: #fff4e0; color: #a35207; cursor: pointer; }
+.pos-caja-chip.cerrada:active { transform: scale(.97); }
+
+/* ── Histórico ──────────────────────────────────────────────────────────────── */
+
+.caja-cierres-dif { font-weight: 800; font-variant-numeric: tabular-nums; }
+.caja-cierres-dif.falta { color: var(--caja-falta-tx, #b91c1c); }
+.caja-cierres-dif.sobra { color: var(--caja-sobra-tx, #a35207); }

@@ -16,11 +16,12 @@ use App\Services\RegistroTicket;
 use App\Support\VerifactuTenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
+use Tests\Concerns\ConCajaAbierta;
 use Tests\TestCase;
 
 class RegistroVerifactuTest extends TestCase
 {
-    use RefreshDatabase;
+    use ConCajaAbierta, RefreshDatabase;
 
     private function tenantConVerifactu(array $overrides = []): Tenant
     {

@@ -1350,6 +1350,32 @@ reutilizables que introdujo:
   justo la pantalla de uso diario y rápido. Mismo criterio que el resto del widget: la exclusión
   se resuelve en el layout (servidor), nunca con CSS (`display:none`) sobre el widget ya emitido.
   Si aparece otra vista donde el widget estorbe, sumar su `routeIs(...)` a la misma condición.
+- **Zona de arrastre (drop zone) sobre un contenedor** (feature 047, `asistente-chat.js`): patrón
+  reutilizable para cualquier panel que acepte ficheros soltados.
+  - `preventDefault()` **obligatorio en `dragover` y en `drop`**. Sin él el navegador abre el
+    fichero y **descarta la página**, llevándose lo que la persona tuviera escrito sin enviar. Es
+    el fallo más caro y el más fácil de cometer.
+  - `dragleave` dispara también al pasar sobre elementos hijos del contenedor. Llevar un
+    **contador de entradas/salidas** y apagar la marca solo al llegar a 0, o parpadea.
+  - Cerrar con `dragend`/`drop` sobre `document`: un arrastre cancelado (Escape, soltar fuera) no
+    siempre emite `dragleave` sobre el contenedor y la marca quedaría encendida.
+  - La marca visual va en un **`::after` con `pointer-events: none`**, no en un div real: un
+    overlay que capture el puntero dispara `dragleave` en cuanto aparece y se autoapaga en bucle.
+    Bordes y texto con `var(--primary)` para respetar la marca del tenant.
+  - Filtrar por `dataTransfer.types` incluyendo `'Files'`: arrastrar texto seleccionado o un
+    enlace no debe encender la zona ni adjuntar nada.
+- **Pegar ficheros (Ctrl+V) en un campo de texto** (feature 047): el listener de `paste` va
+  **sobre el campo concreto, nunca sobre `document`** — un listener global captura pegados de
+  cualquier formulario de la aplicación y el efecto colateral aparece semanas después en una
+  pantalla sin relación. Recorrer `clipboardData.items` quedándose con `kind === 'file'`, y llamar
+  a `preventDefault()` **solo** cuando hay fichero y no hay texto acompañante: cancelar siempre
+  rompe el pegado de texto normal, y cancelar con contenido mixto (imagen + texto, típico al copiar
+  de un documento) pierde el texto en silencio. Una captura del portapapeles llega sin nombre útil:
+  renombrarla con sello temporal **y extensión real** (el servidor valida el tipo por la extensión).
+- **Un solo punto de subida por widget**: cuando varios gestos entregan lo mismo (clip, pegar,
+  soltar), todos deben converger en la misma función de subida. Así las validaciones, los permisos
+  y los mensajes de rechazo se cumplen por construcción y no por disciplina; un segundo camino se
+  desincroniza del primero al primer cambio.
 
 ## Bloque QR normativo en documentos PDF (Verifactu, feature 032)
 
@@ -1685,9 +1711,12 @@ La regla: **el campo es un disparador, no una caja de texto.**
   con un botón explícito. **Cancelar restaura el valor anterior**, no lo pone a cero: cancelar es
   descartar la edición en curso, no borrar lo que ya había.
 - La regla de tecleo (coma decimal, máximo 2 decimales, la primera pulsación tras prellenar
-  reemplaza) se comparte entre todos los teclados de la pantalla en una sola función
-  (`aplicarTecla()` en `public/js/pos-cobro.js`). Dos teclados que se comportan distinto al teclear
-  son un error de bulto en una pantalla de servicio.
+  reemplaza) se comparte entre **todos** los teclados del POS en un solo archivo,
+  `public/js/pos-teclado.js` (`window.PosTeclado`: `aplicarTecla` decimal, `aplicarTeclaEntera`
+  para cantidades con tecla `C` = poner a cero, `aNumero`, `formatear`). Lo usan el cobro del TPV y
+  la caja (feature 048), y se carga antes que cualquier script que lo necesite. Dos teclados que se
+  comportan distinto al teclear son un error de bulto en una pantalla de servicio: no se copia la
+  función a otro archivo, se usa esta.
 
 Ejemplo vivo: campo "Entregado" del modal de cobro (`#pos-keypad-entregado` +
 `#pos-entregado-panel` en `resources/views/pos/create.blade.php`).
@@ -1984,3 +2013,71 @@ categoría. Pulsar una la envía como mensaje.
   beneficio nulo.
 - Viven **dentro** de `.asistente-chat__bienvenida`, así que el primer mensaje se las lleva por
   delante con el resto del estado vacío. `vaciarPanel()` las vuelve a montar y recargar.
+
+## Caja del POS: bandeja de denominaciones (feature 048)
+
+Para contar efectivo (fondo al abrir, cajón al cerrar) hay **un solo componente**:
+`resources/views/pos/_caja-bandeja.blade.php` + `public/js/pos-caja-bandeja.js`
+(`PosCajaBandeja.crear(el, { onCambio })`). No se diseña otro contador por pantalla.
+
+- **Fichas, no inputs**: cada billete es una ficha apaisada con el tinte de su color real y una
+  franja saturada; cada moneda, un disco con su metal (cobre, oro nórdico, bimetálica). El color de
+  la pantalla lo pone el propio dinero: se reconoce al instante sin leer el valor. El catálogo
+  (valores en céntimos, tono) vive en `App\Support\DenominacionesEuro`; la vista lo itera.
+- **Tocar selecciona, el teclado teclea la cantidad** (entera; la tecla `,` pasa a ser `C`).
+  **Doble toque suma una unidad**: contar billete a billete sin mirar el teclado.
+- **Dos modos** con `.filtro-segmentado`: "Billetes y monedas" / "Importe total". El componente
+  arranca en el modo que pida la pantalla (importe para abrir rápido, conteo para cerrar).
+- **Lo que viaja es el mapa céntimos → cantidad**, nunca un total de confianza: el servidor suma
+  (Principio III). El total en pantalla es solo percepción.
+- **Sin animación en lo repetitivo**: fichas y teclas se pulsan decenas de veces por cierre; solo
+  llevan `:active { scale(.97) }` y la selección es instantánea.
+- El conteo en curso se guarda en `sessionStorage` (`caja-conteo:<sesion_id>`, con try/catch): una
+  recarga accidental de la tablet no obliga a recontar. Se borra al cerrar.
+- `hidden` en elementos con `display` propio no oculta nada (el `display` de autor gana al del
+  navegador): el CSS de la caja lleva `.caja [hidden] { display: none !important; }`.
+
+## Acción ciega y revelado (feature 048)
+
+Cuando el valor de una acción depende de que el usuario **no vea** una cifra (el arqueo ciego: se
+cuenta sin saber cuánto debería haber):
+
+- **La cifra no viaja al navegador** hasta que la acción se confirma. Ocultarla con CSS o guardarla
+  en una variable JS no es ciego: se lee en las herramientas de desarrollo. El endpoint de estado
+  simplemente no la incluye (test: `ResumenCajaTest`, que comprueba que el JSON no contiene el
+  esperado).
+- **El revelado es la única secuencia con intención de la pantalla** (pasa una vez al día):
+  esperado → contado → veredicto, escalonado de 60 ms, `cubic-bezier(.23, 1, .32, 1)`, desde
+  `translateY(8px)` + opacidad (nunca `scale(0)`), veredicto al final. Con `prefers-reduced-motion`,
+  solo fundido.
+- **El veredicto nunca es solo color**: icono + texto ("Cuadra", "Sobran 3,20 €", "Faltan 2,00 €")
+  + color.
+- Si el servidor rechaza la confirmación por la propia cifra (diferencia sobre el umbral sin
+  explicación, 422 `observacion_requerida`), la respuesta trae el **resultado provisional**: se
+  revela igual, marcado como "todavía no está cerrada", con el campo que falta y "Volver a contar".
+
+## Bloqueo por estado del servidor con resolución inline (feature 048)
+
+Cuando una acción frecuente queda bloqueada por un estado que el usuario puede resolver en el acto
+(cobrar con la caja cerrada):
+
+- El servidor responde **409 con un `codigo`** (`caja_cerrada`), no un 422 genérico: no es un dato
+  mal enviado, es el estado. El `codigo` permite al JS ofrecer la solución en vez de un toast.
+- La pantalla **no pierde lo armado**: se cierra el modal en curso, se abre el que resuelve (el
+  mismo panel de apertura que la pantalla de caja, `pos/_caja-apertura.blade.php` +
+  `pos-caja-apertura.js`) y, al resolverse, **se vuelve al punto exacto** (el cobro con los pagos
+  tecleados; `PosApp.state.conservarCobro`).
+- Antes de que el servidor lo diga, el estado conocido se refleja en la interfaz (chip "Caja
+  cerrada" junto al ticket) y la acción se intercepta en fase de captura para no abrir un modal
+  que acabaría en 409. El servidor sigue siendo quien manda: el 409 cubre el caso en que otra
+  tablet cambió el estado mientras tanto.
+- Dos modales de Bootstrap nunca a la vez: se espera al `hidden.bs.modal` del primero antes de
+  abrir el segundo.
+
+## Botones con markup interno y `withButtonLoading`
+
+`data-loading-text` reemplaza el contenido del botón con `.text()` y lo restaura igual: un botón
+que lleva icono o un `<span>` que se actualiza por JS (p. ej. "Abrir caja con 150,00 €") **pierde
+ese markup para siempre**. En esos botones no se pone `data-loading-text`: basta el spinner que
+antepone `withButtonLoading`.
+
