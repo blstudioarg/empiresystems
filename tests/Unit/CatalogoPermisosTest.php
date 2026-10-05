@@ -7,11 +7,12 @@ use PHPUnit\Framework\TestCase;
 
 class CatalogoPermisosTest extends TestCase
 {
-    public function test_expone_las_35_claves_del_catalogo(): void
+    public function test_expone_las_36_claves_del_catalogo(): void
     {
         // 31 + `ver-pos-sala` y `ver-pos-opciones` del módulo de hostelería (feature 038)
-        // + `ver-cobros` del módulo de Cobros (feature 043) + `ver-pos-caja` (feature 048).
-        $this->assertCount(35, CatalogoPermisos::claves());
+        // + `ver-cobros` del módulo de Cobros (feature 043) + `ver-pos-caja` (feature 048)
+        // + `anular-tickets` (feature 051).
+        $this->assertCount(36, CatalogoPermisos::claves());
     }
 
     public function test_no_hay_claves_duplicadas(): void
@@ -92,6 +93,7 @@ class CatalogoPermisosTest extends TestCase
         $this->assertNotContains('ver-configuracion', $base);
         $this->assertNotContains('ver-logs', $base);
         $this->assertNotContains('ver-informes-equipo', $base);
+        $this->assertNotContains('anular-tickets', $base);
         $this->assertContains('ver-fichar', $base);
         $this->assertContains('ver-mi-jornada', $base);
         $this->assertContains('ver-clientes', $base);

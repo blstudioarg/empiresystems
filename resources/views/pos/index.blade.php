@@ -100,6 +100,34 @@
 			</div>
 		</div>
 	</div>
+
+	{{-- Anular un ticket (feature 051): mismo patrón que «Anular factura» (facturas/index), con el
+	     motivo obligatorio como confirmación explícita. --}}
+	<div class="modal fade" id="ticketAnularModal" tabindex="-1" aria-labelledby="ticketAnularModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered">
+			<form id="ticketAnularForm" class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="ticketAnularModalLabel">{{ __('Anular ticket') }}</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('Cerrar') }}"></button>
+				</div>
+				<div class="modal-body">
+					<p class="text-muted">
+						{{ __('El ticket queda anulado con su número, deja de contar en las ventas y en la caja, y lo vendido vuelve al stock. Es para tickets emitidos por error; una devolución se hace con una rectificativa.') }}
+					</p>
+					<p class="fw-bold mb-2" id="ticketAnularNumero"></p>
+					<div class="mb-1">
+						<label for="ticketAnularMotivo" class="form-label">{{ __('Motivo') }}</label>
+						<textarea id="ticketAnularMotivo" name="motivo" class="form-control" rows="3" maxlength="500" required></textarea>
+						<div class="invalid-feedback" data-error-for="motivo"></div>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-light" data-bs-dismiss="modal">{{ __('Cancelar') }}</button>
+					<button type="submit" class="btn btn-danger" id="ticketAnularConfirmar">{{ __('Anular') }}</button>
+				</div>
+			</form>
+		</div>
+	</div>
 @endsection
 
 @section('ayuda-titulo', __('Facturas simplificadas (POS)'))
