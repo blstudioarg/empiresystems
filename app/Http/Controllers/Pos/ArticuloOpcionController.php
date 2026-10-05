@@ -112,6 +112,6 @@ class ArticuloOpcionController extends Controller
             $modelo->posOpciones()->sync($opcionesSync);
         });
 
-        return response()->json(['message' => 'Opciones del artículo guardadas.']);
+        return response()->json(['message' => __('Opciones del artículo guardadas.')]);
     }
 }

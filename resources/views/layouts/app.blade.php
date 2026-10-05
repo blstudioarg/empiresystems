@@ -82,6 +82,9 @@
 		@include('partials.asistente-chat')
 	@endunless
 
+	{{-- __t() y, en el POS traducido, su diccionario (feature 050). Antes de los scripts de cada vista. --}}
+	@include('partials.pos-i18n')
+
 	@stack('scripts')
 </body>
 

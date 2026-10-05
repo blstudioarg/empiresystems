@@ -15,11 +15,11 @@ class CajaCerradaException extends RuntimeException
 
     public static function paraCobrar(): self
     {
-        return new self('La caja está cerrada. Ábrela para poder cobrar.');
+        return new self(__('La caja está cerrada. Ábrela para poder cobrar.'));
     }
 
     public static function sinSesion(): self
     {
-        return new self('No hay ninguna caja abierta.');
+        return new self(__('No hay ninguna caja abierta.'));
     }
 }

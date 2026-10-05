@@ -8,6 +8,7 @@ use App\Exceptions\FacturaeNoGenerableException;
 use App\Mail\FacturaMail;
 use App\Models\Factura;
 use App\Models\FacturaEvento;
+use App\Traduccion\Bilingue;
 use Barryvdh\DomPDF\Facade\Pdf;
 
 /**
@@ -78,7 +79,13 @@ class EnvioFacturae
      */
     private function enviarConMailer(Factura $factura, string $xml, string $destino, TenantMailer $tenantMailer): array
     {
-        $pdf = Pdf::loadView('facturas.pdf', ['factura' => $factura])->output();
+        // Fuente con caracteres chinos si la factura los tiene (feature 050, FR-019).
+        $fuenteCjk = Bilingue::fuenteCjkFactura($factura);
+        if ($fuenteCjk) {
+            Bilingue::prepararCarpetaFuentes();
+        }
+        $pdf = Pdf::loadView('facturas.pdf', ['factura' => $factura, 'fuenteCjk' => $fuenteCjk])
+            ->setOption('isFontSubsettingEnabled', $fuenteCjk)->output();
 
         $mailable = (new FacturaMail($factura, $pdf, $xml))
             ->from($tenantMailer->remitente(), $tenantMailer->remitenteNombre());

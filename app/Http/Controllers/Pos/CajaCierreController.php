@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Pos;
 use App\Http\Controllers\Controller;
 use App\Models\CajaSesion;
 use App\Support\DenominacionesEuro;
+use App\Traduccion\Bilingue;
+use App\Traduccion\CargadorTraducciones;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -73,11 +75,21 @@ class CajaCierreController extends Controller
             ->findOrFail($sesion);
 
         $informe = CajaController::payloadInforme($modelo);
-        $datos = ['informe' => $informe, 'tenant' => tenant()];
+
+        // El informe es interno y sale entero en el idioma del POS (research D9): en chino, o con
+        // algún dato chino (motivos, nombres), necesita la fuente CJK (feature 050).
+        $fuenteCjk = CargadorTraducciones::esIdiomaTraducido(app()->getLocale())
+            || Bilingue::contieneCjk(json_encode($informe, JSON_UNESCAPED_UNICODE), tenant()->nombre_comercial, tenant()->razon_social);
+
+        if ($fuenteCjk) {
+            Bilingue::prepararCarpetaFuentes();
+        }
+
+        $datos = ['informe' => $informe, 'tenant' => tenant(), 'fuenteCjk' => $fuenteCjk];
         $nombre = 'cierre-caja-'.$modelo->id.'.pdf';
 
         if ($request->query('formato') === 'a4') {
-            return Pdf::loadView('caja.informe-a4', $datos)->stream($nombre);
+            return Pdf::loadView('caja.informe-a4', $datos)->setOption('isFontSubsettingEnabled', $fuenteCjk)->stream($nombre);
         }
 
         // Alto variable en función del contenido; DomPDF recorta el sobrante en blanco.
@@ -87,6 +99,7 @@ class CajaCierreController extends Controller
 
         return Pdf::loadView('caja.informe-80mm', $datos)
             ->setPaper([0, 0, 226.77, $altoPuntos])
+            ->setOption('isFontSubsettingEnabled', $fuenteCjk)
             ->stream($nombre);
     }
 }

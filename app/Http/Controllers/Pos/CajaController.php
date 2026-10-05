@@ -73,7 +73,7 @@ class CajaController extends Controller
         $sesion->load('abiertaPor:id,name');
 
         return response()->json([
-            'message' => 'Caja abierta.',
+            'message' => __('Caja abierta.'),
             'sesion' => $this->payloadSesion($sesion),
             'en_vivo' => $this->enVivo($sesion),
         ], 201);
@@ -95,7 +95,7 @@ class CajaController extends Controller
         $sesion = $movimiento->sesion;
 
         return response()->json([
-            'message' => $movimiento->tipo === 'entrada' ? 'Entrada registrada.' : 'Salida registrada.',
+            'message' => $movimiento->tipo === 'entrada' ? __('Entrada registrada.') : __('Salida registrada.'),
             'movimiento' => [
                 'tipo' => $movimiento->tipo,
                 'importe' => DenominacionesEuro::aDecimal(DenominacionesEuro::aCentimos($movimiento->importe)),
@@ -136,7 +136,7 @@ class CajaController extends Controller
         }
 
         return response()->json([
-            'message' => 'Caja cerrada.',
+            'message' => __('Caja cerrada.'),
             'sesion_id' => $sesion->id,
             'resultado' => [
                 'efectivo_esperado' => (string) $sesion->efectivo_esperado,
@@ -226,8 +226,8 @@ class CajaController extends Controller
         return [
             'id' => $sesion->id,
             'cerrada_at' => $cerrada->toIso8601String(),
-            'cerrada_texto' => $cerrada->isToday() ? 'hoy '.$cerrada->format('H:i')
-                : ($cerrada->isYesterday() ? 'ayer '.$cerrada->format('H:i') : $cerrada->format('d/m/Y H:i')),
+            'cerrada_texto' => $cerrada->isToday() ? __('hoy :hora', ['hora' => $cerrada->format('H:i')])
+                : ($cerrada->isYesterday() ? __('ayer :hora', ['hora' => $cerrada->format('H:i')]) : $cerrada->format('d/m/Y H:i')),
             'cerrada_por' => $sesion->cerradaPor?->name,
             'total_facturado' => (string) $sesion->total_facturado,
             'descuadre' => (string) $sesion->descuadre,

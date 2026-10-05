@@ -36,7 +36,7 @@ class CerrarCajaRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'efectivo_contado.required_without' => 'Cuenta el efectivo del cajón para poder cerrar.',
+            'efectivo_contado.required_without' => __('Cuenta el efectivo del cajón para poder cerrar.'),
         ];
     }
 }

@@ -16,9 +16,11 @@ use App\Models\PosMesa;
 use App\Services\AperturaCaja;
 use App\Services\PrecuentaCuenta;
 use App\Services\RegistroTicket;
+use App\Services\ResumenCaja;
 use App\Support\ConfigPos;
 use App\Support\TiposImpositivos;
 use App\Support\TopeSimplificada;
+use App\Traduccion\Bilingue;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -50,18 +52,18 @@ class PosController extends Controller
 
                     return [
                         'id' => $ticket->id,
-                        'identificador' => $ticket->numero_completo ?? 'Borrador',
+                        'identificador' => $ticket->numero_completo ?? __('Borrador'),
                         'estado' => $ticket->estado->value,
                         'cualificada' => $cualificada,
                         'receptor' => $cualificada
                             ? ($ticket->cliente_razon_social ?: $ticket->cliente_nombre ?: $ticket->cliente_nif)
-                            : 'Consumidor final',
+                            : __('Consumidor final'),
                         'fecha_expedicion' => $ticket->fecha_expedicion->toDateString(),
                         'total' => number_format((float) $ticket->total, 2, '.', ''),
                         // Desglose interno de cómo se cobró en caja (pago simple o dividido).
                         'pagos' => $ticket->pagosTicket->map(fn ($pago) => [
                             'metodo' => $pago->metodo->value,
-                            'metodo_label' => ucfirst($pago->metodo->value),
+                            'metodo_label' => ResumenCaja::etiquetaMetodo($pago->metodo),
                             'importe' => number_format((float) $pago->importe, 2, '.', ''),
                         ])->values(),
                         'dividido' => $ticket->pagosTicket->count() > 1,
@@ -250,7 +252,7 @@ class PosController extends Controller
 
         if ($request->wantsJson()) {
             return response()->json([
-                'message' => 'Ticket emitido correctamente.',
+                'message' => __('Ticket emitido correctamente.'),
                 'id' => $ticket->id,
                 'numero_completo' => $ticket->numero_completo,
             ], 201);
@@ -269,14 +271,26 @@ class PosController extends Controller
 
         $formato = $request->query('formato') === 'a4' ? 'a4' : 'ticket';
 
+        // Fuente con caracteres chinos (feature 050, FR-019): si el ticket sale bilingüe o algún
+        // dato los tiene. Con subsetting: sin él cada ticket incrustaría la fuente entera.
+        $fuenteCjk = Bilingue::fuenteCjkFactura($ticket);
+        $datos = ['factura' => $ticket, 'fuenteCjk' => $fuenteCjk];
+
+        if ($fuenteCjk) {
+            Bilingue::prepararCarpetaFuentes();
+        }
+
         if ($formato === 'a4') {
-            $pdf = Pdf::loadView('facturas.pdf', ['factura' => $ticket]);
+            $pdf = Pdf::loadView('facturas.pdf', $datos);
         } else {
-            // Rollo de 80 mm de ancho (≈ 226.77 pt). Alto amplio; DomPDF recorta el sobrante en blanco.
-            $altoPuntos = 400 + (count($ticket->lineas) * 24);
-            $pdf = Pdf::loadView('facturas.ticket-80mm', ['factura' => $ticket])
+            // Rollo de 80 mm de ancho (≈ 226.77 pt). Alto amplio; DomPDF recorta el sobrante en
+            // blanco. Bilingüe, cada etiqueta puede ocupar dos líneas: se reserva más alto.
+            $altoPuntos = ($fuenteCjk ? 520 : 400) + (count($ticket->lineas) * 24);
+            $pdf = Pdf::loadView('facturas.ticket-80mm', $datos)
                 ->setPaper([0, 0, 226.77, $altoPuntos]);
         }
+
+        $pdf->setOption('isFontSubsettingEnabled', $fuenteCjk);
 
         return $pdf->stream(($ticket->numero_completo ?? 'ticket-'.$ticket->id).'.pdf');
     }

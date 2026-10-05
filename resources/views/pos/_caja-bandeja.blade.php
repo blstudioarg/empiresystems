@@ -18,7 +18,7 @@
 	$modo = $modo ?? 'conteo';
 	$billetes = \App\Support\DenominacionesEuro::billetes();
 	$monedas = \App\Support\DenominacionesEuro::monedas();
-	$etiquetaTotal = $etiquetaTotal ?? 'Total contado';
+	$etiquetaTotal = $etiquetaTotal ?? __('Total contado');
 @endphp
 <div class="caja-bandeja-comp" id="{{ $id }}" data-bandeja data-modo-inicial="{{ $modo }}">
 	<div class="caja-apertura-cab">
@@ -26,20 +26,20 @@
 			<h3>{{ $titulo }}</h3>
 			@if (! empty($subtitulo))<p>{{ $subtitulo }}</p>@endif
 		</div>
-		<div class="btn-group filtro-segmentado" role="group" aria-label="Cómo contar">
-			<button type="button" class="btn btn-outline-secondary" data-bandeja-modo="conteo">Billetes y monedas</button>
-			<button type="button" class="btn btn-outline-secondary" data-bandeja-modo="importe">Importe total</button>
+		<div class="btn-group filtro-segmentado" role="group" aria-label="{{ __('Cómo contar') }}">
+			<button type="button" class="btn btn-outline-secondary" data-bandeja-modo="conteo">{{ __('Billetes y monedas') }}</button>
+			<button type="button" class="btn btn-outline-secondary" data-bandeja-modo="importe">{{ __('Importe total') }}</button>
 		</div>
 	</div>
 
 	<div class="caja-bandeja">
 		<div>
 			<div class="caja-bandeja-tray" data-bandeja-panel="conteo">
-				<p class="caja-tray-eyebrow">Billetes</p>
+				<p class="caja-tray-eyebrow">{{ __('Billetes') }}</p>
 				<div class="caja-tray-billetes">
 					@foreach ($billetes as $d)
 						<button type="button" class="caja-ficha caja-billete" data-centimos="{{ $d['centimos'] }}" data-tono="{{ $d['tono'] }}"
-							data-etiqueta="{{ $d['etiqueta'] }}" aria-label="Billete de {{ $d['etiqueta'] }}, 0 unidades">
+							data-etiqueta="{{ $d['etiqueta'] }}" aria-label="{{ __('Billete de :valor, :n unidades', ['valor' => $d['etiqueta'], 'n' => 0]) }}">
 							<span class="caja-ficha-valor">{{ intdiv($d['centimos'], 100) }}<small>€</small></span>
 							<span class="caja-ficha-pie">
 								<span class="caja-ficha-cant" data-cant>×0</span>
@@ -48,11 +48,11 @@
 						</button>
 					@endforeach
 				</div>
-				<p class="caja-tray-eyebrow">Monedas</p>
+				<p class="caja-tray-eyebrow">{{ __('Monedas') }}</p>
 				<div class="caja-tray-monedas">
 					@foreach ($monedas as $d)
 						<button type="button" class="caja-ficha caja-moneda" data-centimos="{{ $d['centimos'] }}" data-tono="{{ $d['tono'] }}"
-							data-etiqueta="{{ $d['etiqueta'] }}" aria-label="Moneda de {{ $d['etiqueta'] }}, 0 unidades">
+							data-etiqueta="{{ $d['etiqueta'] }}" aria-label="{{ __('Moneda de :valor, :n unidades', ['valor' => $d['etiqueta'], 'n' => 0]) }}">
 							<span class="caja-moneda-disco">{{ $d['centimos'] >= 100 ? intdiv($d['centimos'], 100).'€' : $d['centimos'] }}</span>
 							<span class="caja-ficha-pie">
 								<span class="caja-ficha-cant" data-cant>×0</span>
@@ -66,13 +66,13 @@
 			<div class="caja-importe-total" data-bandeja-panel="importe" hidden>
 				<div class="lbl">{{ $etiquetaTotal }}</div>
 				<div class="val" data-bandeja-importe aria-live="polite">0,00 €</div>
-				<p class="hint">Teclea el total con el teclado de la derecha.</p>
+				<p class="hint">{{ __('Teclea el total con el teclado de la derecha.') }}</p>
 			</div>
 		</div>
 
 		<div class="caja-teclado">
 			<div class="caja-teclado-sel" data-bandeja-solo="conteo">
-				<span class="lbl">Cantidad de</span>
+				<span class="lbl">{{ __('Cantidad de') }}</span>
 				<span class="den" data-bandeja-sel>—</span>
 			</div>
 			<div class="caja-teclado-display vacio" data-bandeja-solo="conteo" data-bandeja-display>0</div>
@@ -80,9 +80,9 @@
 				@foreach ([1, 2, 3, 4, 5, 6, 7, 8, 9] as $n)
 					<button type="button" class="caja-key" data-key="{{ $n }}">{{ $n }}</button>
 				@endforeach
-				<button type="button" class="caja-key sec" data-key="," data-bandeja-coma aria-label="Coma decimal">,</button>
+				<button type="button" class="caja-key sec" data-key="," data-bandeja-coma aria-label="{{ __('Coma decimal') }}">,</button>
 				<button type="button" class="caja-key" data-key="0">0</button>
-				<button type="button" class="caja-key sec" data-key="del" aria-label="Borrar"><i class="fa-solid fa-delete-left" aria-hidden="true"></i></button>
+				<button type="button" class="caja-key sec" data-key="del" aria-label="{{ __('Borrar') }}"><i class="fa-solid fa-delete-left" aria-hidden="true"></i></button>
 			</div>
 			<div class="caja-total-vivo" data-bandeja-solo="conteo">
 				<span class="lbl">{{ $etiquetaTotal }}</span>

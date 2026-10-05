@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 	<meta charset="utf-8">
-	<title>Cierre de caja {{ $informe['numero'] }}</title>
+	<title>{{ __('Cierre de caja :numero', ['numero' => $informe['numero']]) }}</title>
 	<style>
 		/* Rollo de 80 mm, misma técnica que facturas/ticket-80mm. Monoespaciada: es la voz del
 		   papel térmico, y alinea las cifras en columna sin depender de tabular-nums. */
@@ -20,7 +20,7 @@
 		table { width: 100%; border-collapse: collapse; }
 		td { padding: 1px 0; vertical-align: top; }
 		.total td { font-size: 11px; font-weight: bold; }
-	</style>
+	</style>@if ($fuenteCjk ?? false){!! \App\Traduccion\Bilingue::estiloFuenteCjk() !!}@endif
 </head>
 <body>
 	@include('caja._informe-contenido')

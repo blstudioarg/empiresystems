@@ -24,6 +24,7 @@ use App\Http\Controllers\CompraFacturaeController;
 use App\Http\Controllers\Configuracion\PosConfiguracionController;
 use App\Http\Controllers\Configuracion\PosMesaController;
 use App\Http\Controllers\Configuracion\PosZonaController;
+use App\Http\Controllers\Configuracion\TraduccionPosController;
 use App\Http\Controllers\ConfiguracionController;
 use App\Http\Controllers\CorreccionFichajeController;
 use App\Http\Controllers\CuentaBancariaController;
@@ -222,79 +223,87 @@ Route::middleware(['tenant.context', 'auth', 'sin_super_admin'])->group(function
             ->defaults('modulo', 'albaranes')->name('albaranes.exportar');
     });
 
-    // POS — caja (feature 048). Declarada ANTES de `/pos/{factura}/pdf` para que "caja" nunca se
-    // lea como el id de un ticket. Abrir admite además a quien crea tickets (gate `abrir-caja`).
-    Route::middleware('can:ver-pos-caja')->group(function () {
-        Route::get('/pos/caja', [CajaController::class, 'index'])->name('pos.caja');
-        Route::post('/pos/caja/movimientos', [CajaController::class, 'movimiento'])->name('pos.caja.movimientos.store');
-        Route::post('/pos/caja/cerrar', [CajaController::class, 'cerrar'])->name('pos.caja.cerrar');
-        Route::get('/pos/caja/cierres', [CajaCierreController::class, 'index'])->name('pos.caja.cierres');
-        Route::get('/pos/caja/sesiones/{sesion}/informe', [CajaCierreController::class, 'informe'])->name('pos.caja.informe');
-    });
-    Route::post('/pos/caja/abrir', [CajaController::class, 'abrir'])
-        ->middleware('can:abrir-caja')->name('pos.caja.abrir');
+    // Idioma del POS (feature 050): todas las rutas del POS se sirven en el idioma elegido por el
+    // tenant (middleware `idioma.pos`, primero para que también salgan traducidos el cartel de módulo
+    // inactivo y los 403). Fuera del POS la app sigue en español (FR-008): por eso las rutas de
+    // opciones de un artículo, que usa la ficha del catálogo, lo excluyen.
+    Route::middleware('idioma.pos')->group(function () {
+        // POS — caja (feature 048). Declarada ANTES de `/pos/{factura}/pdf` para que "caja" nunca se
+        // lea como el id de un ticket. Abrir admite además a quien crea tickets (gate `abrir-caja`).
+        Route::middleware('can:ver-pos-caja')->group(function () {
+            Route::get('/pos/caja', [CajaController::class, 'index'])->name('pos.caja');
+            Route::post('/pos/caja/movimientos', [CajaController::class, 'movimiento'])->name('pos.caja.movimientos.store');
+            Route::post('/pos/caja/cerrar', [CajaController::class, 'cerrar'])->name('pos.caja.cerrar');
+            Route::get('/pos/caja/cierres', [CajaCierreController::class, 'index'])->name('pos.caja.cierres');
+            Route::get('/pos/caja/sesiones/{sesion}/informe', [CajaCierreController::class, 'informe'])->name('pos.caja.informe');
+        });
+        Route::post('/pos/caja/abrir', [CajaController::class, 'abrir'])
+            ->middleware('can:abrir-caja')->name('pos.caja.abrir');
 
-    // POS — facturas simplificadas (tickets). "Crear ticket" con permiso propio (doc 09, Cambio 3).
-    Route::middleware('can:ver-pos-crear')->group(function () {
-        Route::get('/pos/crear', [PosController::class, 'create'])->name('pos.create');
-        Route::post('/pos', [PosController::class, 'store'])->name('pos.store');
-    });
+        // POS — facturas simplificadas (tickets). "Crear ticket" con permiso propio (doc 09, Cambio 3).
+        Route::middleware('can:ver-pos-crear')->group(function () {
+            Route::get('/pos/crear', [PosController::class, 'create'])->name('pos.create');
+            Route::post('/pos', [PosController::class, 'store'])->name('pos.store');
+        });
 
-    // POS — módulo de hostelería (feature 038). DOS capas de acceso obligatorias en todas estas
-    // rutas: el permiso del usuario Y el módulo activo en el tenant (research.md D6). Tener el
-    // permiso con el módulo apagado da 404/403, no acceso.
-    Route::middleware(['can:ver-pos-sala', 'modulo.hosteleria'])->group(function () {
-        Route::get('/pos/sala', [PosSalaController::class, 'index'])->name('pos.sala');
+        // POS — módulo de hostelería (feature 038). DOS capas de acceso obligatorias en todas estas
+        // rutas: el permiso del usuario Y el módulo activo en el tenant (research.md D6). Tener el
+        // permiso con el módulo apagado da 404/403, no acceso.
+        Route::middleware(['can:ver-pos-sala', 'modulo.hosteleria'])->group(function () {
+            Route::get('/pos/sala', [PosSalaController::class, 'index'])->name('pos.sala');
 
-        Route::post('/pos/cuentas', [PosCuentaController::class, 'store'])->name('pos.cuentas.store');
-        Route::get('/pos/cuentas/{cuenta}', [PosCuentaController::class, 'show'])->name('pos.cuentas.show');
-        Route::put('/pos/cuentas/{cuenta}', [PosCuentaController::class, 'update'])->name('pos.cuentas.update');
-        Route::post('/pos/cuentas/{cuenta}/anular', [PosCuentaController::class, 'anular'])->name('pos.cuentas.anular');
-        Route::post('/pos/cuentas/{cuenta}/transferir', [PosCuentaController::class, 'transferir'])->name('pos.cuentas.transferir');
-        Route::post('/pos/cuentas/{cuenta}/unir', [PosCuentaController::class, 'unir'])->name('pos.cuentas.unir');
-        Route::post('/pos/cuentas/{cuenta}/cobrar', [PosCuentaController::class, 'cobrar'])->name('pos.cuentas.cobrar');
-        // Precuenta (feature 049): documento no fiscal; mismo permiso y módulo que las cuentas.
-        Route::post('/pos/cuentas/{cuenta}/precuentas', [PosPrecuentaController::class, 'store'])->name('pos.cuentas.precuentas.store');
-        Route::get('/pos/precuentas/{precuenta}/pdf', [PosPrecuentaController::class, 'pdf'])->name('pos.precuentas.pdf');
-    });
+            Route::post('/pos/cuentas', [PosCuentaController::class, 'store'])->name('pos.cuentas.store');
+            Route::get('/pos/cuentas/{cuenta}', [PosCuentaController::class, 'show'])->name('pos.cuentas.show');
+            Route::put('/pos/cuentas/{cuenta}', [PosCuentaController::class, 'update'])->name('pos.cuentas.update');
+            Route::post('/pos/cuentas/{cuenta}/anular', [PosCuentaController::class, 'anular'])->name('pos.cuentas.anular');
+            Route::post('/pos/cuentas/{cuenta}/transferir', [PosCuentaController::class, 'transferir'])->name('pos.cuentas.transferir');
+            Route::post('/pos/cuentas/{cuenta}/unir', [PosCuentaController::class, 'unir'])->name('pos.cuentas.unir');
+            Route::post('/pos/cuentas/{cuenta}/cobrar', [PosCuentaController::class, 'cobrar'])->name('pos.cuentas.cobrar');
+            // Precuenta (feature 049): documento no fiscal; mismo permiso y módulo que las cuentas.
+            Route::post('/pos/cuentas/{cuenta}/precuentas', [PosPrecuentaController::class, 'store'])->name('pos.cuentas.precuentas.store');
+            Route::get('/pos/precuentas/{precuenta}/pdf', [PosPrecuentaController::class, 'pdf'])->name('pos.precuentas.pdf');
+        });
 
-    // Guardado del plano de sala (feature 039): además de `ver-pos-sala` (para ver la sala), exige
-    // `ver-configuracion` (D6, research.md) — solo quien administra el POS puede reordenar el
-    // salón, aunque cualquier camarero con acceso a Sala siga viendo el plano en solo lectura.
-    Route::middleware(['can:ver-configuracion', 'modulo.hosteleria'])->group(function () {
-        Route::match(['put', 'patch'], '/pos/sala/zonas/{zona}/plano', [PlanoSalaController::class, 'update'])
-            ->name('pos.sala.plano.update');
-    });
+        // Guardado del plano de sala (feature 039): además de `ver-pos-sala` (para ver la sala), exige
+        // `ver-configuracion` (D6, research.md) — solo quien administra el POS puede reordenar el
+        // salón, aunque cualquier camarero con acceso a Sala siga viendo el plano en solo lectura.
+        Route::middleware(['can:ver-configuracion', 'modulo.hosteleria'])->group(function () {
+            Route::match(['put', 'patch'], '/pos/sala/zonas/{zona}/plano', [PlanoSalaController::class, 'update'])
+                ->name('pos.sala.plano.update');
+        });
 
-    // Opciones de artículo: su propia capacidad dentro del módulo, para que un bar que solo
-    // quiere mesas no cargue con un recetario que no usa (FR-004).
-    Route::middleware(['can:ver-pos-opciones', 'modulo.hosteleria:opciones'])->group(function () {
-        // Los grupos van ANTES que `/pos/opciones/{opcion}`: si no, "grupos" se leería como el id
-        // de una opción y el listado de grupos daría 404.
-        Route::get('/pos/opciones/grupos', [PosOpcionGrupoController::class, 'index'])->name('pos.opcion-grupos.index');
-        Route::post('/pos/opciones/grupos', [PosOpcionGrupoController::class, 'store'])->name('pos.opcion-grupos.store');
-        Route::put('/pos/opciones/grupos/{grupo}', [PosOpcionGrupoController::class, 'update'])->name('pos.opcion-grupos.update');
-        Route::delete('/pos/opciones/grupos/{grupo}', [PosOpcionGrupoController::class, 'destroy'])->name('pos.opcion-grupos.destroy');
+        // Opciones de artículo: su propia capacidad dentro del módulo, para que un bar que solo
+        // quiere mesas no cargue con un recetario que no usa (FR-004).
+        Route::middleware(['can:ver-pos-opciones', 'modulo.hosteleria:opciones'])->group(function () {
+            // Los grupos van ANTES que `/pos/opciones/{opcion}`: si no, "grupos" se leería como el id
+            // de una opción y el listado de grupos daría 404.
+            Route::get('/pos/opciones/grupos', [PosOpcionGrupoController::class, 'index'])->name('pos.opcion-grupos.index');
+            Route::post('/pos/opciones/grupos', [PosOpcionGrupoController::class, 'store'])->name('pos.opcion-grupos.store');
+            Route::put('/pos/opciones/grupos/{grupo}', [PosOpcionGrupoController::class, 'update'])->name('pos.opcion-grupos.update');
+            Route::delete('/pos/opciones/grupos/{grupo}', [PosOpcionGrupoController::class, 'destroy'])->name('pos.opcion-grupos.destroy');
 
-        Route::get('/pos/opciones', [PosOpcionController::class, 'index'])->name('pos.opciones.index');
-        Route::post('/pos/opciones', [PosOpcionController::class, 'store'])->name('pos.opciones.store');
-        Route::put('/pos/opciones/{opcion}', [PosOpcionController::class, 'update'])->name('pos.opciones.update');
-        Route::delete('/pos/opciones/{opcion}', [PosOpcionController::class, 'destroy'])->name('pos.opciones.destroy');
+            Route::get('/pos/opciones', [PosOpcionController::class, 'index'])->name('pos.opciones.index');
+            Route::post('/pos/opciones', [PosOpcionController::class, 'store'])->name('pos.opciones.store');
+            Route::put('/pos/opciones/{opcion}', [PosOpcionController::class, 'update'])->name('pos.opciones.update');
+            Route::delete('/pos/opciones/{opcion}', [PosOpcionController::class, 'destroy'])->name('pos.opciones.destroy');
 
-        Route::get('/articulos/{articulo}/opciones', [PosArticuloOpcionController::class, 'index'])->name('articulos.opciones.index');
-        Route::put('/articulos/{articulo}/opciones', [PosArticuloOpcionController::class, 'sync'])->name('articulos.opciones.sync');
-    });
+            Route::get('/articulos/{articulo}/opciones', [PosArticuloOpcionController::class, 'index'])->name('articulos.opciones.index')
+                ->withoutMiddleware('idioma.pos');
+            Route::put('/articulos/{articulo}/opciones', [PosArticuloOpcionController::class, 'sync'])->name('articulos.opciones.sync')
+                ->withoutMiddleware('idioma.pos');
+        });
 
-    // Opciones de un artículo para el modal del TPV: lo consume el camarero al comandar, así que
-    // se gatea con `ver-pos-crear` y no con el permiso de administrar el recetario.
-    Route::middleware(['can:ver-pos-crear', 'modulo.hosteleria:opciones'])->group(function () {
-        Route::get('/pos/articulos/{articulo}/opciones', [PosController::class, 'opcionesArticulo'])
-            ->name('pos.articulo-opciones');
-    });
+        // Opciones de un artículo para el modal del TPV: lo consume el camarero al comandar, así que
+        // se gatea con `ver-pos-crear` y no con el permiso de administrar el recetario.
+        Route::middleware(['can:ver-pos-crear', 'modulo.hosteleria:opciones'])->group(function () {
+            Route::get('/pos/articulos/{articulo}/opciones', [PosController::class, 'opcionesArticulo'])
+                ->name('pos.articulo-opciones');
+        });
 
-    Route::middleware('can:ver-pos')->group(function () {
-        Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
-        Route::get('/pos/{factura}/pdf', [PosController::class, 'pdf'])->name('pos.pdf');
+        Route::middleware('can:ver-pos')->group(function () {
+            Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
+            Route::get('/pos/{factura}/pdf', [PosController::class, 'pdf'])->name('pos.pdf');
+        });
     });
 
     // Perfil: sección personal, sin permiso (todo usuario autenticado del tenant).
@@ -344,14 +353,27 @@ Route::middleware(['tenant.context', 'auth', 'sin_super_admin'])->group(function
         // administrador sin forma de volver a encenderlo.
         Route::match(['put', 'patch'], '/configuracion/pos', [PosConfiguracionController::class, 'update'])
             ->name('configuracion.pos.update');
-        Route::get('/configuracion/pos/zonas', [PosZonaController::class, 'index'])->name('configuracion.pos.zonas.index');
-        Route::post('/configuracion/pos/zonas', [PosZonaController::class, 'store'])->name('configuracion.pos.zonas.store');
-        Route::put('/configuracion/pos/zonas/{zona}', [PosZonaController::class, 'update'])->name('configuracion.pos.zonas.update');
-        Route::delete('/configuracion/pos/zonas/{zona}', [PosZonaController::class, 'destroy'])->name('configuracion.pos.zonas.destroy');
-        Route::get('/configuracion/pos/mesas', [PosMesaController::class, 'index'])->name('configuracion.pos.mesas.index');
-        Route::post('/configuracion/pos/mesas', [PosMesaController::class, 'store'])->name('configuracion.pos.mesas.store');
-        Route::put('/configuracion/pos/mesas/{mesa}', [PosMesaController::class, 'update'])->name('configuracion.pos.mesas.update');
-        Route::delete('/configuracion/pos/mesas/{mesa}', [PosMesaController::class, 'destroy'])->name('configuracion.pos.mesas.destroy');
+        // Traducciones del POS (feature 050, US4): corrección por tenant. Sin `modulo.hosteleria`
+        // (el idioma aplica al POS sin hostelería) y sin `idioma.pos` (Configuración sigue en
+        // español, FR-008).
+        Route::get('/configuracion/pos/traducciones', [TraduccionPosController::class, 'index'])
+            ->name('configuracion.pos.traducciones.index');
+        Route::put('/configuracion/pos/traducciones/{hash}', [TraduccionPosController::class, 'update'])
+            ->where('hash', '[0-9a-f]{64}')->name('configuracion.pos.traducciones.update');
+        Route::delete('/configuracion/pos/traducciones/{hash}', [TraduccionPosController::class, 'destroy'])
+            ->where('hash', '[0-9a-f]{64}')->name('configuracion.pos.traducciones.destroy');
+        // Zonas y mesas: solo las usa el editor del plano de POS → Sala, así que responden en el
+        // idioma del POS (feature 050).
+        Route::middleware('idioma.pos')->group(function () {
+            Route::get('/configuracion/pos/zonas', [PosZonaController::class, 'index'])->name('configuracion.pos.zonas.index');
+            Route::post('/configuracion/pos/zonas', [PosZonaController::class, 'store'])->name('configuracion.pos.zonas.store');
+            Route::put('/configuracion/pos/zonas/{zona}', [PosZonaController::class, 'update'])->name('configuracion.pos.zonas.update');
+            Route::delete('/configuracion/pos/zonas/{zona}', [PosZonaController::class, 'destroy'])->name('configuracion.pos.zonas.destroy');
+            Route::get('/configuracion/pos/mesas', [PosMesaController::class, 'index'])->name('configuracion.pos.mesas.index');
+            Route::post('/configuracion/pos/mesas', [PosMesaController::class, 'store'])->name('configuracion.pos.mesas.store');
+            Route::put('/configuracion/pos/mesas/{mesa}', [PosMesaController::class, 'update'])->name('configuracion.pos.mesas.update');
+            Route::delete('/configuracion/pos/mesas/{mesa}', [PosMesaController::class, 'destroy'])->name('configuracion.pos.mesas.destroy');
+        });
         Route::match(['put', 'patch'], '/configuracion/general', [ConfiguracionController::class, 'updateGeneral'])
             ->name('configuracion.general.update');
         Route::match(['put', 'patch'], '/configuracion/crm', [ConfiguracionController::class, 'updateCrm'])

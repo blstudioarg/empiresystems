@@ -42,7 +42,7 @@ class PosZonaController extends Controller
     {
         $zona = PosZona::create($this->validar($request) + ['tenant_id' => tenant()->getTenantKey()]);
 
-        return response()->json(['message' => 'Zona creada.', 'id' => $zona->id], 201);
+        return response()->json(['message' => __('Zona creada.'), 'id' => $zona->id], 201);
     }
 
     public function update(Request $request, string $zona): JsonResponse
@@ -51,7 +51,7 @@ class PosZonaController extends Controller
 
         $modelo->update($this->validar($request, $modelo->id));
 
-        return response()->json(['message' => 'Zona actualizada.']);
+        return response()->json(['message' => __('Zona actualizada.')]);
     }
 
     public function destroy(string $zona): JsonResponse
@@ -60,13 +60,13 @@ class PosZonaController extends Controller
 
         if ($modelo->mesas_count > 0) {
             return response()->json([
-                'message' => "No se puede eliminar «{$modelo->nombre}»: tiene {$modelo->mesas_count} mesa(s). Muévelas o elimínalas primero.",
+                'message' => __('No se puede eliminar «:nombre»: tiene :n mesa(s). Muévelas o elimínalas primero.', ['nombre' => $modelo->nombre, 'n' => $modelo->mesas_count]),
             ], 422);
         }
 
         $modelo->delete();
 
-        return response()->json(['message' => 'Zona eliminada.']);
+        return response()->json(['message' => __('Zona eliminada.')]);
     }
 
     /** @return array<string, mixed> */

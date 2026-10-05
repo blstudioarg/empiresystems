@@ -64,6 +64,15 @@ Es control interno del negocio, no un requisito fiscal: no toca numeración, imp
 Fuera de alcance: varias cajas/terminales por negocio, cierre por empleado, conciliación con
 datáfono o banco, apertura física del cajón. Modelo en `docs/03-modelo-datos.md` ("Caja del POS").
 
+## Alcance ampliado — Idioma del POS (feature 050)
+El POS se puede usar en **chino simplificado** (Configuración → POS, por tenant), para negocios
+con personal chino: todas sus pantallas, avisos, mensajes y guías de ayuda; el menú lateral solo
+en el grupo POS. Traducción automática con DeepL guardada en base de datos (cada texto una vez,
+glosario de términos del oficio, corrección manual por tenant); el ticket y la precuenta salen
+bilingües español/chino (el castellano siempre en el documento, RD 1619/2012 art. 12.2). Los datos
+del negocio no se traducen. Fuera de alcance por ahora: el resto de la app (el mecanismo está
+pensado para extenderse pantalla a pantalla), otros idiomas, idioma por usuario y el asistente IA.
+
 ## Alcance ampliado — Gestor documental (incorporado al MVP)
 El producto incluye un **espacio de archivos por tenant** tipo "Drive": carpetas anidadas y
 archivos ligeros (PDF, imágenes, ofimática, texto/csv), sin permisos por carpeta ni versionado —

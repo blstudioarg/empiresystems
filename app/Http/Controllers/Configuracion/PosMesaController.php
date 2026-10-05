@@ -67,7 +67,7 @@ class PosMesaController extends Controller
             'columna' => $celda['columna'] ?? null,
         ]);
 
-        return response()->json(['message' => 'Mesa creada.', 'id' => $mesa->id], 201);
+        return response()->json(['message' => __('Mesa creada.'), 'id' => $mesa->id], 201);
     }
 
     public function update(Request $request, string $mesa): JsonResponse
@@ -76,7 +76,7 @@ class PosMesaController extends Controller
 
         $modelo->update($this->validar($request, $modelo->id));
 
-        return response()->json(['message' => 'Mesa actualizada.']);
+        return response()->json(['message' => __('Mesa actualizada.')]);
     }
 
     public function destroy(string $mesa): JsonResponse
@@ -90,7 +90,7 @@ class PosMesaController extends Controller
 
         if ($abiertas > 0) {
             return response()->json([
-                'message' => "No se puede eliminar «{$modelo->nombre}»: tiene una cuenta abierta. Cóbrala o anúlala primero.",
+                'message' => __('No se puede eliminar «:nombre»: tiene una cuenta abierta. Cóbrala o anúlala primero.', ['nombre' => $modelo->nombre]),
             ], 422);
         }
 
@@ -100,7 +100,7 @@ class PosMesaController extends Controller
         $modelo->update(['fila' => null, 'columna' => null]);
         $modelo->delete();
 
-        return response()->json(['message' => 'Mesa eliminada.']);
+        return response()->json(['message' => __('Mesa eliminada.')]);
     }
 
     /** @return array<string, mixed> */
@@ -115,7 +115,7 @@ class PosMesaController extends Controller
         // La zona se resuelve bajo el TenantScope: sin esto, un id de otro tenant pasaría la
         // validación `integer` y colgaría la mesa de una zona ajena.
         if (PosZona::query()->find($datos['zona_id']) === null) {
-            throw ValidationException::withMessages(['zona_id' => 'La zona indicada no existe.']);
+            throw ValidationException::withMessages(['zona_id' => __('La zona indicada no existe.')]);
         }
 
         $request->validate([

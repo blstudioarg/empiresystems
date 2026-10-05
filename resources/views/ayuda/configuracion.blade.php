@@ -14,6 +14,12 @@
 		corre por cuenta de tu clave. Aquí también decidís <strong>cuántos días se conservan las
 		conversaciones</strong> del historial del asistente (90 por defecto): pasado ese tiempo sin
 		usarlas se eliminan solas, junto con sus mensajes.</li>
+	<li><strong>POS</strong>: el <strong>idioma del POS</strong> (español o chino simplificado) y
+		los ajustes del módulo de hostelería y de la caja. El idioma lo ve todo el personal en las
+		pantallas del POS —crear ticket, sala, caja, listados, avisos y su ayuda—; el resto de la
+		aplicación sigue en español, y los nombres de artículos, mesas y zonas se muestran tal como
+		los cargaste. Con el POS en chino aparece <em>Traducciones del POS</em>: buscá un texto,
+		<em>Corregir</em> y escribí tu traducción.</li>
 	<li><strong>Menú</strong>: renombrá el texto de cualquier sección de tu menú lateral y
 		reordená arrastrando (grupos entre sí, y entradas dentro de su propio grupo). Nada se
 		aplica hasta que pulsás <em>Guardar</em>. El botón <em>Restaurar valores por defecto</em>
@@ -34,6 +40,13 @@
 	fijes arriba y luego se borra automáticamente; cualquiera puede borrar sus propias
 	conversaciones antes desde el icono de historial del panel. En conversaciones muy largas, la
 	parte más antigua se resume automáticamente para no perder el hilo.</p>
+
+<p class="ayuda-nota"><strong>Traducciones del POS:</strong> los textos se traducen solos (la
+	primera vez que aparece uno nuevo puede verse en español hasta que se traduce). Tu corrección se
+	ve al momento en todo el POS, solo en tu empresa, y ninguna actualización la vuelve a cambiar;
+	<em>Restaurar automática</em> la descarta. Si el texto tiene partes como <code>:mesa</code> o
+	<code>:importe</code>, conservalas: ahí va el dato. Con el POS en chino, el ticket y la precuenta
+	se imprimen en español y en chino.</p>
 
 <p class="ayuda-nota">Los datos de General y el Certificado son los que usa la facturación legal:
 revisalos bien antes de empezar a emitir.</p>

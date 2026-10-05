@@ -19,6 +19,6 @@ class ObservacionRequeridaException extends RuntimeException
     {
         $importe = number_format(abs((float) $resultado['descuadre']), 2, ',', '.');
 
-        parent::__construct("Hay una diferencia de {$importe} €. Escribe qué pasó para poder cerrar.");
+        parent::__construct(__('Hay una diferencia de :importe €. Escribe qué pasó para poder cerrar.', ['importe' => $importe]));
     }
 }

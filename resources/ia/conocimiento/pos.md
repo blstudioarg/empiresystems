@@ -16,6 +16,20 @@ módulo, separadas de las facturas ordinarias.
 - **Caja**: para cobrar, la caja del día tiene que estar abierta (POS → Caja). Si está cerrada, el
   TPV deja abrirla al tocar Cobrar. Ver `pos-caja.md` para apertura, arqueo y cierre.
 
+## Idioma del POS (chino)
+
+El POS puede usarse en **chino simplificado** (Configuración → POS → Idioma del POS, para todo el
+tenant). Los textos de la aplicación se traducen automáticamente una sola vez y se guardan (los
+términos del oficio —precuenta, mesa, caja, arqueo…— tienen traducción fijada); un texto nuevo
+puede verse en español la primera vez hasta que se traduce. Lo que **no** cambia con el idioma:
+los datos del negocio (nombres de platos, mesas, zonas, clientes, tal como se cargaron), los
+importes, la numeración, los impuestos, el QR y Verifactu. Con el POS en chino, el **ticket** (80
+mm y A4) y la **precuenta** se imprimen **bilingües español/chino** (el castellano siempre está en
+el documento, por normativa), y un PDF con caracteres chinos en los datos los muestra bien aunque el
+POS esté en español. El informe de cierre de caja sale entero en el idioma del POS. Una traducción
+que quedó mal se corrige en Configuración → POS → Traducciones del POS. El asistente IA no se
+traduce.
+
 ## Pago dividido (métodos de cobro)
 
 Al cobrar, se elige con qué método se pagó: **efectivo, tarjeta, transferencia o domiciliación**.

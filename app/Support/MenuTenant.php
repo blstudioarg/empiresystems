@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Http\Middleware\ModuloHosteleriaActivo;
 use App\Models\Configuracion;
+use App\Traduccion\CargadorTraducciones;
 
 /**
  * Capa de personalización del menú lateral por tenant (feature 036, data-model.md §2-3 y §5).
@@ -36,6 +37,83 @@ class MenuTenant
         $catalogo = self::podarModulosInactivos(CatalogoMenu::catalogo(), $tenantId);
 
         return self::$memo[$tenantId] = self::fusionar($catalogo, $personalizacion, '_raiz');
+    }
+
+    /**
+     * Estructura para pintar el menú lateral (feature 050, FR-009): igual que {@see estructura()},
+     * pero con las entradas del grupo POS (y la etiqueta del propio grupo) traducidas al idioma del
+     * POS del tenant, en cualquier pantalla. Una etiqueta que personalizó el tenant se muestra tal
+     * como la escribió. El resto del menú queda en español.
+     *
+     * No se toca {@see estructura()}: la usa también la pantalla de personalización del menú, que
+     * tiene que seguir mostrando los nombres en español.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public static function estructuraParaMenu(int $tenantId): array
+    {
+        $estructura = self::estructura($tenantId);
+        $idioma = self::idiomaPos($tenantId);
+
+        if ($idioma === null) {
+            return $estructura;
+        }
+
+        $traducir = function (array $elemento) use ($idioma): array {
+            if ($elemento['etiqueta'] === $elemento['etiqueta_defecto']) {
+                $elemento['etiqueta'] = __($elemento['etiqueta'], [], $idioma);
+            }
+
+            return $elemento;
+        };
+
+        return array_map(function (array $grupo) use ($traducir): array {
+            if ($grupo['clave'] !== 'pos') {
+                return $grupo;
+            }
+
+            $grupo = $traducir($grupo);
+            $grupo['hijos'] = array_map($traducir, $grupo['hijos']);
+
+            return $grupo;
+        }, $estructura);
+    }
+
+    /**
+     * Idioma del POS del tenant si es un idioma traducido (no el español de origen); null si no.
+     * Lo usan el menú lateral y la ayuda global, que se traducen en cualquier pantalla (FR-009).
+     */
+    public static function idiomaPos(?int $tenantId = null): ?string
+    {
+        $tenantId ??= tenant()?->getTenantKey();
+
+        if ($tenantId === null) {
+            return null;
+        }
+
+        $idioma = ConfigPos::idioma((int) $tenantId);
+
+        return CargadorTraducciones::esIdiomaTraducido($idioma) ? $idioma : null;
+    }
+
+    /**
+     * Claves del grupo POS del menú para el extractor de traducciones (`ambitos.pos.claves_extra`):
+     * salen del catálogo, no de un `__()` literal.
+     *
+     * @return list<string>
+     */
+    public static function clavesTraduciblesPos(): array
+    {
+        $grupo = collect(CatalogoMenu::catalogo())->firstWhere('clave', 'pos');
+
+        if ($grupo === null) {
+            return [];
+        }
+
+        return array_values(array_unique(array_merge(
+            [$grupo['etiqueta']],
+            array_column($grupo['hijos'], 'etiqueta'),
+        )));
     }
 
     /**

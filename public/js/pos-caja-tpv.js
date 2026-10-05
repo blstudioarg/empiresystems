@@ -22,8 +22,8 @@ window.PosApp.registrar('caja', function (PosApp) {
 		if (!$chip) { return; }
 		$chip.classList.toggle('abierta', estado.abierta);
 		$chip.classList.toggle('cerrada', !estado.abierta);
-		$chip.querySelector('[data-caja-chip-texto]').textContent = estado.abierta ? 'Caja abierta' : 'Caja cerrada';
-		$chip.setAttribute('aria-label', estado.abierta ? 'Caja abierta' : 'Caja cerrada. Toca para abrirla');
+		$chip.querySelector('[data-caja-chip-texto]').textContent = estado.abierta ? __t('Caja abierta') : __t('Caja cerrada');
+		$chip.setAttribute('aria-label', estado.abierta ? __t('Caja abierta') : __t('Caja cerrada. Toca para abrirla'));
 		if (estado.abierta) {
 			$chip.setAttribute('tabindex', '-1');
 			$chip.setAttribute('aria-disabled', 'true');

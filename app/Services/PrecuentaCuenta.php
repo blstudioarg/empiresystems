@@ -137,7 +137,7 @@ class PrecuentaCuenta
             $cuenta->load('lineas.opciones', 'mesa.zona');
 
             if (! $cuenta->estaAbierta()) {
-                throw ValidationException::withMessages(['cuenta' => 'Esta cuenta ya no está abierta.']);
+                throw ValidationException::withMessages(['cuenta' => __('Esta cuenta ya no está abierta.')]);
             }
 
             if ($version !== (int) $cuenta->version) {
@@ -145,7 +145,7 @@ class PrecuentaCuenta
             }
 
             if ($cuenta->pendiente() <= 0) {
-                throw ValidationException::withMessages(['cuenta' => 'No hay nada pendiente para la precuenta.']);
+                throw ValidationException::withMessages(['cuenta' => __('No hay nada pendiente para la precuenta.')]);
             }
 
             $calculo = $this->calcular($cuenta);

@@ -61,8 +61,9 @@
 		var $u = el('caja-ultimo');
 		if (!ultimoCierre) { $u.hidden = true; return; }
 		$u.hidden = false;
-		var estadoTxt = { cuadra: 'Cuadró', sobra: 'Sobraron ' + euros(Math.abs(ultimoCierre.descuadre)), falta: 'Faltaron ' + euros(Math.abs(ultimoCierre.descuadre)) }[ultimoCierre.estado] || '';
-		$u.querySelector('[data-ultimo="titulo"]').textContent = euros(ultimoCierre.total_facturado) + ' facturado · ' + estadoTxt;
+		var dif = { importe: euros(Math.abs(ultimoCierre.descuadre)) };
+		var estadoTxt = { cuadra: __t('Cuadró'), sobra: __t('Sobraron :importe', dif), falta: __t('Faltaron :importe', dif) }[ultimoCierre.estado] || '';
+		$u.querySelector('[data-ultimo="titulo"]').textContent = __t(':importe facturado', { importe: euros(ultimoCierre.total_facturado) }) + ' · ' + estadoTxt;
 		$u.querySelector('[data-ultimo="detalle"]').textContent = ultimoCierre.cerrada_texto + (ultimoCierre.cerrada_por ? ' · ' + ultimoCierre.cerrada_por : '');
 	}
 
@@ -91,7 +92,7 @@
 		var min = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 60000));
 		var h = Math.floor(min / 60);
 		var m = min % 60;
-		return '(' + (h > 0 ? h + ' h ' : '') + m + ' min)';
+		return '(' + (h > 0 ? __t(':h h :m min', { h: h, m: m }) : __t(':m min', { m: m })) + ')';
 	}
 
 	function pintarSesion() {
@@ -128,7 +129,7 @@
 			li.className = importe > 0 ? '' : 'cero';
 			li.innerHTML = '<span class="caja-punto" aria-hidden="true"></span>'
 				+ '<span class="nombre">' + esc(m.label) + '</span>'
-				+ '<span class="tickets">' + (m.tickets ? m.tickets + (m.tickets === 1 ? ' ticket' : ' tickets') : '—') + '</span>'
+				+ '<span class="tickets">' + (m.tickets ? (m.tickets === 1 ? __t(':n ticket', { n: 1 }) : __t(':n tickets', { n: m.tickets })) : '—') + '</span>'
 				+ '<span class="importe">' + euros(importe) + '</span>';
 			lista.appendChild(li);
 		});
@@ -142,7 +143,7 @@
 				+ '<span class="imp ' + m.tipo + '">' + (m.tipo === 'entrada' ? '+' : '−') + euros(m.importe) + '</span></li>';
 		}).join('');
 		el('caja-mov-vacio').hidden = movs.length > 0;
-		document.querySelector('[data-mov="conteo"]').textContent = movs.length ? movs.length + (movs.length === 1 ? ' movimiento' : ' movimientos') : '';
+		document.querySelector('[data-mov="conteo"]').textContent = movs.length ? (movs.length === 1 ? __t(':n movimiento', { n: 1 }) : __t(':n movimientos', { n: movs.length })) : '';
 	}
 
 	function entrarAbierta(s, vivo) {
@@ -196,8 +197,8 @@
 	var $movMotivo = el('caja-mov-motivo');
 	var $movGuardar = el('caja-mov-guardar');
 	var CHIPS = {
-		salida: ['Pago a proveedor', 'Retirada a caja fuerte', 'Gasto menor', 'Otro'],
-		entrada: ['Cambio', 'Reposición de fondo', 'Otro'],
+		salida: [__t('Pago a proveedor'), __t('Retirada a caja fuerte'), __t('Gasto menor'), __t('Otro')],
+		entrada: [__t('Cambio'), __t('Reposición de fondo'), __t('Otro')],
 	};
 
 	function pintarMov() {
@@ -208,7 +209,7 @@
 			b.classList.toggle('active', activo);
 			b.setAttribute('aria-pressed', activo ? 'true' : 'false');
 		});
-		$movGuardar.textContent = movTipo === 'entrada' ? 'Registrar entrada' : 'Registrar salida';
+		$movGuardar.textContent = movTipo === 'entrada' ? __t('Registrar entrada') : __t('Registrar salida');
 		$movGuardar.disabled = T.aNumero(movStr) <= 0 || $movMotivo.value.trim() === '';
 		el('caja-mov-chips').innerHTML = CHIPS[movTipo].map(function (c) {
 			return '<button type="button" class="caja-chip" data-chip="' + esc(c) + '">' + esc(c) + '</button>';
@@ -240,7 +241,7 @@
 		if (!c) { return; }
 		// "Otro" no rellena nada: deja el campo para escribir. El resto acelera, pero sigue editable.
 		var texto = c.getAttribute('data-chip');
-		$movMotivo.value = texto === 'Otro' ? '' : texto;
+		$movMotivo.value = texto === __t('Otro') ? '' : texto;
 		$movMotivo.focus();
 		pintarMov();
 	});
@@ -258,7 +259,7 @@
 				movModal.hide();
 			})
 			.fail(function (xhr) {
-				window.showToast('error', mensajeError(xhr, 'No se pudo registrar el movimiento.'));
+				window.showToast('error', mensajeError(xhr, __t('No se pudo registrar el movimiento.')));
 				if (xhr.status === 409) { movModal.hide(); refrescar(); }
 			});
 	});
@@ -308,9 +309,9 @@
 	}
 
 	var VEREDICTOS = {
-		cuadra: { icono: 'fa-circle-check', titulo: function () { return 'Cuadra'; }, sub: 'El efectivo coincide al céntimo.' },
-		sobra: { icono: 'fa-arrow-trend-up', titulo: function (d) { return 'Sobran ' + euros(Math.abs(d)); }, sub: 'Hay más efectivo del esperado.' },
-		falta: { icono: 'fa-triangle-exclamation', titulo: function (d) { return 'Faltan ' + euros(Math.abs(d)); }, sub: 'Hay menos efectivo del esperado.' },
+		cuadra: { icono: 'fa-circle-check', titulo: function () { return __t('Cuadra'); }, sub: __t('El efectivo coincide al céntimo.') },
+		sobra: { icono: 'fa-arrow-trend-up', titulo: function (d) { return __t('Sobran :importe', { importe: euros(Math.abs(d)) }); }, sub: __t('Hay más efectivo del esperado.') },
+		falta: { icono: 'fa-triangle-exclamation', titulo: function (d) { return __t('Faltan :importe', { importe: euros(Math.abs(d)) }); }, sub: __t('Hay menos efectivo del esperado.') },
 	};
 
 	function revelar(resultado, provisional, umbral) {
@@ -329,7 +330,7 @@
 		var $icono = $v.querySelector('[data-veredicto="icono"]');
 		$icono.className = 'fa-solid ' + v.icono;
 		$v.querySelector('[data-veredicto="titulo"]').textContent = v.titulo(parseFloat(resultado.descuadre));
-		$v.querySelector('[data-veredicto="sub"]').textContent = provisional ? 'La caja todavía no está cerrada.' : v.sub;
+		$v.querySelector('[data-veredicto="sub"]').textContent = provisional ? __t('La caja todavía no está cerrada.') : v.sub;
 
 		el('caja-observacion').hidden = !provisional;
 		el('caja-acciones-provisional').hidden = !provisional;
@@ -337,7 +338,7 @@
 		el('caja-papel-wrap').hidden = provisional;
 		if (provisional) {
 			el('caja-observacion').querySelector('[data-observacion="ayuda"]').textContent =
-				'Las diferencias de más de ' + euros(umbral) + ' necesitan una explicación para cerrar.';
+				__t('Las diferencias de más de :importe necesitan una explicación para cerrar.', { importe: euros(umbral) });
 		}
 
 		// Dos frames: el estado inicial (opaco, 8px abajo) tiene que pintarse antes de la transición.
@@ -353,7 +354,7 @@
 				try { sessionStorage.removeItem(claveConteo()); } catch (e) { /* ignorar */ }
 				pintarPapel(r.informe);
 				revelar(r.resultado, false);
-				window.showToast('success', r.message || 'Caja cerrada.');
+				window.showToast('success', r.message || __t('Caja cerrada.'));
 			})
 			.fail(function (xhr) {
 				var r = xhr.responseJSON || {};
@@ -361,7 +362,7 @@
 					revelar(r.resultado, true, r.umbral);
 					return;
 				}
-				window.showToast('error', mensajeError(xhr, 'No se pudo cerrar la caja.'));
+				window.showToast('error', mensajeError(xhr, __t('No se pudo cerrar la caja.')));
 				if (xhr.status === 409) {
 					try { sessionStorage.removeItem(claveConteo()); } catch (e) { /* ignorar */ }
 					// Otra tablet cerró antes: se sale del conteo y se muestra el estado real de la caja
@@ -377,7 +378,7 @@
 	el('caja-cerrar-con-diferencia').addEventListener('click', function () {
 		var obs = el('caja-observacion-txt').value.trim();
 		if (!obs) {
-			window.showToast('warning', 'Escribe qué pasó para poder cerrar con esta diferencia.');
+			window.showToast('warning', __t('Escribe qué pasó para poder cerrar con esta diferencia.'));
 			el('caja-observacion-txt').focus();
 			return;
 		}
@@ -400,36 +401,36 @@
 	function pintarPapel(inf) {
 		var h = [];
 		h.push('<div class="c b">' + esc(S.tenant || '') + '</div>');
-		h.push('<div class="c t">CIERRE DE CAJA · Nº ' + esc(inf.numero) + '</div>');
-		h.push('<div class="c m">Informe Z</div><div class="sep"></div>');
-		h.push(fila('Apertura', inf.abierta_at), '<div class="m">' + esc(inf.abierta_por || '') + '</div>');
-		h.push(fila('Cierre', inf.cerrada_at || ''), '<div class="m">' + esc(inf.cerrada_por || '') + '</div><div class="sep"></div>');
-		h.push('<div class="sec">VENTAS</div>', fila('Tickets', String(inf.num_tickets)));
+		h.push('<div class="c t">' + esc(__t('CIERRE DE CAJA · Nº :numero', { numero: inf.numero })) + '</div>');
+		h.push('<div class="c m">' + esc(__t('Informe Z')) + '</div><div class="sep"></div>');
+		h.push(fila(__t('Apertura'), inf.abierta_at), '<div class="m">' + esc(inf.abierta_por || '') + '</div>');
+		h.push(fila(__t('Cierre'), inf.cerrada_at || ''), '<div class="m">' + esc(inf.cerrada_por || '') + '</div><div class="sep"></div>');
+		h.push('<div class="sec">' + esc(__t('VENTAS')) + '</div>', fila(__t('Tickets'), String(inf.num_tickets)));
 		if (inf.primer_ticket) { h.push('<div class="m">' + esc(inf.primer_ticket) + ' → ' + esc(inf.ultimo_ticket) + '</div>'); }
-		h.push(fila('TOTAL', euros(inf.total_facturado), 'tot'), '<div class="sep"></div><div class="sec">POR MÉTODO</div>');
+		h.push(fila(__t('TOTAL'), euros(inf.total_facturado), 'tot'), '<div class="sep"></div><div class="sec">' + esc(__t('POR MÉTODO')) + '</div>');
 		inf.por_metodo.forEach(function (m) { h.push(fila(m.label + ' (' + m.tickets + ')', euros(m.importe))); });
 		if (inf.por_impuesto.length) {
-			h.push('<div class="sep"></div><div class="sec">IMPUESTOS</div>');
+			h.push('<div class="sep"></div><div class="sec">' + esc(__t('IMPUESTOS')) + '</div>');
 			inf.por_impuesto.forEach(function (i) {
-				h.push(fila(i.tipo_impuesto.toUpperCase() + ' ' + T.formatear(i.porcentaje).replace(',00', '') + '%  base ' + T.formatear(i.base), euros(i.cuota)));
+				h.push(fila(i.tipo_impuesto.toUpperCase() + ' ' + T.formatear(i.porcentaje).replace(',00', '') + '%  ' + __t('base :importe', { importe: T.formatear(i.base) }), euros(i.cuota)));
 			});
 		}
 		if (inf.anulados.length) {
-			h.push('<div class="sep"></div><div class="sec">ANULADOS (no suman)</div>');
+			h.push('<div class="sep"></div><div class="sec">' + esc(__t('ANULADOS (no suman)')) + '</div>');
 			inf.anulados.forEach(function (a) { h.push(fila(a.numero || '—', euros(a.total))); });
 		}
 		if (inf.movimientos.length) {
-			h.push('<div class="sep"></div><div class="sec">MOVIMIENTOS</div>');
+			h.push('<div class="sep"></div><div class="sec">' + esc(__t('MOVIMIENTOS')) + '</div>');
 			inf.movimientos.forEach(function (m) { h.push(fila(m.hora + ' ' + m.motivo, (m.tipo === 'entrada' ? '+' : '−') + euros(m.importe))); });
 		}
 		var signo = parseFloat(inf.descuadre) > 0 ? '+' : '';
-		var veredicto = { cuadra: 'CUADRA', sobra: 'SOBRANTE', falta: 'FALTANTE' }[inf.estado] || '';
-		h.push('<div class="sep"></div><div class="sec">ARQUEO</div>');
-		h.push(fila('Fondo inicial', euros(inf.fondo_inicial)), fila('+ Ventas efectivo', euros(inf.efectivo_ventas)));
-		h.push(fila('+ Entradas', euros(inf.entradas)), fila('− Salidas', euros(inf.salidas)));
-		h.push(fila('Esperado', euros(inf.efectivo_esperado), 'b'), fila('Contado', euros(inf.efectivo_contado), 'b'));
+		var veredicto = { cuadra: __t('CUADRA'), sobra: __t('SOBRANTE'), falta: __t('FALTANTE') }[inf.estado] || '';
+		h.push('<div class="sep"></div><div class="sec">' + esc(__t('ARQUEO')) + '</div>');
+		h.push(fila(__t('Fondo inicial'), euros(inf.fondo_inicial)), fila(__t('+ Ventas efectivo'), euros(inf.efectivo_ventas)));
+		h.push(fila(__t('+ Entradas'), euros(inf.entradas)), fila(__t('− Salidas'), euros(inf.salidas)));
+		h.push(fila(__t('Esperado'), euros(inf.efectivo_esperado), 'b'), fila(__t('Contado'), euros(inf.efectivo_contado), 'b'));
 		h.push(fila(veredicto, signo + euros(inf.descuadre), 'tot'));
-		if (inf.observacion) { h.push('<div class="sep"></div><div class="sec">OBSERVACIÓN</div><div>' + esc(inf.observacion) + '</div>'); }
+		if (inf.observacion) { h.push('<div class="sep"></div><div class="sec">' + esc(__t('OBSERVACIÓN')) + '</div><div>' + esc(inf.observacion) + '</div>'); }
 		el('caja-papel').innerHTML = h.join('');
 	}
 

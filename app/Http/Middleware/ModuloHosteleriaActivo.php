@@ -22,14 +22,20 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class ModuloHosteleriaActivo
 {
-    private const MENSAJE = 'El módulo de hostelería del POS está desactivado. Actívalo en Configuración → POS.';
-
-    /** Mensajes por capacidad, para que el cartel diga exactamente qué hay que encender. */
-    private const MENSAJE_CAPACIDAD = [
-        'opciones' => 'Las opciones de artículo forman parte del módulo de hostelería del POS y ahora mismo están desactivadas. Actívalas en Configuración → POS.',
-        'cobro_dividido' => 'El cobro dividido forma parte del módulo de hostelería del POS y ahora mismo está desactivado. Actívalo en Configuración → POS.',
-        'suplemento_zona' => 'El suplemento por zona forma parte del módulo de hostelería del POS y ahora mismo está desactivado. Actívalo en Configuración → POS.',
-    ];
+    /**
+     * Mensaje por capacidad, para que el cartel diga exactamente qué hay que encender. Cada uno es
+     * un `__()` literal (no una constante) para que el extractor de traducciones lo encuentre
+     * (feature 050): el middleware `idioma.pos` corre antes, así que sale en el idioma del POS.
+     */
+    private function mensaje(?string $capacidad): string
+    {
+        return match ($capacidad) {
+            'opciones' => __('Las opciones de artículo forman parte del módulo de hostelería del POS y ahora mismo están desactivadas. Actívalas en Configuración → POS.'),
+            'cobro_dividido' => __('El cobro dividido forma parte del módulo de hostelería del POS y ahora mismo está desactivado. Actívalo en Configuración → POS.'),
+            'suplemento_zona' => __('El suplemento por zona forma parte del módulo de hostelería del POS y ahora mismo está desactivado. Actívalo en Configuración → POS.'),
+            default => __('El módulo de hostelería del POS está desactivado. Actívalo en Configuración → POS.'),
+        };
+    }
 
     public function handle(Request $request, Closure $next, ?string $capacidad = null): Response
     {
@@ -54,7 +60,7 @@ class ModuloHosteleriaActivo
 
     private function cortar(Request $request, ?string $capacidad): Response
     {
-        $mensaje = self::MENSAJE_CAPACIDAD[$capacidad] ?? self::MENSAJE;
+        $mensaje = $this->mensaje($capacidad);
 
         // JSON: 403 con mensaje legible, para que el front pueda mostrarlo con `showToast`.
         if ($request->expectsJson()) {

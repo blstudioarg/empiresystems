@@ -16,8 +16,8 @@
 
 	function renderTipo(data, type, row) {
 		return row.cualificada
-			? '<span class="badge light badge-info">Cualificada</span>'
-			: '<span class="badge light badge-secondary">Simple</span>';
+			? '<span class="badge light badge-info">' + __t('Cualificada') + '</span>'
+			: '<span class="badge light badge-secondary">' + __t('Simple') + '</span>';
 	}
 
 	function renderTotal(data, type, row) {
@@ -41,18 +41,18 @@
 			return '<div class="text-nowrap">' + escapeHtml(p.metodo_label) + ' <span class="text-muted">' + escapeHtml(p.importe) + ' €</span></div>';
 		}).join('');
 
-		return '<span class="badge light badge-primary mb-1">Dividido</span>' + detalle;
+		return '<span class="badge light badge-primary mb-1">' + __t('Dividido') + '</span>' + detalle;
 	}
 
 	function renderAcciones(data, type, row) {
 		return (
 			'<div class="dropdown">' +
 				'<button type="button" class="btn btn-primary light btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">' +
-					'Ver / Imprimir' +
+					__t('Ver / Imprimir') +
 				'</button>' +
 				'<ul class="dropdown-menu dropdown-menu-end">' +
-					'<li><button type="button" class="dropdown-item btn-ver-ticket" data-pdf-url="' + row.pdf_ticket_url + '">Ticket (80 mm)</button></li>' +
-					'<li><button type="button" class="dropdown-item btn-ver-ticket" data-pdf-url="' + row.pdf_a4_url + '">Formato A4</button></li>' +
+					'<li><button type="button" class="dropdown-item btn-ver-ticket" data-pdf-url="' + row.pdf_ticket_url + '">' + __t('Ticket (80 mm)') + '</button></li>' +
+					'<li><button type="button" class="dropdown-item btn-ver-ticket" data-pdf-url="' + row.pdf_a4_url + '">' + __t('Formato A4') + '</button></li>' +
 				'</ul>' +
 			'</div>'
 		);
@@ -88,19 +88,19 @@
 				{ data: null, orderable: false, render: renderAcciones },
 			],
 			language: {
-				search: 'Buscar:',
-				lengthMenu: 'Mostrar _MENU_ registros',
-				info: 'Mostrando _START_ a _END_ de _TOTAL_ registros',
-				infoEmpty: 'Mostrando 0 a 0 de 0 registros',
-				infoFiltered: '(filtrado de _MAX_ registros totales)',
-				zeroRecords: 'No se encontraron tickets',
-				emptyTable: 'Todavía no hay tickets emitidos',
-				processing: 'Cargando...',
+				search: __t('Buscar:'),
+				lengthMenu: __t('Mostrar _MENU_ registros'),
+				info: __t('Mostrando _START_ a _END_ de _TOTAL_ registros'),
+				infoEmpty: __t('Mostrando 0 a 0 de 0 registros'),
+				infoFiltered: __t('(filtrado de _MAX_ registros totales)'),
+				zeroRecords: __t('No se encontraron tickets'),
+				emptyTable: __t('Todavía no hay tickets emitidos'),
+				processing: __t('Cargando...'),
 				paginate: {
-					first: 'Primero',
-					last: 'Último',
-					next: 'Siguiente',
-					previous: 'Anterior',
+					first: __t('Primero'),
+					last: __t('Último'),
+					next: __t('Siguiente'),
+					previous: __t('Anterior'),
 				},
 			},
 		});

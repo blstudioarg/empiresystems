@@ -52,7 +52,7 @@ class CobradorCuenta
 
         if (! $cuenta->estaAbierta()) {
             throw ValidationException::withMessages([
-                'cuenta' => 'Esta cuenta ya no está abierta: no se puede cobrar.',
+                'cuenta' => __('Esta cuenta ya no está abierta: no se puede cobrar.'),
             ]);
         }
 
@@ -62,7 +62,7 @@ class CobradorCuenta
 
         if ($esParcial && ! ConfigPos::cobroDivididoActivo($tenantId)) {
             throw ValidationException::withMessages([
-                'lineas' => 'El cobro por selección de líneas no está activado para esta empresa.',
+                'lineas' => __('El cobro por selección de líneas no está activado para esta empresa.'),
             ]);
         }
 
@@ -209,7 +209,7 @@ class CobradorCuenta
 
             if ($unidades === []) {
                 throw ValidationException::withMessages([
-                    'lineas' => 'Esta cuenta no tiene nada pendiente de cobro.',
+                    'lineas' => __('Esta cuenta no tiene nada pendiente de cobro.'),
                 ]);
             }
 
@@ -221,7 +221,7 @@ class CobradorCuenta
 
             if ($linea === null) {
                 throw ValidationException::withMessages([
-                    'lineas' => 'Alguna de las líneas seleccionadas no pertenece a esta cuenta.',
+                    'lineas' => __('Alguna de las líneas seleccionadas no pertenece a esta cuenta.'),
                 ]);
             }
 
@@ -233,7 +233,7 @@ class CobradorCuenta
 
             if ($cantidad > $linea->cantidadPendiente()) {
                 throw ValidationException::withMessages([
-                    'lineas' => "No quedan tantas unidades pendientes de «{$linea->concepto}».",
+                    'lineas' => __('No quedan tantas unidades pendientes de «:concepto».', ['concepto' => $linea->concepto]),
                 ]);
             }
 
@@ -243,7 +243,7 @@ class CobradorCuenta
         if ($unidades === []) {
             // No se emite un documento sin líneas: sería una factura a 0 €.
             throw ValidationException::withMessages([
-                'lineas' => 'Selecciona al menos una unidad para cobrar.',
+                'lineas' => __('Selecciona al menos una unidad para cobrar.'),
             ]);
         }
 

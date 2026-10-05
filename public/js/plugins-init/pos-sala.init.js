@@ -110,11 +110,11 @@
 		// "Todas" no tiene plano que dibujar (la rejilla es de UNA zona): en vista de plano se
 		// deshabilita en vez de ocultarse, para que la fila de filtros no cambie de tamaño al
 		// alternar de vista (D6).
-		var todasDeshabilitado = vistaActiva === 'plano' ? ' disabled title="El plano se ve por zonas"' : '';
+		var todasDeshabilitado = vistaActiva === 'plano' ? ' disabled title="' + __t('El plano se ve por zonas') + '"' : '';
 
 		var html = '<button type="button" class="pos-filtro' + (zonaActiva === '' ? ' active' : '') + '"' +
 			' data-zona="" aria-pressed="' + (zonaActiva === '' ? 'true' : 'false') + '"' + todasDeshabilitado + '>' +
-			'Todas <span class="badge-count">' + total + '</span></button>';
+			__t('Todas') + ' <span class="badge-count">' + total + '</span></button>';
 
 		datos.zonas.forEach(function (zona) {
 			var activa = String(zonaActiva) === String(zona.id);
@@ -148,18 +148,18 @@
 
 			var badge = '';
 			if (clase === 'precuenta') {
-				badge = '<span class="estado-badge">Precuenta</span>';
+				badge = '<span class="estado-badge">' + __t('Precuenta') + '</span>';
 			} else if (clase === 'olvidada') {
-				badge = '<span class="estado-badge">Sin tocar</span>';
+				badge = '<span class="estado-badge">' + __t('Sin tocar') + '</span>';
 			} else if (clase === 'ocupada') {
-				badge = '<span class="estado-badge">Abierta</span>';
+				badge = '<span class="estado-badge">' + __t('Abierta') + '</span>';
 			}
 
+			var minutos = { min: window.PosPlanoDibujo.minutosMesa(mesa) };
 			var cuerpo = mesa.estado === 'libre'
-				? '<span class="importe">Libre</span><span class="meta">Toca para abrir cuenta</span>'
+				? '<span class="importe">' + __t('Libre') + '</span><span class="meta">' + __t('Toca para abrir cuenta') + '</span>'
 				: '<span class="importe">' + formatoImporte(mesa.pendiente) + ' €</span>' +
-				  '<span class="meta">' + (clase === 'precuenta' ? 'Precuenta hace ' : 'Hace ') +
-				  window.PosPlanoDibujo.minutosMesa(mesa) + ' min</span>';
+				  '<span class="meta">' + (clase === 'precuenta' ? __t('Precuenta hace :min min', minutos) : __t('Hace :min min', minutos)) + '</span>';
 
 			return '<button type="button" class="pos-mesa ' + clase + '" data-url="' + escapeHtml(mesa.abrir_url) + '"' +
 				' data-mesa-id="' + mesa.id + '">' +
@@ -207,7 +207,7 @@
 				document.dispatchEvent(new CustomEvent('pos-sala:actualizado', { detail: datos }));
 			})
 			.catch(function () {
-				window.showToast('error', 'No se pudo cargar el estado de la sala.');
+				window.showToast('error', __t('No se pudo cargar el estado de la sala.'));
 			});
 	}
 

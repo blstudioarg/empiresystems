@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'POS · Historial de cierres')
+@section('title', __('POS · Historial de cierres'))
 
 @push('styles')
 	<link href="{{ asset('vendor/datatables/css/jquery.dataTables.min.css') }}" rel="stylesheet">
@@ -26,7 +26,7 @@
 						<div class="card-body">
 							<div class="d-flex justify-content-between align-items-center">
 								<div>
-									<h6 class="mb-1">Cierres este mes</h6>
+									<h6 class="mb-1">{{ __('Cierres este mes') }}</h6>
 									<h4 class="mb-0" data-metric="cierres">0</h4>
 								</div>
 								<div><x-lordicon icon="wired-outline-2510-money-safety-hover-pinch" size="38" trigger="hover" target=".card" /></div>
@@ -39,7 +39,7 @@
 						<div class="card-body">
 							<div class="d-flex justify-content-between align-items-center">
 								<div>
-									<h6 class="mb-1">Facturado este mes</h6>
+									<h6 class="mb-1">{{ __('Facturado este mes') }}</h6>
 									<h4 class="mb-0" data-metric="facturado">0,00 €</h4>
 								</div>
 								<div><x-lordicon icon="euro" size="38" trigger="hover" target=".card" /></div>
@@ -52,7 +52,7 @@
 						<div class="card-body">
 							<div class="d-flex justify-content-between align-items-center">
 								<div>
-									<h6 class="mb-1">Diferencia de efectivo del mes</h6>
+									<h6 class="mb-1">{{ __('Diferencia de efectivo del mes') }}</h6>
 									<h4 class="mb-0" data-metric="descuadre" id="cierres-descuadre">0,00 €</h4>
 								</div>
 								<div><x-lordicon icon="wired-outline-2115-refund-hover-pinch" size="38" trigger="hover" target=".card" /></div>
@@ -66,10 +66,10 @@
 				<div class="col-xl-12">
 					<div class="card">
 						<div class="card-header border-0 flex-wrap">
-							<h4 class="card-title mb-0">Historial de cierres de caja</h4>
+							<h4 class="card-title mb-0">{{ __('Historial de cierres de caja') }}</h4>
 							<div class="d-flex gap-2">
 								<a href="{{ route('pos.caja') }}" class="btn btn-primary">
-									<i class="fa-solid fa-cash-register me-1" aria-hidden="true"></i> Ir a la caja
+									<i class="fa-solid fa-cash-register me-1" aria-hidden="true"></i> {{ __('Ir a la caja') }}
 								</a>
 							</div>
 						</div>
@@ -78,15 +78,15 @@
 								<table id="cierres-table" class="display responsive nowrap w-100">
 									<thead>
 										<tr>
-											<th>Cierre</th>
-											<th>Abrió</th>
-											<th>Cerró</th>
-											<th>Tickets</th>
-											<th>Facturado</th>
-											<th>Esperado</th>
-											<th>Contado</th>
-											<th>Diferencia</th>
-											<th>Acciones</th>
+											<th>{{ __('Cierre') }}</th>
+											<th>{{ __('Abrió') }}</th>
+											<th>{{ __('Cerró') }}</th>
+											<th>{{ __('Tickets') }}</th>
+											<th>{{ __('Facturado') }}</th>
+											<th>{{ __('Esperado') }}</th>
+											<th>{{ __('Contado') }}</th>
+											<th>{{ __('Diferencia') }}</th>
+											<th>{{ __('Acciones') }}</th>
 										</tr>
 									</thead>
 									<tbody></tbody>
@@ -103,18 +103,18 @@
 		<div class="modal-dialog modal-dialog-centered modal-xl">
 			<div class="modal-content">
 				<div class="modal-header">
-					<h5 class="modal-title">Informe de cierre de caja</h5>
-					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+					<h5 class="modal-title">{{ __('Informe de cierre de caja') }}</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('Cerrar') }}"></button>
 				</div>
 				<div class="modal-body p-0" style="height: 80vh;">
-					<iframe id="cajaInformeFrame" src="" title="Informe de cierre de caja" style="width: 100%; height: 100%; border: 0;"></iframe>
+					<iframe id="cajaInformeFrame" src="" title="{{ __('Informe de cierre de caja') }}" style="width: 100%; height: 100%; border: 0;"></iframe>
 				</div>
 			</div>
 		</div>
 	</div>
 @endsection
 
-@section('ayuda-titulo', 'Historial de cierres')
+@section('ayuda-titulo', __('Historial de cierres'))
 @section('ayuda')
 	@include('ayuda.pos-caja-cierres')
 @endsection

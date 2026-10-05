@@ -25,9 +25,12 @@
 		.verifactu-qr__imagen { width: 35mm; height: 35mm; }
 		.verifactu-qr__etiqueta, .verifactu-qr__leyenda { font-size: 9px; color: #333; }
 		.verifactu-qr__leyenda { font-weight: bold; }
-	</style>
+	</style>@if ($fuenteCjk ?? false){!! \App\Traduccion\Bilingue::estiloFuenteCjk() !!}@endif
 </head>
 <body>
+	{{-- Bilingüe solo si es una simplificada (ticket del POS) y el POS del tenant está en chino
+	     (feature 050): esta plantilla es la misma de las facturas ordinarias, que no cambian. --}}
+	@php \App\Traduccion\Bilingue::documentoDe($factura->tipo === \App\Enums\TipoFactura::Simplificada ? $factura->tenant_id : null); @endphp
 	@include('partials.verifactu-qr', ['factura' => $factura])
 
 	<div class="header">
@@ -58,7 +61,7 @@
 		</div>
 		<div class="col right">
 			<div class="cliente-info">
-			<strong>Cliente</strong><br>
+			<strong>{{ bilingue('Cliente') }}</strong><br>
 			{{ $factura->cliente_razon_social ?: $factura->cliente_nombre }}<br>
 			@if ($factura->cliente_nif)
 				NIF: {{ $factura->cliente_nif }}<br>
@@ -77,27 +80,27 @@
 	<table>
 		<thead>
 			<tr>
-				<th>Número</th>
-				<th>Fecha de expedición</th>
+				<th>{{ bilingue('Número') }}</th>
+				<th>{{ bilingue('Fecha de expedición') }}</th>
 				@if ($factura->fecha_operacion && $factura->fecha_operacion->ne($factura->fecha_expedicion))
-					<th>Fecha de operación</th>
+					<th>{{ bilingue('Fecha de operación') }}</th>
 				@endif
-				<th>Fecha de vencimiento</th>
-				<th>Estado</th>
+				<th>{{ bilingue('Fecha de vencimiento') }}</th>
+				<th>{{ bilingue('Estado') }}</th>
 			</tr>
 		</thead>
 		<tbody>
 			<tr>
 				<td>
-					{{ $factura->numero_completo ?? 'Borrador' }}
-					@if ($factura->es_rectificativa)<br><span class="badge">Rectificativa</span>@endif
+					{{ $factura->numero_completo ?? bilingue('Borrador') }}
+					@if ($factura->es_rectificativa)<br><span class="badge">{{ bilingue('Rectificativa') }}</span>@endif
 				</td>
 				<td>{{ $factura->fecha_expedicion->format('d/m/Y') }}</td>
 				@if ($factura->fecha_operacion && $factura->fecha_operacion->ne($factura->fecha_expedicion))
 					<td>{{ $factura->fecha_operacion->format('d/m/Y') }}</td>
 				@endif
 				<td>{{ $factura->fecha_vencimiento ? $factura->fecha_vencimiento->format('d/m/Y') : '-' }}</td>
-				<td>{{ ucfirst($factura->estado->value) }}</td>
+				<td>{{ bilingue(ucfirst($factura->estado->value)) }}</td>
 			</tr>
 		</tbody>
 	</table>
@@ -105,12 +108,12 @@
 	<table>
 		<thead>
 			<tr>
-				<th>Concepto</th>
-				<th>Cantidad</th>
-				<th>Precio</th>
-				<th>Dto.</th>
+				<th>{{ bilingue('Concepto') }}</th>
+				<th>{{ bilingue('Cantidad') }}</th>
+				<th>{{ bilingue('Precio') }}</th>
+				<th>{{ bilingue('Dto.') }}</th>
 				<th>IVA</th>
-				<th class="text-right">Base</th>
+				<th class="text-right">{{ bilingue('Base') }}</th>
 			</tr>
 		</thead>
 		<tbody>
@@ -129,7 +132,7 @@
 
 	<table class="totales">
 		<tr>
-			<td>Base imponible</td>
+			<td>{{ bilingue('Base imponible') }}</td>
 			<td class="text-right">{{ number_format((float) $factura->base_total, 2, ',', '.') }} €</td>
 		</tr>
 		@foreach ($factura->impuestos as $impuesto)
@@ -139,25 +142,25 @@
 			</tr>
 		@endforeach
 		<tr class="total-final">
-			<td>Total</td>
+			<td>{{ bilingue('Total') }}</td>
 			<td class="text-right">{{ number_format((float) $factura->total, 2, ',', '.') }} €</td>
 		</tr>
 	</table>
 
 	<div style="clear: both;"></div>
-	<p style="margin-top: 25px;"><strong>Forma de pago:</strong> {{ ucfirst($factura->forma_pago->value) }}</p>
+	<p style="margin-top: 25px;"><strong>{{ bilingue('Forma de pago') }}:</strong> {{ bilingue(ucfirst($factura->forma_pago->value)) }}</p>
 
 	@if ($factura->cuenta_bancaria_iban)
 		<table>
 			<thead>
 				<tr>
-					<th colspan="2">Datos de cobro</th>
+					<th colspan="2">{{ bilingue('Datos de cobro') }}</th>
 				</tr>
 			</thead>
 			<tbody>
 				@if ($factura->cuenta_bancaria_banco)
 					<tr>
-						<td style="width: 160px;">Banco</td>
+						<td style="width: 160px;">{{ bilingue('Banco') }}</td>
 						<td>{{ $factura->cuenta_bancaria_banco }}</td>
 					</tr>
 				@endif
@@ -167,7 +170,7 @@
 				</tr>
 				@if ($factura->cuenta_bancaria_titular)
 					<tr>
-						<td style="width: 160px;">Titular</td>
+						<td style="width: 160px;">{{ bilingue('Titular') }}</td>
 						<td>{{ $factura->cuenta_bancaria_titular }}</td>
 					</tr>
 				@endif
@@ -218,7 +221,7 @@
 
 	@if ($factura->notas)
 		<div style="margin-top:20px">
-			<strong>Notas</strong><br>
+			<strong>{{ bilingue('Notas') }}</strong><br>
 			{{ $factura->notas }}
 		</div>
 	@endif

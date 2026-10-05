@@ -4,10 +4,13 @@
     con @section('ayuda-titulo')); si la vista no define ayuda, muestra un estado vacío.
     Se dispara desde el botón "Ayuda" del sidebar. Ver docs/04-front-guidelines.md.
 --}}
+{{-- Los textos propios del modal van en el idioma del POS, igual que el botón que lo abre
+     (feature 050, FR-009). El contenido de la guía lo pone cada vista en el idioma del request. --}}
+@php($__idiomaAyuda = \App\Support\MenuTenant::idiomaPos())
 <div class="modal fade ayuda-modal" id="ayudaContextualModal" tabindex="-1" aria-hidden="true">
 	<div class="modal-dialog modal-dialog-centered">
 		<div class="modal-content ayuda-content">
-			<button type="button" class="ayuda-close" data-bs-dismiss="modal" aria-label="Cerrar">
+			<button type="button" class="ayuda-close" data-bs-dismiss="modal" aria-label="{{ __('Cerrar', [], $__idiomaAyuda) }}">
 				<i class="fas fa-times"></i>
 			</button>
 
@@ -16,8 +19,8 @@
 					<x-lordicon icon="wired-outline-424-question-bubble-hover-wiggle" trigger="loop" size="34" />
 				</div>
 				<div class="ayuda-head-text">
-					<span class="ayuda-eyebrow">Guía rápida</span>
-					<h5 class="ayuda-title">@yield('ayuda-titulo', 'Ayuda')</h5>
+					<span class="ayuda-eyebrow">{{ __('Guía rápida', [], $__idiomaAyuda) }}</span>
+					<h5 class="ayuda-title">@yield('ayuda-titulo', __('Ayuda', [], $__idiomaAyuda))</h5>
 				</div>
 			</div>
 
@@ -26,8 +29,7 @@
 					@yield('ayuda')
 				@else
 					<div class="ayuda-empty">
-						<p class="mb-0">Todavía no hay una guía para esta pantalla. La iremos
-							completando poco a poco.</p>
+						<p class="mb-0">{{ __('Todavía no hay una guía para esta pantalla. La iremos completando poco a poco.', [], $__idiomaAyuda) }}</p>
 					</div>
 				@endif
 			</div>

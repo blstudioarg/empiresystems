@@ -22,23 +22,25 @@
 	function dropdown(acciones) {
 		return (
 			'<div class="dropdown">' +
-				'<button type="button" class="btn btn-primary light btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">Acciones</button>' +
+				'<button type="button" class="btn btn-primary light btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">' + __t('Acciones') + '</button>' +
 				'<ul class="dropdown-menu dropdown-menu-end">' + acciones + '</ul>' +
 			'</div>'
 		);
 	}
 
-	function idioma(que) {
+	// Los textos de "sin resultados" y "vacío" van enteros (no `'No se encontraron ' + que`): una
+	// frase partida no se puede traducir (feature 050).
+	function idioma(sinResultados, vacio) {
 		return {
-			search: 'Buscar:',
-			lengthMenu: 'Mostrar _MENU_ registros',
-			info: 'Mostrando _START_ a _END_ de _TOTAL_ registros',
-			infoEmpty: 'Mostrando 0 a 0 de 0 registros',
-			infoFiltered: '(filtrado de _MAX_ registros totales)',
-			zeroRecords: 'No se encontraron ' + que,
-			emptyTable: 'Todavía no hay ' + que,
-			processing: 'Cargando...',
-			paginate: { first: 'Primero', last: 'Último', next: 'Siguiente', previous: 'Anterior' },
+			search: __t('Buscar:'),
+			lengthMenu: __t('Mostrar _MENU_ registros'),
+			info: __t('Mostrando _START_ a _END_ de _TOTAL_ registros'),
+			infoEmpty: __t('Mostrando 0 a 0 de 0 registros'),
+			infoFiltered: __t('(filtrado de _MAX_ registros totales)'),
+			zeroRecords: sinResultados,
+			emptyTable: vacio,
+			processing: __t('Cargando...'),
+			paginate: { first: __t('Primero'), last: __t('Último'), next: __t('Siguiente'), previous: __t('Anterior') },
 		};
 	}
 
@@ -85,7 +87,7 @@
 			})
 				.done(function (res) {
 					modal.hide();
-					window.showToast('success', res.message || 'Guardado.');
+					window.showToast('success', res.message || __t('Guardado.'));
 					opciones.recargar();
 				})
 				.fail(function (xhr) {
@@ -97,7 +99,7 @@
 						});
 						return;
 					}
-					window.showToast('error', (xhr.responseJSON && xhr.responseJSON.message) || 'No se pudo guardar.');
+					window.showToast('error', (xhr.responseJSON && xhr.responseJSON.message) || __t('No se pudo guardar.'));
 				});
 		});
 
@@ -105,7 +107,7 @@
 			var $btn = $(this);
 			var url = $btn.data('delete-url');
 
-			window.confirmDelete('¿Eliminar «' + $btn.data('nombre') + '»? Esta acción no se puede deshacer.', function () {
+			window.confirmDelete(__t('¿Eliminar «:nombre»? Esta acción no se puede deshacer.', { nombre: $btn.data('nombre') }), function () {
 				return $.ajax({
 					url: url,
 					method: 'POST',
@@ -114,14 +116,14 @@
 					headers: { Accept: 'application/json' },
 				})
 					.done(function (res) {
-						window.showToast('success', res.message || 'Eliminado.');
+						window.showToast('success', res.message || __t('Eliminado.'));
 						opciones.recargar();
 					})
 					.fail(function (xhr) {
 						// El 422 útil aquí es "se usa en N artículos" (FR-047): se muestra literal.
-						window.showToast('error', (xhr.responseJSON && xhr.responseJSON.message) || 'No se pudo eliminar.');
+						window.showToast('error', (xhr.responseJSON && xhr.responseJSON.message) || __t('No se pudo eliminar.'));
 					});
-			}, { confirmLabel: 'Eliminar' });
+			}, { confirmLabel: __t('Eliminar') });
 		});
 	}
 
@@ -140,11 +142,12 @@
 					data: null,
 					orderable: false,
 					render: function (data, type, row) {
-						var max = row.max_selecciones === null ? 'sin límite' : row.max_selecciones;
-						var etiqueta = 'mín. ' + row.min_selecciones + ' · máx. ' + max;
+						var etiqueta = row.max_selecciones === null
+							? __t('mín. :min · máx. sin límite', { min: row.min_selecciones })
+							: __t('mín. :min · máx. :max', { min: row.min_selecciones, max: row.max_selecciones });
 
 						return row.obligatorio
-							? '<span class="badge badge-primary light">Obligatorio</span> <span class="text-muted small">' + etiqueta + '</span>'
+							? '<span class="badge badge-primary light">' + __t('Obligatorio') + '</span> <span class="text-muted small">' + etiqueta + '</span>'
 							: '<span class="text-muted small">' + etiqueta + '</span>';
 					},
 				},
@@ -161,16 +164,16 @@
 								' data-obligatorio="' + (row.obligatorio ? '1' : '0') + '"' +
 								' data-min="' + escapeAttr(row.min_selecciones) + '"' +
 								' data-max="' + escapeAttr(row.max_selecciones === null ? '' : row.max_selecciones) + '"' +
-								' data-orden="' + escapeAttr(row.orden) + '">Editar</button></li>' +
+								' data-orden="' + escapeAttr(row.orden) + '">' + __t('Editar') + '</button></li>' +
 							'<li><hr class="dropdown-divider"></li>' +
 							'<li><button type="button" class="dropdown-item text-danger btn-del-pos-grupo"' +
 								' data-delete-url="' + escapeAttr(row.delete_url) + '"' +
-								' data-nombre="' + escapeAttr(row.nombre) + '">Eliminar</button></li>'
+								' data-nombre="' + escapeAttr(row.nombre) + '">' + __t('Eliminar') + '</button></li>'
 						);
 					},
 				},
 			],
-			language: idioma('grupos de opciones'),
+			language: idioma(__t('No se encontraron grupos de opciones'), __t('Todavía no hay grupos de opciones')),
 		});
 
 		var tablaOpciones = $('#pos-opciones-table').DataTable({
@@ -206,16 +209,16 @@
 								' data-nombre="' + escapeAttr(row.nombre) + '"' +
 								' data-precio="' + escapeAttr(row.precio_defecto) + '"' +
 								' data-articulo-id="' + escapeAttr(row.articulo_vinculado_id === null ? '' : row.articulo_vinculado_id) + '"' +
-								' data-orden="' + escapeAttr(row.orden) + '">Editar</button></li>' +
+								' data-orden="' + escapeAttr(row.orden) + '">' + __t('Editar') + '</button></li>' +
 							'<li><hr class="dropdown-divider"></li>' +
 							'<li><button type="button" class="dropdown-item text-danger btn-del-pos-opcion"' +
 								' data-delete-url="' + escapeAttr(row.delete_url) + '"' +
-								' data-nombre="' + escapeAttr(row.nombre) + '">Eliminar</button></li>'
+								' data-nombre="' + escapeAttr(row.nombre) + '">' + __t('Eliminar') + '</button></li>'
 						);
 					},
 				},
 			],
-			language: idioma('opciones'),
+			language: idioma(__t('No se encontraron opciones'), __t('Todavía no hay opciones')),
 		});
 
 		function recargarTodo() {
@@ -232,8 +235,8 @@
 			editBtn: '.btn-edit-pos-grupo',
 			delBtn: '.btn-del-pos-grupo',
 			storeUrl: state.gruposStoreUrl,
-			tituloAlta: 'Añadir grupo',
-			tituloEdicion: 'Editar grupo',
+			tituloAlta: __t('Añadir grupo'),
+			tituloEdicion: __t('Editar grupo'),
 			onFill: function ($form, $btn) {
 				$form.find('#pos_grupo_nombre').val($btn.data('nombre'));
 				$form.find('#pos_grupo_obligatorio').prop('checked', String($btn.data('obligatorio')) === '1');
@@ -253,8 +256,8 @@
 			editBtn: '.btn-edit-pos-opcion',
 			delBtn: '.btn-del-pos-opcion',
 			storeUrl: state.opcionesStoreUrl,
-			tituloAlta: 'Añadir opción',
-			tituloEdicion: 'Editar opción',
+			tituloAlta: __t('Añadir opción'),
+			tituloEdicion: __t('Editar opción'),
 			onFill: function ($form, $btn) {
 				$form.find('#pos_opcion_grupo').val($btn.data('grupo-id'));
 				$form.find('#pos_opcion_nombre').val($btn.data('nombre'));

@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\Pos\Concerns\RespondeConCuenta;
 use App\Models\PosPrecuenta;
 use App\Services\PrecuentaCuenta;
+use App\Traduccion\Bilingue;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -31,7 +32,7 @@ class PrecuentaController extends Controller
         $modelo = $this->resolverCuenta($cuenta);
 
         if (! $modelo->estaAbierta()) {
-            return response()->json(['message' => 'Esta cuenta ya no está abierta.'], 422);
+            return response()->json(['message' => __('Esta cuenta ya no está abierta.')], 422);
         }
 
         if ($conflicto = $this->conflictoDeVersion($modelo, (int) $datos['version'])) {
@@ -57,10 +58,17 @@ class PrecuentaController extends Controller
 
         // Rollo de 80 mm (≈ 226.77 pt), igual que el ticket. Alto según líneas: DomPDF recorta el
         // sobrante en blanco.
-        $alto = 360 + (count($modelo->lineas) * 30);
+        // Fuente con caracteres chinos si sale bilingüe o algún dato los tiene (feature 050).
+        $fuenteCjk = Bilingue::fuenteCjkPrecuenta($modelo);
+        $alto = ($fuenteCjk ? 460 : 360) + (count($modelo->lineas) * 30);
 
-        return Pdf::loadView('pos.precuenta-80mm', ['precuenta' => $modelo])
+        if ($fuenteCjk) {
+            Bilingue::prepararCarpetaFuentes();
+        }
+
+        return Pdf::loadView('pos.precuenta-80mm', ['precuenta' => $modelo, 'fuenteCjk' => $fuenteCjk])
             ->setPaper([0, 0, 226.77, $alto])
+            ->setOption('isFontSubsettingEnabled', $fuenteCjk)
             ->stream('precuenta-'.$modelo->id.'.pdf');
     }
 }

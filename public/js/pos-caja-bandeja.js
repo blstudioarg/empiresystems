@@ -48,8 +48,10 @@ window.PosCajaBandeja = (function () {
 			ficha.classList.toggle('tiene', n > 0);
 			ficha.querySelector('[data-cant]').textContent = '×' + n;
 			ficha.querySelector('[data-sub]').textContent = T.formatear(n * parseInt(c, 10) / 100);
-			ficha.setAttribute('aria-label', (ficha.classList.contains('caja-billete') ? 'Billete de ' : 'Moneda de ')
-				+ ficha.getAttribute('data-etiqueta') + ', ' + n + (n === 1 ? ' unidad' : ' unidades'));
+			var params = { valor: ficha.getAttribute('data-etiqueta'), n: n };
+			ficha.setAttribute('aria-label', ficha.classList.contains('caja-billete')
+				? (n === 1 ? __t('Billete de :valor, :n unidad', params) : __t('Billete de :valor, :n unidades', params))
+				: (n === 1 ? __t('Moneda de :valor, :n unidad', params) : __t('Moneda de :valor, :n unidades', params)));
 		}
 
 		function pintarTeclado() {
@@ -58,7 +60,7 @@ window.PosCajaBandeja = (function () {
 			} else {
 				var c = seleccion ? seleccion.getAttribute('data-centimos') : null;
 				var valor = c ? (cantidades[c] || '') : '';
-				if ($sel) { $sel.textContent = seleccion ? seleccion.getAttribute('data-etiqueta') : 'Toca un billete o moneda'; }
+				if ($sel) { $sel.textContent = seleccion ? seleccion.getAttribute('data-etiqueta') : __t('Toca un billete o moneda'); }
 				if ($display) {
 					$display.textContent = valor === '' ? '0' : valor;
 					$display.classList.toggle('vacio', valor === '');
@@ -92,7 +94,7 @@ window.PosCajaBandeja = (function () {
 			if ($coma) {
 				$coma.textContent = modo === 'conteo' ? 'C' : ',';
 				$coma.setAttribute('data-key', modo === 'conteo' ? 'c' : ',');
-				$coma.setAttribute('aria-label', modo === 'conteo' ? 'Poner a cero' : 'Coma decimal');
+				$coma.setAttribute('aria-label', modo === 'conteo' ? __t('Poner a cero') : __t('Coma decimal'));
 			}
 			if (modo === 'conteo' && !seleccion && fichas.length) { seleccionar(fichas[0]); }
 			pintarTeclado();

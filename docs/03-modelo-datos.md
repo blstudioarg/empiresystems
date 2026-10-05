@@ -696,6 +696,7 @@ Almacén clave-valor por tenant para parámetros ajustables sin tocar código (t
 | `leads.asignacion_ultimo_indice` | crm | `0` — puntero interno del round-robin (`App\Services\AsignadorLeads`, bloqueo transaccional); no editable en UI |
 | `presupuesto.dias_validez` | crm | `30` (default en `ConfigCrm::DEFAULT_DIAS_VALIDEZ_PRESUPUESTO`) — validez por defecto de un presupuesto nuevo |
 | `pos.caja_umbral_descuadre` | pos | `5.00` (default en `ConfigPos::DEFAULT_CAJA_UMBRAL_DESCUADRE`) — diferencia de arqueo, en €, a partir de la cual cerrar la caja exige una observación (feature 048). **No** depende del módulo de hostelería. Se edita en Configuración → POS |
+| `pos.idioma` | pos | `es` (default por ausencia de fila, `ConfigPos::idioma()`) / `zh` (chino simplificado) — idioma del POS de todo el tenant (feature 050). **No** depende del módulo de hostelería. Valores permitidos en `config('traduccion.idiomas')`. Se edita en Configuración → POS |
 | `menu.personalizacion` | menu | `tipo: json` (feature 036) — `{"etiquetas": {clave: nombre}, "orden": {nivel: [claves]}}`, solo lo que difiere del catálogo (`App\Support\CatalogoMenu`); ausencia de la fila = tenant sin personalizar. Resuelto/fusionado por `App\Support\MenuTenant::estructura()`, consumido por `partials/sidebar.blade.php`. Sin migración ni tabla nueva |
 
 > **Zona horaria (convención transversal).** Todos los timestamps se **guardan y calculan en UTC**
@@ -1497,6 +1498,53 @@ El PDF se regenera siempre desde la fila (nunca desde la cuenta viva), sin archi
 **Datos personales**: solo `usuario_id`, mismo tipo que `pos_cuentas.abierta_por`; sin IP ni
 user-agent. Registro operativo del negocio con el mismo ciclo de vida que cuentas y cobros, sin purga
 propia.
+
+### Traducción del POS (feature 050)
+
+El idioma del POS es la clave `pos.idioma` de `configuraciones` (ver arriba). Las traducciones de
+los textos de la aplicación viven en dos tablas (mecanismo en `docs/01-arquitectura.md`, Decisión 12).
+
+#### `traducciones` — memoria de traducción automática (tabla **central**, sin `tenant_id`)
+
+Guarda textos **de la propia aplicación** («Cobrar»), no datos de ningún tenant, igual que el
+catálogo de permisos: compartirla hace que cada texto se traduzca una sola vez para todos los
+tenants (cupo de la API). Justificado en el Complexity Tracking de `specs/050-traduccion-pos/plan.md`
+frente al Principio I. No se edita desde la app: las correcciones van a la tabla siguiente.
+
+| Columna | Tipo | Notas |
+|---|---|---|
+| `idioma` | VARCHAR(10) | idioma de destino (`zh`) |
+| `hash` | CHAR(64) | SHA-256 de `texto` (`Traduccion::hashDe()`) |
+| `texto` | TEXT | texto en español tal cual aparece en `__()`/`__t()` (con `:variables`) |
+| `ambito` | VARCHAR(40) | ámbito donde se encontró (`pos`); informativo |
+| `es_html` | BOOLEAN | lleva marcado HTML (guías de ayuda) → `tag_handling=html` |
+| `traduccion` | TEXT nullable | `null` mientras está pendiente o falló |
+| `estado` | VARCHAR(12) | `pendiente` / `traducida` / `error` |
+| `intentos` | SMALLINT UNSIGNED | fallos acumulados; a partir de 5 deja de reintentarse solo |
+| `ultimo_error` | VARCHAR(255) nullable | causa del último fallo |
+| `traducida_en`, `vista_en` | TIMESTAMP nullable | `vista_en`: última vez que la extracción o un request la encontró |
+
+Índices: `UNIQUE (idioma, hash)`; `(idioma, estado)`. Una traducción pasa a `traducida` solo si
+conserva todas las `:variables` del original; si no, `error` y se sigue mostrando en español.
+
+#### `traduccion_correcciones` — corrección manual por tenant
+
+`BelongsToTenant` (Principio I). Prevalece sobre `traducciones` **solo** para su tenant.
+
+| Columna | Tipo | Notas |
+|---|---|---|
+| `tenant_id` | BIGINT, índice | |
+| `idioma`, `hash` | VARCHAR(10), CHAR(64) | texto que corrige |
+| `texto` | TEXT | copia del español (sigue listable aunque el texto cambie en el código) |
+| `traduccion` | TEXT | escrita por el tenant; saneada (solo `strong`, `em`, `br`) si el texto es HTML |
+| `corregida_por` | FK `users` nullable (nullOnDelete) | |
+
+Índice: `UNIQUE (tenant_id, idioma, hash)`. Se puede borrar («Restaurar automática»): es
+configuración del tenant, no un registro fiscal.
+
+**Datos personales**: solo `corregida_por`, mismo tipo que `pos_cuentas.abierta_por`; sin IP ni
+user-agent, sin purga propia. A la API de traducción solo viajan textos de la interfaz, nunca datos
+del negocio ni personales (los datos no pasan por `__()`).
 
 ### `pos_opcion_grupos`, `pos_opciones` y sus pivots
 

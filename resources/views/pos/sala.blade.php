@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'POS · Sala')
+@section('title', __('POS · Sala'))
 
 @push('styles')
 	<link rel="stylesheet" href="{{ asset('vendor/jqueryui/css/jquery-ui.min.css') }}">
@@ -483,7 +483,7 @@
 								<div class="card-body">
 									<div class="d-flex justify-content-between align-items-center">
 										<div>
-											<h6 class="mb-1">Total de mesas</h6>
+											<h6 class="mb-1">{{ __('Total de mesas') }}</h6>
 											<h4 class="mb-0" data-metric="total">0</h4>
 										</div>
 										<div>
@@ -498,7 +498,7 @@
 								<div class="card-body">
 									<div class="d-flex justify-content-between align-items-center">
 										<div>
-											<h6 class="mb-1">Libres</h6>
+											<h6 class="mb-1">{{ __('Libres') }}</h6>
 											<h4 class="mb-0" data-metric="libres">0</h4>
 										</div>
 										<div>
@@ -513,7 +513,7 @@
 								<div class="card-body">
 									<div class="d-flex justify-content-between align-items-center">
 										<div>
-											<h6 class="mb-1">Ocupadas</h6>
+											<h6 class="mb-1">{{ __('Ocupadas') }}</h6>
 											<h4 class="mb-0 text-success" data-metric="ocupadas">0</h4>
 										</div>
 										<div>
@@ -528,7 +528,7 @@
 								<div class="card-body">
 									<div class="d-flex justify-content-between align-items-center">
 										<div>
-											<h6 class="mb-1">Olvidadas</h6>
+											<h6 class="mb-1">{{ __('Olvidadas') }}</h6>
 											<h4 class="mb-0 text-danger" data-metric="olvidadas">0</h4>
 										</div>
 										<div>
@@ -544,7 +544,7 @@
 								<div class="card-body">
 									<div class="d-flex justify-content-between align-items-center">
 										<div>
-											<h6 class="mb-1">Precuenta</h6>
+											<h6 class="mb-1">{{ __('Precuenta') }}</h6>
 											<h4 class="mb-0" style="color: var(--pos-precuenta);" data-metric="precuentas">0</h4>
 										</div>
 										<div>
@@ -560,12 +560,12 @@
 
 			<div class="card">
 				<div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-					<h4 class="card-title mb-0">Sala</h4>
+					<h4 class="card-title mb-0">{{ __('Sala') }}</h4>
 					<div class="pos-sala-acciones">
 						<button type="button" class="btn btn-light pos-sala-resumen-toggle" id="pos-sala-resumen-toggle"
 						        aria-expanded="false" aria-controls="pos-sala-cards-collapse">
 							<i class="fas fa-chart-simple" aria-hidden="true"></i>
-							<span>Resumen</span>
+							<span>{{ __('Resumen') }}</span>
 							{{-- Apunta ARRIBA plegado, porque la tira aparece encima de este boton: un
 							     chevron hacia abajo diria que el contenido sale por debajo. Al abrir
 							     rota 180 y pasa a apuntar abajo = "guardalo". --}}
@@ -573,33 +573,33 @@
 						</button>
 						{{-- Sin @can a propósito (FR-004): ver la Sala como plano es parte del servicio;
 						     editarlo sigue siendo `ver-configuracion`. --}}
-						<div class="pos-sala-vista" id="pos-sala-vista" role="group" aria-label="Vista de la sala">
+						<div class="pos-sala-vista" id="pos-sala-vista" role="group" aria-label="{{ __('Vista de la sala') }}">
 							<button type="button" data-vista="tarjetas" aria-pressed="true">
-								<i class="fas fa-table-cells-large"></i> Tarjetas
+								<i class="fas fa-table-cells-large"></i> {{ __('Tarjetas') }}
 							</button>
 							<button type="button" data-vista="plano" aria-pressed="false">
-								<i class="fas fa-map"></i> Plano
+								<i class="fas fa-map"></i> {{ __('Plano') }}
 							</button>
 						</div>
 						<button type="button" class="btn btn-light" id="pos-sala-refrescar">
-							<i class="fas fa-rotate"></i> Actualizar
+							<i class="fas fa-rotate"></i> {{ __('Actualizar') }}
 						</button>
 						@can('ver-configuracion')
 							<button type="button" class="btn btn-outline-primary" id="pos-plano-toggle">
-								<i class="fas fa-arrows-up-down-left-right"></i> Editar plano
+								<i class="fas fa-arrows-up-down-left-right"></i> {{ __('Editar plano') }}
 							</button>
-							<button type="button" class="btn btn-success d-none" id="pos-plano-guardar" data-loading-text="Guardando...">
-								<i class="fas fa-save"></i> Guardar plano
+							<button type="button" class="btn btn-success d-none" id="pos-plano-guardar" data-loading-text="{{ __('Guardando...') }}">
+								<i class="fas fa-save"></i> {{ __('Guardar plano') }}
 							</button>
 						@endcan
 						<a href="{{ route('pos.create') }}" class="btn btn-primary">
-							<i class="fas fa-plus"></i> Venta directa
+							<i class="fas fa-plus"></i> {{ __('Venta directa') }}
 						</a>
 					</div>
 				</div>
 				<div class="card-body">
 					<div class="pos-filtros-wrap">
-						<div class="pos-filtros p-0" id="pos-sala-zonas" role="tablist" aria-label="Filtrar por zona"></div>
+						<div class="pos-filtros p-0" id="pos-sala-zonas" role="tablist" aria-label="{{ __('Filtrar por zona') }}"></div>
 					</div>
 
 					<div class="pos-mesas-grid" id="pos-sala-mesas"></div>
@@ -612,11 +612,11 @@
 						</div>
 
 						<p class="pos-plano-servicio-vacio d-none" id="pos-plano-servicio-vacio">
-							Esta zona todavía no tiene mesas colocadas en el plano.
+							{{ __('Esta zona todavía no tiene mesas colocadas en el plano.') }}
 						</p>
 
 						<div class="d-none" id="pos-plano-servicio-sin-sitio">
-							<p class="pos-plano-servicio-titulo">Sin sitio en el plano</p>
+							<p class="pos-plano-servicio-titulo">{{ __('Sin sitio en el plano') }}</p>
 							<div class="pos-mesas-grid" id="pos-plano-servicio-sin-sitio-grid"></div>
 						</div>
 
@@ -629,26 +629,26 @@
 						     que ademas convertiria a este panel `fixed` en relativo al lienzo. --}}
 						@can('ver-configuracion')
 							<div class="plano-mesa-menu" id="pos-plano-mesa-menu" role="dialog"
-							     aria-label="Acciones de la mesa" aria-hidden="true">
+							     aria-label="{{ __('Acciones de la mesa') }}" aria-hidden="true">
 								<p class="plano-mesa-menu-nombre" id="pos-plano-mesa-menu-nombre"></p>
 
 								<div class="plano-mesa-menu-acciones" id="pos-plano-mesa-menu-acciones">
 									<button type="button" class="btn btn-primary" data-accion="ticket">
-										<i class="fas fa-receipt"></i> Crear ticket
+										<i class="fas fa-receipt"></i> {{ __('Crear ticket') }}
 									</button>
 									<button type="button" class="btn btn-outline-secondary" data-accion="editar">
-										<i class="fas fa-pen"></i> Editar nombre
+										<i class="fas fa-pen"></i> {{ __('Editar nombre') }}
 									</button>
 								</div>
 
 								<div class="plano-mesa-menu-editar d-none" id="pos-plano-mesa-menu-editar">
 									<input type="text" class="form-control form-control-sm"
 									       id="pos-plano-mesa-menu-input" maxlength="60"
-									       aria-label="Nombre de la mesa">
-									<button type="button" class="btn btn-success" data-accion="guardar" title="Guardar">
+									       aria-label="{{ __('Nombre de la mesa') }}">
+									<button type="button" class="btn btn-success" data-accion="guardar" title="{{ __('Guardar') }}">
 										<i class="fas fa-check"></i>
 									</button>
-									<button type="button" class="btn btn-light" data-accion="cancelar" title="Cancelar">
+									<button type="button" class="btn btn-light" data-accion="cancelar" title="{{ __('Cancelar') }}">
 										<i class="fas fa-xmark"></i>
 									</button>
 								</div>
@@ -657,12 +657,12 @@
 					</div>
 
 					<p class="pos-sala-vacia d-none" id="pos-sala-vacia">
-						Todavía no hay mesas configuradas. Créalas con el botón <strong>Editar plano</strong> de arriba.
+						{!! __('Todavía no hay mesas configuradas. Créalas con el botón <strong>Editar plano</strong> de arriba.') !!}
 					</p>
 
 					<div class="pos-plano-wrap" id="pos-plano-wrap">
 						<div class="pos-plano-toolbar">
-							<span class="pos-plano-hint" id="pos-plano-hint">Arrastra las mesas por el asa <i class="fas fa-arrows-up-down-left-right"></i> para reordenarlas. Toca una mesa para cambiar su forma y tamaño.</span>
+							<span class="pos-plano-hint" id="pos-plano-hint">{!! __('Arrastra las mesas por el asa :icono para reordenarlas. Toca una mesa para cambiar su forma y tamaño.', ['icono' => '<i class="fas fa-arrows-up-down-left-right"></i>']) !!}</span>
 
 							{{-- Controles del lienzo (feature 042, FR-018): solo con permiso de
 							     configuración. El lienzo lo VE todo el mundo (viaja en el payload
@@ -671,17 +671,17 @@
 							     "Tamaño de formularios"). --}}
 							@can('ver-configuracion')
 								<div class="pos-plano-lienzo" id="pos-plano-lienzo">
-									<label class="pos-plano-lienzo-label" for="pos-plano-columnas">Ancho</label>
+									<label class="pos-plano-lienzo-label" for="pos-plano-columnas">{{ __('Ancho') }}</label>
 									<input type="number" class="form-control form-control-sm" id="pos-plano-columnas"
-									       min="4" max="24" step="1" inputmode="numeric" aria-label="Columnas de la zona">
+									       min="4" max="24" step="1" inputmode="numeric" aria-label="{{ __('Columnas de la zona') }}">
 									<span class="pos-plano-lienzo-x" aria-hidden="true">×</span>
-									<label class="pos-plano-lienzo-label" for="pos-plano-filas">Alto</label>
+									<label class="pos-plano-lienzo-label" for="pos-plano-filas">{{ __('Alto') }}</label>
 									<input type="number" class="form-control form-control-sm" id="pos-plano-filas"
-									       min="4" max="24" step="1" inputmode="numeric" aria-label="Filas de la zona">
+									       min="4" max="24" step="1" inputmode="numeric" aria-label="{{ __('Filas de la zona') }}">
 
 									<button type="button" class="btn btn-sm btn-outline-secondary" id="pos-plano-recorte"
 									        aria-pressed="false">
-										<i class="fas fa-eraser"></i> Recortar sala
+										<i class="fas fa-eraser"></i> {{ __('Recortar sala') }}
 									</button>
 								</div>
 							@endcan
@@ -692,7 +692,7 @@
 									<div class="pos-plano-canvas" id="pos-plano-canvas"></div>
 
 									<div class="plano-popover" id="plano-popover">
-										<div class="plano-popover-titulo">Forma</div>
+										<div class="plano-popover-titulo">{{ __('Forma') }}</div>
 										<div class="plano-popover-opciones" id="plano-popover-formas"></div>
 									</div>
 								</div>
@@ -702,8 +702,8 @@
 							<aside class="pos-plano-gestion">
 								<div class="pos-plano-gestion-seccion">
 									<div class="pos-plano-gestion-header">
-										<h6 class="mb-0">Zonas</h6>
-										<button type="button" class="btn btn-light btn-icon-cuadrado" id="pos-plano-zona-nueva" title="Nueva zona">
+										<h6 class="mb-0">{{ __('Zonas') }}</h6>
+										<button type="button" class="btn btn-light btn-icon-cuadrado" id="pos-plano-zona-nueva" title="{{ __('Nueva zona') }}">
 											<i class="fas fa-plus"></i>
 										</button>
 									</div>
@@ -712,8 +712,8 @@
 
 								<div class="pos-plano-gestion-seccion">
 									<div class="pos-plano-gestion-header">
-										<h6 class="mb-0">Mesas</h6>
-										<button type="button" class="btn btn-light btn-icon-cuadrado" id="pos-plano-mesa-nueva" title="Nueva mesa">
+										<h6 class="mb-0">{{ __('Mesas') }}</h6>
+										<button type="button" class="btn btn-light btn-icon-cuadrado" id="pos-plano-mesa-nueva" title="{{ __('Nueva mesa') }}">
 											<i class="fas fa-plus"></i>
 										</button>
 									</div>
@@ -728,7 +728,7 @@
 	</div>
 @endsection
 
-@section('ayuda-titulo', 'Sala (POS)')
+@section('ayuda-titulo', __('Sala (POS)'))
 @section('ayuda')
 	@include('ayuda.pos-sala')
 @endsection

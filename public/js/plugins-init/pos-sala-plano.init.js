@@ -20,9 +20,9 @@
 	var STEP = D.STEP;
 
 	var FORMAS = [
-		{ valor: 'redonda', etiqueta: 'Redonda' },
-		{ valor: 'cuadrada', etiqueta: 'Cuadrada' },
-		{ valor: 'barra', etiqueta: 'Barra' },
+		{ valor: 'redonda', etiqueta: __t('Redonda') },
+		{ valor: 'cuadrada', etiqueta: __t('Cuadrada') },
+		{ valor: 'barra', etiqueta: __t('Barra') },
 	];
 
 	var state = window.posPlanoState || {};
@@ -392,7 +392,7 @@
 		if (!cabenTodos) {
 			revertir();
 			pintarCanvas();
-			window.showToast('warning', 'No hay espacio suficiente para la mesa desplazada. Movimiento cancelado.');
+			window.showToast('warning', __t('No hay espacio suficiente para la mesa desplazada. Movimiento cancelado.'));
 			return;
 		}
 
@@ -492,7 +492,7 @@
 
 		var fuera = mesasZona.length - pendiente.length;
 		$fueraRejilla.textContent = fuera > 0
-			? fuera + ' mesa(s) de esta zona no tienen posición en la rejilla (creadas cuando ya estaba llena) y no aparecen en el plano.'
+			? __t(':n mesa(s) de esta zona no tienen posición en la rejilla (creadas cuando ya estaba llena) y no aparecen en el plano.', { n: fuera })
 			: '';
 
 		pintarCanvas();
@@ -530,15 +530,15 @@
 		if (estorban > 0) {
 			sincronizarControles();
 			window.showToast('warning', estorban === 1
-				? 'Hay 1 mesa fuera de esas medidas. Muevela antes de reducir la zona.'
-				: 'Hay ' + estorban + ' mesas fuera de esas medidas. Muevelas antes de reducir la zona.');
+				? __t('Hay 1 mesa fuera de esas medidas. Muevela antes de reducir la zona.')
+				: __t('Hay :n mesas fuera de esas medidas. Muevelas antes de reducir la zona.', { n: estorban }));
 			return false;
 		}
 
 		// G5 en cliente: encoger no puede dejar la zona sin una sola celda de sala (FR-011).
 		if (celdasDeSuelo(columnas, filas, geometria.inactivas) < 1) {
 			sincronizarControles();
-			window.showToast('warning', 'La zona debe conservar al menos una celda de sala.');
+			window.showToast('warning', __t('La zona debe conservar al menos una celda de sala.'));
 			return false;
 		}
 
@@ -574,8 +574,8 @@
 			$recorte.setAttribute('aria-pressed', recortando ? 'true' : 'false');
 			if ($hint) {
 				$hint.textContent = recortando
-					? 'Arrastra sobre el plano para marcar que celdas no son sala. Vuelve a tocar "Recortar sala" para colocar mesas.'
-					: 'Arrastra las mesas por el asa para reordenarlas. Toca una mesa para cambiar su forma y tamano.';
+					? __t('Arrastra sobre el plano para marcar que celdas no son sala. Vuelve a tocar "Recortar sala" para colocar mesas.')
+					: __t('Arrastra las mesas por el asa para reordenarlas. Toca una mesa para cambiar su forma y tamano.');
 			}
 			cerrarPopover();
 			pintarCanvas();
@@ -669,8 +669,8 @@
 		// dispararia decenas en un solo arrastre y taparia la pantalla entera.
 		if (rechazadas > 0) {
 			window.showToast('warning', rechazadas === 1
-				? 'Una celda no se pudo recortar: hay una mesa encima o es la ultima celda de sala.'
-				: rechazadas + ' celdas no se pudieron recortar: hay mesas encima o dejarian la zona sin sala.');
+				? __t('Una celda no se pudo recortar: hay una mesa encima o es la ultima celda de sala.')
+				: __t(':n celdas no se pudieron recortar: hay mesas encima o dejarian la zona sin sala.', { n: rechazadas }));
 		}
 		rechazadas = 0;
 	}
@@ -719,7 +719,7 @@
 		recortando = false;
 		if ($recorte) { $recorte.setAttribute('aria-pressed', 'false'); }
 		if ($hint) {
-			$hint.textContent = 'Arrastra las mesas por el asa para reordenarlas. Toca una mesa para cambiar su forma y tamano.';
+			$hint.textContent = __t('Arrastra las mesas por el asa para reordenarlas. Toca una mesa para cambiar su forma y tamano.');
 		}
 	}
 
@@ -790,7 +790,7 @@
 			});
 		})
 			.done(function (respuesta) {
-				window.showToast('success', respuesta.message || 'Plano guardado.');
+				window.showToast('success', respuesta.message || __t('Plano guardado.'));
 				versionZona = respuesta.version;
 				desactivarEdicion();
 				// Recarga el estado de la sala para que la vista de lectura refleje el plano nuevo.
@@ -799,7 +799,7 @@
 			.fail(function (xhr) {
 				if (xhr.status === 409) {
 					window.showToast('warning', (xhr.responseJSON && xhr.responseJSON.message) ||
-						'El plano se modificó desde otro dispositivo. Recárgalo antes de guardar.');
+						__t('El plano se modificó desde otro dispositivo. Recárgalo antes de guardar.'));
 					// Recarga el plano vigente de esta zona en vez de dejar al usuario reintentar
 					// a ciegas contra un `version` que ya sabemos desactualizado.
 					document.getElementById('pos-sala-refrescar').click();
@@ -810,7 +810,7 @@
 					return;
 				}
 
-				var msg = (xhr.responseJSON && xhr.responseJSON.message) || 'No se pudo guardar el plano.';
+				var msg = (xhr.responseJSON && xhr.responseJSON.message) || __t('No se pudo guardar el plano.');
 				window.showToast('danger', msg);
 			});
 	});

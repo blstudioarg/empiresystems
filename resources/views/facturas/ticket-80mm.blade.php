@@ -21,9 +21,12 @@
 		.verifactu-qr__imagen { width: 30mm; height: 30mm; }
 		.verifactu-qr__etiqueta, .verifactu-qr__leyenda { font-size: 8px; }
 		.verifactu-qr__leyenda { font-weight: bold; }
-	</style>
+	</style>@if ($fuenteCjk ?? false){!! \App\Traduccion\Bilingue::estiloFuenteCjk() !!}@endif
 </head>
 <body>
+	{{-- Bilingüe con el POS del tenant en chino (feature 050): bilingue() lee el idioma del tenant
+	     del documento. El partial del QR (mención regulada) no se traduce. --}}
+	@php \App\Traduccion\Bilingue::documentoDe($factura->tenant_id); @endphp
 	@include('partials.verifactu-qr', ['factura' => $factura])
 
 	<div class="emisor">
@@ -51,14 +54,14 @@
 			<td class="right">{{ $factura->fecha_expedicion->format('d/m/Y') }}</td>
 		</tr>
 		<tr>
-			<td colspan="2" class="muted">Factura simplificada</td>
+			<td colspan="2" class="muted">{{ bilingue('Factura simplificada') }}</td>
 		</tr>
 	</table>
 
 	@if ($factura->cliente_nif)
 		<div class="sep"></div>
 		<table>
-			<tr><td class="bold" colspan="2">Receptor</td></tr>
+			<tr><td class="bold" colspan="2">{{ bilingue('Receptor') }}</td></tr>
 			<tr><td colspan="2">{{ $factura->cliente_razon_social ?: $factura->cliente_nombre }}</td></tr>
 			<tr><td colspan="2" class="muted">NIF: {{ $factura->cliente_nif }}</td></tr>
 			@if ($factura->cliente_direccion)
@@ -90,7 +93,7 @@
 
 	<table>
 		<tr>
-			<td>Base imponible</td>
+			<td>{{ bilingue('Base imponible') }}</td>
 			<td class="right">{{ number_format((float) $factura->base_total, 2, ',', '.') }} €</td>
 		</tr>
 		@foreach ($factura->impuestos as $impuesto)
@@ -105,17 +108,17 @@
 
 	<table class="total">
 		<tr>
-			<td>TOTAL</td>
+			<td>{{ bilingue('TOTAL') }}</td>
 			<td class="right">{{ number_format((float) $factura->total, 2, ',', '.') }} €</td>
 		</tr>
 	</table>
 
 	<div class="sep"></div>
-	<div class="center muted">Forma de pago: {{ ucfirst($factura->forma_pago->value) }}</div>
+	<div class="center muted">{{ bilingue('Forma de pago') }}: {{ bilingue(ucfirst($factura->forma_pago->value)) }}</div>
 	@if ($factura->notas)
 		<div class="sep"></div>
 		<div class="muted">{{ $factura->notas }}</div>
 	@endif
-	<div style="margin-top:8px" class="center muted">Gracias por su visita</div>
+	<div style="margin-top:8px" class="center muted">{{ bilingue('Gracias por su visita') }}</div>
 </body>
 </html>

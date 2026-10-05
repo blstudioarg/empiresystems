@@ -2,9 +2,11 @@
 
 use App\Http\Middleware\BloquearSuperAdminAreaTenant;
 use App\Http\Middleware\EnsureSuperAdmin;
+use App\Http\Middleware\IdiomaPos;
 use App\Http\Middleware\ModuloHosteleriaActivo;
 use App\Http\Middleware\SetTenantContext;
 use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -65,13 +67,15 @@ return Application::configure(basePath: dirname(__DIR__))
             // del permiso del usuario. Acepta una capacidad opcional
             // (`modulo.hosteleria:opciones`).
             'modulo.hosteleria' => ModuloHosteleriaActivo::class,
+            // Idioma del POS (feature 050): fija el locale en las rutas del POS.
+            'idioma.pos' => IdiomaPos::class,
         ]);
 
         // SetTenantContext debe resolver el tenant por Host ANTES que auth/guest: si no, el
         // middlewarePriority global de Laravel (Authenticate tiene prioridad fija) ejecuta el
         // check de sesión primero y un host sin tenant nunca llega a devolver 404 (research.md D2).
         $middleware->prependToPriorityList(
-            before: \Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests::class,
+            before: AuthenticatesRequests::class,
             prepend: SetTenantContext::class,
         );
     })

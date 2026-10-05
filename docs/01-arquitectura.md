@@ -353,3 +353,35 @@ Las tres sirven a los tres módulos importables a la vez, lo que obligó a un ca
 contrato de las tools: `ToolAsistente::disponiblePara()` (con `permisosAlternativos()`) es ahora el
 criterio único de `CatalogoTools` para filtrar y re-verificar, y el permiso del **módulo concreto**
 se re-exige al ejecutar, con el módulo ya conocido.
+
+## Decisión 12 — Traducción automática con memoria en BD y glosario (050-traduccion-pos)
+
+El POS se puede usar en chino simplificado (idioma por tenant, `pos.idioma` en `configuraciones`).
+Decisiones (detalle en `specs/050-traduccion-pos/research.md`):
+
+- **Clave = texto en español** (`__('Cobrar')`, `__t('Cobrar')` en JS): con el POS en español no
+  hay búsqueda que encuentre traducción y el texto sale tal cual; cambiar un texto genera una clave
+  nueva sola. Sin archivos de traducción que mantener (D1).
+- **Las traducciones viven en base de datos**: `App\Traduccion\CargadorTraducciones` sustituye al
+  `translation.loader` de Laravel y, para un idioma traducido, combina la tabla central
+  `traducciones` (automática, compartida por todos los tenants: cada texto se traduce una vez) con
+  `traduccion_correcciones` del tenant activo, que prevalece. Una consulta por tabla y request; en
+  español, ninguna (D2).
+- **Idioma por request con un middleware** (`idioma.pos`) solo en las rutas del POS; el menú
+  lateral y los PDF piden el idioma explícitamente. Fuera del POS todo sigue en español (D3).
+- **Traducción en el deploy + respaldo «al primer uso» en `terminating`** (después de enviar la
+  respuesta, sin colas, Principio V): la carga de una pantalla nunca espera a la API, y si la API
+  falla se ve en español (D4). `traducciones:sincronizar` nunca hace fallar el deploy.
+- **DeepL vía el cliente `Http`, sin SDK**, detrás de la interfaz `ProveedorTraduccion` (D6).
+  Variables protegidas como `<x>:var</x>` y siglas como `<k>…</k>` con `ignore_tags` (con
+  etiquetas vacías DeepL colocaba mal las variables).
+- **Glosario versionado en `config/traduccion.php`**, sincronizado con DeepL por nombre con hash
+  (sin estado local); los textos que son exactamente un término o una frase fijada se traducen
+  localmente (D7). Cambiar el glosario no retraduce solo: `--retraducir`.
+- **Documentos bilingües y fuente CJK** (D9): `bilingue()` en ticket y precuenta; Noto Sans SC con
+  subsetting solo si el documento tiene caracteres chinos; métricas pre-generadas con
+  `pos:preparar-fuentes`.
+
+**Extender a otra parte de la app** = marcar sus textos con `__()`/`__t()`, declarar un ámbito en
+`config/traduccion.php`, aplicar el middleware de idioma a sus rutas y correr la sincronización con
+`--ambito`. Nada del mecanismo es específico del POS.

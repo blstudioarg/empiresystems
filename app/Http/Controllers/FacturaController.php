@@ -30,6 +30,7 @@ use App\Support\EmailTenant;
 use App\Support\TiposImpositivos;
 use App\Support\VencimientoFactura;
 use App\Support\VerifactuTenant;
+use App\Traduccion\Bilingue;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -394,7 +395,16 @@ class FacturaController extends Controller
     {
         $factura = Factura::with(['lineas', 'impuestos', 'cliente', 'tenant', 'facturaRectificada', 'rectificativa', 'pagos'])->findOrFail($factura);
 
-        $pdf = Pdf::loadView('facturas.pdf', ['factura' => $factura]);
+        // Fuente con caracteres chinos (feature 050, FR-019): una simplificada del POS en chino sale
+        // bilingüe, y cualquier factura con datos chinos los necesita para no pintar cuadrados.
+        $fuenteCjk = Bilingue::fuenteCjkFactura($factura);
+
+        if ($fuenteCjk) {
+            Bilingue::prepararCarpetaFuentes();
+        }
+
+        $pdf = Pdf::loadView('facturas.pdf', ['factura' => $factura, 'fuenteCjk' => $fuenteCjk])
+            ->setOption('isFontSubsettingEnabled', $fuenteCjk);
 
         return $pdf->stream(($factura->numero_completo ?? 'borrador-'.$factura->id).'.pdf');
     }
@@ -435,7 +445,12 @@ class FacturaController extends Controller
             return redirect()->back()->with('error', $mensaje);
         }
 
-        $pdf = Pdf::loadView('facturas.pdf', ['factura' => $factura])->output();
+        $fuenteCjk = Bilingue::fuenteCjkFactura($factura);
+        if ($fuenteCjk) {
+            Bilingue::prepararCarpetaFuentes();
+        }
+        $pdf = Pdf::loadView('facturas.pdf', ['factura' => $factura, 'fuenteCjk' => $fuenteCjk])
+            ->setOption('isFontSubsettingEnabled', $fuenteCjk)->output();
 
         $mailable = (new FacturaMail($factura, $pdf))
             ->from($tenantMailer->remitente(), $tenantMailer->remitenteNombre());

@@ -178,7 +178,7 @@
 				}
 			}
 		} else {
-			interior += '<span class="plano-mesa-handle" title="Arrastrar"><i class="fas fa-arrows-up-down-left-right"></i></span>';
+			interior += '<span class="plano-mesa-handle" title="' + __t('Arrastrar') + '"><i class="fas fa-arrows-up-down-left-right"></i></span>';
 		}
 
 		return '<div class="plano-mesa ' + clase + ' forma-' + mesa.forma + estirada +

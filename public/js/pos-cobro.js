@@ -91,7 +91,7 @@ window.PosApp.registrar('cobro', function (PosApp) {
 		if ($clienteBtnLabel) {
 			$clienteBtnLabel.textContent = tiene
 				? (($nombre && $nombre.value.trim()) || $nif.value.trim())
-				: 'Cliente';
+				: __t('Cliente');
 		}
 	}
 
@@ -181,7 +181,7 @@ window.PosApp.registrar('cobro', function (PosApp) {
 				'<span class="ic"><i class="fas ' + metodoIcon(t.metodo) + '"></i></span>' +
 				'<span class="nom">' + PosApp.escapeHtml(metodoLabel(t.metodo)) + '</span>' +
 				'<span class="imp">' + PosApp.format(t.importe) + ' €</span>' +
-				'<button type="button" class="quitar" data-i="' + i + '" aria-label="Quitar pago">×</button>';
+				'<button type="button" class="quitar" data-i="' + i + '" aria-label="' + __t('Quitar pago') + '">×</button>';
 			$cobroTenders.appendChild(row);
 		});
 	}
@@ -196,15 +196,15 @@ window.PosApp.registrar('cobro', function (PosApp) {
 			// Tocable sólo mientras se teclea un importe y aún queda algo por asignar.
 			$cobroRestante.classList.toggle('tappable', tecleando && restante > 0);
 		}
-		if ($cobroRestanteLbl) { $cobroRestanteLbl.textContent = completo ? 'Cobrado' : 'Restante'; }
+		if ($cobroRestanteLbl) { $cobroRestanteLbl.textContent = completo ? __t('Cobrado') : __t('Restante'); }
 		if ($cobroRestanteVal) { $cobroRestanteVal.textContent = PosApp.format(completo ? totalCobro() : Math.max(0, restante)) + ' €'; }
 
 		// Elección de método visible sólo mientras falte por asignar (y no se esté tecleando).
 		if ($cobroEleccion) { $cobroEleccion.classList.toggle('d-none', tecleando || restante <= 0); }
 		if ($cobroHint) {
 			$cobroHint.textContent = tenders.length
-				? 'Añadí otro método para dividir el pago.'
-				: 'Tocá el método con el que cobrás.';
+				? __t('Añadí otro método para dividir el pago.')
+				: __t('Tocá el método con el que cobrás.');
 		}
 
 		if ($cobroEmitir) { $cobroEmitir.disabled = !completo || !lineas.length; }
@@ -383,7 +383,7 @@ window.PosApp.registrar('cobro', function (PosApp) {
 		ultimoTicketPdfUrl = pdfUrlPara(data.id);
 		// Precargar el PDF en el iframe oculto para que "Imprimir" responda al instante.
 		if ($printFrame) { $printFrame.setAttribute('src', ultimoTicketPdfUrl); }
-		if ($exitoNumero) { $exitoNumero.textContent = data.numero_completo ? ('Nº ' + data.numero_completo) : ''; }
+		if ($exitoNumero) { $exitoNumero.textContent = data.numero_completo ? __t('Nº :numero', { numero: data.numero_completo }) : ''; }
 		if (exitoModal) { exitoModal.show(); }
 	}
 
@@ -435,9 +435,10 @@ window.PosApp.registrar('cobro', function (PosApp) {
 
 				$avisoPrecuenta.classList.toggle('d-none', !desactualizada);
 				if (desactualizada) {
-					$avisoPrecuentaTexto.textContent =
-						'Precuenta entregada: ' + PosApp.format(parseFloat(precuenta.ultima.total)) + ' € · ' +
-						'Total actual: ' + PosApp.format(parseFloat(precuenta.total_actual)) + ' €';
+					$avisoPrecuentaTexto.textContent = __t('Precuenta entregada: :entregada € · Total actual: :actual €', {
+						entregada: PosApp.format(parseFloat(precuenta.ultima.total)),
+						actual: PosApp.format(parseFloat(precuenta.total_actual)),
+					});
 				}
 			});
 		}
@@ -568,14 +569,14 @@ window.PosApp.registrar('cobro', function (PosApp) {
 						.then(function (res) {
 							if (cajaCerrada(res)) { return; }
 							if (!res.ok) {
-								window.showToast('error', res.data.message || 'No se pudo emitir el ticket.');
+								window.showToast('error', res.data.message || __t('No se pudo emitir el ticket.'));
 								return;
 							}
 							if (cobroModal) { cobroModal.hide(); }
 							mostrarExito(res.data);
 						})
 						.catch(function () {
-							window.showToast('error', 'No se pudo emitir el ticket.');
+							window.showToast('error', __t('No se pudo emitir el ticket.'));
 						});
 				}).always(function () {
 					renderRestante();
@@ -646,11 +647,11 @@ window.PosApp.registrar('cobro', function (PosApp) {
 					.then(function (res) {
 						if (cajaCerrada(res)) { return; }
 						if (res.status === 409) {
-							window.showToast('error', res.data.message || 'Otro dispositivo modificó esta cuenta.');
+							window.showToast('error', res.data.message || __t('Otro dispositivo modificó esta cuenta.'));
 							return;
 						}
 						if (!res.ok) {
-							window.showToast('error', res.data.message || 'No se pudo cobrar la cuenta.');
+							window.showToast('error', res.data.message || __t('No se pudo cobrar la cuenta.'));
 							return;
 						}
 						if (res.data.cuenta_cerrada && cuentaModulo.limpiarTrasCierre) {
@@ -660,7 +661,7 @@ window.PosApp.registrar('cobro', function (PosApp) {
 						mostrarExito(res.data);
 					})
 					.catch(function () {
-						window.showToast('error', 'No se pudo cobrar la cuenta.');
+						window.showToast('error', __t('No se pudo cobrar la cuenta.'));
 					});
 			});
 		}
