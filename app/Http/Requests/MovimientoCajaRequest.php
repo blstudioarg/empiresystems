@@ -30,8 +30,8 @@ class MovimientoCajaRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'importe.gt' => 'El importe tiene que ser mayor que cero.',
-            'motivo.required' => 'Escribe el motivo del movimiento.',
+            'importe.gt' => __('El importe tiene que ser mayor que cero.'),
+            'motivo.required' => __('Escribe el motivo del movimiento.'),
         ];
     }
 }

@@ -162,10 +162,10 @@ class ResumenCaja
         $valor = $metodo instanceof FormaPago ? $metodo->value : $metodo;
 
         return match ($valor) {
-            'efectivo' => 'Efectivo',
-            'tarjeta' => 'Tarjeta',
-            'transferencia' => 'Transferencia',
-            'domiciliacion' => 'Domiciliación',
+            'efectivo' => __('Efectivo'),
+            'tarjeta' => __('Tarjeta'),
+            'transferencia' => __('Transferencia'),
+            'domiciliacion' => __('Domiciliación'),
             default => ucfirst($valor),
         };
     }

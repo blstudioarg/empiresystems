@@ -24,10 +24,12 @@
 		.opcion { font-size: 9px; color: #333; padding-left: 8px; }
 		.total { font-size: 13px; font-weight: bold; }
 		.muted { color: #333; }
-	</style>
+	</style>@if ($fuenteCjk ?? false){!! \App\Traduccion\Bilingue::estiloFuenteCjk() !!}@endif
 </head>
 <body>
 	@php
+		// Bilingüe con el POS del tenant en chino (feature 050, research D9).
+		\App\Traduccion\Bilingue::documentoDe($precuenta->tenant_id);
 		$__tenant = $precuenta->tenant;
 		$__logo = $__tenant?->logo_facturacion_path
 			? public_path('storage/'.$__tenant->logo_facturacion_path)
@@ -43,10 +45,10 @@
 		<span class="bold">{{ $__tenant?->nombre_comercial }}</span>
 	</div>
 
-	<div class="titulo">PRECUENTA</div>
-	<div class="leyenda">Documento no válido como factura</div>
+	<div class="titulo">{{ bilingue('PRECUENTA') }}</div>
+	<div class="leyenda">{{ bilingue('Documento no válido como factura') }}</div>
 	@if ($precuenta->reimpresion)
-		<div class="reimpresion">Reimpresión</div>
+		<div class="reimpresion">{{ bilingue('Reimpresión') }}</div>
 	@endif
 
 	<div class="sep"></div>
@@ -57,17 +59,17 @@
 				@if ($precuenta->mesa_nombre)
 					{{ $precuenta->mesa_nombre }}@if ($precuenta->zona_nombre) · {{ $precuenta->zona_nombre }}@endif
 				@else
-					Sin mesa
+					{{ bilingue('Sin mesa') }}
 				@endif
 			</td>
 			{{-- Guardada en UTC; se muestra en la zona horaria del tenant (la hora que ve el cliente). --}}
 			<td class="right">{{ $precuenta->emitida_en->enZonaTenant()->format('d/m/Y H:i') }}</td>
 		</tr>
 		@if ($precuenta->comensales)
-			<tr><td colspan="2" class="muted">Comensales: {{ $precuenta->comensales }}</td></tr>
+			<tr><td colspan="2" class="muted">{{ bilingue('Comensales') }}: {{ $precuenta->comensales }}</td></tr>
 		@endif
 		@if ($precuenta->usuario)
-			<tr><td colspan="2" class="muted">Atendido por: {{ $precuenta->usuario->name }}</td></tr>
+			<tr><td colspan="2" class="muted">{{ bilingue('Atendido por') }}: {{ $precuenta->usuario->name }}</td></tr>
 		@endif
 	</table>
 
@@ -89,7 +91,7 @@
 		@if ((float) $precuenta->suplemento_zona > 0)
 			{{-- Nunca un aumento silencioso: el suplemento de zona va como concepto visible. --}}
 			<tr>
-				<td>Suplemento {{ $precuenta->zona_nombre ?? 'zona' }} ({{ \App\Support\Formato::porcentaje($precuenta->suplemento_zona) }}%)</td>
+				<td>{{ bilingue('Suplemento') }} {{ $precuenta->zona_nombre ?? bilingue('zona') }} ({{ \App\Support\Formato::porcentaje($precuenta->suplemento_zona) }}%)</td>
 				<td class="right">{{ $__dinero($__importeSuplemento) }} €</td>
 			</tr>
 		@endif
@@ -99,14 +101,14 @@
 
 	<table class="total">
 		<tr>
-			<td>TOTAL</td>
+			<td>{{ bilingue('TOTAL') }}</td>
 			<td class="right">{{ $__dinero($precuenta->total) }} €</td>
 		</tr>
 	</table>
-	<div class="center muted">{{ $__impuesto }} incluido</div>
+	<div class="center muted">{{ bilingue(':impuesto incluido', ['impuesto' => $__impuesto]) }}</div>
 
 	<div class="sep"></div>
-	<div class="leyenda">Documento no válido como factura</div>
-	<div style="margin-top:6px" class="center muted">El ticket se entrega al pagar</div>
+	<div class="leyenda">{{ bilingue('Documento no válido como factura') }}</div>
+	<div style="margin-top:6px" class="center muted">{{ bilingue('El ticket se entrega al pagar') }}</div>
 </body>
 </html>

@@ -5,10 +5,15 @@ namespace App\Providers;
 use App\Excel\RegistroDefiniciones;
 use App\Models\User;
 use App\Support\ConfigTenant;
+use App\Traduccion\CargadorTraducciones;
+use App\Traduccion\MemoriaTraducciones;
+use App\Traduccion\ProveedorTraduccion;
+use App\Traduccion\TraductorDeepl;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\ServiceProvider;
 use League\Flysystem\Filesystem as Flysystem;
@@ -25,6 +30,14 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(RegistroDefiniciones::class);
+
+        // Traducción de la interfaz (feature 050, research D2): el loader de Laravel pasa a servir
+        // también las traducciones guardadas en base de datos para los idiomas traducidos.
+        $this->app->extend('translation.loader', fn ($loader) => new CargadorTraducciones($loader));
+        $this->app->bind(ProveedorTraduccion::class, TraductorDeepl::class);
+        $this->app->singleton(MemoriaTraducciones::class);
+
+        require_once app_path('Traduccion/helpers.php');
     }
 
     /**
@@ -35,6 +48,8 @@ class AppServiceProvider extends ServiceProvider
         $this->desactivarDeteccionMimePorFinfo();
 
         $this->registrarAssetVersionado();
+
+        $this->registrarRespaldoTraducciones();
 
         // Illuminate\Auth\Events\{Login,Logout,Failed,Lockout} -> LogAuthenticationActivity ya
         // quedan enganchados por el auto-discovery de eventos de Laravel (los métodos handle*
@@ -96,6 +111,35 @@ class AppServiceProvider extends ServiceProvider
         Blade::directive('assetv', function (string $expression) {
             return "<?php \$__ruta = {$expression}; \$__abs = public_path(\$__ruta); ".
                 "echo e(asset(\$__ruta).(is_file(\$__abs) ? '?v='.filemtime(\$__abs) : '')); ?>";
+        });
+    }
+
+    /**
+     * Respaldo «al primer uso» de la traducción (feature 050, research D4). Si en un request
+     * traducido `__()` no encuentra un texto, se apunta; **después de enviar la respuesta**
+     * (`terminating`, tras `fastcgi_finish_request` en PHP-FPM) se registra como pendiente y se
+     * traduce con un timeout corto. El usuario lo ve en español esa vez y en chino desde la
+     * siguiente, sin esperar nunca a la API (SC-003). Nada de esto puede romper el request.
+     *
+     * Las claves con forma de clave de archivo (`validation.required`, `auth.failed`) no son
+     * textos en español y se ignoran.
+     */
+    private function registrarRespaldoTraducciones(): void
+    {
+        Lang::handleMissingKeysUsing(function (string $clave, array $replace, ?string $locale) {
+            if (CargadorTraducciones::esIdiomaTraducido($locale) && ! preg_match('/^[a-z0-9_\-]+(\.[a-z0-9_\-]+)+$/', $clave)) {
+                $this->app->make(MemoriaTraducciones::class)->apuntarAusente($clave, $locale);
+            }
+
+            return $clave;
+        });
+
+        $this->app->terminating(function () {
+            try {
+                $this->app->make(MemoriaTraducciones::class)->procesarAusentes();
+            } catch (\Throwable $e) {
+                report($e);
+            }
         });
     }
 

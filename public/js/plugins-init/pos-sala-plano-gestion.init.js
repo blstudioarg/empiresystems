@@ -60,7 +60,7 @@
 
 	function pintarZonas(zonas) {
 		if (zonas.length === 0) {
-			$zonasLista.innerHTML = '<p class="plano-gestion-vacio">Todavía no hay zonas.</p>';
+			$zonasLista.innerHTML = '<p class="plano-gestion-vacio">' + __t('Todavía no hay zonas.') + '</p>';
 			return;
 		}
 
@@ -69,10 +69,10 @@
 		$zonasLista.innerHTML = zonas.map(function (z) {
 			return '<div class="plano-gestion-item' + (String(z.id) === String(activa) ? ' activa' : '') + '" data-zona-id="' + z.id + '">' +
 				'<input type="text" name="zona_nombre_' + z.id + '" autocomplete="off" value="' + escapeHtml(z.nombre) + '" data-original="' + escapeHtml(z.nombre) + '"' +
-				' data-update-url="' + z.update_url + '" aria-label="Nombre de la zona">' +
+				' data-update-url="' + z.update_url + '" aria-label="' + __t('Nombre de la zona') + '">' +
 				'<span class="plano-gestion-meta">' + z.mesas + '</span>' +
 				'<button type="button" class="btn-eliminar" data-delete-url="' + z.delete_url + '"' +
-				' data-nombre="' + escapeHtml(z.nombre) + '" title="Eliminar zona"><i class="fas fa-trash"></i></button>' +
+				' data-nombre="' + escapeHtml(z.nombre) + '" title="' + __t('Eliminar zona') + '"><i class="fas fa-trash"></i></button>' +
 				'</div>';
 		}).join('');
 	}
@@ -100,12 +100,12 @@
 		ajaxJson(updateUrl, 'PUT', { nombre: nuevo })
 			.done(function () {
 				input.setAttribute('data-original', nuevo);
-				window.showToast('success', 'Zona actualizada.');
+				window.showToast('success', __t('Zona actualizada.'));
 				document.getElementById('pos-sala-refrescar').click();
 			})
 			.fail(function (xhr) {
 				input.value = original;
-				window.showToast('danger', mensajeError(xhr, 'No se pudo renombrar la zona.'));
+				window.showToast('danger', mensajeError(xhr, __t('No se pudo renombrar la zona.')));
 			});
 	});
 
@@ -116,15 +116,15 @@
 		var nombre = btn.getAttribute('data-nombre');
 		var url = btn.getAttribute('data-delete-url');
 
-		window.confirmDelete('¿Eliminar la zona «' + nombre + '»?', function () {
+		window.confirmDelete(__t('¿Eliminar la zona «:nombre»?', { nombre: nombre }), function () {
 			return ajaxJson(url, 'DELETE')
 				.done(function () {
-					window.showToast('success', 'Zona eliminada.');
+					window.showToast('success', __t('Zona eliminada.'));
 					cargarZonasPanel();
 					document.getElementById('pos-sala-refrescar').click();
 				})
 				.fail(function (xhr) {
-					window.showToast('danger', mensajeError(xhr, 'No se pudo eliminar la zona.'));
+					window.showToast('danger', mensajeError(xhr, __t('No se pudo eliminar la zona.')));
 				});
 		});
 	});
@@ -150,9 +150,9 @@
 		fila.className = 'plano-gestion-item plano-gestion-alta';
 		fila.innerHTML = '<input type="text" name="' + campo + '" autocomplete="off" placeholder="' +
 			placeholder + '" aria-label="' + etiqueta + '">' +
-			'<button type="button" class="btn-confirmar" title="Crear" aria-label="Crear" disabled>' +
+			'<button type="button" class="btn-confirmar" title="' + __t('Crear') + '" aria-label="' + __t('Crear') + '" disabled>' +
 			'<i class="fas fa-check"></i></button>' +
-			'<button type="button" class="btn-cancelar-alta" title="Cancelar" aria-label="Cancelar">' +
+			'<button type="button" class="btn-cancelar-alta" title="' + __t('Cancelar') + '" aria-label="' + __t('Cancelar') + '">' +
 			'<i class="fas fa-xmark"></i></button>';
 
 		var $input = fila.querySelector('input');
@@ -191,17 +191,17 @@
 	}
 
 	$zonaNuevaBtn.addEventListener('click', function () {
-		var alta = filaDeAlta('zona_nueva_nombre', 'Nombre de la zona…', 'Nombre de la nueva zona',
+		var alta = filaDeAlta('zona_nueva_nombre', __t('Nombre de la zona…'), __t('Nombre de la nueva zona'),
 			function (nombre, alFallar) {
 				ajaxJson(state.zonasStoreUrl, 'POST', { nombre: nombre })
 					.done(function () {
-						window.showToast('success', 'Zona creada.');
+						window.showToast('success', __t('Zona creada.'));
 						// Repinta la lista entera, así que la fila de alta desaparece sola.
 						cargarZonasPanel();
 						document.getElementById('pos-sala-refrescar').click();
 					})
 					.fail(function (xhr) {
-						window.showToast('danger', mensajeError(xhr, 'No se pudo crear la zona.'));
+						window.showToast('danger', mensajeError(xhr, __t('No se pudo crear la zona.')));
 						alFallar();
 					});
 			});
@@ -214,17 +214,17 @@
 
 	function pintarMesas(mesas) {
 		if (mesas.length === 0) {
-			$mesasLista.innerHTML = '<p class="plano-gestion-vacio">Esta zona todavía no tiene mesas.</p>';
+			$mesasLista.innerHTML = '<p class="plano-gestion-vacio">' + __t('Esta zona todavía no tiene mesas.') + '</p>';
 			return;
 		}
 
 		$mesasLista.innerHTML = mesas.map(function (m) {
 			return '<div class="plano-gestion-item" data-mesa-id="' + m.id + '">' +
 				'<input type="text" name="mesa_nombre_' + m.id + '" autocomplete="off" value="' + escapeHtml(m.nombre) + '" data-original="' + escapeHtml(m.nombre) + '"' +
-				' data-update-url="' + m.update_url + '" data-zona-id="' + m.zona_id + '" aria-label="Nombre de la mesa">' +
-				(m.ocupada ? '<span class="plano-gestion-meta">Ocupada</span>' : '') +
+				' data-update-url="' + m.update_url + '" data-zona-id="' + m.zona_id + '" aria-label="' + __t('Nombre de la mesa') + '">' +
+				(m.ocupada ? '<span class="plano-gestion-meta">' + __t('Ocupada') + '</span>' : '') +
 				'<button type="button" class="btn-eliminar" data-delete-url="' + m.delete_url + '"' +
-				' data-nombre="' + escapeHtml(m.nombre) + '" data-zona-id="' + m.zona_id + '" title="Eliminar mesa"><i class="fas fa-trash"></i></button>' +
+				' data-nombre="' + escapeHtml(m.nombre) + '" data-zona-id="' + m.zona_id + '" title="' + __t('Eliminar mesa') + '"><i class="fas fa-trash"></i></button>' +
 				'</div>';
 		}).join('');
 	}
@@ -255,12 +255,12 @@
 		ajaxJson(updateUrl, 'PUT', { zona_id: zonaId, nombre: nuevo })
 			.done(function () {
 				input.setAttribute('data-original', nuevo);
-				window.showToast('success', 'Mesa actualizada.');
+				window.showToast('success', __t('Mesa actualizada.'));
 				window.PosPlano.renombrarMesa(zonaId, mesaId, nuevo);
 			})
 			.fail(function (xhr) {
 				input.value = original;
-				window.showToast('danger', mensajeError(xhr, 'No se pudo renombrar la mesa.'));
+				window.showToast('danger', mensajeError(xhr, __t('No se pudo renombrar la mesa.')));
 			});
 	});
 
@@ -273,16 +273,16 @@
 		var zonaId = btn.getAttribute('data-zona-id');
 		var mesaId = btn.closest('.plano-gestion-item').getAttribute('data-mesa-id');
 
-		window.confirmDelete('¿Eliminar la mesa «' + nombre + '»?', function () {
+		window.confirmDelete(__t('¿Eliminar la mesa «:nombre»?', { nombre: nombre }), function () {
 			return ajaxJson(url, 'DELETE')
 				.done(function () {
-					window.showToast('success', 'Mesa eliminada.');
+					window.showToast('success', __t('Mesa eliminada.'));
 					window.PosPlano.quitarMesa(zonaId, mesaId);
 					cargarMesasPanel();
 					document.getElementById('pos-sala-refrescar').click();
 				})
 				.fail(function (xhr) {
-					window.showToast('danger', mensajeError(xhr, 'No se pudo eliminar la mesa.'));
+					window.showToast('danger', mensajeError(xhr, __t('No se pudo eliminar la mesa.')));
 				});
 		});
 	});
@@ -290,15 +290,15 @@
 	$mesaNuevaBtn.addEventListener('click', function () {
 		var zid = window.PosPlano.zonaActiva();
 		if (!zid) {
-			window.showToast('warning', 'Elegí primero una zona.');
+			window.showToast('warning', __t('Elegí primero una zona.'));
 			return;
 		}
 
-		var alta = filaDeAlta('mesa_nueva_nombre', 'Nombre de la mesa…', 'Nombre de la nueva mesa',
+		var alta = filaDeAlta('mesa_nueva_nombre', __t('Nombre de la mesa…'), __t('Nombre de la nueva mesa'),
 			function (nombre, alFallar) {
 				ajaxJson(state.mesasStoreUrl, 'POST', { zona_id: zid, nombre: nombre })
 					.done(function (respuesta) {
-						window.showToast('success', 'Mesa creada.');
+						window.showToast('success', __t('Mesa creada.'));
 						cargarMesasPanel();
 
 						// La posición (fila/columna) la asigna el servidor (FR-014): se toma del
@@ -312,7 +312,7 @@
 						document.getElementById('pos-sala-refrescar').click();
 					})
 					.fail(function (xhr) {
-						window.showToast('danger', mensajeError(xhr, 'No se pudo crear la mesa.'));
+						window.showToast('danger', mensajeError(xhr, __t('No se pudo crear la mesa.')));
 						alFallar();
 					});
 			});

@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'POS · Crear ticket')
+@section('title', __('POS · Crear ticket'))
 
 @push('styles')
 	<link href="@assetv('css/pos-caja.css')" rel="stylesheet">
@@ -618,15 +618,15 @@
 					<div class="card-body">
 						<div class="pos-search-wrap">
 							<i class="fas fa-search pos-search-icon"></i>
-							<input type="search" id="pos-search" class="form-control pos-search" placeholder="Buscar artículo...">
+							<input type="search" id="pos-search" class="form-control pos-search" placeholder="{{ __('Buscar artículo...') }}">
 						</div>
 
 						@if ($categorias->isNotEmpty())
 							<div class="pos-filtros-wrap" id="pos-filtros-wrap">
-								<button type="button" class="pos-filtros-nav prev" id="pos-filtros-prev" aria-label="Categorías anteriores">‹</button>
-								<div class="pos-filtros p-0" id="pos-filtros" role="tablist" aria-label="Filtrar por categoría">
+								<button type="button" class="pos-filtros-nav prev" id="pos-filtros-prev" aria-label="{{ __('Categorías anteriores') }}">‹</button>
+								<div class="pos-filtros p-0" id="pos-filtros" role="tablist" aria-label="{{ __('Filtrar por categoría') }}">
 									<button type="button" class="pos-filtro active" data-categoria="" aria-pressed="true">
-										Todos
+										{{ __('Todos') }}
 										<span class="badge-count">{{ $articulos->count() }}</span>
 									</button>
 									@foreach ($categorias as $categoria)
@@ -636,7 +636,7 @@
 										</button>
 									@endforeach
 								</div>
-								<button type="button" class="pos-filtros-nav next" id="pos-filtros-next" aria-label="Más categorías">›</button>
+								<button type="button" class="pos-filtros-nav next" id="pos-filtros-next" aria-label="{{ __('Más categorías') }}">›</button>
 							</div>
 						@endif
 
@@ -657,9 +657,9 @@
 									data-tipo-articulo="{{ $articulo->tipo->value }}"
 									data-tiene-opciones="{{ ($articulo->tiene_opciones ?? false) ? '1' : '0' }}">
 									@if ($sinStock)
-										<span class="pos-art-badge sin-stock">Sin stock</span>
+										<span class="pos-art-badge sin-stock">{{ __('Sin stock') }}</span>
 									@elseif ($bajoStock)
-										<span class="pos-art-badge bajo-stock">Quedan {{ rtrim(rtrim(number_format((float) $articulo->stock_actual, 2, '.', ''), '0'), '.') }}</span>
+										<span class="pos-art-badge bajo-stock">{{ __('Quedan :cantidad', ['cantidad' => rtrim(rtrim(number_format((float) $articulo->stock_actual, 2, '.', ''), '0'), '.')]) }}</span>
 									@endif
 									<span class="pos-art-icono">
 										@if ($articulo->imagenUrl())
@@ -671,10 +671,10 @@
 									<span class="pos-art-nombre"><span>{{ $articulo->nombre }}</span></span>
 								</button>
 							@empty
-								<p class="pos-empty-catalogo">No hay artículos en el catálogo. Añádelos en Productos/Servicios.</p>
+								<p class="pos-empty-catalogo">{{ __('No hay artículos en el catálogo. Añádelos en Productos/Servicios.') }}</p>
 							@endforelse
 						</div>
-						<p class="pos-empty-catalogo d-none" id="pos-empty-catalogo">No hay artículos que coincidan con la búsqueda.</p>
+						<p class="pos-empty-catalogo d-none" id="pos-empty-catalogo">{{ __('No hay artículos que coincidan con la búsqueda.') }}</p>
 					</div>
 				</section>
 				</div>
@@ -686,14 +686,14 @@
 					<section class="pos-ticket card">
 						<div class="card-header">
 							<span class="titulo">
-								<h4 class="card-title mb-0">Ticket</h4>
+								<h4 class="card-title mb-0">{{ __('Ticket') }}</h4>
 								<span class="pos-ticket-count d-none" id="pos-ticket-count">0</span>
 								{{-- Estado de la caja (feature 048). Cerrada, es un botón: abre la caja ahí mismo. --}}
 								<button type="button" class="pos-caja-chip {{ $cajaAbierta ? 'abierta' : 'cerrada' }}" id="pos-caja-chip"
 									@if ($cajaAbierta) tabindex="-1" aria-disabled="true" @endif
-									aria-label="{{ $cajaAbierta ? 'Caja abierta' : 'Caja cerrada. Toca para abrirla' }}">
+									aria-label="{{ $cajaAbierta ? __('Caja abierta') : __('Caja cerrada. Toca para abrirla') }}">
 									<span class="dot" aria-hidden="true"></span>
-									<span data-caja-chip-texto>{{ $cajaAbierta ? 'Caja abierta' : 'Caja cerrada' }}</span>
+									<span data-caja-chip-texto>{{ $cajaAbierta ? __('Caja abierta') : __('Caja cerrada') }}</span>
 								</button>
 								{{-- Contexto de mesa (FR-060): solo visible con el módulo de hostelería activo
 								     y una mesa de por medio; venta directa no la muestra nunca. --}}
@@ -704,15 +704,15 @@
 										<small id="pos-mesa-chip-pendiente" class="d-none"></small>
 										{{-- Precuenta (feature 049): estado de la última y acción para generarla. --}}
 										<span class="pos-precuenta-estado d-none" id="pos-precuenta-estado"></span>
-										<button type="button" class="pos-mesa-chip-precuenta d-none" id="pos-precuenta-btn" title="Generar la precuenta de esta mesa" aria-label="Generar precuenta">
-											<i class="fas fa-receipt" aria-hidden="true"></i> Precuenta
+										<button type="button" class="pos-mesa-chip-precuenta d-none" id="pos-precuenta-btn" title="{{ __('Generar la precuenta de esta mesa') }}" aria-label="{{ __('Generar precuenta') }}">
+											<i class="fas fa-receipt" aria-hidden="true"></i> {{ __('Precuenta') }}
 										</button>
-										<button type="button" class="pos-mesa-chip-anular d-none" id="pos-mesa-chip-mover" title="Transferir o unir con otra mesa" aria-label="Transferir o unir con otra mesa">⇄</button>
-										<button type="button" class="pos-mesa-chip-anular d-none" id="pos-anular-cuenta" title="Anular cuenta" aria-label="Anular cuenta">×</button>
+										<button type="button" class="pos-mesa-chip-anular d-none" id="pos-mesa-chip-mover" title="{{ __('Transferir o unir con otra mesa') }}" aria-label="{{ __('Transferir o unir con otra mesa') }}">⇄</button>
+										<button type="button" class="pos-mesa-chip-anular d-none" id="pos-anular-cuenta" title="{{ __('Anular cuenta') }}" aria-label="{{ __('Anular cuenta') }}">×</button>
 									</span>
 								@endif
 							</span>
-							<button type="button" class="pos-vaciar d-none" id="pos-vaciar" title="Vaciar ticket" aria-label="Vaciar ticket">
+							<button type="button" class="pos-vaciar d-none" id="pos-vaciar" title="{{ __('Vaciar ticket') }}" aria-label="{{ __('Vaciar ticket') }}">
 								<x-lordicon icon="wired-outline-185-trash-bin-hover-empty" size="22" trigger="hover" />
 							</button>
 						</div>
@@ -722,13 +722,13 @@
 									<div class="lord-icon-wrap">
 										<x-lordicon icon="wired-outline-1910-beverages" size="48" trigger="loop-on-hover" />
 									</div>
-									<p class="mb-0">Toca un artículo para añadirlo.</p>
+									<p class="mb-0">{{ __('Toca un artículo para añadirlo.') }}</p>
 								</div>
 								<div class="pos-lineas-scroll d-none" id="pos-lineas-scroll"></div>
 							</div>
 
 							<div class="pos-foot" id="pos-foot">
-								<span id="pos-foot-count">0 artículos</span> · {{ $regimen['label'] }} incluido
+								<span id="pos-foot-count">{{ __(':n artículos', ['n' => 0]) }}</span> · {{ __(':impuesto incluido', ['impuesto' => $regimen['label']]) }}
 								{{-- Suplemento de zona vigente (FR-051/US7, escenario 2): visible para que
 								     nunca sea un aumento silencioso del importe. --}}
 								@if ($suplementoZonaActivo ?? false)
@@ -739,21 +739,22 @@
 							<div class="alert alert-danger pos-tope-alert" id="pos-tope-alert">
 								<i class="fas fa-exclamation-triangle"></i>
 								<span>
-									Supera el máximo de una factura simplificada
-									(<strong id="pos-tope-valor">{{ number_format($topeAplicable, 2, ',', '.') }}</strong> € {{ $regimen['label'] }} incl.).
-									Emite una factura ordinaria.
+									{!! __('Supera el máximo de una factura simplificada (:tope € :impuesto incl.). Emite una factura ordinaria.', [
+										'tope' => '<strong id="pos-tope-valor">'.e(number_format($topeAplicable, 2, ',', '.')).'</strong>',
+										'impuesto' => e($regimen['label']),
+									]) !!}
 								</span>
 							</div>
 						</div>
 					</section>
 
-					<aside class="pos-botonera" aria-label="Acciones del ticket">
+					<aside class="pos-botonera" aria-label="{{ __('Acciones del ticket') }}">
 						<button type="button" class="pos-total-card" id="pos-total-card"
 							data-bs-toggle="modal" data-bs-target="#posTotalModal"
-							aria-label="Ver desglose del total">
-							<span class="pos-total-label">Total</span>
+							aria-label="{{ __('Ver desglose del total') }}">
+							<span class="pos-total-label">{{ __('Total') }}</span>
 							<span class="pos-total" id="pos-total">0,00 €</span>
-							<span class="pos-total-sub">{{ $regimen['label'] }} incluido</span>
+							<span class="pos-total-sub">{{ __(':impuesto incluido', ['impuesto' => $regimen['label']]) }}</span>
 						</button>
 
 						{{-- Franja central: con el módulo de hostelería activo se convierte en un mini-grid
@@ -763,28 +764,28 @@
 							<div class="pos-bkey-grid">
 								<button type="button" class="pos-bkey" id="pos-cliente-btn" data-bs-toggle="modal" data-bs-target="#posReceptorModal">
 									<x-lordicon icon="person" size="22" trigger="hover" target="#pos-cliente-btn" />
-									<span class="pos-bkey-label" id="pos-cliente-btn-label">Cliente</span>
+									<span class="pos-bkey-label" id="pos-cliente-btn-label">{{ __('Cliente') }}</span>
 								</button>
 								<button type="button" class="pos-bkey" id="pos-guardar-cuenta">
 									<x-lordicon icon="system-regular-49-upload-file" size="22" trigger="hover" target="#pos-guardar-cuenta" />
-									<span class="pos-bkey-label">Guardar</span>
+									<span class="pos-bkey-label">{{ __('Guardar') }}</span>
 								</button>
 								<button type="button" class="pos-bkey" id="pos-aparcadas-btn">
 									<x-lordicon icon="wired-outline-690-avatar-man-waiter-hover-pinch" size="22" trigger="hover" target="#pos-aparcadas-btn" />
-									<span class="pos-bkey-label">Aparcadas</span>
+									<span class="pos-bkey-label">{{ __('Aparcadas') }}</span>
 								</button>
 							</div>
 						@else
 							<button type="button" class="pos-bkey" id="pos-cliente-btn" data-bs-toggle="modal" data-bs-target="#posReceptorModal">
 								<x-lordicon icon="person" size="26" trigger="hover" target="#pos-cliente-btn" />
-								<span class="pos-bkey-label" id="pos-cliente-btn-label">Cliente</span>
+								<span class="pos-bkey-label" id="pos-cliente-btn-label">{{ __('Cliente') }}</span>
 							</button>
 						@endif
 
 						<button type="button" class="pos-cobrar" id="pos-cobrar" disabled
 							data-bs-toggle="modal" data-bs-target="#posCobroModal">
 							<x-lordicon icon="euro" size="32" trigger="hover" target="#pos-cobrar" colors="primary:#ffffff,secondary:#ffffff" />
-							<span>Cobrar</span>
+							<span>{{ __('Cobrar') }}</span>
 						</button>
 					</aside>
 
@@ -800,12 +801,12 @@
 		<div class="modal-dialog modal-dialog-centered">
 			<div class="modal-content">
 				<div class="modal-header">
-					<h5 class="modal-title" id="posTotalModalLabel">Desglose del total</h5>
-					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+					<h5 class="modal-title" id="posTotalModalLabel">{{ __('Desglose del total') }}</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('Cerrar') }}"></button>
 				</div>
 				<div class="modal-body pos-total-modal">
 					<div class="row-desglose">
-						<span class="lbl">Subtotal</span>
+						<span class="lbl">{{ __('Subtotal') }}</span>
 						<span class="val" id="pos-modal-subtotal">0,00 €</span>
 					</div>
 					<div class="row-desglose">
@@ -813,7 +814,7 @@
 						<span class="val" id="pos-modal-impuesto">0,00 €</span>
 					</div>
 					<div class="row-desglose total">
-						<span class="lbl">Total</span>
+						<span class="lbl">{{ __('Total') }}</span>
 						<span class="val" id="pos-modal-total">0,00 €</span>
 					</div>
 				</div>
@@ -825,10 +826,10 @@
 	     el desglose es interno (no se refleja en el PDF del ticket). --}}
 	@php
 		$metodosPago = [
-			'efectivo' => ['label' => 'Efectivo', 'icon' => 'fa-money-bill-wave'],
-			'tarjeta' => ['label' => 'Tarjeta', 'icon' => 'fa-credit-card'],
-			'transferencia' => ['label' => 'Transferencia', 'icon' => 'fa-building-columns'],
-			'domiciliacion' => ['label' => 'Domiciliación', 'icon' => 'fa-file-invoice-dollar'],
+			'efectivo' => ['label' => __('Efectivo'), 'icon' => 'fa-money-bill-wave'],
+			'tarjeta' => ['label' => __('Tarjeta'), 'icon' => 'fa-credit-card'],
+			'transferencia' => ['label' => __('Transferencia'), 'icon' => 'fa-building-columns'],
+			'domiciliacion' => ['label' => __('Domiciliación'), 'icon' => 'fa-file-invoice-dollar'],
 		];
 	@endphp
 	<div class="modal fade pos-cobro-modal" id="posCobroModal" tabindex="-1" aria-labelledby="posCobroModalLabel" aria-hidden="true">
@@ -836,14 +837,14 @@
 			<div class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title" id="posCobroModalLabel">
-						Cobrar
+						{{ __('Cobrar') }}
 						{{-- Contexto de mesa en el modal de cobro (FR-064): para no cobrar la mesa
 						     equivocada cuando hay varias cuentas abiertas a la vez. --}}
 						@if ($hosteleriaActiva ?? false)
 							<span class="pos-cobro-mesa-ctx d-none" id="pos-cobro-mesa-ctx"></span>
 						@endif
 					</h5>
-					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('Cerrar') }}"></button>
 				</div>
 				<div class="modal-body">
 					@if ($hosteleriaActiva ?? false)
@@ -854,13 +855,13 @@
 					@endif
 					<div class="pos-cobro-cab">
 						<div class="pos-cobro-total">
-							<span class="lbl">Total</span>
+							<span class="lbl">{{ __('Total') }}</span>
 							<span class="val" id="pos-cobro-total">0,00 €</span>
 						</div>
-						<div class="pos-cobro-restante" id="pos-cobro-restante" role="button" tabindex="0" aria-label="Autocompletar con el importe restante">
-							<span class="lbl" id="pos-cobro-restante-lbl">Restante</span>
+						<div class="pos-cobro-restante" id="pos-cobro-restante" role="button" tabindex="0" aria-label="{{ __('Autocompletar con el importe restante') }}">
+							<span class="lbl" id="pos-cobro-restante-lbl">{{ __('Restante') }}</span>
 							<span class="val" id="pos-cobro-restante-val">0,00 €</span>
-							<span class="tap-hint">Tocar para autocompletar</span>
+							<span class="tap-hint">{{ __('Tocar para autocompletar') }}</span>
 						</div>
 					</div>
 
@@ -869,7 +870,7 @@
 
 					{{-- Selección de método (visible mientras falte por asignar). --}}
 					<div id="pos-cobro-eleccion">
-						<p class="pos-cobro-hint" id="pos-cobro-hint">Tocá el método con el que cobrás.</p>
+						<p class="pos-cobro-hint" id="pos-cobro-hint">{{ __('Tocá el método con el que cobrás.') }}</p>
 						<div class="pos-cobro-metodos">
 							@foreach ($metodosPago as $valor => $meta)
 								<button type="button" class="pos-metodo" data-metodo="{{ $valor }}" data-label="{{ $meta['label'] }}">
@@ -885,7 +886,7 @@
 						<div class="pos-keypad-head">
 							<span class="metodo-lbl">
 								<span class="ic"><i class="fas" id="pos-keypad-icon"></i></span>
-								<span id="pos-keypad-metodo-lbl">Efectivo</span>
+								<span id="pos-keypad-metodo-lbl">{{ __('Efectivo') }}</span>
 							</span>
 							<span class="pos-keypad-monto" id="pos-keypad-monto">0,00 €</span>
 						</div>
@@ -901,27 +902,27 @@
 							<button type="button" class="pos-key" data-key="9">9</button>
 							<button type="button" class="pos-key wide" data-key=",">,</button>
 							<button type="button" class="pos-key" data-key="0">0</button>
-							<button type="button" class="pos-key wide" data-key="del" aria-label="Borrar">⌫</button>
+							<button type="button" class="pos-key wide" data-key="del" aria-label="{{ __('Borrar') }}">⌫</button>
 						</div>
 
 						{{-- Entregado/Devolver (FR-063): solo en efectivo, sobre el teclado ya existente.
 						     Es ayuda de caja: no altera el importe cobrado ni figura en el documento. --}}
 						<div class="pos-keypad-cambio d-none" id="pos-keypad-cambio">
-							<label class="pos-keypad-cambio-lbl" for="pos-keypad-entregado">Entregado</label>
+							<label class="pos-keypad-cambio-lbl" for="pos-keypad-entregado">{{ __('Entregado') }}</label>
 							{{-- readonly + inputmode="none": el teclado del sistema no debe aparecer nunca
 							     en tablet. Tocarlo abre el teclado propio de abajo. --}}
 							<input type="text" readonly inputmode="none" class="pos-keypad-entregado"
 								id="pos-keypad-entregado" placeholder="0,00" aria-haspopup="true"
-								title="Tocá para teclear lo que entrega el cliente">
+								title="{{ __('Tocá para teclear lo que entrega el cliente') }}">
 							<div class="pos-keypad-devolver">
-								<span>Devolver</span>
+								<span>{{ __('Devolver') }}</span>
 								<strong id="pos-keypad-devolver-val">0,00 €</strong>
 							</div>
 						</div>
 
 						<div class="pos-keypad-acciones">
-							<button type="button" class="btn btn-light" id="pos-keypad-cancelar">Cancelar</button>
-							<button type="button" class="btn pos-keypad-anadir" id="pos-keypad-anadir">Añadir pago</button>
+							<button type="button" class="btn btn-light" id="pos-keypad-cancelar">{{ __('Cancelar') }}</button>
+							<button type="button" class="btn pos-keypad-anadir" id="pos-keypad-anadir">{{ __('Añadir pago') }}</button>
 						</div>
 
 						{{-- Teclado de "Entregado": mismas teclas `.pos-key` que el de importe (el
@@ -931,7 +932,7 @@
 							<div class="pos-entregado-head">
 								<span class="lbl">
 									<span class="ic"><i class="fas fa-hand-holding-dollar"></i></span>
-									<span>Entregado</span>
+									<span>{{ __('Entregado') }}</span>
 								</span>
 								<span class="pos-entregado-monto" id="pos-entregado-monto">0,00 €</span>
 							</div>
@@ -947,24 +948,24 @@
 								<button type="button" class="pos-key" data-key="9">9</button>
 								<button type="button" class="pos-key wide" data-key=",">,</button>
 								<button type="button" class="pos-key" data-key="0">0</button>
-								<button type="button" class="pos-key wide" data-key="del" aria-label="Borrar">⌫</button>
+								<button type="button" class="pos-key wide" data-key="del" aria-label="{{ __('Borrar') }}">⌫</button>
 							</div>
 
 							<div class="pos-entregado-resumen">
-								<span class="lbl">Devolver</span>
+								<span class="lbl">{{ __('Devolver') }}</span>
 								<span class="val" id="pos-entregado-devolver">0,00 €</span>
 							</div>
 
 							<div class="pos-keypad-acciones">
-								<button type="button" class="btn btn-light" id="pos-entregado-cancelar">Cancelar</button>
-								<button type="button" class="btn pos-keypad-anadir" id="pos-entregado-listo">Listo</button>
+								<button type="button" class="btn btn-light" id="pos-entregado-cancelar">{{ __('Cancelar') }}</button>
+								<button type="button" class="btn pos-keypad-anadir" id="pos-entregado-listo">{{ __('Listo') }}</button>
 							</div>
 						</div>
 					</div>
 				</div>
 				<div class="modal-footer">
 					<button type="button" class="btn pos-cobro-emitir w-100" id="pos-cobro-emitir" disabled>
-						Emitir ticket
+						{{ __('Emitir ticket') }}
 					</button>
 				</div>
 			</div>
@@ -981,11 +982,11 @@
 			<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
 				<div class="modal-content">
 					<div class="modal-header">
-						<h5 class="modal-title" id="posMoverModalLabel">Transferir o unir</h5>
-						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+						<h5 class="modal-title" id="posMoverModalLabel">{{ __('Transferir o unir') }}</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('Cerrar') }}"></button>
 					</div>
 					<div class="modal-body">
-						<p class="text-muted small mb-3">Elige la mesa de destino. Si ya tiene una cuenta abierta, se te ofrecerá unirlas.</p>
+						<p class="text-muted small mb-3">{{ __('Elige la mesa de destino. Si ya tiene una cuenta abierta, se te ofrecerá unirlas.') }}</p>
 						<div id="pos-mover-lista" class="list-group"></div>
 					</div>
 				</div>
@@ -1001,17 +1002,17 @@
 			<div class="modal-dialog modal-dialog-centered modal-lg">
 				<div class="modal-content">
 					<div class="modal-header">
-						<h5 class="modal-title" id="posPrecuentaModalLabel">Precuenta</h5>
-						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+						<h5 class="modal-title" id="posPrecuentaModalLabel">{{ __('Precuenta') }}</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('Cerrar') }}"></button>
 					</div>
 					<div class="modal-body p-0" style="height: 70vh;">
-						<iframe id="pos-precuenta-frame" title="Precuenta" src="" style="width: 100%; height: 100%; border: 0;"></iframe>
+						<iframe id="pos-precuenta-frame" title="{{ __('Precuenta') }}" src="" style="width: 100%; height: 100%; border: 0;"></iframe>
 					</div>
 					<div class="modal-footer">
 						<button type="button" class="btn btn-outline-primary" id="pos-precuenta-imprimir">
-							<i class="fas fa-print me-1" aria-hidden="true"></i> Imprimir
+							<i class="fas fa-print me-1" aria-hidden="true"></i> {{ __('Imprimir') }}
 						</button>
-						<button type="button" class="btn btn-primary" data-bs-dismiss="modal">Listo</button>
+						<button type="button" class="btn btn-primary" data-bs-dismiss="modal">{{ __('Listo') }}</button>
 					</div>
 				</div>
 			</div>
@@ -1025,13 +1026,13 @@
 			<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
 				<div class="modal-content">
 					<div class="modal-header">
-						<h5 class="modal-title" id="posOpcionesModalLabel">Opciones</h5>
-						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+						<h5 class="modal-title" id="posOpcionesModalLabel">{{ __('Opciones') }}</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('Cerrar') }}"></button>
 					</div>
 					<div class="modal-body" id="pos-opciones-grupos"></div>
 					<div class="modal-footer">
 						<button type="button" class="btn pos-cobro-emitir w-100" id="pos-opciones-confirmar" disabled>
-							Añadir al ticket
+							{{ __('Añadir al ticket') }}
 						</button>
 					</div>
 				</div>
@@ -1044,20 +1045,20 @@
 		<div class="modal-dialog modal-dialog-centered modal-lg">
 			<div class="modal-content">
 				<div class="modal-header border-0 pb-0">
-					<h5 class="modal-title visually-hidden" id="posExitoModalLabel">Ticket emitido</h5>
-					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+					<h5 class="modal-title visually-hidden" id="posExitoModalLabel">{{ __('Ticket emitido') }}</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('Cerrar') }}"></button>
 				</div>
 				<div class="modal-body text-center pt-0 pb-2">
 					<div class="pos-exito-icono">
 						<x-lordicon icon="wired-outline-267-like-thumb-up-hover-up" size="96" trigger="loop" />
 					</div>
-					<h4 class="mb-1">¡Ticket emitido con éxito!</h4>
+					<h4 class="mb-1">{{ __('¡Ticket emitido con éxito!') }}</h4>
 					<p class="text-muted mb-0" id="pos-exito-numero"></p>
 				</div>
 				<div class="modal-footer pos-exito-acciones">
-					<button type="button" class="btn btn-outline-primary" id="pos-exito-ver">Ver ticket</button>
-					<button type="button" class="btn btn-outline-primary" id="pos-exito-imprimir">Imprimir</button>
-					<button type="button" class="btn btn-primary" id="pos-exito-seguir">Seguir creando</button>
+					<button type="button" class="btn btn-outline-primary" id="pos-exito-ver">{{ __('Ver ticket') }}</button>
+					<button type="button" class="btn btn-outline-primary" id="pos-exito-imprimir">{{ __('Imprimir') }}</button>
+					<button type="button" class="btn btn-primary" id="pos-exito-seguir">{{ __('Seguir creando') }}</button>
 				</div>
 			</div>
 		</div>
@@ -1068,18 +1069,18 @@
 		<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
 			<div class="modal-content">
 				<div class="modal-header">
-					<h5 class="modal-title" id="posVerTicketModalLabel">Ticket</h5>
-					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+					<h5 class="modal-title" id="posVerTicketModalLabel">{{ __('Ticket') }}</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('Cerrar') }}"></button>
 				</div>
 				<div class="modal-body">
-					<iframe id="pos-ver-frame" class="pos-pdf-frame" title="Ticket"></iframe>
+					<iframe id="pos-ver-frame" class="pos-pdf-frame" title="{{ __('Ticket') }}"></iframe>
 				</div>
 			</div>
 		</div>
 	</div>
 
 	{{-- Iframe oculto solo para imprimir (precarga el PDF; nunca se muestra). --}}
-	<iframe id="pos-print-frame" title="Impresión" aria-hidden="true" tabindex="-1"
+	<iframe id="pos-print-frame" title="{{ __('Impresión') }}" aria-hidden="true" tabindex="-1"
 		style="position:fixed; left:-10000px; top:0; width:380px; height:600px; border:0;"></iframe>
 
 	{{-- Datos del receptor: solo para factura simplificada cualificada (opcional). --}}
@@ -1087,18 +1088,17 @@
 		<div class="modal-dialog modal-dialog-centered">
 			<div class="modal-content">
 				<div class="modal-header">
-					<h5 class="modal-title" id="posReceptorModalLabel">Datos del receptor</h5>
-					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+					<h5 class="modal-title" id="posReceptorModalLabel">{{ __('Datos del receptor') }}</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('Cerrar') }}"></button>
 				</div>
 				<div class="modal-body">
 					<p class="text-muted small mb-3">
-						Rellena estos datos solo si el cliente pide una factura simplificada <strong>cualificada</strong>.
-						Si los dejas vacíos, el ticket se emite a consumidor final.
+						{!! __('Rellena estos datos solo si el cliente pide una factura simplificada <strong>cualificada</strong>. Si los dejas vacíos, el ticket se emite a consumidor final.') !!}
 					</p>
 					<div class="mb-2">
-						<label class="form-label" for="pos-cliente">Cliente</label>
+						<label class="form-label" for="pos-cliente">{{ __('Cliente') }}</label>
 						<select id="pos-cliente" class="form-control">
-							<option value="">— Cliente nuevo / manual —</option>
+							<option value="">{{ __('— Cliente nuevo / manual —') }}</option>
 							@foreach ($clientes as $cliente)
 								<option value="{{ $cliente->id }}"
 									data-nif="{{ $cliente->nif }}"
@@ -1109,20 +1109,20 @@
 							@endforeach
 						</select>
 					</div>
-					<input type="text" id="pos-nif" class="form-control mb-2" placeholder="NIF">
-					<input type="text" id="pos-nombre" class="form-control mb-2" placeholder="Nombre / razón social">
-					<input type="text" id="pos-direccion" class="form-control" placeholder="Domicilio">
+					<input type="text" id="pos-nif" class="form-control mb-2" placeholder="{{ __('NIF') }}">
+					<input type="text" id="pos-nombre" class="form-control mb-2" placeholder="{{ __('Nombre / razón social') }}">
+					<input type="text" id="pos-direccion" class="form-control" placeholder="{{ __('Domicilio') }}">
 				</div>
 				<div class="modal-footer">
-					<button type="button" class="btn btn-light" id="pos-receptor-quitar">Quitar datos</button>
-					<button type="button" class="btn btn-primary" id="pos-receptor-aplicar" data-bs-dismiss="modal">Aplicar</button>
+					<button type="button" class="btn btn-light" id="pos-receptor-quitar">{{ __('Quitar datos') }}</button>
+					<button type="button" class="btn btn-primary" id="pos-receptor-aplicar" data-bs-dismiss="modal">{{ __('Aplicar') }}</button>
 				</div>
 			</div>
 		</div>
 	</div>
 @endsection
 
-@section('ayuda-titulo', 'Crear ticket (POS)')
+@section('ayuda-titulo', __('Crear ticket (POS)'))
 @section('ayuda')
 	@include('ayuda.pos-crear')
 	{{-- Abrir caja desde el TPV (feature 048, FR-020): el mismo panel que la pantalla de caja. --}}
@@ -1130,18 +1130,18 @@
 		<div class="modal-dialog modal-dialog-centered modal-xl">
 			<div class="modal-content caja">
 				<div class="modal-header">
-					<h5 class="modal-title" id="posCajaAperturaTitulo">La caja está cerrada</h5>
-					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+					<h5 class="modal-title" id="posCajaAperturaTitulo">{{ __('La caja está cerrada') }}</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('Cerrar') }}"></button>
 				</div>
 				<div class="modal-body">
 					@if ($puedeAbrirCaja)
-						<p class="text-muted mb-3">Para cobrar hay que abrir la caja. El ticket que estás armando no se pierde.</p>
+						<p class="text-muted mb-3">{{ __('Para cobrar hay que abrir la caja. El ticket que estás armando no se pierde.') }}</p>
 						@include('pos._caja-apertura', ['id' => 'pos-caja-apertura', 'cancelable' => true])
 					@else
 						<div class="text-center py-4">
 							<x-lordicon icon="wired-outline-2510-money-safety-hover-pinch" size="64" trigger="loop" />
-							<p class="fs-5 fw-bold mt-3 mb-1">La caja está cerrada</p>
-							<p class="text-muted mb-0">Pide a un responsable que la abra para poder cobrar. El ticket no se pierde.</p>
+							<p class="fs-5 fw-bold mt-3 mb-1">{{ __('La caja está cerrada') }}</p>
+							<p class="text-muted mb-0">{{ __('Pide a un responsable que la abra para poder cobrar. El ticket no se pierde.') }}</p>
 						</div>
 					@endif
 				</div>

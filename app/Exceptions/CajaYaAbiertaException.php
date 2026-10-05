@@ -12,6 +12,6 @@ class CajaYaAbiertaException extends RuntimeException
 
     public function __construct(public readonly ?CajaSesion $sesion)
     {
-        parent::__construct('Ya hay una caja abierta.');
+        parent::__construct(__('Ya hay una caja abierta.'));
     }
 }

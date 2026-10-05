@@ -26,9 +26,9 @@ class AbrirCajaRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'fondo_inicial.required_without' => 'Indica con cuánto efectivo empieza la caja.',
-            'fondo_inicial.min' => 'El fondo no puede ser negativo.',
-            'fondo_inicial.max' => 'El fondo no puede superar 99.999,99 €.',
+            'fondo_inicial.required_without' => __('Indica con cuánto efectivo empieza la caja.'),
+            'fondo_inicial.min' => __('El fondo no puede ser negativo.'),
+            'fondo_inicial.max' => __('El fondo no puede superar 99.999,99 €.'),
         ];
     }
 }

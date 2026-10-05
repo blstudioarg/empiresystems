@@ -46,7 +46,7 @@ class OpcionGrupoController extends Controller
     {
         $grupo = PosOpcionGrupo::create($this->validar($request) + ['tenant_id' => tenant()->getTenantKey()]);
 
-        return response()->json(['message' => 'Grupo creado.', 'id' => $grupo->id], 201);
+        return response()->json(['message' => __('Grupo creado.'), 'id' => $grupo->id], 201);
     }
 
     public function update(Request $request, string $grupo): JsonResponse
@@ -57,13 +57,13 @@ class OpcionGrupoController extends Controller
 
         if (($datos['obligatorio'] ?? false) && $modelo->opciones_count === 0) {
             throw ValidationException::withMessages([
-                'obligatorio' => 'Un grupo obligatorio necesita al menos una opción: si no, el artículo no se podría comandar.',
+                'obligatorio' => __('Un grupo obligatorio necesita al menos una opción: si no, el artículo no se podría comandar.'),
             ]);
         }
 
         $modelo->update($datos);
 
-        return response()->json(['message' => 'Grupo actualizado.']);
+        return response()->json(['message' => __('Grupo actualizado.')]);
     }
 
     public function destroy(string $grupo): JsonResponse
@@ -72,13 +72,13 @@ class OpcionGrupoController extends Controller
 
         if ($modelo->articulos_count > 0) {
             return response()->json([
-                'message' => "No se puede eliminar «{$modelo->nombre}»: se usa en {$modelo->articulos_count} artículo(s).",
+                'message' => __('No se puede eliminar «:nombre»: se usa en :n artículo(s).', ['nombre' => $modelo->nombre, 'n' => $modelo->articulos_count]),
             ], 422);
         }
 
         $modelo->delete();
 
-        return response()->json(['message' => 'Grupo eliminado.']);
+        return response()->json(['message' => __('Grupo eliminado.')]);
     }
 
     /** @return array<string, mixed> */
@@ -109,7 +109,7 @@ class OpcionGrupoController extends Controller
 
         if ($max !== null && $min > (int) $max) {
             throw ValidationException::withMessages([
-                'max_selecciones' => 'El máximo de selecciones no puede ser menor que el mínimo.',
+                'max_selecciones' => __('El máximo de selecciones no puede ser menor que el mínimo.'),
             ]);
         }
 

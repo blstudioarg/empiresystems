@@ -1115,6 +1115,37 @@ controller ya castea a `(float)` antes de `response()->json(...)`, así que JS r
 limpio (sin ceros de relleno) y no hace falta `Formato` del lado del cliente — el problema es
 exclusivamente de Blade renderizando directo un atributo del modelo.
 
+## Textos traducibles: `__()` / `__t()` con el texto en español como clave (feature 050)
+
+El POS se puede ver en chino. Mecanismo (decisión en `docs/01-arquitectura.md`, Decisión 12):
+
+- **Todo texto propio de una pantalla traducible se marca**, con el texto en español actual como
+  clave y **sin cambiarlo**: `{{ __('Cobrar') }}` en Blade, `__('…')` en PHP (mensajes de
+  controladores, servicios, excepciones y `messages()` de los FormRequest), `__t('…')` en JS
+  (definido en `public/js/traduccion.js`, cargado en todas las páginas). En español `__()`
+  devuelve la propia clave, así que nada cambia.
+- **Partes variables con `:nombre`**, nunca concatenando: `__('Mesa :mesa', ['mesa' => $m])` y
+  `__t('Hace :min min', { min: n })`. Una frase partida en trozos (`'No se encontraron ' + que`) no
+  se puede traducir: va entera. Singular y plural, dos claves (`':n artículo'` / `':n artículos'`).
+- **Los datos del negocio nunca pasan por `__()`** (nombres de artículos, mesas, clientes,
+  importes, siglas). Tampoco los atributos `value`/`data-*` que lee el JS: solo lo que ve la persona.
+- **HTML dentro de un texto**: en Blade, `{!! __('Texto con <strong>negrita</strong>') !!}` (el
+  texto es nuestro, no del usuario). En JS, las cadenas que montan HTML siguen escapando **el
+  dato** (`PosApp.escapeHtml`), no el texto traducido.
+- **El literal es obligatorio**: el comando `traducciones:sincronizar` extrae las claves con una
+  expresión regular sobre los archivos del ámbito (`config/traduccion.php`, `ambitos.pos.rutas`).
+  `__($variable)` no se extrae; si no hay más remedio, su texto va a `claves_extra`. Un archivo
+  nuevo del POS se añade a `rutas`.
+- **El diccionario JS solo existe en el POS** (`window.posI18n`, inyectado por
+  `partials/pos-i18n.blade.php` cuando el request está en un idioma traducido): las demás
+  pantallas no cargan nada de más (§ "Peso y cacheo de assets").
+- **Documentos PDF del POS** (ticket, precuenta): `bilingue('Total')` en vez de `__()` →
+  «Total / 合计» con el POS en chino. El partial `verifactu-qr` no se toca. Si el documento
+  puede llevar caracteres chinos, la plantilla imprime `Bilingue::estiloFuenteCjk()` pegado a su
+  `</style>` cuando recibe `$fuenteCjk` (dompdf no sustituye glifos entre fuentes).
+- **Botones y chips del POS con texto traducido**: el chino es más corto pero el español puede
+  crecer; nunca anchos fijos para texto (ya aplicado: `white-space: nowrap` en chips, `flex-wrap`).
+
 ## Ayuda contextual (mini-tutoriales por vista/proceso)
 
 Documentación in-app para el usuario final (no para devs). **Un único punto de entrada global**:
@@ -1153,6 +1184,13 @@ se agregaron las reglas equivalentes para `.ayuda-trigger` en los dos estados co
 aporta el `title`/`aria-label` del botón. `icon-hover` no necesita nada porque `style.css` ya
 oculta el `.help-desk` entero. Si algún día se agrega otro control propio al `help-desk`, hay que
 darle su propia variante comprimida: el template no la cubre.
+
+**Guías traducibles (feature 050)**: en las guías del POS (`ayuda/pos*.blade.php`) cada `<p>` y
+cada `<li>` es **un bloque** `{!! __('…') !!}` con su HTML interno (`<strong>`, `<em>`) en una sola
+línea: se traduce la frase entera, no trozos. El botón «Ayuda de esta pantalla» y el chrome del
+modal («Guía rápida») salen en el idioma del POS en cualquier pantalla (`MenuTenant::idiomaPos()`).
+Al tocar una guía del POS, mantener ese formato: un bloque nuevo es un texto nuevo que el deploy
+traduce solo.
 
 **Qué tan largo debe ser**: la prueba práctica es que casi no debería hacer falta scrollear (el
 cuerpo tiene `max-height` con scroll como red de seguridad, no como norma). Responder solo tres

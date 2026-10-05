@@ -33,7 +33,7 @@ trait RespondeConCuenta
         }
 
         return response()->json([
-            'message' => 'Otro dispositivo modificó esta cuenta mientras la tenías abierta. Se recargó con los datos actuales.',
+            'message' => __('Otro dispositivo modificó esta cuenta mientras la tenías abierta. Se recargó con los datos actuales.'),
             'cuenta' => $this->payload($cuenta),
         ], 409);
     }

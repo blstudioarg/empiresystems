@@ -17,7 +17,7 @@ class PagoTicketDescuadradoException extends RuntimeException
         $asignadoFmt = number_format($asignado, 2, ',', '.');
 
         return new self(
-            "El reparto de pagos ({$asignadoFmt} €) no coincide con el total del ticket ({$totalFmt} €)."
+            __('El reparto de pagos (:asignado €) no coincide con el total del ticket (:total €).', ['asignado' => $asignadoFmt, 'total' => $totalFmt])
         );
     }
 }

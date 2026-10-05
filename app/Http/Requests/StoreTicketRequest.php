@@ -71,15 +71,15 @@ class StoreTicketRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'lineas.required' => 'El ticket debe tener al menos una línea.',
-            'lineas.min' => 'El ticket debe tener al menos una línea.',
-            'lineas.*.articulo_id.exists' => 'Solo se pueden añadir productos a un ticket, no servicios.',
-            'lineas.*.cantidad.gt' => 'La cantidad debe ser mayor que cero.',
-            'receptor.cliente_nif.required_with' => 'Para una simplificada cualificada indique el NIF del receptor.',
-            'receptor.cliente_direccion.required_with' => 'Para una simplificada cualificada indique el domicilio del receptor.',
-            'pagos.*.metodo.required_with' => 'Cada pago del reparto debe indicar un método.',
-            'pagos.*.importe.required_with' => 'Cada pago del reparto debe indicar un importe.',
-            'pagos.*.importe.gt' => 'El importe de cada pago debe ser mayor que cero.',
+            'lineas.required' => __('El ticket debe tener al menos una línea.'),
+            'lineas.min' => __('El ticket debe tener al menos una línea.'),
+            'lineas.*.articulo_id.exists' => __('Solo se pueden añadir productos a un ticket, no servicios.'),
+            'lineas.*.cantidad.gt' => __('La cantidad debe ser mayor que cero.'),
+            'receptor.cliente_nif.required_with' => __('Para una simplificada cualificada indique el NIF del receptor.'),
+            'receptor.cliente_direccion.required_with' => __('Para una simplificada cualificada indique el domicilio del receptor.'),
+            'pagos.*.metodo.required_with' => __('Cada pago del reparto debe indicar un método.'),
+            'pagos.*.importe.required_with' => __('Cada pago del reparto debe indicar un importe.'),
+            'pagos.*.importe.gt' => __('El importe de cada pago debe ser mayor que cero.'),
         ];
     }
 }

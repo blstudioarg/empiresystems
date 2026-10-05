@@ -25,7 +25,7 @@ class TransferidorCuenta
 
         if ($destino !== null && $this->cuentaAbiertaDe($destino, $cuenta->id) !== null) {
             throw ValidationException::withMessages([
-                'mesa_id' => 'Esa mesa ya tiene una cuenta abierta. Únelas si quieres juntar el consumo.',
+                'mesa_id' => __('Esa mesa ya tiene una cuenta abierta. Únelas si quieres juntar el consumo.'),
             ]);
         }
 
@@ -49,7 +49,7 @@ class TransferidorCuenta
 
         if ($origen->id === $destino->id) {
             throw ValidationException::withMessages([
-                'cuenta_destino_id' => 'No se puede unir una cuenta consigo misma.',
+                'cuenta_destino_id' => __('No se puede unir una cuenta consigo misma.'),
             ]);
         }
 
@@ -110,7 +110,7 @@ class TransferidorCuenta
     {
         if (! $cuenta->estaAbierta()) {
             throw ValidationException::withMessages([
-                'cuenta' => 'Solo se pueden mover o unir cuentas abiertas.',
+                'cuenta' => __('Solo se pueden mover o unir cuentas abiertas.'),
             ]);
         }
     }

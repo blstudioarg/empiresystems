@@ -57,7 +57,7 @@ class OpcionController extends Controller
     {
         $opcion = PosOpcion::create($this->validar($request) + ['tenant_id' => tenant()->getTenantKey()]);
 
-        return response()->json(['message' => 'Opción creada.', 'id' => $opcion->id], 201);
+        return response()->json(['message' => __('Opción creada.'), 'id' => $opcion->id], 201);
     }
 
     public function update(Request $request, string $opcion): JsonResponse
@@ -68,7 +68,7 @@ class OpcionController extends Controller
         // pivot es independiente a propósito, y por eso aquí no se propaga nada.
         $modelo->update($this->validar($request, $modelo->id));
 
-        return response()->json(['message' => 'Opción actualizada.']);
+        return response()->json(['message' => __('Opción actualizada.')]);
     }
 
     public function destroy(string $opcion): JsonResponse
@@ -77,13 +77,13 @@ class OpcionController extends Controller
 
         if ($modelo->articulos_count > 0) {
             return response()->json([
-                'message' => "No se puede eliminar «{$modelo->nombre}»: se usa en {$modelo->articulos_count} artículo(s).",
+                'message' => __('No se puede eliminar «:nombre»: se usa en :n artículo(s).', ['nombre' => $modelo->nombre, 'n' => $modelo->articulos_count]),
             ], 422);
         }
 
         $modelo->delete();
 
-        return response()->json(['message' => 'Opción eliminada.']);
+        return response()->json(['message' => __('Opción eliminada.')]);
     }
 
     /** @return array<string, mixed> */
@@ -106,11 +106,11 @@ class OpcionController extends Controller
         // Grupo y artículo vinculado se resuelven bajo el TenantScope, no por `exists:` a secas:
         // un `exists` sin filtro de tenant aceptaría un id de otro tenant.
         if (PosOpcionGrupo::query()->find($datos['grupo_id']) === null) {
-            throw ValidationException::withMessages(['grupo_id' => 'El grupo indicado no existe.']);
+            throw ValidationException::withMessages(['grupo_id' => __('El grupo indicado no existe.')]);
         }
 
         if (! empty($datos['articulo_vinculado_id']) && Articulo::query()->find($datos['articulo_vinculado_id']) === null) {
-            throw ValidationException::withMessages(['articulo_vinculado_id' => 'El artículo vinculado no existe.']);
+            throw ValidationException::withMessages(['articulo_vinculado_id' => __('El artículo vinculado no existe.')]);
         }
 
         $request->validate([

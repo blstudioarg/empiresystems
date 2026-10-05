@@ -15,7 +15,7 @@ class TicketFueraDeTopeException extends RuntimeException
         $topeFormateado = number_format($tope, 2, ',', '.');
 
         return new self(
-            "El importe supera el máximo de una factura simplificada ({$topeFormateado} € IVA incl.). Emita una factura ordinaria."
+            __('El importe supera el máximo de una factura simplificada (:tope € IVA incl.). Emita una factura ordinaria.', ['tope' => $topeFormateado])
         );
     }
 }

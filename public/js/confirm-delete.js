@@ -32,7 +32,7 @@
 		$('#confirmDeleteMessage').text(message);
 
 		var $boton = $('#confirmDeleteButton')
-			.text(opciones.confirmLabel || 'Eliminar')
+			.text(opciones.confirmLabel || (window.__t ? window.__t('Eliminar') : 'Eliminar'))
 			.removeClass('btn-danger btn-primary')
 			.addClass(opciones.confirmClass || 'btn-danger');
 

@@ -16,8 +16,9 @@ continua, así que el procedimiento tiene que ser rápido, repetible y cuidadoso
    `composer.lock` o es un primer deploy).
 3. En el Terminal de cPanel, siempre con el PHP explícito (punto 5 de abajo): `migrate --force` si
    hay migraciones nuevas — revisando antes con `migrate:status` que las pendientes sean las
-   esperadas —, los seeders que pida la feature (p. ej. `PermisosSeeder` si hay permisos nuevos) y
-   `optimize:clear` + `config:cache` + `route:cache` + `view:cache`.
+   esperadas —, los seeders que pida la feature (p. ej. `PermisosSeeder` si hay permisos nuevos),
+   `optimize:clear`, **`traducciones:sincronizar` + `pos:preparar-fuentes`** (feature 050, ver
+   abajo) y `config:cache` + `route:cache` + `view:cache`.
 4. Verificar en la app (y en `storage/logs/laravel.log` si algo falla).
 
 **Credenciales de FTP, base de datos, SSH y accesos de la app**: siempre en `ftp.txt` (raíz del
@@ -101,6 +102,25 @@ tener que redescubrir todo esto cada vez.
    ln -s ../storage/app/public public/storage
    ```
    **Excluir `public/storage` del zip en el próximo deploy completo** para no repetir esto.
+
+## Traducción del POS en cada deploy (feature 050)
+
+Después de `migrate` y `optimize:clear` (para que lea la config y el `.env` actuales, no una
+config cacheada de un deploy anterior) y antes de las cachés:
+
+```bash
+php artisan traducciones:sincronizar   # extrae los textos del POS y traduce los nuevos (DeepL)
+php artisan pos:preparar-fuentes       # caché de métricas de Noto Sans SC para los PDF en chino
+```
+
+- `traducciones:sincronizar` **nunca hace fallar el deploy por la API** (caída, timeout, cupo
+  agotado): lo informa y los textos quedan pendientes para el siguiente deploy o se traducen solos
+  la primera vez que alguien los ve. Es idempotente: sin textos nuevos no llama a la API.
+- Necesita en el `.env` de producción `DEEPL_API_KEY` (clave de la plataforma, en `ftp.txt`) y
+  `DEEPL_API_URL` (`https://api-free.deepl.com` en el plan gratuito). Sin la clave el comando
+  devuelve error (el POS sigue funcionando en español).
+- `pos:preparar-fuentes` genera una sola vez la caché de métricas de la fuente CJK en
+  `storage/fonts`, para que el primer ticket en chino no la genere en caliente.
 
 ## Seeds necesarios tras un despliegue nuevo (o una base de datos vacía)
 

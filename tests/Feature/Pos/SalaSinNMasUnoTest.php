@@ -31,9 +31,9 @@ class SalaSinNMasUnoTest extends TestCase
         $consultas = count(DB::getQueryLog());
         DB::disableQueryLog();
 
-        // Zonas + mesas + cuentas abiertas + sus líneas (+ la de sus precuentas, feature 049): un
-        // puñado fijo de consultas, no una por mesa. Un límite generoso (11) deja margen sin
-        // dejar pasar una regresión N+1 real.
-        $this->assertLessThanOrEqual(11, $consultas, "La Sala hizo {$consultas} consultas con 20 mesas ocupadas: sospecha de N+1.");
+        // Zonas + mesas + cuentas abiertas + sus líneas (+ la de sus precuentas, feature 049, + la
+        // del idioma del POS, feature 050): un puñado fijo de consultas, no una por mesa. Un
+        // límite generoso (12) deja margen sin dejar pasar una regresión N+1 real.
+        $this->assertLessThanOrEqual(12, $consultas, "La Sala hizo {$consultas} consultas con 20 mesas ocupadas: sospecha de N+1.");
     }
 }

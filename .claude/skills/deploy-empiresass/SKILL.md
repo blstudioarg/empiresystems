@@ -34,10 +34,14 @@ Para cambios de código que no tocan `composer.json`/`composer.lock` ni assets d
    ```bash
    cd /home/gestionley/empiresass.gestionley.com
    /opt/cpanel/ea-php82/root/usr/bin/php artisan optimize:clear
+   /opt/cpanel/ea-php82/root/usr/bin/php artisan traducciones:sincronizar
    /opt/cpanel/ea-php82/root/usr/bin/php artisan config:cache
    /opt/cpanel/ea-php82/root/usr/bin/php artisan route:cache
    /opt/cpanel/ea-php82/root/usr/bin/php artisan view:cache
    ```
+   `traducciones:sincronizar` (feature 050) traduce los textos nuevos del POS con DeepL; va después
+   de `optimize:clear` para leer la config actual, y nunca falla por la API (docs/08, "Traducción
+   del POS en cada deploy"). Correrlo siempre que se suba una vista, JS o mensaje del POS.
    Solo si el cambio se limita a `app/` (controllers, models, services) sin tocar config, rutas
    ni Blade alcanza con subir el archivo. **Una vista `.blade.php` subida por FTP sin correr
    `view:cache` no se ve reflejada**, porque queda la version compilada anterior.
@@ -70,7 +74,8 @@ Para cambios de código que no tocan `composer.json`/`composer.lock` ni assets d
 4. `.env` de producción: partir del que ya está en el servidor si existe (no pisarlo a ciegas —
    descargarlo primero por FTP y diffearlo), o armar uno nuevo con: `APP_ENV=production`,
    `APP_DEBUG=false`, `APP_URL` del dominio, `CENTRAL_DOMAINS=empiresass.gestionley.com`, la
-   conexión MySQL de `ftp.txt`, `SESSION_DRIVER=database`, `QUEUE_CONNECTION=database`.
+   conexión MySQL de `ftp.txt`, `SESSION_DRIVER=database`, `QUEUE_CONNECTION=database`,
+   `DEEPL_API_KEY` y `DEEPL_API_URL` (traducción del POS, feature 050; clave en `ftp.txt`).
 5. Empaquetar en zip con **rutas `/` (forward slash), no `\`** — `Compress-Archive` de PowerShell
    genera rutas con backslash que rompen al descomprimir en Linux. Usar PHP `ZipArchive` (ver
    snippet en el historial de esta conversación / regenerar uno análogo) o `tar`.
@@ -83,6 +88,8 @@ Para cambios de código que no tocan `composer.json`/`composer.lock` ni assets d
    /opt/cpanel/ea-php82/root/usr/bin/php artisan storage:link
    /opt/cpanel/ea-php82/root/usr/bin/php artisan migrate --force
    /opt/cpanel/ea-php82/root/usr/bin/php artisan optimize:clear
+   /opt/cpanel/ea-php82/root/usr/bin/php artisan traducciones:sincronizar
+   /opt/cpanel/ea-php82/root/usr/bin/php artisan pos:preparar-fuentes
    /opt/cpanel/ea-php82/root/usr/bin/php artisan config:cache
    /opt/cpanel/ea-php82/root/usr/bin/php artisan route:cache
    /opt/cpanel/ea-php82/root/usr/bin/php artisan view:cache

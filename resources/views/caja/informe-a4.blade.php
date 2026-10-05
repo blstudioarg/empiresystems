@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 	<meta charset="utf-8">
-	<title>Cierre de caja {{ $informe['numero'] }}</title>
+	<title>{{ __('Cierre de caja :numero', ['numero' => $informe['numero']]) }}</title>
 	<style>
 		/* A4: el mismo contenido que el rollo, en una columna centrada de lectura cómoda. Se
 		   mantiene la monoespaciada para que el informe se reconozca igual en los dos formatos. */
@@ -21,7 +21,7 @@
 		table { width: 100%; border-collapse: collapse; }
 		td { padding: 2px 0; vertical-align: top; }
 		.total td { font-size: 13px; font-weight: bold; }
-	</style>
+	</style>@if ($fuenteCjk ?? false){!! \App\Traduccion\Bilingue::estiloFuenteCjk() !!}@endif
 </head>
 <body>
 	<div class="hoja">

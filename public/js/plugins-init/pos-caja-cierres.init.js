@@ -20,9 +20,9 @@
 	}
 
 	var BADGES = {
-		cuadra: '<span class="badge light badge-success">Cuadra</span>',
-		sobra: '<span class="badge light badge-warning">Sobrante</span>',
-		falta: '<span class="badge light badge-danger">Faltante</span>',
+		cuadra: '<span class="badge light badge-success">' + __t('Cuadra') + '</span>',
+		sobra: '<span class="badge light badge-warning">' + __t('Sobrante') + '</span>',
+		falta: '<span class="badge light badge-danger">' + __t('Faltante') + '</span>',
 	};
 
 	function renderDiferencia(data, type, row) {
@@ -36,13 +36,13 @@
 	function renderAcciones(data, type, row) {
 		var items = '';
 		if (row.informe_url_ticket) {
-			items += '<li><button type="button" class="dropdown-item btn-ver-informe" data-url="' + esc(row.informe_url_ticket) + '">Ver informe (80 mm)</button></li>';
+			items += '<li><button type="button" class="dropdown-item btn-ver-informe" data-url="' + esc(row.informe_url_ticket) + '">' + __t('Ver informe (80 mm)') + '</button></li>';
 		}
 		if (row.informe_url_a4) {
-			items += '<li><button type="button" class="dropdown-item btn-ver-informe" data-url="' + esc(row.informe_url_a4) + '">Ver informe (A4)</button></li>';
+			items += '<li><button type="button" class="dropdown-item btn-ver-informe" data-url="' + esc(row.informe_url_a4) + '">' + __t('Ver informe (A4)') + '</button></li>';
 		}
 		return '<div class="dropdown">'
-			+ '<button type="button" class="btn btn-primary light btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">Acciones</button>'
+			+ '<button type="button" class="btn btn-primary light btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">' + __t('Acciones') + '</button>'
 			+ '<ul class="dropdown-menu dropdown-menu-end">' + items + '</ul></div>';
 	}
 
@@ -84,15 +84,15 @@
 				{ data: null, orderable: false, searchable: false, render: renderAcciones },
 			],
 			language: {
-				search: 'Buscar:',
-				lengthMenu: 'Mostrar _MENU_ registros',
-				info: 'Mostrando _START_ a _END_ de _TOTAL_ cierres',
-				infoEmpty: 'Mostrando 0 a 0 de 0 cierres',
-				infoFiltered: '(filtrado de _MAX_ cierres totales)',
-				zeroRecords: 'No se encontraron cierres',
-				emptyTable: 'Todavía no se cerró ninguna caja',
-				processing: 'Cargando...',
-				paginate: { first: 'Primero', last: 'Último', next: 'Siguiente', previous: 'Anterior' },
+				search: __t('Buscar:'),
+				lengthMenu: __t('Mostrar _MENU_ registros'),
+				info: __t('Mostrando _START_ a _END_ de _TOTAL_ cierres'),
+				infoEmpty: __t('Mostrando 0 a 0 de 0 cierres'),
+				infoFiltered: __t('(filtrado de _MAX_ cierres totales)'),
+				zeroRecords: __t('No se encontraron cierres'),
+				emptyTable: __t('Todavía no se cerró ninguna caja'),
+				processing: __t('Cargando...'),
+				paginate: { first: __t('Primero'), last: __t('Último'), next: __t('Siguiente'), previous: __t('Anterior') },
 			},
 		});
 

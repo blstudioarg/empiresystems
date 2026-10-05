@@ -20,7 +20,7 @@ window.PosCajaApertura = (function () {
 
 		var bandeja = window.PosCajaBandeja.crear(root.querySelector('[data-bandeja]'), {
 			onCambio: function (total) {
-				if ($texto) { $texto.textContent = 'Abrir caja con ' + T.formatear(total) + ' €'; }
+				if ($texto) { $texto.textContent = __t('Abrir caja con :importe', { importe: T.formatear(total) + ' €' }); }
 			},
 		});
 
@@ -39,7 +39,7 @@ window.PosCajaApertura = (function () {
 				});
 			})
 				.done(function (res) {
-					window.showToast('success', res.message || 'Caja abierta.');
+					window.showToast('success', res.message || __t('Caja abierta.'));
 					bandeja.limpiar();
 					if (typeof opciones.onAbierta === 'function') { opciones.onAbierta(res); }
 				})
@@ -48,7 +48,9 @@ window.PosCajaApertura = (function () {
 					if (xhr.status === 409 && res.codigo === 'caja_ya_abierta') {
 						// Otra tablet se adelantó: no es un error para quien quería vender, la caja ya
 						// está abierta. Se informa y se sigue.
-						window.showToast('info', 'La caja ya estaba abierta' + (res.sesion && res.sesion.abierta_por ? ' (la abrió ' + res.sesion.abierta_por + ').' : '.'));
+						window.showToast('info', res.sesion && res.sesion.abierta_por
+							? __t('La caja ya estaba abierta (la abrió :usuario).', { usuario: res.sesion.abierta_por })
+							: __t('La caja ya estaba abierta.'));
 						if (typeof opciones.onYaAbierta === 'function') { opciones.onYaAbierta(res); }
 						return;
 					}
@@ -57,7 +59,7 @@ window.PosCajaApertura = (function () {
 						var primero = Object.keys(res.errors)[0];
 						msg = res.errors[primero][0];
 					}
-					window.showToast('error', msg || 'No se pudo abrir la caja.');
+					window.showToast('error', msg || __t('No se pudo abrir la caja.'));
 				});
 		}
 

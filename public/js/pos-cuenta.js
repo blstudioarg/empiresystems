@@ -65,7 +65,7 @@ window.PosApp.registrar('cuenta', function (PosApp) {
 		}
 
 		$chip.classList.remove('d-none');
-		if ($chipLabel) { $chipLabel.textContent = mesaNombre || 'Mesa'; }
+		if ($chipLabel) { $chipLabel.textContent = mesaNombre || __t('Mesa'); }
 		if ($chipPendiente) {
 			$chipPendiente.textContent = cuenta ? (PosApp.format(parseFloat(cuenta.pendiente || 0)) + ' €') : '';
 			$chipPendiente.classList.toggle('d-none', !cuenta);
@@ -77,7 +77,7 @@ window.PosApp.registrar('cuenta', function (PosApp) {
 		if ($suplementoZona) {
 			var suplemento = cuenta ? parseFloat(cuenta.zona_suplemento || 0) : 0;
 			if (suplemento > 0) {
-				$suplementoZona.textContent = '· +' + PosApp.format(suplemento) + '% zona';
+				$suplementoZona.textContent = '· ' + __t('+:porcentaje% zona', { porcentaje: PosApp.format(suplemento) });
 				$suplementoZona.classList.remove('d-none');
 			} else {
 				$suplementoZona.classList.add('d-none');
@@ -109,9 +109,9 @@ window.PosApp.registrar('cuenta', function (PosApp) {
 		}
 
 		var desactualizada = estadoPrecuenta === 'desactualizada';
-		var texto = desactualizada ? 'Precuenta desactualizada' : 'Precuenta dada';
+		var texto = desactualizada ? __t('Precuenta desactualizada') : __t('Precuenta dada');
 		$precuentaEstado.innerHTML = desactualizada
-			? '<i class="fas fa-triangle-exclamation" aria-hidden="true"></i> Desactualizada'
+			? '<i class="fas fa-triangle-exclamation" aria-hidden="true"></i> ' + PosApp.escapeHtml(__t('Desactualizada'))
 			: '<i class="fas fa-check" aria-hidden="true"></i>';
 		$precuentaEstado.setAttribute('title', texto);
 		$precuentaEstado.setAttribute('aria-label', texto);
@@ -123,7 +123,7 @@ window.PosApp.registrar('cuenta', function (PosApp) {
 	function abrirMover() {
 		if (!cuenta || !$moverLista) { return; }
 
-		$moverLista.innerHTML = '<p class="text-muted small mb-0">Cargando mesas…</p>';
+		$moverLista.innerHTML = '<p class="text-muted small mb-0">' + __t('Cargando mesas…') + '</p>';
 		moverModal.show();
 
 		fetch('/pos/sala', { headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
@@ -132,7 +132,7 @@ window.PosApp.registrar('cuenta', function (PosApp) {
 				var otras = json.mesas.filter(function (m) { return String(m.id) !== String(mesaId); });
 
 				if (!otras.length) {
-					$moverLista.innerHTML = '<p class="text-muted small mb-0">No hay otras mesas en la sala.</p>';
+					$moverLista.innerHTML = '<p class="text-muted small mb-0">' + __t('No hay otras mesas en la sala.') + '</p>';
 					return;
 				}
 
@@ -143,8 +143,8 @@ window.PosApp.registrar('cuenta', function (PosApp) {
 					$item.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center';
 					$item.innerHTML = '<span>' + PosApp.escapeHtml(mesa.nombre) + '</span>' +
 						(mesa.estado === 'ocupada'
-							? '<span class="badge badge-warning light">Ocupada · unir</span>'
-							: '<span class="badge badge-secondary light">Libre · transferir</span>');
+							? '<span class="badge badge-warning light">' + __t('Ocupada · unir') + '</span>'
+							: '<span class="badge badge-secondary light">' + __t('Libre · transferir') + '</span>');
 					$item.addEventListener('click', function () {
 						mesa.estado === 'ocupada' ? unir(mesa) : transferir(mesa);
 					});
@@ -152,44 +152,44 @@ window.PosApp.registrar('cuenta', function (PosApp) {
 				});
 			})
 			.catch(function () {
-				$moverLista.innerHTML = '<p class="text-danger small mb-0">No se pudo cargar la sala.</p>';
+				$moverLista.innerHTML = '<p class="text-danger small mb-0">' + __t('No se pudo cargar la sala.') + '</p>';
 			});
 	}
 
 	function transferir(mesa) {
 		window.confirmDelete(
-			'¿Transferir la cuenta a «' + mesa.nombre + '»?',
+			__t('¿Transferir la cuenta a «:mesa»?', { mesa: mesa.nombre }),
 			function () {
 				return peticion('/pos/cuentas/' + cuenta.id + '/transferir', 'POST', { mesa_id: mesa.id }).then(function (res) {
 					if (!res.ok) {
-						window.showToast('error', res.data.message || 'No se pudo transferir la cuenta.');
+						window.showToast('error', res.data.message || __t('No se pudo transferir la cuenta.'));
 						return;
 					}
-					window.showToast('success', 'Cuenta transferida.');
+					window.showToast('success', __t('Cuenta transferida.'));
 					window.location.href = res.data.cuenta.mesa_id
 						? '/pos/crear?cuenta=' + cuenta.id
 						: (PosApp.state.salaUrl || '/pos/sala');
 				});
 			},
-			{ confirmLabel: 'Transferir', confirmClass: 'btn-primary', icon: 'wired-outline-1846-employee-working-hover-working' },
+			{ confirmLabel: __t('Transferir'), confirmClass: 'btn-primary', icon: 'wired-outline-1846-employee-working-hover-working' },
 		);
 		if (moverModal) { moverModal.hide(); }
 	}
 
 	function unir(mesa) {
 		window.confirmDelete(
-			'¿Unir esta cuenta con la de «' + mesa.nombre + '»? Se sumará todo el consumo pendiente.',
+			__t('¿Unir esta cuenta con la de «:mesa»? Se sumará todo el consumo pendiente.', { mesa: mesa.nombre }),
 			function () {
 				return peticion('/pos/cuentas/' + cuenta.id + '/unir', 'POST', { cuenta_destino_id: mesa.cuenta_id }).then(function (res) {
 					if (!res.ok) {
-						window.showToast('error', res.data.message || 'No se pudieron unir las cuentas.');
+						window.showToast('error', res.data.message || __t('No se pudieron unir las cuentas.'));
 						return;
 					}
-					window.showToast('success', 'Cuentas unidas.');
+					window.showToast('success', __t('Cuentas unidas.'));
 					window.location.href = '/pos/crear?cuenta=' + mesa.cuenta_id;
 				});
 			},
-			{ confirmLabel: 'Unir', confirmClass: 'btn-primary', icon: 'wired-outline-1846-employee-working-hover-working' },
+			{ confirmLabel: __t('Unir'), confirmClass: 'btn-primary', icon: 'wired-outline-1846-employee-working-hover-working' },
 		);
 		if (moverModal) { moverModal.hide(); }
 	}
@@ -230,7 +230,7 @@ window.PosApp.registrar('cuenta', function (PosApp) {
 		var silencioso = !!(opciones && opciones.silencioso);
 
 		if (!PosApp.lineas.length) {
-			window.showToast('error', 'No hay nada que guardar todavía.');
+			window.showToast('error', __t('No hay nada que guardar todavía.'));
 			return null;
 		}
 
@@ -255,19 +255,19 @@ window.PosApp.registrar('cuenta', function (PosApp) {
 
 		return promesa.then(function (res) {
 			if (res.status === 409) {
-				window.showToast('error', res.data.message || 'Otro dispositivo modificó esta cuenta.');
+				window.showToast('error', res.data.message || __t('Otro dispositivo modificó esta cuenta.'));
 				aplicarCuenta(res.data.cuenta);
 				return res;
 			}
 			if (!res.ok) {
-				window.showToast('error', res.data.message || 'No se pudo guardar la cuenta.');
+				window.showToast('error', res.data.message || __t('No se pudo guardar la cuenta.'));
 				return res;
 			}
 			aplicarCuenta(res.data);
 			if (estadoPrevio === 'vigente' && res.data.precuenta && res.data.precuenta.estado === 'desactualizada') {
-				window.showToast('warning', 'La precuenta impresa ya no coincide con la cuenta. Reimprímela antes de cobrar.');
+				window.showToast('warning', __t('La precuenta impresa ya no coincide con la cuenta. Reimprímela antes de cobrar.'));
 			} else if (!silencioso) {
-				window.showToast('success', 'Cuenta guardada.');
+				window.showToast('success', __t('Cuenta guardada.'));
 			}
 			return res;
 		});
@@ -277,18 +277,18 @@ window.PosApp.registrar('cuenta', function (PosApp) {
 		if (!cuenta) { return; }
 
 		window.confirmDelete(
-			'¿Anular esta cuenta? Se perderá todo lo que no se haya cobrado todavía.',
+			__t('¿Anular esta cuenta? Se perderá todo lo que no se haya cobrado todavía.'),
 			function () {
 				return peticion('/pos/cuentas/' + cuenta.id + '/anular', 'POST').then(function (res) {
 					if (!res.ok) {
-						window.showToast('error', res.data.message || 'No se pudo anular la cuenta.');
+						window.showToast('error', res.data.message || __t('No se pudo anular la cuenta.'));
 						return;
 					}
-					window.showToast('success', res.data.message || 'Cuenta anulada.');
+					window.showToast('success', res.data.message || __t('Cuenta anulada.'));
 					window.location.href = PosApp.state.salaUrl || '/pos/sala';
 				});
 			},
-			{ confirmLabel: 'Anular', icon: 'wired-outline-185-trash-bin-hover-empty' },
+			{ confirmLabel: __t('Anular'), icon: 'wired-outline-185-trash-bin-hover-empty' },
 		);
 	}
 
@@ -300,7 +300,7 @@ window.PosApp.registrar('cuenta', function (PosApp) {
 			return;
 		}
 
-		$cobroMesaCtx.textContent = mesaNombre || 'Mesa';
+		$cobroMesaCtx.textContent = mesaNombre || __t('Mesa');
 		$cobroMesaCtx.classList.remove('d-none');
 	}
 

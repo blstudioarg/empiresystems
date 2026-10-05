@@ -84,7 +84,7 @@ class CuentaController extends Controller
         $modelo = $this->resolverCuenta($cuenta);
 
         if (! $modelo->estaAbierta()) {
-            return response()->json(['message' => 'Esta cuenta ya no está abierta.'], 422);
+            return response()->json(['message' => __('Esta cuenta ya no está abierta.')], 422);
         }
 
         if ($conflicto = $this->conflictoDeVersion($modelo, (int) $request->validated('version'))) {
@@ -119,7 +119,7 @@ class CuentaController extends Controller
         $modelo = $this->resolverCuenta($cuenta);
 
         if (! $modelo->estaAbierta()) {
-            return response()->json(['message' => 'Esta cuenta ya no está abierta.'], 422);
+            return response()->json(['message' => __('Esta cuenta ya no está abierta.')], 422);
         }
 
         $modelo->load('lineas');
@@ -143,8 +143,8 @@ class CuentaController extends Controller
 
         return response()->json([
             'message' => $yaCobrado
-                ? 'Cuenta anulada. Lo ya cobrado sigue emitido: si hay que devolverlo, emite una rectificativa.'
-                : 'Cuenta anulada.',
+                ? __('Cuenta anulada. Lo ya cobrado sigue emitido: si hay que devolverlo, emite una rectificativa.')
+                : __('Cuenta anulada.'),
             'cuenta_cerrada' => true,
         ]);
     }
@@ -165,7 +165,7 @@ class CuentaController extends Controller
         ]);
 
         return response()->json([
-            'message' => 'Cuenta transferida.',
+            'message' => __('Cuenta transferida.'),
             'cuenta' => $this->payload($modelo->refresh()),
         ]);
     }
@@ -186,7 +186,7 @@ class CuentaController extends Controller
         ]);
 
         return response()->json([
-            'message' => 'Cuentas unidas.',
+            'message' => __('Cuentas unidas.'),
             'cuenta' => $this->payload($destino->refresh()),
         ]);
     }
@@ -237,7 +237,7 @@ class CuentaController extends Controller
             // 422 y no 404: para el usuario es un dato inválido del formulario, y devolver 404
             // aquí filtraría que el id existe en otro tenant.
             throw ValidationException::withMessages([
-                'mesa_id' => 'La mesa indicada no existe.',
+                'mesa_id' => __('La mesa indicada no existe.'),
             ]);
         }
 
@@ -346,7 +346,7 @@ class CuentaController extends Controller
 
             if ($elegidasDelGrupo < max(1, (int) $grupo->min_selecciones)) {
                 throw ValidationException::withMessages([
-                    'lineas' => "«{$articulo->nombre}» necesita elegir «{$grupo->nombre}» antes de comandarse.",
+                    'lineas' => __('«:articulo» necesita elegir «:grupo» antes de comandarse.', ['articulo' => $articulo->nombre, 'grupo' => $grupo->nombre]),
                 ]);
             }
         }

@@ -19,7 +19,7 @@ class CajaYaCerradaException extends RuntimeException
         $hora = $sesion->cerrada_at?->enZonaTenant()->format('H:i');
 
         parent::__construct($quien && $hora
-            ? "Esta caja ya la cerró {$quien} a las {$hora}."
-            : 'Esta caja ya está cerrada.');
+            ? __('Esta caja ya la cerró :quien a las :hora.', ['quien' => $quien, 'hora' => $hora])
+            : __('Esta caja ya está cerrada.'));
     }
 }

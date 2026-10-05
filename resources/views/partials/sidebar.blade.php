@@ -58,7 +58,7 @@
 									->count()
 								: 0;
 						@endphp
-						@foreach (\App\Support\MenuTenant::estructura(tenant()->getTenantKey()) as $__grupo)
+						@foreach (\App\Support\MenuTenant::estructuraParaMenu(tenant()->getTenantKey()) as $__grupo)
 							@if (empty($__grupo['hijos']))
 								{{-- Grupo sin hijos: enlace directo (caso "Inicio"/"Archivos", D6.1) --}}
 								@if ($__grupo['ruta'] && \Illuminate\Support\Facades\Route::has($__grupo['ruta']) && (! $__grupo['permiso'] || auth()->user()->can($__grupo['permiso'])))
@@ -112,15 +112,17 @@
 						@endforeach
 					@endif
 				</ul>
+				{{-- El botón de ayuda va en el idioma del POS en cualquier pantalla (feature 050, FR-009). --}}
+				@php($__idiomaPos = \App\Support\MenuTenant::idiomaPos())
 				<div class="help-desk pb-3">
 					<button type="button" class="ayuda-trigger" data-bs-toggle="modal" data-bs-target="#ayudaContextualModal"
-						title="Ayuda de esta pantalla" aria-label="Ayuda de esta pantalla">
+						title="{{ __('Ayuda de esta pantalla', [], $__idiomaPos) }}" aria-label="{{ __('Ayuda de esta pantalla', [], $__idiomaPos) }}">
 						<span class="ayuda-trigger-icon">
 							<x-lordicon icon="wired-outline-424-question-bubble-hover-wiggle" trigger="hover" size="22" target=".ayuda-trigger" />
 						</span>
 						<span class="ayuda-trigger-text">
-							<span class="ayuda-trigger-title">Ayuda de esta pantalla</span>
-							<span class="ayuda-trigger-sub">Guía rápida de lo que ves ahora</span>
+							<span class="ayuda-trigger-title">{{ __('Ayuda de esta pantalla', [], $__idiomaPos) }}</span>
+							<span class="ayuda-trigger-sub">{{ __('Guía rápida de lo que ves ahora', [], $__idiomaPos) }}</span>
 						</span>
 						<i class="fas fa-chevron-right ayuda-trigger-chevron"></i>
 					</button>

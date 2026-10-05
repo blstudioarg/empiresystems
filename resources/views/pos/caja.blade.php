@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'POS · Caja')
+@section('title', __('POS · Caja'))
 
 @push('styles')
 	<link href="@assetv('css/pos-caja.css')" rel="stylesheet">
@@ -20,10 +20,10 @@
 						<div class="caja-hero-icono">
 							<x-lordicon icon="wired-outline-2510-money-safety-hover-pinch" size="64" trigger="hover" target=".caja-hero" />
 						</div>
-						<h2>La caja está cerrada</h2>
-						<p>Ábrela con el fondo de cambio para empezar a cobrar.</p>
+						<h2>{{ __('La caja está cerrada') }}</h2>
+						<p>{{ __('Ábrela con el fondo de cambio para empezar a cobrar.') }}</p>
 						<button type="button" class="btn caja-cta caja-cta-xl caja-cta-dinero" id="caja-abrir-btn">
-							<i class="fa-solid fa-lock-open" aria-hidden="true"></i> Abrir caja
+							<i class="fa-solid fa-lock-open" aria-hidden="true"></i> {{ __('Abrir caja') }}
 						</button>
 					</div>
 
@@ -33,16 +33,16 @@
 
 					<div class="caja-ultimo" id="caja-ultimo" @if (empty($estado['ultimo_cierre'])) hidden @endif>
 						<div class="caja-ultimo-txt">
-							<span class="eyebrow">Último cierre</span>
+							<span class="eyebrow">{{ __('Último cierre') }}</span>
 							<strong data-ultimo="titulo">—</strong>
 							<span class="text-muted" data-ultimo="detalle"></span>
 						</div>
 						<div class="caja-ultimo-acciones">
 							<button type="button" class="btn btn-outline-secondary caja-sec" id="caja-ultimo-ver">
-								<i class="fa-solid fa-receipt" aria-hidden="true"></i> Ver informe
+								<i class="fa-solid fa-receipt" aria-hidden="true"></i> {{ __('Ver informe') }}
 							</button>
 							<a href="{{ route('pos.caja.cierres') }}" class="btn btn-outline-secondary caja-sec">
-								<i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i> Historial
+								<i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i> {{ __('Historial') }}
 							</a>
 						</div>
 					</div>
@@ -58,20 +58,20 @@
 						<div class="caja-estado-txt">
 							<span class="caja-pulso" aria-hidden="true"></span>
 							<div>
-								<p class="caja-estado-titulo">Caja abierta</p>
+								<p class="caja-estado-titulo">{{ __('Caja abierta') }}</p>
 								<p class="caja-estado-meta">
-									Desde las <strong data-sesion="hora">—</strong>
+									{!! __('Desde las :hora', ['hora' => '<strong data-sesion="hora">—</strong>']) !!}
 									<span data-sesion="duracion"></span> · <span data-sesion="usuario">—</span>
 								</p>
-								<p class="caja-aviso-antigua">Abierta desde un día anterior: ciérrala antes de empezar el día.</p>
+								<p class="caja-aviso-antigua">{{ __('Abierta desde un día anterior: ciérrala antes de empezar el día.') }}</p>
 							</div>
 						</div>
 						<div class="caja-estado-acciones">
-							<button type="button" class="btn btn-outline-secondary caja-sec" id="caja-actualizar" aria-label="Actualizar">
-								<i class="fa-solid fa-rotate" aria-hidden="true"></i> <span class="d-none d-md-inline">Actualizar</span>
+							<button type="button" class="btn btn-outline-secondary caja-sec" id="caja-actualizar" aria-label="{{ __('Actualizar') }}">
+								<i class="fa-solid fa-rotate" aria-hidden="true"></i> <span class="d-none d-md-inline">{{ __('Actualizar') }}</span>
 							</button>
 							<a href="{{ route('pos.caja.cierres') }}" class="btn btn-outline-secondary caja-sec">
-								<i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i> <span class="d-none d-md-inline">Historial</span>
+								<i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i> <span class="d-none d-md-inline">{{ __('Historial') }}</span>
 							</a>
 						</div>
 					</div>
@@ -85,7 +85,7 @@
 									<div class="card-body">
 										<div class="d-flex justify-content-between align-items-center">
 											<div>
-												<h6 class="mb-1">Vendido</h6>
+												<h6 class="mb-1">{{ __('Vendido') }}</h6>
 												<h4 class="mb-0 text-success" data-metric="vendido" data-vivo="total_vendido">0,00 €</h4>
 											</div>
 											<div><x-lordicon icon="euro" size="38" trigger="hover" target=".card" /></div>
@@ -98,7 +98,7 @@
 									<div class="card-body">
 										<div class="d-flex justify-content-between align-items-center">
 											<div>
-												<h6 class="mb-1">Tickets</h6>
+												<h6 class="mb-1">{{ __('Tickets') }}</h6>
 												<h4 class="mb-0" data-metric="tickets" data-vivo="num_tickets">0</h4>
 											</div>
 											<div><x-lordicon icon="ticket" size="38" trigger="hover" target=".card" /></div>
@@ -111,7 +111,7 @@
 									<div class="card-body">
 										<div class="d-flex justify-content-between align-items-center">
 											<div>
-												<h6 class="mb-1">Ticket medio</h6>
+												<h6 class="mb-1">{{ __('Ticket medio') }}</h6>
 												<h4 class="mb-0" data-metric="ticket_medio" data-vivo="ticket_medio">0,00 €</h4>
 											</div>
 											<div><x-lordicon icon="wired-outline-2447-invoice-receipt-euro-hover-pinch" size="38" trigger="hover" target=".card" /></div>
@@ -123,10 +123,10 @@
 
 						<div class="card">
 							<div class="card-header border-0 pb-0">
-								<h4 class="card-title mb-0">Cómo te pagaron</h4>
+								<h4 class="card-title mb-0">{{ __('Cómo te pagaron') }}</h4>
 							</div>
 							<div class="card-body">
-								<div class="caja-metodos-barra" id="caja-metodos-barra" role="img" aria-label="Reparto de lo vendido por método de pago"></div>
+								<div class="caja-metodos-barra" id="caja-metodos-barra" role="img" aria-label="{{ __('Reparto de lo vendido por método de pago') }}"></div>
 								<ul class="caja-metodos-lista" id="caja-metodos-lista"></ul>
 							</div>
 						</div>
@@ -137,29 +137,29 @@
 							<div class="card-body">
 								<div class="caja-mov-botones">
 									<button type="button" class="caja-mov-btn entrada" data-movimiento="entrada">
-										<i class="fa-solid fa-circle-plus" aria-hidden="true"></i> Entrada
+										<i class="fa-solid fa-circle-plus" aria-hidden="true"></i> {{ __('Entrada') }}
 									</button>
 									<button type="button" class="caja-mov-btn salida" data-movimiento="salida">
-										<i class="fa-solid fa-circle-minus" aria-hidden="true"></i> Salida
+										<i class="fa-solid fa-circle-minus" aria-hidden="true"></i> {{ __('Salida') }}
 									</button>
 								</div>
 
 								<div>
 									<div class="caja-mov-titulo">
-										<h5>Movimientos del turno</h5>
+										<h5>{{ __('Movimientos del turno') }}</h5>
 										<span data-mov="conteo"></span>
 									</div>
 									<ul class="caja-mov-lista" id="caja-mov-lista"></ul>
-									<p class="caja-mov-vacio" id="caja-mov-vacio">Sin entradas ni salidas de efectivo.</p>
+									<p class="caja-mov-vacio" id="caja-mov-vacio">{{ __('Sin entradas ni salidas de efectivo.') }}</p>
 								</div>
 
 								<div class="caja-fondo-linea">
-									<span>Fondo inicial</span>
+									<span>{{ __('Fondo inicial') }}</span>
 									<strong data-sesion="fondo">0,00 €</strong>
 								</div>
 
 								<button type="button" class="btn caja-cta caja-cta-xl caja-cta-cerrar" id="caja-cerrar-btn">
-									<i class="fa-solid fa-cash-register" aria-hidden="true"></i> Cerrar caja
+									<i class="fa-solid fa-cash-register" aria-hidden="true"></i> {{ __('Cerrar caja') }}
 								</button>
 							</div>
 						</div>
@@ -172,14 +172,14 @@
 			<section class="caja-vista" id="caja-cierre" hidden>
 				<div class="card caja-cierre">
 					<div class="card-header border-0 flex-wrap gap-2">
-						<div class="caja-pasos" aria-label="Pasos del cierre">
-							<span class="caja-paso activo" data-paso="1"><span class="n">1</span> Contar</span>
+						<div class="caja-pasos" aria-label="{{ __('Pasos del cierre') }}">
+							<span class="caja-paso activo" data-paso="1"><span class="n">1</span> {{ __('Contar') }}</span>
 							<span class="guion" aria-hidden="true"></span>
-							<span class="caja-paso" data-paso="2"><span class="n">2</span> Resultado</span>
+							<span class="caja-paso" data-paso="2"><span class="n">2</span> {{ __('Resultado') }}</span>
 						</div>
 						<span class="caja-ciego" id="caja-ciego">
 							<i class="fa-solid fa-eye-slash" aria-hidden="true"></i>
-							Cuenta sin mirar lo esperado: lo verás al confirmar.
+							{{ __('Cuenta sin mirar lo esperado: lo verás al confirmar.') }}
 						</span>
 					</div>
 
@@ -189,16 +189,16 @@
 							@include('pos._caja-bandeja', [
 								'id' => 'caja-bandeja-cierre',
 								'modo' => 'conteo',
-								'titulo' => 'Cuenta el efectivo del cajón',
-								'subtitulo' => 'Toca cada billete o moneda y teclea cuántos hay. Doble toque suma uno.',
-								'etiquetaTotal' => 'Total contado',
+								'titulo' => __('Cuenta el efectivo del cajón'),
+								'subtitulo' => __('Toca cada billete o moneda y teclea cuántos hay. Doble toque suma uno.'),
+								'etiquetaTotal' => __('Total contado'),
 							])
 							<div class="caja-acciones">
 								<button type="button" class="btn btn-light caja-sec" id="caja-cierre-volver">
-									<i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Volver a la caja
+									<i class="fa-solid fa-arrow-left" aria-hidden="true"></i> {{ __('Volver a la caja') }}
 								</button>
 								<button type="button" class="btn caja-cta caja-cta-cerrar" id="caja-confirmar-conteo">
-									<i class="fa-solid fa-check" aria-hidden="true"></i> Confirmar conteo
+									<i class="fa-solid fa-check" aria-hidden="true"></i> {{ __('Confirmar conteo') }}
 								</button>
 							</div>
 						</div>
@@ -208,49 +208,49 @@
 							<div class="caja-resultado" id="caja-resultado">
 								<div>
 									<ul class="caja-cifras">
-										<li class="caja-revelar"><span class="lbl">Esperado en el cajón</span><span class="val" data-res="efectivo_esperado">0,00 €</span></li>
-										<li class="caja-revelar"><span class="lbl">Contado</span><span class="val" data-res="efectivo_contado">0,00 €</span></li>
+										<li class="caja-revelar"><span class="lbl">{{ __('Esperado en el cajón') }}</span><span class="val" data-res="efectivo_esperado">0,00 €</span></li>
+										<li class="caja-revelar"><span class="lbl">{{ __('Contado') }}</span><span class="val" data-res="efectivo_contado">0,00 €</span></li>
 									</ul>
 
 									<div class="caja-veredicto caja-revelar" id="caja-veredicto" data-estado="cuadra" role="status">
 										<i class="fa-solid fa-circle-check" aria-hidden="true" data-veredicto="icono"></i>
 										<div>
-											<p class="titulo" data-veredicto="titulo">Cuadra</p>
-											<p class="sub" data-veredicto="sub">El efectivo coincide al céntimo.</p>
+											<p class="titulo" data-veredicto="titulo">{{ __('Cuadra') }}</p>
+											<p class="sub" data-veredicto="sub">{{ __('El efectivo coincide al céntimo.') }}</p>
 										</div>
 									</div>
 
 									<div class="caja-observacion" id="caja-observacion" hidden>
-										<label for="caja-observacion-txt">¿Qué pasó?</label>
+										<label for="caja-observacion-txt">{{ __('¿Qué pasó?') }}</label>
 										<textarea class="form-control" id="caja-observacion-txt" rows="3" maxlength="1000"
-											placeholder="Por ejemplo: se pagó al repartidor del pan sin registrar la salida."></textarea>
+											placeholder="{{ __('Por ejemplo: se pagó al repartidor del pan sin registrar la salida.') }}"></textarea>
 										<small class="text-muted d-block mt-1" data-observacion="ayuda"></small>
 									</div>
 
 									<div class="caja-resultado-acciones" id="caja-acciones-provisional" hidden>
 										<button type="button" class="btn btn-light caja-sec" id="caja-recontar">
-											<i class="fa-solid fa-arrow-rotate-left" aria-hidden="true"></i> Volver a contar
+											<i class="fa-solid fa-arrow-rotate-left" aria-hidden="true"></i> {{ __('Volver a contar') }}
 										</button>
 										<button type="button" class="btn caja-cta caja-cta-cerrar" id="caja-cerrar-con-diferencia">
-											Cerrar caja con esta diferencia
+											{{ __('Cerrar caja con esta diferencia') }}
 										</button>
 									</div>
 
 									<div class="caja-resultado-acciones" id="caja-acciones-final" hidden>
 										<button type="button" class="btn caja-cta" id="caja-imprimir-ticket">
-											<i class="fa-solid fa-print" aria-hidden="true"></i> Imprimir 80 mm
+											<i class="fa-solid fa-print" aria-hidden="true"></i> {{ __('Imprimir 80 mm') }}
 										</button>
 										<button type="button" class="btn btn-outline-secondary caja-sec" id="caja-ver-a4">
-											<i class="fa-regular fa-file-lines" aria-hidden="true"></i> Ver en A4
+											<i class="fa-regular fa-file-lines" aria-hidden="true"></i> {{ __('Ver en A4') }}
 										</button>
 										<button type="button" class="btn btn-light caja-sec" id="caja-volver-inicio">
-											Volver a la caja
+											{{ __('Volver a la caja') }}
 										</button>
 									</div>
 								</div>
 
 								<div class="caja-papel-wrap caja-revelar" id="caja-papel-wrap" hidden>
-									<div class="caja-papel" id="caja-papel" aria-label="Informe Z"></div>
+									<div class="caja-papel" id="caja-papel" aria-label="{{ __('Informe Z') }}"></div>
 									<div class="caja-papel-borde" aria-hidden="true"></div>
 								</div>
 							</div>
@@ -266,13 +266,13 @@
 		<div class="modal-dialog modal-dialog-centered">
 			<div class="modal-content caja">
 				<div class="modal-header">
-					<h5 class="modal-title" id="cajaMovimientoTitulo">Movimiento de efectivo</h5>
-					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+					<h5 class="modal-title" id="cajaMovimientoTitulo">{{ __('Movimiento de efectivo') }}</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('Cerrar') }}"></button>
 				</div>
 				<div class="modal-body">
-					<div class="btn-group filtro-segmentado w-100 caja-mov-tipo" role="group" aria-label="Tipo de movimiento">
-						<button type="button" class="btn btn-outline-secondary" data-mov-tipo="entrada">Entrada</button>
-						<button type="button" class="btn btn-outline-secondary" data-mov-tipo="salida">Salida</button>
+					<div class="btn-group filtro-segmentado w-100 caja-mov-tipo" role="group" aria-label="{{ __('Tipo de movimiento') }}">
+						<button type="button" class="btn btn-outline-secondary" data-mov-tipo="entrada">{{ __('Entrada') }}</button>
+						<button type="button" class="btn btn-outline-secondary" data-mov-tipo="salida">{{ __('Salida') }}</button>
 					</div>
 
 					<div class="caja-teclado">
@@ -281,19 +281,19 @@
 							@foreach ([1, 2, 3, 4, 5, 6, 7, 8, 9] as $n)
 								<button type="button" class="caja-key" data-key="{{ $n }}">{{ $n }}</button>
 							@endforeach
-							<button type="button" class="caja-key sec" data-key="," aria-label="Coma decimal">,</button>
+							<button type="button" class="caja-key sec" data-key="," aria-label="{{ __('Coma decimal') }}">,</button>
 							<button type="button" class="caja-key" data-key="0">0</button>
-							<button type="button" class="caja-key sec" data-key="del" aria-label="Borrar"><i class="fa-solid fa-delete-left" aria-hidden="true"></i></button>
+							<button type="button" class="caja-key sec" data-key="del" aria-label="{{ __('Borrar') }}"><i class="fa-solid fa-delete-left" aria-hidden="true"></i></button>
 						</div>
 					</div>
 
-					<label class="form-label mt-3" for="caja-mov-motivo">Motivo</label>
+					<label class="form-label mt-3" for="caja-mov-motivo">{{ __('Motivo') }}</label>
 					<input type="text" class="form-control caja-motivo" id="caja-mov-motivo" maxlength="160" autocomplete="off">
 					<div class="caja-chips" id="caja-mov-chips"></div>
 				</div>
 				<div class="modal-footer">
-					<button type="button" class="btn btn-light caja-sec" data-bs-dismiss="modal">Cancelar</button>
-					<button type="button" class="btn caja-cta" id="caja-mov-guardar">Registrar salida</button>
+					<button type="button" class="btn btn-light caja-sec" data-bs-dismiss="modal">{{ __('Cancelar') }}</button>
+					<button type="button" class="btn caja-cta" id="caja-mov-guardar">{{ __('Registrar salida') }}</button>
 				</div>
 			</div>
 		</div>
@@ -304,18 +304,18 @@
 		<div class="modal-dialog modal-dialog-centered modal-xl">
 			<div class="modal-content">
 				<div class="modal-header">
-					<h5 class="modal-title">Informe de cierre de caja</h5>
-					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+					<h5 class="modal-title">{{ __('Informe de cierre de caja') }}</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('Cerrar') }}"></button>
 				</div>
 				<div class="modal-body p-0" style="height: 80vh;">
-					<iframe id="cajaInformeFrame" src="" title="Informe de cierre de caja" style="width: 100%; height: 100%; border: 0;"></iframe>
+					<iframe id="cajaInformeFrame" src="" title="{{ __('Informe de cierre de caja') }}" style="width: 100%; height: 100%; border: 0;"></iframe>
 				</div>
 			</div>
 		</div>
 	</div>
 @endsection
 
-@section('ayuda-titulo', 'Caja')
+@section('ayuda-titulo', __('Caja'))
 @section('ayuda')
 	@include('ayuda.pos-caja')
 @endsection

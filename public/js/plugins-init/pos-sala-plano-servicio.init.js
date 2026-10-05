@@ -102,11 +102,11 @@
 			$sinSitio.classList.toggle('d-none', sinSitio.length === 0);
 			$sinSitioGrid.innerHTML = sinSitio.map(function (mesa) {
 				var clase = D.claseEstado(mesa);
+				var minutos = { min: D.minutosMesa(mesa) };
 				var cuerpo = mesa.estado === 'libre'
-					? '<span class="importe">Libre</span><span class="meta">Toca para abrir cuenta</span>'
+					? '<span class="importe">' + __t('Libre') + '</span><span class="meta">' + __t('Toca para abrir cuenta') + '</span>'
 					: '<span class="importe">' + D.formatoImporte(mesa.pendiente) + ' €</span>' +
-					  '<span class="meta">' + (clase === 'precuenta' ? 'Precuenta hace ' : 'Hace ') +
-					  D.minutosMesa(mesa) + ' min</span>';
+					  '<span class="meta">' + (clase === 'precuenta' ? __t('Precuenta hace :min min', minutos) : __t('Hace :min min', minutos)) + '</span>';
 
 				return '<button type="button" class="pos-mesa ' + clase + '" data-mesa-id="' + mesa.id + '">' +
 					'<span class="nombre">' + D.escapeHtml(mesa.nombre) + '</span>' +
@@ -173,7 +173,7 @@
 	function abrirMenu(mesa, el) {
 		mesaMenu = mesa;
 
-		$menuNombre.textContent = mesa.nombre || 'Mesa';
+		$menuNombre.textContent = mesa.nombre || __t('Mesa');
 		$menuAcciones.classList.remove('d-none');
 		$menuEditar.classList.add('d-none');
 
@@ -222,11 +222,11 @@
 				// (tarjetas incluidas) desde el servidor.
 				mesa.nombre = nuevo;
 				pintar();
-				window.showToast('success', 'Mesa actualizada.');
+				window.showToast('success', __t('Mesa actualizada.'));
 				document.getElementById('pos-sala-refrescar').click();
 			})
 			.fail(function (xhr) {
-				var msg = (xhr.responseJSON && xhr.responseJSON.message) || 'No se pudo renombrar la mesa.';
+				var msg = (xhr.responseJSON && xhr.responseJSON.message) || __t('No se pudo renombrar la mesa.');
 				window.showToast('danger', msg);
 			});
 

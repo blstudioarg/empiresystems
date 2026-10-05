@@ -185,6 +185,26 @@ simplificada) como siempre.
 > es secundaria ([Holded — tipos de facturas y Verifactu](https://www.holded.com/es/blog/tipos-facturas-verifactu)).
 > Reconfirmarlo contra las FAQ oficiales de la AEAT sobre Verifactu.
 
+### 3.3 Idioma de las facturas (RD 1619/2012 art. 12.2) — feature 050
+
+- **Las facturas se pueden expedir en cualquier lengua.** El art. 12.2 del Reglamento de
+  facturación (RD 1619/2012) lo permite expresamente; la Administración tributaria, cuando lo
+  considere necesario para una comprobación, puede **exigir una traducción al castellano** u otra
+  lengua oficial en España de las facturas expedidas (o recibidas) en lengua no oficial.
+- **Decisión del proyecto (feature 050, POS en chino):** con el idioma del POS en chino, el ticket
+  (factura simplificada, 80 mm y A4) y la precuenta se imprimen **bilingües español/chino**: cada
+  texto propio del documento aparece en castellano y en chino. El castellano está siempre en el
+  propio documento, así que la exigencia de traducción queda cubierta sin generar nada aparte. Con
+  el POS en español los documentos no cambian.
+- **Lo regulado no se traduce ni cambia**: numeración, importes, desglose de impuestos, QR de cotejo
+  y registro Verifactu son idénticos en los dos idiomas (Principio III). El partial
+  `partials/verifactu-qr` (QR + mención «VERI*FACTU») **no** pasa por la traducción. Las siglas
+  fiscales (IVA, IGIC, IPSI, NIF, VERI*FACTU) se mantienen tal cual.
+- La factura **ordinaria** A4 no se ve afectada: el POS solo emite simplificadas, y lo bilingüe se
+  aplica únicamente cuando el documento es `simplificada`.
+- Los datos del negocio (nombres de artículos, cliente, notas) se imprimen tal cual se cargaron; si
+  contienen caracteres chinos, el PDF usa una fuente con glifos CJK (Noto Sans SC).
+
 ## 4. Campos obligatorios de la factura completa
 - Número y, en su caso, **serie** (correlativo, sin huecos).
 - **Fecha de expedición** y, si difiere, **fecha de operación**.
@@ -298,6 +318,7 @@ referencia legal, p. ej.:
 - Factura simplificada (supuestos, contenido, cualificada): [AEAT — Manual actividades económicas 5.10.6 Facturas simplificadas](https://sede.agenciatributaria.gob.es/Sede/ayuda/manuales-videos-folletos/manuales-practicos/folleto-actividades-economicas/5-impuesto-sobre-valor-anadido/5_10-facturas/5_10_6-facturas-simplificadas.html)
 - IVA / recargo / IRPF: [AEAT — tipos impositivos IVA](https://sede.agenciatributaria.gob.es/Sede/iva/calculo-iva-repercutido-clientes/tipos-impositivos-iva.html)
 - IGIC Canarias 2026: [guiafiscal — IGIC 2026](https://guiafiscal.es/iva/igic-canarias-2026/), [KPMG — cambios tipos IGIC 2026](https://assets.kpmg.com/content/dam/kpmgsites/es/pdf/2026/01/tax-alert-cambios-tipos-igic-2026.pdf.coredownload.inline.pdf)
+- Idioma de las facturas (art. 12.2): [RD 1619/2012, Reglamento de facturación — BOE-A-2012-14696](https://www.boe.es/buscar/act.php?id=BOE-A-2012-14696)
 - Precuenta / proforma sin registro Verifactu (fuente secundaria, reconfirmar con AEAT): [Holded — tipos de facturas y Verifactu](https://www.holded.com/es/blog/tipos-facturas-verifactu)
 - Numeración/series: [AEAT — recomendaciones numeración](https://sede.agenciatributaria.gob.es/Sede/iva/facturacion-registro/facturacion-iva.html)
 - Calificación operación / causas de exención (SII/Verifactu): [AEAT — FAQ libro registro facturas expedidas](https://sede.agenciatributaria.gob.es/Sede/iva/facturacion-registro/preguntas-frecuentes/libro-registro-facturas-expedidas-iva-irpf.html), [Wolters Kluwer — claves de facturas IVA (SII)](https://a3responde.wolterskluwer.com/es/s/article/sii-relacion-de-claves-de-las-facturas-iva-tributacion-estatal)

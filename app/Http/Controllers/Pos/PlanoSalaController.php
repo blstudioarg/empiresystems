@@ -55,7 +55,7 @@ class PlanoSalaController extends Controller
 
         if ((int) $datos['version'] !== (int) $modelo->version) {
             return response()->json([
-                'message' => 'El plano se modificó desde otro dispositivo. Recárgalo antes de guardar.',
+                'message' => __('El plano se modificó desde otro dispositivo. Recárgalo antes de guardar.'),
             ], 409);
         }
 
@@ -90,7 +90,7 @@ class PlanoSalaController extends Controller
         });
 
         return response()->json([
-            'message' => 'Plano guardado.',
+            'message' => __('Plano guardado.'),
             'version' => $modelo->version,
         ]);
     }

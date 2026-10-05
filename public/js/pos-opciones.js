@@ -61,7 +61,7 @@ window.PosApp.registrar('opciones', function (PosApp) {
 			var titulo = document.createElement('div');
 			titulo.className = 'pos-opciones-grupo-titulo';
 			titulo.innerHTML = '<span>' + PosApp.escapeHtml(grupo.nombre) + '</span>' +
-				(grupo.obligatorio ? '<span class="req">Obligatorio</span>' : '');
+				(grupo.obligatorio ? '<span class="req">' + __t('Obligatorio') + '</span>' : '');
 			$bloque.appendChild(titulo);
 
 			var grid = document.createElement('div');
@@ -110,7 +110,7 @@ window.PosApp.registrar('opciones', function (PosApp) {
 				abrirConDatos(data);
 			})
 			.catch(function () {
-				window.showToast('error', 'No se pudieron cargar las opciones de este artículo.');
+				window.showToast('error', __t('No se pudieron cargar las opciones de este artículo.'));
 			});
 	}
 

@@ -12,18 +12,18 @@
 	@include('pos._caja-bandeja', [
 		'id' => $id.'-bandeja',
 		'modo' => 'importe',
-		'titulo' => 'Abrir caja',
-		'subtitulo' => 'Con cuánto efectivo empieza el cajón (el fondo de cambio).',
-		'etiquetaTotal' => 'Fondo de cambio',
+		'titulo' => __('Abrir caja'),
+		'subtitulo' => __('Con cuánto efectivo empieza el cajón (el fondo de cambio).'),
+		'etiquetaTotal' => __('Fondo de cambio'),
 	])
 
 	<div class="caja-acciones">
 		@if ($cancelable ?? true)
-			<button type="button" class="btn btn-light caja-sec" data-apertura-cancelar>Cancelar</button>
+			<button type="button" class="btn btn-light caja-sec" data-apertura-cancelar>{{ __('Cancelar') }}</button>
 		@endif
 		<button type="button" class="btn caja-cta caja-cta-dinero" data-apertura-confirmar>
 			<i class="fa-solid fa-lock-open" aria-hidden="true"></i>
-			<span data-apertura-texto>Abrir caja con 0,00 €</span>
+			<span data-apertura-texto>{{ __('Abrir caja con :importe', ['importe' => '0,00 €']) }}</span>
 		</button>
 	</div>
 </div>

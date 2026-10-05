@@ -58,23 +58,23 @@ window.PosApp.registrar('precuenta', function (PosApp) {
 
 			return emitir(cuenta).then(function (res) {
 				if (res.status === 409) {
-					window.showToast('error', res.data.message || 'Otro dispositivo modificó esta cuenta.');
+					window.showToast('error', res.data.message || __t('Otro dispositivo modificó esta cuenta.'));
 					if (res.data.cuenta) { cuentaModulo.aplicarCuenta(res.data.cuenta); }
 					return;
 				}
 				if (!res.ok) {
-					window.showToast('error', res.data.message || 'No se pudo generar la precuenta.');
+					window.showToast('error', res.data.message || __t('No se pudo generar la precuenta.'));
 					return;
 				}
 
 				cuentaModulo.aplicarCuenta(res.data.cuenta);
-				window.showToast('success', res.data.precuenta.reimpresion ? 'Precuenta reimpresa.' : 'Precuenta generada.');
+				window.showToast('success', res.data.precuenta.reimpresion ? __t('Precuenta reimpresa.') : __t('Precuenta generada.'));
 
 				$frame.setAttribute('src', res.data.precuenta.pdf_url);
 				modal.show();
 			});
 		}).catch(function () {
-			window.showToast('error', 'No se pudo generar la precuenta.');
+			window.showToast('error', __t('No se pudo generar la precuenta.'));
 		});
 	}
 

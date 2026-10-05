@@ -20,8 +20,8 @@
 				<p id="confirmDeleteMessage" class="mb-0 mt-2"></p>
 			</div>
 			<div class="modal-footer border-0 justify-content-center pb-4">
-				<button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
-				<button type="button" id="confirmDeleteButton" class="btn btn-danger">Eliminar</button>
+				<button type="button" class="btn btn-light" data-bs-dismiss="modal">{{ __('Cancelar') }}</button>
+				<button type="button" id="confirmDeleteButton" class="btn btn-danger">{{ __('Eliminar') }}</button>
 			</div>
 		</div>
 	</div>

@@ -60,18 +60,18 @@ window.PosApp.registrar('ticket', function (PosApp) {
 					'</div>' +
 					'<div class="linea-controls">' +
 						'<span class="qty-group">' +
-							'<button type="button" class="qty-btn" data-act="dec" data-i="' + i + '" aria-label="Restar">−</button>' +
+							'<button type="button" class="qty-btn" data-act="dec" data-i="' + i + '" aria-label="' + __t('Restar') + '">−</button>' +
 							'<span class="qty">' + l.cantidad + '</span>' +
-							'<button type="button" class="qty-btn" data-act="inc" data-i="' + i + '" aria-label="Sumar">+</button>' +
+							'<button type="button" class="qty-btn" data-act="inc" data-i="' + i + '" aria-label="' + __t('Sumar') + '">+</button>' +
 						'</span>' +
-						'<button type="button" class="del" data-act="del" data-i="' + i + '" aria-label="Quitar">×</button>' +
+						'<button type="button" class="del" data-act="del" data-i="' + i + '" aria-label="' + __t('Quitar') + '">×</button>' +
 					'</div>';
 				$lineasScroll.appendChild(row);
 			});
 		}
 
 		if ($footCount) {
-			$footCount.textContent = count === 1 ? '1 artículo' : count + ' artículos';
+			$footCount.textContent = count === 1 ? __t(':n artículo', { n: 1 }) : __t(':n artículos', { n: count });
 		}
 
 		var bruto = PosApp.totalBruto();

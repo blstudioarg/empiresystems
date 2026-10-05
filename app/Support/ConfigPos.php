@@ -38,6 +38,15 @@ class ConfigPos
 
     public const DEFAULT_CAJA_UMBRAL_DESCUADRE = 5.00;
 
+    /**
+     * Idioma del POS (feature 050): `es` por defecto, también por **ausencia** de fila. **No**
+     * depende del módulo de hostelería (FR-002): el listado de tickets, crear ticket y la caja
+     * existen sin él y también se traducen.
+     */
+    public const CLAVE_IDIOMA = 'pos.idioma';
+
+    public const DEFAULT_IDIOMA = 'es';
+
     public const GRUPO = 'pos';
 
     public static function hosteleriaActivo(int $tenantId): bool
@@ -73,12 +82,26 @@ class ConfigPos
     }
 
     /**
+     * Idioma del POS del tenant. Un valor guardado que ya no esté entre los permitidos
+     * (`config('traduccion.idiomas')`) cae al español en vez de dejar el POS en un idioma sin
+     * soporte.
+     */
+    public static function idioma(int $tenantId): string
+    {
+        $valor = self::fila($tenantId, self::CLAVE_IDIOMA);
+
+        return $valor !== null && array_key_exists($valor, (array) config('traduccion.idiomas'))
+            ? $valor
+            : self::DEFAULT_IDIOMA;
+    }
+
+    /**
      * Estado completo del módulo, para la pestaña de configuración y para el payload de las
      * vistas del POS. Las capacidades se devuelven **crudas** (tal cual están guardadas), no
      * cruzadas con el interruptor maestro: la pantalla de configuración tiene que poder mostrar
      * cómo quedarán al reactivar el módulo (FR-007).
      *
-     * @return array{hosteleria_activo: bool, opciones_activo: bool, cobro_dividido_activo: bool, suplemento_zona_activo: bool, mesa_olvidada_min: int, caja_umbral_descuadre: float}
+     * @return array{hosteleria_activo: bool, opciones_activo: bool, cobro_dividido_activo: bool, suplemento_zona_activo: bool, mesa_olvidada_min: int, caja_umbral_descuadre: float, idioma: string}
      */
     public static function todo(int $tenantId): array
     {
@@ -89,6 +112,7 @@ class ConfigPos
             'suplemento_zona_activo' => self::flag($tenantId, self::CLAVE_SUPLEMENTO_ZONA_ACTIVO),
             'mesa_olvidada_min' => self::mesaOlvidadaMin($tenantId),
             'caja_umbral_descuadre' => self::cajaUmbralDescuadre($tenantId),
+            'idioma' => self::idioma($tenantId),
         ];
     }
 
@@ -96,7 +120,7 @@ class ConfigPos
      * Persiste los flags del módulo. Nunca borra zonas, mesas, grupos ni opciones: apagar una
      * capacidad solo la oculta (FR-007), de modo que reactivarla recupera los datos intactos.
      *
-     * @param  array{hosteleria_activo?: bool, opciones_activo?: bool, cobro_dividido_activo?: bool, suplemento_zona_activo?: bool, mesa_olvidada_min?: int, caja_umbral_descuadre?: float|string}  $valores
+     * @param  array{hosteleria_activo?: bool, opciones_activo?: bool, cobro_dividido_activo?: bool, suplemento_zona_activo?: bool, mesa_olvidada_min?: int, caja_umbral_descuadre?: float|string, idioma?: string}  $valores
      */
     public static function guardar(int $tenantId, array $valores): void
     {
@@ -119,6 +143,12 @@ class ConfigPos
 
         if (array_key_exists('caja_umbral_descuadre', $valores)) {
             self::escribir($tenantId, self::CLAVE_CAJA_UMBRAL_DESCUADRE, number_format((float) $valores['caja_umbral_descuadre'], 2, '.', ''), 'decimal');
+        }
+
+        // Un idioma no permitido se ignora: la validación de entrada vive en el controlador, esto
+        // solo evita persistir basura si alguien llama al servicio directamente.
+        if (array_key_exists('idioma', $valores) && array_key_exists($valores['idioma'], (array) config('traduccion.idiomas'))) {
+            self::escribir($tenantId, self::CLAVE_IDIOMA, (string) $valores['idioma'], 'string');
         }
     }
 
