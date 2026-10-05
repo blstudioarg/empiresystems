@@ -49,10 +49,25 @@ aparece en el ticket impreso.</p>
 		<li><strong>Artículos con opciones</strong>: un plato con modificadores (punto de cocción,
 			extras…) abre un modal de selección al tocarlo; uno sin opciones se añade directo, en
 			un toque, igual que siempre.</li>
-		<li><strong>Cobro por partes</strong> (si está activado): en el modal de cobro podés elegir
-			qué líneas cobrar en vez de la cuenta entera. La mesa sigue ocupada mostrando lo que
-			falta, hasta que se salda todo.</li>
+		<li><strong>Precuenta</strong>: cuando la mesa pide la cuenta, tocá <em>Precuenta</em> en el
+			chip de la mesa. Se guarda lo que tengas en pantalla y aparece la vista previa de un papel
+			titulado «PRECUENTA» con lo consumido pendiente de cobro y el total; desde ahí la
+			<em>imprimís</em> y se la llevás a la mesa. <strong>No es un ticket ni cobra nada</strong>:
+			no tiene número, no cuenta como venta y lleva la leyenda «Documento no válido como
+			factura». Al cerrar la vista previa la pantalla queda en cero, igual que al guardar, y la
+			cuenta sigue abierta en su mesa. Cuando el cliente paga, cobrás como siempre y entonces sí
+			se emite el ticket. Mientras la precuenta siga valiendo, el chip de la mesa muestra un
+			check (✓); si la volvés a sacar sin cambios, sale marcada como «Reimpresión».</li>
+		<li><strong>Cobro por partes</strong>: <em>disponible próximamente</em>. Por ahora, desde el
+			TPV la cuenta se cobra entera.</li>
 	</ol>
+
+	<p class="ayuda-nota">Si después de dar la precuenta añadís o quitás algo y guardás, te avisa de
+	que <strong>la precuenta impresa ya no coincide</strong> y el chip de la mesa muestra
+	«Desactualizada» en ámbar. Reimprimila antes de cobrar: al abrir el cobro también vas a ver la
+	cifra de la precuenta junto al total actual, para que nunca se cobre algo distinto de lo que el cliente
+	revisó sin darte cuenta. Cambiar las notas, los comensales o los datos del cliente no la
+	desactualiza.</p>
 
 	<p class="ayuda-nota">Si dos camareros abren la misma cuenta en dispositivos distintos y ambos
 	guardan cambios, el segundo en guardar recibe un aviso y la pantalla se recarga con los datos

@@ -157,6 +157,34 @@ Datos técnicos de Facturae:
 
 > **Implicación de diseño:** el modelo de `facturas` ya tiene `cliente_id` y el snapshot `cliente_*` como **nullable** (pensado desde el inicio para simplificada). No hace falta ninguna columna nueva para soportar la variante cualificada: si el usuario completa el receptor en una factura `tipo = simplificada`, es cualificada; si lo deja vacío, es la variante simple. La validación de importe (≤ 400 €/3.000 € según sector) y la lista de sectores con tope ampliado quedan como reglas de negocio a implementar en la feature correspondiente, no como columnas.
 
+### 3.2 Precuenta (documento no fiscal) — feature 049
+
+En hostelería es habitual entregar a la mesa una **precuenta** (lo consumido hasta ese momento) para
+que el cliente la revise antes de pagar; después se cobra y se expide el ticket (factura
+simplificada) como siempre.
+
+- **No es una factura.** Es un documento informativo, equivalente a una proforma: no es una factura
+  expedida, por lo que **no genera registro de facturación Verifactu** (RD 1007/2023 y Orden
+  HAC/1177/2024 regulan los registros de las facturas expedidas, §1) ni **consume numeración** de
+  ninguna serie (§7).
+- **Riesgo real a cubrir: la confusión con una factura** y su uso para cobrar ventas que luego no
+  se facturan. Por eso el documento debe distinguirse sin ambigüedad del ticket: título
+  «PRECUENTA», leyenda «Documento no válido como factura» al principio y al final, y **sin** número,
+  serie, código QR de cotejo ni la mención VERI*FACTU. Tampoco lleva NIF ni dirección fiscal del
+  emisor (no son necesarios y acercan el documento a una factura).
+- **Mención del impuesto según el régimen del tenant** («IVA/IGIC/IPSI incluido», sin desglose):
+  nunca «IVA» fijo (§5, regímenes territoriales).
+- **Registro append-only de emisiones** (`pos_precuentas`, ver `03-modelo-datos.md`): cada precuenta
+  emitida queda registrada con foto de lo impreso y nunca se edita ni se borra, de modo que una
+  cuenta con precuenta que acaba anulada sin cobrarse es detectable a posteriori.
+- **El total de la precuenta sale del mismo cálculo que el ticket** (`CalculadoraFactura`, mismo
+  régimen y recargo de equivalencia del receptor de la cuenta): debe coincidir al céntimo con lo que
+  se cobraría en ese instante.
+
+> **Pendiente antes de producción:** la fuente de que las proformas/precuentas no generan registro
+> es secundaria ([Holded — tipos de facturas y Verifactu](https://www.holded.com/es/blog/tipos-facturas-verifactu)).
+> Reconfirmarlo contra las FAQ oficiales de la AEAT sobre Verifactu.
+
 ## 4. Campos obligatorios de la factura completa
 - Número y, en su caso, **serie** (correlativo, sin huecos).
 - **Fecha de expedición** y, si difiere, **fecha de operación**.
@@ -270,6 +298,7 @@ referencia legal, p. ej.:
 - Factura simplificada (supuestos, contenido, cualificada): [AEAT — Manual actividades económicas 5.10.6 Facturas simplificadas](https://sede.agenciatributaria.gob.es/Sede/ayuda/manuales-videos-folletos/manuales-practicos/folleto-actividades-economicas/5-impuesto-sobre-valor-anadido/5_10-facturas/5_10_6-facturas-simplificadas.html)
 - IVA / recargo / IRPF: [AEAT — tipos impositivos IVA](https://sede.agenciatributaria.gob.es/Sede/iva/calculo-iva-repercutido-clientes/tipos-impositivos-iva.html)
 - IGIC Canarias 2026: [guiafiscal — IGIC 2026](https://guiafiscal.es/iva/igic-canarias-2026/), [KPMG — cambios tipos IGIC 2026](https://assets.kpmg.com/content/dam/kpmgsites/es/pdf/2026/01/tax-alert-cambios-tipos-igic-2026.pdf.coredownload.inline.pdf)
+- Precuenta / proforma sin registro Verifactu (fuente secundaria, reconfirmar con AEAT): [Holded — tipos de facturas y Verifactu](https://www.holded.com/es/blog/tipos-facturas-verifactu)
 - Numeración/series: [AEAT — recomendaciones numeración](https://sede.agenciatributaria.gob.es/Sede/iva/facturacion-registro/facturacion-iva.html)
 - Calificación operación / causas de exención (SII/Verifactu): [AEAT — FAQ libro registro facturas expedidas](https://sede.agenciatributaria.gob.es/Sede/iva/facturacion-registro/preguntas-frecuentes/libro-registro-facturas-expedidas-iva-irpf.html), [Wolters Kluwer — claves de facturas IVA (SII)](https://a3responde.wolterskluwer.com/es/s/article/sii-relacion-de-claves-de-las-facturas-iva-tributacion-estatal)
 - Facturae / formatos B2B (EN 16931): [Facturae 3.2.2 + XAdES-EPES](https://apolohq.com/facturae/), [formatos obligatorios B2B (Facturae/UBL/CII/EDIFACT)](https://peppolvalidator.com/factura-electronica-espana)

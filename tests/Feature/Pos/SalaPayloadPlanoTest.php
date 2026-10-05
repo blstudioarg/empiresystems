@@ -26,10 +26,14 @@ class SalaPayloadPlanoTest extends TestCase
 {
     use GestionaRolesDeTenant, RefreshDatabase;
 
-    /** Los diez campos que la vista de plano declara contrato. */
+    /**
+     * Los campos que la vista de plano declara contrato: los diez de la feature 041 más los dos del
+     * estado "precuenta pedida" (feature 049), que deciden la clase visual en las dos vistas.
+     */
     private const CAMPOS_CONTRATO = [
         'fila', 'columna', 'ancho_celdas', 'alto_celdas', 'forma',
         'estado', 'olvidada', 'pendiente', 'abierta_hace_min', 'abrir_url',
+        'precuenta_pedida', 'precuenta_hace_min',
     ];
 
     /** @return array{0: Tenant, 1: User} */
@@ -45,7 +49,7 @@ class SalaPayloadPlanoTest extends TestCase
         return [$tenant, $this->usuarioConRol($tenant, $rol)];
     }
 
-    public function test_cada_mesa_llega_con_los_diez_campos_de_contrato_y_sus_tipos(): void
+    public function test_cada_mesa_llega_con_los_campos_de_contrato_y_sus_tipos(): void
     {
         $this->sembrarPermisos();
         [$tenant, $user] = $this->tenantConSala();
@@ -71,6 +75,8 @@ class SalaPayloadPlanoTest extends TestCase
         $this->assertSame('cuadrada', $mesa['forma']);
         $this->assertSame('libre', $mesa['estado']);
         $this->assertFalse($mesa['olvidada']);
+        $this->assertFalse($mesa['precuenta_pedida']);
+        $this->assertNull($mesa['precuenta_hace_min']);
         $this->assertIsString($mesa['pendiente']);
         $this->assertIsString($mesa['abrir_url']);
     }

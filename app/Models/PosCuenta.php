@@ -3,11 +3,13 @@
 namespace App\Models;
 
 use App\Services\CobradorCuenta;
+use App\Services\PrecuentaCuenta;
 use Database\Factories\PosCuentaFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
 /**
@@ -81,6 +83,23 @@ class PosCuenta extends Model
     public function cobros(): HasMany
     {
         return $this->hasMany(PosCobro::class, 'cuenta_id');
+    }
+
+    /**
+     * Precuentas emitidas (feature 049), append-only. El **estado** de precuenta de la cuenta
+     * (ninguna / vigente / desactualizada) no se guarda en ninguna columna: se deriva comparando
+     * huellas en {@see PrecuentaCuenta}, para que ningún camino que toque líneas pueda olvidarse de
+     * "marcarla" como desactualizada.
+     */
+    public function precuentas(): HasMany
+    {
+        return $this->hasMany(PosPrecuenta::class, 'cuenta_id')->orderBy('id');
+    }
+
+    /** La última precuenta emitida: es la única que decide el estado (feature 049). */
+    public function ultimaPrecuenta(): HasOne
+    {
+        return $this->hasOne(PosPrecuenta::class, 'cuenta_id')->latestOfMany('id');
     }
 
     public function estaAbierta(): bool

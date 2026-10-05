@@ -12,6 +12,10 @@
 			--pos-primary: var(--primary, #1d69d6);
 			--pos-money: #16a34a;
 			--pos-warn: #d97706;
+			/* Precuenta (feature 049): violeta, distinto de los colores ya reservados y del rojo de
+			   rechazo; no el primario del tenant, que podría coincidir con el verde de "ocupada". */
+			--pos-precuenta: #7c3aed;
+			--pos-precuenta-bg: #f6f2ff;
 		}
 
 		.pos-filtros-wrap { position: relative; margin: 0 0 1rem; }
@@ -35,8 +39,10 @@
 		.pos-filtro.active .badge-count { background: rgba(255,255,255,.25); color: #fff; }
 
 		/* Tarjetas de mesa: el borde comunica el estado de un vistazo desde la barra, sin leer.
-		   Gris = libre, verde = ocupada, ámbar = olvidada. El servidor decide "olvidada": la
-		   vista NO hace aritmética de fechas (dependería del reloj de la tablet). */
+		   Gris = libre, verde = ocupada, ámbar = olvidada, violeta = precuenta (feature 049: la
+		   mesa ya tiene la cuenta y espera para pagar; prevalece sobre olvidada). El servidor
+		   decide "olvidada" y "precuenta": la vista NO hace aritmética de fechas (dependería del
+		   reloj de la tablet). */
 		.pos-mesas-grid {
 			display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: .9rem;
 		}
@@ -58,12 +64,16 @@
 		.pos-mesa.olvidada { border-color: var(--pos-warn); background: #fffaf2; }
 		.pos-mesa.olvidada .importe { color: var(--pos-warn); }
 		.pos-mesa.olvidada .meta { color: var(--pos-warn); }
+		.pos-mesa.precuenta { border-color: var(--pos-precuenta); background: var(--pos-precuenta-bg); }
+		.pos-mesa.precuenta .importe { color: var(--pos-precuenta); }
+		.pos-mesa.precuenta .meta { color: var(--pos-precuenta); }
 		.pos-mesa .estado-badge {
 			position: absolute; top: .55rem; right: .6rem; font-size: .66rem; font-weight: 800;
 			letter-spacing: .04em; text-transform: uppercase; padding: .18rem .5rem; border-radius: 1rem;
 		}
 		.pos-mesa.ocupada .estado-badge { background: #e9f9ef; color: #14833b; }
 		.pos-mesa.olvidada .estado-badge { background: #fff4e5; color: #b26a00; }
+		.pos-mesa.precuenta .estado-badge { background: #ede5ff; color: #5b21b6; }
 
 		.pos-sala-vacia { text-align: center; padding: 3rem 1rem; color: #9aa0a6; }
 
@@ -191,6 +201,7 @@
 		.plano-mesa.libre { border-color: #d7dbe3; }
 		.plano-mesa.ocupada { border-color: var(--pos-money, #16a34a); }
 		.plano-mesa.olvidada { border-color: var(--pos-warn, #d97706); background: #fffaf2; }
+		.plano-mesa.precuenta { border-color: var(--pos-precuenta, #7c3aed); background: var(--pos-precuenta-bg, #f6f2ff); }
 		.plano-mesa .plano-mesa-nombre { pointer-events: none; }
 		.plano-mesa .plano-mesa-handle {
 			position: absolute; top: -.5rem; right: -.5rem; width: 1.6rem; height: 1.6rem;
@@ -262,6 +273,7 @@
 		}
 		.plano-mesa.ocupada .silla { background: rgba(22,163,74,.45); }
 		.plano-mesa.olvidada .silla { background: rgba(217,119,6,.45); }
+		.plano-mesa.precuenta .silla { background: rgba(124,58,237,.45); }
 
 		#pos-plano-fuera-rejilla { margin-top: .8rem; }
 
@@ -442,6 +454,8 @@
 		.plano-mesa.ocupada.plano-mesa-servicio .plano-mesa-importe { color: var(--pos-money, #16a34a); }
 		.plano-mesa.olvidada.plano-mesa-servicio .plano-mesa-importe,
 		.plano-mesa.olvidada.plano-mesa-servicio .plano-mesa-tiempo { color: var(--pos-warn, #d97706); }
+		.plano-mesa.precuenta.plano-mesa-servicio .plano-mesa-importe,
+		.plano-mesa.precuenta.plano-mesa-servicio .plano-mesa-tiempo { color: var(--pos-precuenta, #7c3aed); }
 
 		@media (prefers-reduced-motion: reduce) {
 			.plano-mesa { transition: none; }
@@ -464,7 +478,7 @@
 			<div class="pos-sala-cards-collapse" id="pos-sala-cards-collapse">
 				<div class="pos-sala-cards-collapse-inner">
 					<div class="row" id="pos-sala-cards">
-						<div class="col-xl-3 col-sm-6">
+						<div class="col-xl col-md-4 col-sm-6">
 							<div class="card same-card">
 								<div class="card-body">
 									<div class="d-flex justify-content-between align-items-center">
@@ -479,7 +493,7 @@
 								</div>
 							</div>
 						</div>
-						<div class="col-xl-3 col-sm-6">
+						<div class="col-xl col-md-4 col-sm-6">
 							<div class="card same-card">
 								<div class="card-body">
 									<div class="d-flex justify-content-between align-items-center">
@@ -494,7 +508,7 @@
 								</div>
 							</div>
 						</div>
-						<div class="col-xl-3 col-sm-6">
+						<div class="col-xl col-md-4 col-sm-6">
 							<div class="card same-card">
 								<div class="card-body">
 									<div class="d-flex justify-content-between align-items-center">
@@ -509,7 +523,7 @@
 								</div>
 							</div>
 						</div>
-						<div class="col-xl-3 col-sm-6">
+						<div class="col-xl col-md-4 col-sm-6">
 							<div class="card same-card">
 								<div class="card-body">
 									<div class="d-flex justify-content-between align-items-center">
@@ -519,6 +533,22 @@
 										</div>
 										<div>
 											<x-lordicon icon="wired-outline-3627-mail-open-warning-hover-pinch" size="38" trigger="hover" target=".card" />
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+						{{-- Precuenta (feature 049): mesas que ya tienen la cuenta y esperan para pagar. --}}
+						<div class="col-xl col-md-4 col-sm-6">
+							<div class="card same-card">
+								<div class="card-body">
+									<div class="d-flex justify-content-between align-items-center">
+										<div>
+											<h6 class="mb-1">Precuenta</h6>
+											<h4 class="mb-0" style="color: var(--pos-precuenta);" data-metric="precuentas">0</h4>
+										</div>
+										<div>
+											<x-lordicon icon="wired-outline-2447-invoice-receipt-euro-hover-pinch" size="38" trigger="hover" target=".card" />
 										</div>
 									</div>
 								</div>

@@ -14,6 +14,7 @@ use App\Models\Factura;
 use App\Models\PosCuenta;
 use App\Models\PosMesa;
 use App\Services\AperturaCaja;
+use App\Services\PrecuentaCuenta;
 use App\Services\RegistroTicket;
 use App\Support\ConfigPos;
 use App\Support\TiposImpositivos;
@@ -125,7 +126,7 @@ class PosController extends Controller
         $cuenta = null;
         if ($hosteleria && $request->filled('cuenta')) {
             $cuenta = PosCuenta::query()
-                ->with('lineas.opciones', 'mesa.zona')
+                ->with('lineas.opciones', 'mesa.zona', 'ultimaPrecuenta')
                 ->where('estado', PosCuenta::ESTADO_ABIERTA)
                 ->find($request->query('cuenta'));
         }
@@ -166,6 +167,9 @@ class PosController extends Controller
                 'zona_suplemento' => ConfigPos::suplementoZonaActivo($tenantId)
                     ? number_format((float) ($cuenta->mesa?->zona?->suplemento_porcentaje ?? 0), 2, '.', '')
                     : '0.00',
+                // Precuenta (feature 049): el chip y el aviso del cobro la necesitan desde el
+                // primer render, al retomar la cuenta desde la Sala.
+                'precuenta' => app(PrecuentaCuenta::class)->resumen($cuenta, $cuenta->ultimaPrecuenta),
             ] : null,
             'mesaPreseleccionadaPayload' => $mesaPreseleccionada ? [
                 'id' => $mesaPreseleccionada->id,

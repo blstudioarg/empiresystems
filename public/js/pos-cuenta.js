@@ -24,6 +24,8 @@ window.PosApp.registrar('cuenta', function (PosApp) {
 	var $anularBtn = document.getElementById('pos-anular-cuenta');
 	var $aparcadasBtn = document.getElementById('pos-aparcadas-btn');
 	var $moverBtn = document.getElementById('pos-mesa-chip-mover');
+	var $precuentaBtn = document.getElementById('pos-precuenta-btn');
+	var $precuentaEstado = document.getElementById('pos-precuenta-estado');
 	var $suplementoZona = document.getElementById('pos-suplemento-zona');
 	var $cobroMesaCtx = document.getElementById('pos-cobro-mesa-ctx');
 	var $cobroModalEl = document.getElementById('posCobroModal');
@@ -70,6 +72,7 @@ window.PosApp.registrar('cuenta', function (PosApp) {
 		}
 		if ($anularBtn) { $anularBtn.classList.toggle('d-none', !cuenta); }
 		if ($moverBtn) { $moverBtn.classList.toggle('d-none', !cuenta); }
+		renderPrecuenta();
 
 		if ($suplementoZona) {
 			var suplemento = cuenta ? parseFloat(cuenta.zona_suplemento || 0) : 0;
@@ -80,6 +83,40 @@ window.PosApp.registrar('cuenta', function (PosApp) {
 				$suplementoZona.classList.add('d-none');
 			}
 		}
+	}
+
+	/**
+	 * Precuenta (feature 049). El botón está siempre que haya mesa —también con una mesa recién
+	 * tocada, cuya cuenta se crea al guardar—, deshabilitado con el ticket vacío. El caso "todo
+	 * cobrado" lo rechaza el servidor (422). El estado lo decide SIEMPRE el servidor (huella), aquí
+	 * solo se pinta.
+	 */
+	function renderPrecuenta() {
+		if ($precuentaBtn) {
+			$precuentaBtn.classList.toggle('d-none', !mesaId);
+			if (!window.jQuery || !window.jQuery($precuentaBtn).data('loading-busy')) {
+				$precuentaBtn.disabled = PosApp.lineas.length === 0;
+			}
+		}
+
+		if (!$precuentaEstado) { return; }
+
+		var estadoPrecuenta = cuenta && cuenta.precuenta ? cuenta.precuenta.estado : 'ninguna';
+
+		if (!mesaId || estadoPrecuenta === 'ninguna') {
+			$precuentaEstado.classList.add('d-none');
+			return;
+		}
+
+		var desactualizada = estadoPrecuenta === 'desactualizada';
+		var texto = desactualizada ? 'Precuenta desactualizada' : 'Precuenta dada';
+		$precuentaEstado.innerHTML = desactualizada
+			? '<i class="fas fa-triangle-exclamation" aria-hidden="true"></i> Desactualizada'
+			: '<i class="fas fa-check" aria-hidden="true"></i>';
+		$precuentaEstado.setAttribute('title', texto);
+		$precuentaEstado.setAttribute('aria-label', texto);
+		$precuentaEstado.classList.toggle('desactualizada', desactualizada);
+		$precuentaEstado.classList.remove('d-none');
 	}
 
 	// ── Transferir / unir (US6) ──────────────────────────────────────────
@@ -184,7 +221,14 @@ window.PosApp.registrar('cuenta', function (PosApp) {
 		renderChip();
 	}
 
-	function guardar() {
+	/**
+	 * @param {{silencioso?: boolean}} [opciones] `silencioso` omite el toast de "Cuenta guardada"
+	 *   cuando el guardado es un paso previo de otra acción que ya avisa por su cuenta (precuenta).
+	 *   Los errores y el aviso de precuenta desactualizada se muestran siempre.
+	 */
+	function guardar(opciones) {
+		var silencioso = !!(opciones && opciones.silencioso);
+
 		if (!PosApp.lineas.length) {
 			window.showToast('error', 'No hay nada que guardar todavía.');
 			return null;
@@ -206,6 +250,9 @@ window.PosApp.registrar('cuenta', function (PosApp) {
 				});
 			});
 
+		// FR-022: si este guardado deja desactualizada una precuenta que estaba vigente, se avisa.
+		var estadoPrevio = cuenta && cuenta.precuenta ? cuenta.precuenta.estado : 'ninguna';
+
 		return promesa.then(function (res) {
 			if (res.status === 409) {
 				window.showToast('error', res.data.message || 'Otro dispositivo modificó esta cuenta.');
@@ -217,7 +264,11 @@ window.PosApp.registrar('cuenta', function (PosApp) {
 				return res;
 			}
 			aplicarCuenta(res.data);
-			window.showToast('success', 'Cuenta guardada.');
+			if (estadoPrevio === 'vigente' && res.data.precuenta && res.data.precuenta.estado === 'desactualizada') {
+				window.showToast('warning', 'La precuenta impresa ya no coincide con la cuenta. Reimprímela antes de cobrar.');
+			} else if (!silencioso) {
+				window.showToast('success', 'Cuenta guardada.');
+			}
 			return res;
 		});
 	}
@@ -255,6 +306,8 @@ window.PosApp.registrar('cuenta', function (PosApp) {
 
 	function init() {
 		renderChip();
+
+		document.addEventListener('pos:ticket-render', renderPrecuenta);
 
 		// FR-064: al abrir el modal de cobro, refrescar el contexto de mesa (puede haber cambiado
 		// desde que se cargó la vista, p. ej. tras transferir).
@@ -338,6 +391,8 @@ window.PosApp.registrar('cuenta', function (PosApp) {
 	return {
 		init: init,
 		guardar: guardar,
+		aplicarCuenta: aplicarCuenta,
+		vaciarPantalla: vaciarPantalla,
 		mesaId: function () { return mesaId; },
 		limpiarTrasCierre: limpiarTrasCierre,
 	};

@@ -15,8 +15,9 @@ POS para activarlo (solo si el usuario tiene permiso de configuración).
 
 La pantalla **Sala** (menú POS → Sala) muestra todas las mesas del local agrupadas por zona, con
 su estado: libre (borde gris), ocupada (borde verde, con el importe pendiente y los minutos desde
-que se abrió) u olvidada (borde ámbar, cuando lleva más tiempo del umbral configurado sin que
-nadie le añada nada). Tocar una mesa libre abre el TPV con esa mesa; tocar una ocupada retoma su
+que se abrió), olvidada (borde ámbar, cuando lleva más tiempo del umbral configurado sin que
+nadie le añada nada) o **con precuenta** (borde violeta: ya se le dio la precuenta y espera para
+pagar; ver «Precuenta» más abajo). Tocar una mesa libre abre el TPV con esa mesa; tocar una ocupada retoma su
 cuenta.
 
 La Sala se puede ver de **dos formas**, con un selector en la cabecera visible para cualquiera que
@@ -72,7 +73,8 @@ el usuario necesita ver con que se topo.
 
 ### Resumen de la sala
 
-Encima de la sala hay cuatro métricas —total de mesas, libres, ocupadas y olvidadas— que vienen
+Encima de la sala hay cinco métricas —total de mesas, libres, ocupadas, olvidadas y con
+precuenta— que vienen
 **plegadas por defecto**: en la tablet de sala lo que importa es ver las mesas, y las tarjetas
 empujaban el plano fuera de la primera pantalla. Se despliegan con el botón **Resumen** y la
 elección se recuerda por usuario y dispositivo, igual que la de vista (tarjetas o plano), porque
@@ -168,12 +170,51 @@ Una opción puede llevar un **artículo vinculado** del catálogo (p. ej. "Refre
 a un refresco concreto): al venderla, descuenta stock de ese artículo aunque no aparezca como línea
 propia en el ticket.
 
+## Precuenta
+
+La **precuenta** es el papel que se le da a la mesa cuando pide la cuenta, para que revise lo
+consumido antes de pagar. Se genera desde **Crear ticket**, con la cuenta de la mesa cargada,
+tocando **Precuenta** en el chip de la mesa (cabecera del ticket). Primero se guarda lo que haya en
+pantalla y luego aparece la vista previa (rollo de 80 mm) para imprimirla. Al cerrar la vista previa
+la pantalla queda en cero, igual que al guardar; la cuenta sigue abierta en su mesa.
+
+**No es un documento fiscal**: no es un ticket ni una factura, no tiene número ni serie, no lleva
+código QR ni la mención VERI*FACTU, no consume numeración, no genera registro Verifactu, no mueve
+stock y no registra ningún cobro. Lleva el título «PRECUENTA» y la leyenda «Documento no válido como
+factura» arriba y abajo. Incluye el nombre del local, la mesa y la zona (o «Sin mesa»), fecha y
+hora, comensales, quién la emitió, solo lo **pendiente** de cobro (si ya se cobró una parte, eso
+no sale), las opciones bajo cada plato, el suplemento de zona como concepto visible y el total con
+la mención «IVA incluido» (o IGIC/IPSI según el régimen de la empresa). El total coincide al
+céntimo con el ticket que se emitiría al cobrarla entera en ese momento. Cuando el cliente paga se
+cobra como siempre, y entonces sí se emite el ticket (factura simplificada).
+
+Estados de la precuenta de una cuenta (los decide el servidor):
+
+- **Vigente** (check ✓ en el chip de la mesa): el consumo no cambió desde que se dio. La mesa se ve
+  en la Sala con borde violeta y la etiqueta «Precuenta», con los minutos desde que se dio, y
+  cuenta en la métrica «Precuenta». Prevalece sobre «olvidada».
+- **Desactualizada**: después de darla se añadió, quitó o cambió algo (cantidad, precio, opciones),
+  se unió otra cuenta o se movió a una zona con otro suplemento. Al guardar, el TPV avisa de que la
+  precuenta impresa ya no coincide; el chip muestra «Desactualizada» en ámbar; la mesa vuelve a verse
+  como ocupada en la Sala; y al abrir el cobro aparece un aviso con el total de la precuenta y el
+  total actual (avisa, no impide cobrar). Se arregla sacando una precuenta nueva.
+- Cobrar solo una parte, cambiar notas, comensales o datos del cliente, o mover la cuenta a otra
+  mesa de la misma zona **no** la desactualizan.
+
+Se puede sacar las veces que haga falta: si nada cambió desde la anterior (ni el consumo ni lo
+cobrado), la nueva sale marcada como **«Reimpresión»**. Cada precuenta queda registrada para
+siempre (no se edita ni se borra, tampoco si la cuenta se anula), así que se puede saber si una
+cuenta anulada llegó a tener precuenta. No hay precuenta en la venta directa de mostrador (solo
+sobre cuentas de mesa) ni precuenta parcial de algunas líneas.
+
 ## Cobro por partes (cobro dividido de la cuenta)
 
-Con esta capacidad activa, al cobrar una cuenta se puede elegir **qué líneas cobrar** en vez de la
-cuenta entera — útil cuando varios comensales pagan por separado. Cada cobro genera su propio
-ticket (factura simplificada), numerado correlativamente como cualquier otro. La mesa sigue
-ocupada mostrando lo que queda pendiente hasta que se salda todo, momento en el que se libera sola.
+El servidor admite cobrar una cuenta **por partes** (qué líneas cobrar en vez de la cuenta entera,
+cada cobro con su propio ticket numerado correlativamente), pero **la pantalla de cobro del TPV
+todavía no ofrece elegir líneas**: hoy, desde Crear ticket, la cuenta se cobra entera. Si alguien
+pregunta cómo dividir la cuenta entre comensales, explicar que está disponible próximamente; como
+alternativa pueden repartir el **pago** entre varios métodos (efectivo, tarjeta…) en el modal de
+cobro, que sí está disponible.
 
 ## Transferir y unir mesas
 

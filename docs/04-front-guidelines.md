@@ -716,6 +716,11 @@ Puntos que no se negocian: `modal-dialog-centered` (ver sección de modales), `m
 `height: 80vh` en el body para que el documento se lea sin scroll interno absurdo, `p-0` en el
 `modal-body` (el iframe ocupa todo), y el reset del `src` en `hidden.bs.modal`.
 
+**Documentos de rollo de 80 mm del TPV (ticket y precuenta): `modal-lg`, no `modal-xl`.** El
+documento es una tira estrecha; en `modal-xl` queda perdida en un lienzo enorme. Es la única
+desviación permitida del tamaño, y solo para estos dos documentos (`#posVerTicketModal`,
+`#posPrecuentaModal`); el resto del patrón (centrado, iframe, reset del `src`) se mantiene.
+
 **El enlace del "Ver" apunta a la ruta `*.pdf`, no a `*.edit`**: los `edit()` de facturas,
 presupuestos y albaranes hacen `abort(403)` cuando el documento ya no es editable (emitido,
 aceptado, entregado), así que usar `edit` como "ver" rompe justo en los documentos que más se
@@ -1455,18 +1460,43 @@ bundler ni un sistema de módulos ES nuevo (Principio V: sin build step).
 Referencia completa: `public/js/pos-form.js` (orquestador) + `pos-catalogo.js`, `pos-ticket.js`,
 `pos-cobro.js`, `pos-cuenta.js`, `pos-opciones.js` (módulos).
 
-## Tarjeta de mesa y sus tres estados (Sala del POS, feature 038)
+## Tarjeta de mesa y sus cuatro estados (Sala del POS, features 038 y 049)
 
 Grid de tarjetas (`.pos-mesa`, `resources/views/pos/sala.blade.php`) donde el **borde** comunica
 el estado de un vistazo, sin tener que leer el texto interior: gris = libre, verde = ocupada,
-ámbar = "olvidada" (lleva tiempo sin que nadie añada nada). El servidor decide `olvidada`
-comparando con el umbral configurado (`ConfigPos::mesaOlvidadaMin`); **la vista nunca hace
-aritmética de fechas** — si lo hiciera, dependería del reloj de cada tablet y dos dispositivos
-mostrarían cosas distintas para la misma mesa.
+ámbar = "olvidada" (lleva tiempo sin que nadie añada nada), violeta (`--pos-precuenta: #7c3aed`,
+fondo `#f6f2ff`) = "precuenta" (feature 049: la mesa ya tiene la precuenta vigente y espera para
+pagar). El servidor decide `olvidada` comparando con el umbral configurado
+(`ConfigPos::mesaOlvidadaMin`) y `precuenta_pedida` comparando huellas (ver "Estado derivado por
+huella"); **la vista nunca hace aritmética de fechas** — si lo hiciera, dependería del reloj de cada
+tablet y dos dispositivos mostrarían cosas distintas para la misma mesa.
+
+**Precedencia**: `precuenta` prevalece sobre `olvidada` (el servidor manda `olvidada: false` cuando
+hay precuenta vigente, y `PosPlanoDibujo.claseEstado()` mira `precuenta_pedida` antes): una mesa que
+espera para pagar no está olvidada, y es la información más accionable. El tiempo que muestra la
+mesa en ese estado es desde la precuenta (`PosPlanoDibujo.minutosMesa()`), no desde la apertura. El
+violeta no usa el primario del tenant, que puede coincidir con el verde de "ocupada".
 
 Las pestañas de filtro por zona de la Sala **reutilizan `.pos-filtro`** del catálogo del TPV (52px
 de alto, badge de conteo, activo con el primario del tenant) — no se diseña un selector nuevo para
 lo mismo; ver "Catálogo del POS (TPV)" más abajo.
+
+## Estado derivado por huella, no por flag (feature 049)
+
+Cuando la UI tiene que mostrar si algo "sigue valiendo" respecto de un momento anterior (p. ej. si
+la precuenta impresa sigue coincidiendo con la cuenta), **no se guarda un flag** que haya que poner
+a `false` en cada sitio que modifica los datos: el día que alguien añada un camino nuevo (unir,
+transferir, un endpoint futuro) se olvidará del flag y la pantalla mentirá. Se guarda una **huella**
+(SHA-256 de una representación canónica de lo que importa) en el momento de referencia, y el
+servidor deriva el estado comparándola con la huella actual
+(`App\Services\PrecuentaCuenta::estado()`).
+
+Reglas: la representación canónica incluye **solo lo que cambia el resultado** (para la precuenta:
+artículo, concepto, cantidad, precio, suplementos, tipo impositivo, opciones y % de zona; no notas
+ni comensales), se ordena por contenido y no por id (los ids pueden recrearse con el mismo
+contenido), y normaliza decimales. Una sola función decide el estado y la consumen todas las
+vistas (payload de la cuenta, Sala, TPV): el cliente solo pinta lo que recibe. Si se evalúa para
+muchas filas a la vez (la Sala), se cargan los datos de la huella en bloque para no caer en N+1.
 
 ## Modal de selección de opciones de artículo (feature 038)
 
@@ -1486,7 +1516,9 @@ al activar el módulo de hostelería: la franja central pasa de un único botón
 mini-grid de 3 acciones (`.pos-bkey-grid`, grid `1fr 1fr 1fr`) — Cliente / Guardar / Aparcadas —
 conservando el mismo `min-height` táctil que `.pos-bkey` y ocupando el mismo hueco flex de la
 botonera. El contexto de mesa (chip con el pendiente y accesos a anular/transferir) vive aparte,
-en el `card-header` del ticket, no en la botonera.
+en el `card-header` del ticket, no en la botonera. Las acciones propias de la cuenta abierta que se
+añadan después (p. ej. **Precuenta**, feature 049: pill blanca `#pos-precuenta-btn` + indicador
+`#pos-precuenta-estado`) van también en ese chip, nunca como un botón más de la botonera.
 
 ## Suplemento de zona y contexto de cuenta: nunca un aumento silencioso (feature 038)
 
@@ -1498,7 +1530,7 @@ nunca sea una sorpresa al pagar.
 ## Feedback de bloqueo cuando el borde ya comunica estado (feature 040)
 
 Si el **color del borde** de un elemento ya está reservado para comunicar su estado —como en
-"Tarjeta de mesa y sus tres estados" (gris libre / verde ocupada / ámbar olvidada)—, el feedback de
+"Tarjeta de mesa y sus cuatro estados" (gris libre / verde ocupada / ámbar olvidada / violeta precuenta)—, el feedback de
 un intento **rechazado** (una acción que no se puede completar: agrandar contra una vecina, llegar
 al límite de la rejilla) **nunca** se da tiñendo ese borde: haría parecer que el elemento cambió de
 estado. Se da con **sombra exterior** (`box-shadow`) más un **micro-desplazamiento** de rechazo

@@ -147,16 +147,19 @@
 			var clase = window.PosPlanoDibujo.claseEstado(mesa);
 
 			var badge = '';
-			if (mesa.olvidada) {
+			if (clase === 'precuenta') {
+				badge = '<span class="estado-badge">Precuenta</span>';
+			} else if (clase === 'olvidada') {
 				badge = '<span class="estado-badge">Sin tocar</span>';
-			} else if (mesa.estado === 'ocupada') {
+			} else if (clase === 'ocupada') {
 				badge = '<span class="estado-badge">Abierta</span>';
 			}
 
 			var cuerpo = mesa.estado === 'libre'
 				? '<span class="importe">Libre</span><span class="meta">Toca para abrir cuenta</span>'
 				: '<span class="importe">' + formatoImporte(mesa.pendiente) + ' €</span>' +
-				  '<span class="meta">Hace ' + mesa.abierta_hace_min + ' min</span>';
+				  '<span class="meta">' + (clase === 'precuenta' ? 'Precuenta hace ' : 'Hace ') +
+				  window.PosPlanoDibujo.minutosMesa(mesa) + ' min</span>';
 
 			return '<button type="button" class="pos-mesa ' + clase + '" data-url="' + escapeHtml(mesa.abrir_url) + '"' +
 				' data-mesa-id="' + mesa.id + '">' +
@@ -173,7 +176,7 @@
 	 * contradecir lo que se ve abajo, sea plano o tarjetas (FR-018).
 	 */
 	function pintarCards() {
-		var conteo = { libre: 0, ocupada: 0, olvidada: 0 };
+		var conteo = { libre: 0, ocupada: 0, olvidada: 0, precuenta: 0 };
 
 		datos.mesas.forEach(function (mesa) {
 			conteo[window.PosPlanoDibujo.claseEstado(mesa)]++;
@@ -185,6 +188,7 @@
 		$('[data-metric="libres"]').text(libres);
 		$('[data-metric="ocupadas"]').text(ocupadas);
 		$('[data-metric="olvidadas"]').text(olvidadas);
+		$('[data-metric="precuentas"]').text(conteo.precuenta);
 	}
 
 	function cargar() {
