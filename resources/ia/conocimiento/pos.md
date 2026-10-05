@@ -16,6 +16,18 @@ módulo, separadas de las facturas ordinarias.
 - **Caja**: para cobrar, la caja del día tiene que estar abierta (POS → Caja). Si está cerrada, el
   TPV deja abrirla al tocar Cobrar. Ver `pos-caja.md` para apertura, arqueo y cierre.
 
+## Anular un ticket
+
+Un ticket emitido **no se puede borrar** (es una factura: numeración sin huecos, Verifactu). Si se
+emitió por error, se **anula** desde el listado de tickets (POS → Facturas simplificadas →
+Acciones → Anular), escribiendo el motivo. Requiere el permiso **Anular tickets** (por defecto solo
+el rol Administrador; se asigna en Roles). Efectos: el ticket queda «Anulado» con su número, deja de
+contar en los totales del listado y en la caja abierta (lo vendido y el efectivo esperado), las
+unidades vendidas vuelven al stock y, con Verifactu activo, se genera el registro de anulación. Un
+cierre de caja ya hecho no cambia. No se puede anular un ticket ya anulado, con cobros registrados
+aparte o que ya tenga una rectificativa. **Anular no es devolver**: una devolución de algo que el
+cliente se llevó se hace con una rectificativa.
+
 ## Idioma del POS (chino)
 
 El POS puede usarse en **chino simplificado** (Configuración → POS → Idioma del POS, para todo el

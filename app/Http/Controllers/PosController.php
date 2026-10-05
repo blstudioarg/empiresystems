@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\EstadoFactura;
 use App\Enums\TipoArticulo;
 use App\Enums\TipoFactura;
 use App\Exceptions\CajaCerradaException;
+use App\Exceptions\FacturaNoAnulableException;
 use App\Exceptions\PagoTicketDescuadradoException;
 use App\Exceptions\TicketFueraDeTopeException;
 use App\Http\Requests\StoreTicketRequest;
@@ -13,6 +15,7 @@ use App\Models\Cliente;
 use App\Models\Factura;
 use App\Models\PosCuenta;
 use App\Models\PosMesa;
+use App\Services\AnuladorFactura;
 use App\Services\AperturaCaja;
 use App\Services\PrecuentaCuenta;
 use App\Services\RegistroTicket;
@@ -40,20 +43,35 @@ class PosController extends Controller
     public function index(Request $request): View|JsonResponse
     {
         if ($request->wantsJson()) {
+            // Para decidir si se ofrece «Anular» sin una consulta por fila (feature 051): cobros
+            // vigentes registrados aparte y si ya tiene rectificativa.
             $tickets = Factura::where('tipo', TipoFactura::Simplificada)
                 ->with('pagosTicket')
+                ->withSum(['pagos as cobrado' => fn ($q) => $q->whereNull('anulado_at')], 'importe')
+                ->withExists('rectificativa')
                 ->orderByDesc('fecha_expedicion')
                 ->orderByDesc('id')
                 ->get();
 
+            $puedeAnular = $request->user()->can('anular-tickets');
+            $vigentes = $tickets->reject(fn (Factura $t) => $t->estado === EstadoFactura::Anulada);
+
             return response()->json([
-                'data' => $tickets->map(function (Factura $ticket) {
+                'data' => $tickets->map(function (Factura $ticket) use ($puedeAnular) {
                     $cualificada = (bool) $ticket->cliente_nif;
 
                     return [
                         'id' => $ticket->id,
                         'identificador' => $ticket->numero_completo ?? __('Borrador'),
                         'estado' => $ticket->estado->value,
+                        'anulada' => $ticket->estado === EstadoFactura::Anulada,
+                        // El backend decide si se ofrece la acción (docs/04 § "Columna Acciones").
+                        'anular_url' => $puedeAnular
+                            && $ticket->estado === EstadoFactura::Emitida
+                            && (float) $ticket->cobrado <= 0
+                            && ! $ticket->rectificativa_exists
+                                ? route('pos.anular', $ticket->id)
+                                : null,
                         'cualificada' => $cualificada,
                         'receptor' => $cualificada
                             ? ($ticket->cliente_razon_social ?: $ticket->cliente_nombre ?: $ticket->cliente_nif)
@@ -71,9 +89,10 @@ class PosController extends Controller
                         'pdf_a4_url' => route('pos.pdf', ['factura' => $ticket->id, 'formato' => 'a4']),
                     ];
                 })->values(),
+                // Los anulados no cuentan como venta (feature 051).
                 'totales' => [
-                    'total' => $tickets->count(),
-                    'importe_total' => number_format((float) $tickets->sum('total'), 2, '.', ''),
+                    'total' => $vigentes->count(),
+                    'importe_total' => number_format((float) $vigentes->sum('total'), 2, '.', ''),
                 ],
             ]);
         }
@@ -259,6 +278,39 @@ class PosController extends Controller
         }
 
         return redirect()->route('pos.index')->with('success', 'Ticket emitido correctamente.');
+    }
+
+    /**
+     * Anula un ticket desde el listado (feature 051). Un ticket emitido es una factura: no se borra
+     * ni se renumera, se anula (motivo, evento, registro Verifactu de anulación) y devuelve al
+     * stock lo que descontó. La caja ya excluye los anulados (ResumenCaja).
+     */
+    public function anular(Request $request, string $factura, AnuladorFactura $anulador): JsonResponse
+    {
+        // Resolución manual bajo el scope de tenant: un ticket ajeno da 404.
+        $ticket = Factura::where('tipo', TipoFactura::Simplificada)->findOrFail($factura);
+
+        $datos = $request->validate(
+            ['motivo' => ['required', 'string', 'max:500']],
+            [
+                'motivo.required' => __('Escribe el motivo de la anulación.'),
+                'motivo.max' => __('El motivo no puede superar los 500 caracteres.'),
+            ],
+        );
+
+        try {
+            $anulador->anular($ticket, $datos['motivo'], $request->user(), revertirStock: true);
+        } catch (FacturaNoAnulableException $e) {
+            $mensaje = match ($e->codigo) {
+                FacturaNoAnulableException::CON_COBROS => __('Este ticket tiene cobros registrados aparte: corrígelo con una rectificativa.'),
+                FacturaNoAnulableException::RECTIFICADA => __('Este ticket ya tiene una rectificativa.'),
+                default => __('Este ticket ya está anulado.'),
+            };
+
+            return response()->json(['message' => $mensaje], 422);
+        }
+
+        return response()->json(['message' => __('Ticket anulado.')]);
     }
 
     public function pdf(Request $request, string $factura): Response

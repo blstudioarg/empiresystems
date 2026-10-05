@@ -304,6 +304,10 @@ Route::middleware(['tenant.context', 'auth', 'sin_super_admin'])->group(function
             Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
             Route::get('/pos/{factura}/pdf', [PosController::class, 'pdf'])->name('pos.pdf');
         });
+
+        // Anular un ticket (feature 051): un ticket emitido no se borra, se anula. Permiso propio.
+        Route::post('/pos/{factura}/anular', [PosController::class, 'anular'])
+            ->middleware('can:anular-tickets')->name('pos.anular');
     });
 
     // Perfil: sección personal, sin permiso (todo usuario autenticado del tenant).

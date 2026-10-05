@@ -9,6 +9,7 @@ use App\Enums\FormaPago;
 use App\Enums\TipoFactura;
 use App\Enums\TipoRectificacion;
 use App\Exceptions\EmailNoConfiguradoException;
+use App\Exceptions\FacturaNoAnulableException;
 use App\Exceptions\FacturaNoEmitibleException;
 use App\Exceptions\FacturaNoRectificableException;
 use App\Http\Requests\StoreFacturaRequest;
@@ -20,16 +21,15 @@ use App\Models\CuentaBancaria;
 use App\Models\Factura;
 use App\Models\FacturaEvento;
 use App\Models\Serie;
+use App\Services\AnuladorFactura;
 use App\Services\CalculadoraFactura;
 use App\Services\EmisorFacturas;
 use App\Services\GeneradorRectificativa;
 use App\Services\RegistradorActividad;
-use App\Services\RegistroVerifactu;
 use App\Services\TenantMailer;
 use App\Support\EmailTenant;
 use App\Support\TiposImpositivos;
 use App\Support\VencimientoFactura;
-use App\Support\VerifactuTenant;
 use App\Traduccion\Bilingue;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
@@ -46,7 +46,7 @@ class FacturaController extends Controller
         private readonly EmisorFacturas $emisor,
         private readonly GeneradorRectificativa $generadorRectificativa,
         private readonly RegistradorActividad $registradorActividad,
-        private readonly RegistroVerifactu $registroVerifactu,
+        private readonly AnuladorFactura $anulador,
     ) {}
 
     public function index(Request $request): View|JsonResponse
@@ -343,46 +343,21 @@ class FacturaController extends Controller
 
         $datos = $request->validate(['motivo' => ['required', 'string', 'max:500']]);
 
-        if ($factura->estado !== EstadoFactura::Emitida) {
-            $mensaje = 'Solo se pueden anular facturas emitidas.';
+        // La lógica vive en AnuladorFactura (feature 051), compartida con la anulación de tickets
+        // del POS. Las facturas ordinarias no revierten stock (comportamiento de siempre).
+        try {
+            $this->anulador->anular($factura, $datos['motivo'], $request->user());
+        } catch (FacturaNoAnulableException $e) {
+            $mensaje = match ($e->codigo) {
+                FacturaNoAnulableException::CON_COBROS => 'No se puede anular una factura con cobros registrados: usa una rectificativa.',
+                FacturaNoAnulableException::RECTIFICADA => 'No se puede anular una factura que ya tiene una rectificativa.',
+                default => 'Solo se pueden anular facturas emitidas.',
+            };
 
             return $request->wantsJson()
                 ? response()->json(['message' => $mensaje], 422)
                 : redirect()->back()->with('error', $mensaje);
         }
-
-        if ($factura->montoCobrado() > 0) {
-            $mensaje = 'No se puede anular una factura con cobros registrados: usa una rectificativa.';
-
-            return $request->wantsJson()
-                ? response()->json(['message' => $mensaje], 422)
-                : redirect()->back()->with('error', $mensaje);
-        }
-
-        DB::transaction(function () use ($factura, $datos) {
-            $factura->estado = EstadoFactura::Anulada;
-            $factura->save();
-
-            FacturaEvento::create([
-                'tenant_id' => $factura->tenant_id,
-                'factura_id' => $factura->id,
-                'tipo_evento' => 'anulada',
-                'detalle' => ['motivo' => $datos['motivo']],
-                'ocurrido_at' => now(),
-            ]);
-
-            if (VerifactuTenant::activo($factura->tenant_id) && $factura->tieneRegistroVerifactu()) {
-                $this->registroVerifactu->registrarAnulacion($factura, $datos['motivo']);
-            }
-        });
-
-        $this->registradorActividad->registrar(
-            auth()->user(),
-            AccionLogActividad::Modificacion,
-            EntidadLogActividad::Factura,
-            $factura->id,
-            "Anuló la factura {$factura->numero_completo}",
-        );
 
         if ($request->wantsJson()) {
             return response()->json(['message' => 'Factura anulada correctamente.']);

@@ -517,6 +517,10 @@ Historial de entradas/salidas de stock. Solo aplica a artículos `producto` con 
 **Reglas de stock:**
 - Al **emitir** una factura, cada línea con `articulo` producto+`gestion_stock` genera una **`salida`** y descuenta `stock_actual`.
 - Al **anular/rectificar** una venta, se genera el movimiento inverso (`entrada`/`devolucion`).
+  Implementado para las rectificativas y para la **anulación de tickets del POS** (feature 051,
+  `App\Services\AnuladorFactura`: una entrada por cada salida registrada con el ticket, líneas y
+  opciones vinculadas, con el mismo `factura_id`). La anulación de facturas ordinarias no mueve
+  stock por ahora.
 - Compras/reposición y ajustes manuales generan `entrada`/`ajuste`.
 - `stock_actual` en `articulos` es el valor vivo (rápido de leer); `movimientos_stock` es la fuente de verdad histórica.
 - **Stock negativo permitido:** la emisión de una factura nunca se bloquea por falta de stock —

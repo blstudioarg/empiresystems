@@ -44,6 +44,9 @@ class CatalogoPermisos
         ['clave' => 'ver-cobros', 'etiqueta' => 'Cobros', 'modulo' => 'Facturas'],
         ['clave' => 'ver-pos', 'etiqueta' => 'POS', 'modulo' => 'POS'],
         ['clave' => 'ver-pos-crear', 'etiqueta' => 'Crear ticket', 'modulo' => 'POS'],
+        // Anular tickets (feature 051): separado de ver y cobrar, porque anular una venta cobrada
+        // es la vía clásica de fraude en un TPV. Por defecto solo en el rol Administrador.
+        ['clave' => 'anular-tickets', 'etiqueta' => 'Anular tickets', 'modulo' => 'POS'],
         // Caja (feature 048): apertura, movimientos, arqueo e informe Z. No depende del módulo de
         // hostelería. Abrir la caja lo puede hacer además quien crea tickets (gate `abrir-caja`).
         ['clave' => 'ver-pos-caja', 'etiqueta' => 'Caja', 'modulo' => 'POS'],
@@ -79,6 +82,8 @@ class CatalogoPermisos
         'ver-configuracion',
         'ver-logs',
         'ver-informes-equipo',
+        // Anular tickets (feature 051): solo administración, nunca el rol base.
+        'anular-tickets',
     ];
 
     /**
