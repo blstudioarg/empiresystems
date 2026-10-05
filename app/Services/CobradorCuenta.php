@@ -68,33 +68,9 @@ class CobradorCuenta
 
         $unidades = $this->resolverUnidades($cuenta, $seleccion, $esParcial);
 
-        // El suplemento se toma de la zona DONDE SE COBRA y con el valor VIGENTE AHORA (FR-051):
-        // si la cuenta se transfirió desde otra zona, manda la de destino.
-        $suplemento = ConfigPos::suplementoZonaActivo($tenantId)
-            ? (float) ($cuenta->mesa?->zona?->suplemento_porcentaje ?? 0)
-            : 0.0;
+        $suplemento = $this->suplementoEfectivo($cuenta);
 
-        $lineasPayload = [];
-        foreach ($cuenta->lineas as $linea) {
-            $cantidad = $unidades[$linea->id] ?? 0.0;
-
-            if ($cantidad <= 0) {
-                continue;
-            }
-
-            $lineasPayload[] = [
-                'articulo_id' => $linea->articulo_id,
-                'concepto' => $this->conceptoConOpciones($linea),
-                'unidad' => $linea->unidad,
-                'cantidad' => $cantidad,
-                // Redondeo POR LÍNEA (no al final) para que el total impreso sea la suma exacta
-                // de los importes de línea impresos — misma regla que CalculadoraFactura.
-                'precio_unitario' => round($linea->precioEfectivo() * (1 + $suplemento / 100), 2),
-                'tipo_impositivo' => (float) $linea->tipo_impositivo,
-            ];
-        }
-
-        $datos = ['lineas' => $lineasPayload];
+        $datos = ['lineas' => $this->lineasACobrar($cuenta, $unidades, $suplemento)];
 
         if ($pagos !== null && $pagos !== []) {
             $datos['pagos'] = $pagos;
@@ -156,6 +132,58 @@ class CobradorCuenta
                 'pendiente' => $cuenta->pendiente(),
             ];
         });
+    }
+
+    /**
+     * % de suplemento de zona que se aplicaría **ahora**: el de la zona DONDE SE COBRA y con el
+     * valor VIGENTE (FR-051); si la cuenta se transfirió desde otra zona, manda la de destino.
+     *
+     * Público porque la precuenta (feature 049) tiene que usar exactamente el mismo valor: si
+     * calculara el suyo, su total podría divergir del ticket (research D2 de la 049).
+     */
+    public function suplementoEfectivo(PosCuenta $cuenta, ?bool $suplementoActivo = null): float
+    {
+        // `$suplementoActivo` lo pasa quien ya leyó el flag (la Sala, para N cuentas a la vez):
+        // evita una consulta de configuración por cuenta.
+        return ($suplementoActivo ?? ConfigPos::suplementoZonaActivo((int) $cuenta->tenant_id))
+            ? (float) ($cuenta->mesa?->zona?->suplemento_porcentaje ?? 0)
+            : 0.0;
+    }
+
+    /**
+     * Construye el array `lineas[]` que espera {@see RegistroTicket} para estas unidades.
+     *
+     * Es el único sitio donde se decide cómo se traduce una línea de cuenta a línea de documento
+     * (precio efectivo + suplemento de zona, concepto con opciones). La precuenta lo reutiliza tal
+     * cual para que su total coincida al céntimo con el ticket (feature 049, SC-002).
+     *
+     * @param  array<int, float>  $unidades  cuenta_linea_id => unidades
+     * @return list<array<string, mixed>>
+     */
+    public function lineasACobrar(PosCuenta $cuenta, array $unidades, float $suplemento): array
+    {
+        $lineasPayload = [];
+
+        foreach ($cuenta->lineas as $linea) {
+            $cantidad = $unidades[$linea->id] ?? 0.0;
+
+            if ($cantidad <= 0) {
+                continue;
+            }
+
+            $lineasPayload[] = [
+                'articulo_id' => $linea->articulo_id,
+                'concepto' => $this->conceptoConOpciones($linea),
+                'unidad' => $linea->unidad,
+                'cantidad' => $cantidad,
+                // Redondeo POR LÍNEA (no al final) para que el total impreso sea la suma exacta
+                // de los importes de línea impresos — misma regla que CalculadoraFactura.
+                'precio_unitario' => round($linea->precioEfectivo() * (1 + $suplemento / 100), 2),
+                'tipo_impositivo' => (float) $linea->tipo_impositivo,
+            ];
+        }
+
+        return $lineasPayload;
     }
 
     /**

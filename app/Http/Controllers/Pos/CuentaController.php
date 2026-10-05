@@ -6,6 +6,7 @@ use App\Exceptions\CajaCerradaException;
 use App\Exceptions\PagoTicketDescuadradoException;
 use App\Exceptions\TicketFueraDeTopeException;
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Pos\Concerns\RespondeConCuenta;
 use App\Http\Requests\CobrarCuentaPosRequest;
 use App\Http\Requests\GuardarCuentaPosRequest;
 use App\Models\Articulo;
@@ -31,6 +32,8 @@ use Illuminate\Validation\ValidationException;
  */
 class CuentaController extends Controller
 {
+    use RespondeConCuenta;
+
     public function __construct(
         private readonly CobradorCuenta $cobrador,
         private readonly TransferidorCuenta $transferidor,
@@ -222,12 +225,6 @@ class CuentaController extends Controller
 
     // ── Resolución y utilidades ──────────────────────────────────────────
 
-    private function resolverCuenta(string $id): PosCuenta
-    {
-        // Resolución manual bajo TenantScope: `findOrFail` sobre el modelo (no binding implícito).
-        return PosCuenta::query()->with('lineas.opciones', 'mesa.zona')->findOrFail($id);
-    }
-
     private function resolverMesa(mixed $id): ?PosMesa
     {
         if ($id === null || $id === '') {
@@ -245,23 +242,6 @@ class CuentaController extends Controller
         }
 
         return $mesa;
-    }
-
-    /**
-     * Bloqueo optimista (FR-024): si la versión que trae el cliente no es la de base de datos,
-     * otro dispositivo tocó la cuenta. Se responde 409 con el estado actual y **nunca** se
-     * reintenta en silencio, que sería exactamente pisar los cambios del otro camarero.
-     */
-    private function conflictoDeVersion(PosCuenta $cuenta, int $version): ?JsonResponse
-    {
-        if ($version === (int) $cuenta->version) {
-            return null;
-        }
-
-        return response()->json([
-            'message' => 'Otro dispositivo modificó esta cuenta mientras la tenías abierta. Se recargó con los datos actuales.',
-            'cuenta' => $this->payload($cuenta),
-        ], 409);
     }
 
     /**
@@ -399,53 +379,5 @@ class CuentaController extends Controller
             'precio' => (float) ($opcion->articulos->first()?->pivot->precio ?? $opcion->precio_defecto),
             'articulo_vinculado_id' => $opcion->articulo_vinculado_id,
         ])->all();
-    }
-
-    /** @return array<string, mixed> */
-    private function payload(PosCuenta $cuenta): array
-    {
-        $cuenta->loadMissing('lineas.opciones', 'mesa.zona');
-        $tenantId = (int) $cuenta->tenant_id;
-
-        return [
-            'id' => $cuenta->id,
-            'estado' => $cuenta->estado,
-            'version' => (int) $cuenta->version,
-            'mesa_id' => $cuenta->mesa_id,
-            'mesa_nombre' => $cuenta->mesa?->nombre,
-            'zona_nombre' => $cuenta->mesa?->zona?->nombre,
-            'zona_suplemento' => ConfigPos::suplementoZonaActivo($tenantId)
-                ? number_format((float) ($cuenta->mesa?->zona?->suplemento_porcentaje ?? 0), 2, '.', '')
-                : '0.00',
-            'comensales' => $cuenta->comensales,
-            'notas' => $cuenta->notas,
-            'receptor' => $cuenta->cliente_nif ? [
-                'cliente_id' => $cuenta->cliente_id,
-                'cliente_nif' => $cuenta->cliente_nif,
-                'cliente_nombre' => $cuenta->cliente_nombre,
-                'cliente_razon_social' => $cuenta->cliente_razon_social,
-                'cliente_direccion' => $cuenta->cliente_direccion,
-            ] : null,
-            'pendiente' => number_format($cuenta->pendiente(), 2, '.', ''),
-            'lineas' => $cuenta->lineas->map(fn (PosCuentaLinea $linea) => [
-                'id' => $linea->id,
-                'articulo_id' => $linea->articulo_id,
-                'concepto' => $linea->concepto,
-                'unidad' => $linea->unidad,
-                'cantidad' => (float) $linea->cantidad,
-                'cantidad_saldada' => (float) $linea->cantidad_saldada,
-                'cantidad_pendiente' => $linea->cantidadPendiente(),
-                'precio_unitario' => (float) $linea->precio_unitario,
-                'suplemento_opciones' => (float) $linea->suplemento_opciones,
-                'precio_efectivo' => $linea->precioEfectivo(),
-                'tipo_impositivo' => (float) $linea->tipo_impositivo,
-                'importe_pendiente' => $linea->brutoPendiente(),
-                'opciones' => $linea->opciones->map(fn ($o) => [
-                    'opcion_id' => $o->opcion_id,
-                    'nombre' => $o->nombre,
-                    'precio' => (float) $o->precio,
-                ])->values(),
-            ])->values(),
-        ];
     }
 }

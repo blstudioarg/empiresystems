@@ -53,6 +53,7 @@ use App\Http\Controllers\Pos\CuentaController as PosCuentaController;
 use App\Http\Controllers\Pos\OpcionController as PosOpcionController;
 use App\Http\Controllers\Pos\OpcionGrupoController as PosOpcionGrupoController;
 use App\Http\Controllers\Pos\PlanoSalaController;
+use App\Http\Controllers\Pos\PrecuentaController as PosPrecuentaController;
 use App\Http\Controllers\Pos\SalaController as PosSalaController;
 use App\Http\Controllers\PosController;
 use App\Http\Controllers\PresupuestoController;
@@ -252,6 +253,9 @@ Route::middleware(['tenant.context', 'auth', 'sin_super_admin'])->group(function
         Route::post('/pos/cuentas/{cuenta}/transferir', [PosCuentaController::class, 'transferir'])->name('pos.cuentas.transferir');
         Route::post('/pos/cuentas/{cuenta}/unir', [PosCuentaController::class, 'unir'])->name('pos.cuentas.unir');
         Route::post('/pos/cuentas/{cuenta}/cobrar', [PosCuentaController::class, 'cobrar'])->name('pos.cuentas.cobrar');
+        // Precuenta (feature 049): documento no fiscal; mismo permiso y módulo que las cuentas.
+        Route::post('/pos/cuentas/{cuenta}/precuentas', [PosPrecuentaController::class, 'store'])->name('pos.cuentas.precuentas.store');
+        Route::get('/pos/precuentas/{precuenta}/pdf', [PosPrecuentaController::class, 'pdf'])->name('pos.precuentas.pdf');
     });
 
     // Guardado del plano de sala (feature 039): además de `ver-pos-sala` (para ver la sala), exige

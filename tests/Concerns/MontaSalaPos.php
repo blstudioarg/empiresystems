@@ -108,4 +108,19 @@ trait MontaSalaPos
             'lineas' => $payload,
         ])->assertOk()->json();
     }
+
+    /**
+     * Emite una precuenta (feature 049) sobre la versión actual de la cuenta y devuelve la
+     * respuesta completa (`precuenta` + `cuenta`).
+     *
+     * @return array<string, mixed>
+     */
+    protected function emitirPrecuenta(int $cuentaId): array
+    {
+        $version = $this->getJson("/pos/cuentas/{$cuentaId}")->assertOk()->json('version');
+
+        return $this->postJson("/pos/cuentas/{$cuentaId}/precuentas", ['version' => $version])
+            ->assertCreated()
+            ->json();
+    }
 }

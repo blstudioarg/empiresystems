@@ -179,7 +179,7 @@
 
 		/* ── Ticket ────────────────────────────────────────────────── */
 		.pos-ticket .card-header { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
-		.pos-ticket .card-header .titulo { display: flex; align-items: center; gap: .5rem; }
+		.pos-ticket .card-header .titulo { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; row-gap: .4rem; min-width: 0; }
 		.pos-ticket-count { background: var(--pos-primary); color: #fff; border-radius: 1rem; font-size: .78rem; font-weight: 700; padding: .1rem .55rem; }
 		.pos-vaciar {
 			border: none; background: none; color: #b0332a; opacity: .6; display: inline-flex; align-items: center;
@@ -269,6 +269,9 @@
 		.pos-mesa-chip {
 			display: inline-flex; align-items: center; gap: .4rem; background: var(--pos-primary); color: #fff;
 			border-radius: 1rem; padding: .2rem .3rem .2rem .65rem; font-size: .78rem; font-weight: 700;
+			/* Con la precuenta (feature 049) el chip crece: nunca parte su texto en dos líneas; si no
+			   cabe junto a «Ticket» y la caja, el chip entero baja a la línea siguiente. */
+			white-space: nowrap;
 		}
 		.pos-mesa-chip small { font-weight: 800; font-variant-numeric: tabular-nums; }
 		.pos-mesa-chip-anular {
@@ -278,6 +281,27 @@
 			transition: background .12s ease;
 		}
 		.pos-mesa-chip-anular:hover { background: rgba(255,255,255,.35); }
+
+		/* Precuenta (feature 049): acción dentro del contexto de cuenta, no en la botonera (§
+		   "Franja central de la botonera del POS"). Pill blanca sobre el chip primario: es la
+		   acción que se pulsa cuando la mesa pide la cuenta, tiene que leerse sin buscarla. */
+		.pos-mesa-chip-precuenta {
+			border: none; background: #fff; color: var(--pos-primary); border-radius: 1rem;
+			font-size: .7rem; font-weight: 800; padding: .12rem .55rem; line-height: 1.4;
+			display: inline-flex; align-items: center; gap: .3rem; -webkit-tap-highlight-color: transparent;
+			transition: transform .14s cubic-bezier(.23, 1, .32, 1), opacity .14s ease;
+		}
+		.pos-mesa-chip-precuenta:active:not(:disabled) { transform: scale(.97); }
+		.pos-mesa-chip-precuenta:disabled { opacity: .55; cursor: not-allowed; }
+		/* Estado de la última precuenta, decidido por el servidor. Vigente es un check discreto
+		   (el texto va en el title/aria); desactualizada se escribe entera y en el ámbar de aviso,
+		   porque la cifra que tiene el cliente ya no es la que se va a cobrar (FR-023). */
+		.pos-precuenta-estado {
+			display: inline-flex; align-items: center; justify-content: center; gap: .25rem;
+			height: 20px; min-width: 20px; border-radius: 1rem; padding: 0 .3rem;
+			font-size: .66rem; font-weight: 800; background: rgba(255,255,255,.22); color: #fff;
+		}
+		.pos-precuenta-estado.desactualizada { background: #fff4e5; color: #b26a00; padding: 0 .5rem; }
 
 		.pos-cobrar {
 			border: none; border-radius: 1.1rem; padding: 1.1rem .5rem; min-height: 92px;
@@ -315,6 +339,11 @@
 		}
 		.pos-cobro-modal .modal-body { padding: 1.1rem 1.15rem; }
 		/* Contexto de mesa en el título del modal de cobro (FR-064). */
+		/* Aviso de precuenta desactualizada en el cobro (feature 049, FR-024): informa, no bloquea. */
+		.pos-cobro-aviso-precuenta {
+			background: #fff4e5; color: #8a5300; border-radius: .8rem; padding: .55rem .8rem;
+			font-size: .82rem; font-weight: 600; margin-bottom: .9rem; display: flex; gap: .5rem; align-items: center;
+		}
 		.pos-cobro-mesa-ctx {
 			display: inline-flex; align-items: center; gap: .3rem; margin-left: .5rem;
 			font-size: .72rem; font-weight: 700; color: var(--pos-primary);
@@ -673,6 +702,11 @@
 										<i class="fas fa-utensils"></i>
 										<span id="pos-mesa-chip-label"></span>
 										<small id="pos-mesa-chip-pendiente" class="d-none"></small>
+										{{-- Precuenta (feature 049): estado de la última y acción para generarla. --}}
+										<span class="pos-precuenta-estado d-none" id="pos-precuenta-estado"></span>
+										<button type="button" class="pos-mesa-chip-precuenta d-none" id="pos-precuenta-btn" title="Generar la precuenta de esta mesa" aria-label="Generar precuenta">
+											<i class="fas fa-receipt" aria-hidden="true"></i> Precuenta
+										</button>
 										<button type="button" class="pos-mesa-chip-anular d-none" id="pos-mesa-chip-mover" title="Transferir o unir con otra mesa" aria-label="Transferir o unir con otra mesa">⇄</button>
 										<button type="button" class="pos-mesa-chip-anular d-none" id="pos-anular-cuenta" title="Anular cuenta" aria-label="Anular cuenta">×</button>
 									</span>
@@ -812,6 +846,12 @@
 					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
 				</div>
 				<div class="modal-body">
+					@if ($hosteleriaActiva ?? false)
+						<div class="pos-cobro-aviso-precuenta d-none" id="pos-cobro-aviso-precuenta" role="status">
+							<i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+							<span id="pos-cobro-aviso-precuenta-texto"></span>
+						</div>
+					@endif
 					<div class="pos-cobro-cab">
 						<div class="pos-cobro-total">
 							<span class="lbl">Total</span>
@@ -947,6 +987,31 @@
 					<div class="modal-body">
 						<p class="text-muted small mb-3">Elige la mesa de destino. Si ya tiene una cuenta abierta, se te ofrecerá unirlas.</p>
 						<div id="pos-mover-lista" class="list-group"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+	@endif
+
+	@if ($hosteleriaActiva ?? false)
+		{{-- Vista previa de la precuenta (feature 049). § "«Ver» un documento… SIEMPRE en modal":
+		     iframe dentro de la app, centrado, `src` vaciado al cerrar. `modal-lg` y no `modal-xl`
+		     por ser un rollo de 80 mm, igual que "Ver ticket". Al cerrarlo el TPV queda en cero. --}}
+		<div class="modal fade" id="posPrecuentaModal" tabindex="-1" aria-labelledby="posPrecuentaModalLabel" aria-hidden="true">
+			<div class="modal-dialog modal-dialog-centered modal-lg">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title" id="posPrecuentaModalLabel">Precuenta</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+					</div>
+					<div class="modal-body p-0" style="height: 70vh;">
+						<iframe id="pos-precuenta-frame" title="Precuenta" src="" style="width: 100%; height: 100%; border: 0;"></iframe>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-outline-primary" id="pos-precuenta-imprimir">
+							<i class="fas fa-print me-1" aria-hidden="true"></i> Imprimir
+						</button>
+						<button type="button" class="btn btn-primary" data-bs-dismiss="modal">Listo</button>
 					</div>
 				</div>
 			</div>
@@ -1121,6 +1186,7 @@
 	<script src="@assetv('js/pos-caja-tpv.js')"></script>
 	@if ($hosteleriaActiva ?? false)
 		<script src="@assetv('js/pos-cuenta.js')"></script>
+		<script src="@assetv('js/pos-precuenta.js')"></script>
 	@endif
 	@if ($opcionesActivas ?? false)
 		<script src="@assetv('js/pos-opciones.js')"></script>

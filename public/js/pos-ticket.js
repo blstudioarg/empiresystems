@@ -80,6 +80,10 @@ window.PosApp.registrar('ticket', function (PosApp) {
 		var excede = Math.round(bruto * 100) > Math.round(PosApp.state.tope * 100);
 		$topeAlert.classList.toggle('show', excede);
 		$cobrar.disabled = !lineas.length || excede;
+
+		// Aviso para los módulos que dependen de si el ticket está vacío (p. ej. el botón de
+		// precuenta, feature 049) sin que este módulo tenga que conocerlos.
+		document.dispatchEvent(new CustomEvent('pos:ticket-render'));
 	}
 
 	/**

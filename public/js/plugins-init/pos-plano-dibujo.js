@@ -106,17 +106,31 @@
 	}
 
 	/**
-	 * Estado visual de una mesa: `libre` / `ocupada` / `olvidada`. **Una sola** implementación de la
+	 * Estado visual de una mesa: `libre` / `ocupada` / `olvidada` / `precuenta`. **Una sola** implementación de la
 	 * regla, consumida por la tarjeta, el plano de servicio y el editor (feature 041). Estaba
 	 * escrita dos veces y duplicarla es exactamente lo que permitiría que dos vistas de la misma
 	 * mesa se contradigan.
 	 *
 	 * `olvidada` viene decidido por el servidor con el umbral del tenant: aquí no se hace ninguna
-	 * aritmética de fechas (dependería del reloj de cada tablet).
+	 * aritmética de fechas (dependería del reloj de cada tablet). `precuenta` (feature 049) también
+	 * lo decide el servidor (`precuenta_pedida`, precuenta vigente) y prevalece sobre `olvidada`: la
+	 * mesa no está olvidada, está esperando para pagar (FR-018).
 	 */
 	function claseEstado(mesa) {
 		if (!mesa || mesa.estado === 'libre') { return 'libre'; }
+		if (mesa.precuenta_pedida) { return 'precuenta'; }
 		return mesa.olvidada ? 'olvidada' : 'ocupada';
+	}
+
+	/**
+	 * Minutos que muestra una mesa ocupada: desde la precuenta si la tiene (es lo que importa a
+	 * quien va a cobrar, FR-019), si no desde que se abrió la cuenta.
+	 */
+	function minutosMesa(mesa) {
+		if (!mesa || mesa.estado === 'libre') { return null; }
+		return mesa.precuenta_pedida && mesa.precuenta_hace_min != null
+			? mesa.precuenta_hace_min
+			: mesa.abierta_hace_min;
 	}
 
 	/** Tamaño en celdas, aceptando tanto el objeto del editor (`ancho`) como el del payload (`ancho_celdas`). */
@@ -158,8 +172,9 @@
 			// sin perder información. El importe se pinta tal cual lo entrega el servidor.
 			if (mesa.estado !== 'libre') {
 				interior += '<span class="plano-mesa-importe">' + formatoImporte(mesa.pendiente) + ' €</span>';
-				if (mesa.abierta_hace_min != null) {
-					interior += '<span class="plano-mesa-tiempo">' + mesa.abierta_hace_min + '′</span>';
+				var minutos = minutosMesa(mesa);
+				if (minutos != null) {
+					interior += '<span class="plano-mesa-tiempo">' + minutos + '′</span>';
 				}
 			}
 		} else {
@@ -270,6 +285,7 @@
 		aCeldas: aCeldas,
 		sillasParaMesa: sillasParaMesa,
 		claseEstado: claseEstado,
+		minutosMesa: minutosMesa,
 		mesaHtml: mesaHtml,
 	};
 

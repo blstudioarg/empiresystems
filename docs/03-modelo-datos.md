@@ -1336,7 +1336,8 @@ tenants ──< pos_zonas ──< pos_mesas
                               │
                               └──< pos_cuentas ──< pos_cuenta_lineas ──< pos_cuenta_linea_opciones
                                        │
-                                       └──< pos_cobros ──> facturas   (1 cuenta → N documentos)
+                                       ├──< pos_cobros ──> facturas   (1 cuenta → N documentos)
+                                       └──< pos_precuentas            (append-only, no fiscal; feature 049)
 
 tenants ──< pos_opcion_grupos ──< pos_opciones ──(opcional)──> articulos   (artículo vinculado)
 articulos >──< pos_opcion_grupos          vía pos_articulo_grupo
@@ -1456,6 +1457,46 @@ cuenta→factura vive en `pos_cobros.factura_id` (del lado nuevo, no como column
 esquema de facturación no se toca si se puede evitar). `zona_suplemento_aplicado` congela el % de
 zona vigente en ese cobro. `pos_cobro_lineas.cantidad` es el detalle de qué unidades saldó cada
 cobro; el invariante crítico es que su suma por línea coincida siempre con `cantidad_saldada`.
+
+### `pos_precuentas` — registro de precuentas emitidas (feature 049)
+
+Cada precuenta entregada a una mesa (documento **no fiscal**, ver `02-facturacion-espana.md` §3.2).
+**Append-only**: el modelo `PosPrecuenta` lanza excepción en `updating`/`deleting` y `cuenta_id` es
+`restrict`, así que ninguna anulación, cobro o transferencia de la cuenta borra filas.
+
+| Columna | Tipo | Notas |
+|---|---|---|
+| `tenant_id` | BIGINT, índice | `BelongsToTenant` |
+| `cuenta_id` | FK `pos_cuentas` (restrict) | |
+| `mesa_id` | FK `pos_mesas` nullable (nullOnDelete) | mesa en el momento de emitir; `null` = cuenta sin mesa |
+| `mesa_nombre`, `zona_nombre` | VARCHAR(100) nullable | foto para el documento |
+| `usuario_id` | FK `users` nullable (nullOnDelete) | quién la emitió |
+| `emitida_en` | TIMESTAMP | |
+| `cuenta_version` | INT UNSIGNED | `pos_cuentas.version` al emitir (trazabilidad) |
+| `huella_consumo` | CHAR(64) | SHA-256 del consumo canónico: decide vigente/desactualizada |
+| `huella_pendiente` | CHAR(64) | ídem + `cantidad_saldada`: decide "reimpresión" |
+| `reimpresion` | BOOLEAN | la anterior tenía la misma `huella_pendiente` |
+| `regimen_impositivo` | VARCHAR(10) | régimen del tenant al emitir (para «… incluido») |
+| `suplemento_zona` | DECIMAL(5,2) | % efectivo aplicado |
+| `comensales` | SMALLINT UNSIGNED nullable | foto |
+| `lineas` | JSON | foto impresa: `[{concepto, opciones[], cantidad, precio_unitario, importe}]` |
+| `total` | DECIMAL(12,2) | impuestos incluidos; = lo que costaría cobrar entera en ese instante |
+
+Índices: `tenant_id`; `(tenant_id, cuenta_id, id)` para "última precuenta de cada cuenta".
+
+**El estado de precuenta de una cuenta no se almacena: se deriva** (`App\Services\PrecuentaCuenta`).
+`ninguna` si no hay precuentas; `vigente` si la `huella_consumo` de la última coincide con la huella
+actual de la cuenta; `desactualizada` si no. La huella es SHA-256 de las líneas (artículo, concepto,
+cantidad, precio, suplemento de opciones, tipo impositivo, opciones ordenadas), ordenadas por
+contenido y no por id, más el % de suplemento de zona efectivo. Así añadir/quitar/cambiar líneas,
+unir cuentas o transferir a una zona con otro suplemento la desactualizan, y un cobro parcial, un
+cambio de notas/comensales/receptor o un guardado que recrea líneas idénticas no.
+
+El PDF se regenera siempre desde la fila (nunca desde la cuenta viva), sin archivos en disco.
+
+**Datos personales**: solo `usuario_id`, mismo tipo que `pos_cuentas.abierta_por`; sin IP ni
+user-agent. Registro operativo del negocio con el mismo ciclo de vida que cuentas y cobros, sin purga
+propia.
 
 ### `pos_opcion_grupos`, `pos_opciones` y sus pivots
 

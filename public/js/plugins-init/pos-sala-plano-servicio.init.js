@@ -105,7 +105,8 @@
 				var cuerpo = mesa.estado === 'libre'
 					? '<span class="importe">Libre</span><span class="meta">Toca para abrir cuenta</span>'
 					: '<span class="importe">' + D.formatoImporte(mesa.pendiente) + ' €</span>' +
-					  '<span class="meta">Hace ' + mesa.abierta_hace_min + ' min</span>';
+					  '<span class="meta">' + (clase === 'precuenta' ? 'Precuenta hace ' : 'Hace ') +
+					  D.minutosMesa(mesa) + ' min</span>';
 
 				return '<button type="button" class="pos-mesa ' + clase + '" data-mesa-id="' + mesa.id + '">' +
 					'<span class="nombre">' + D.escapeHtml(mesa.nombre) + '</span>' +

@@ -2,8 +2,8 @@
 la que se abren, se retoman y se cobran las cuentas.</p>
 
 <ol>
-	<li><strong>Ver el resumen</strong>: las cuatro tarjetas de arriba (total de mesas, libres,
-		ocupadas y olvidadas) vienen <strong>plegadas</strong> para que la sala se vea entera de un
+	<li><strong>Ver el resumen</strong>: las tarjetas de arriba (total de mesas, libres,
+		ocupadas, olvidadas y con precuenta) vienen <strong>plegadas</strong> para que la sala se vea entera de un
 		vistazo. Se despliegan con el botón <em>Resumen</em>, en la cabecera de la
 		sala junto a <em>Tarjetas</em> y <em>Plano</em>, y se vuelven a plegar con el mismo botón. Lo que elijas se recuerda para la próxima vez, en ese
 		dispositivo y para tu usuario.</li>
@@ -29,6 +29,13 @@ no lo consumido. Si ya se cobró parte de la cuenta, la mesa sigue ocupada mostr
 <p class="ayuda-nota">Una mesa con borde <strong>ámbar</strong> lleva mucho tiempo sin que nadie le
 añada nada (el umbral se configura en <em>Configuración → POS</em>). Es un aviso para que no se
 quede una cuenta olvidada sin cobrar, no un error.</p>
+
+<p class="ayuda-nota">Una mesa con borde <strong>violeta</strong> y la etiqueta «Precuenta» ya
+tiene la precuenta en la mano y <strong>está esperando para pagar</strong>: es la que hay que ir a
+cobrar. Muestra lo que falta por cobrar y los minutos desde que se dio la precuenta. Prevalece sobre
+el ámbar (una mesa esperando para pagar no está olvidada). Si después se le añade o quita algo,
+vuelve a verse como ocupada hasta que se le dé una precuenta nueva; cobrarle solo una parte no le
+quita el violeta. Se toca igual que cualquier mesa ocupada para ir a su cuenta.</p>
 
 <p class="ayuda-nota">En la vista de <strong>plano</strong>, si tenés permiso de Configuración,
 tocar una mesa abre un pequeño menú con dos opciones: <em>Crear ticket</em> (abre el TPV con esa

@@ -422,6 +422,26 @@ window.PosApp.registrar('cobro', function (PosApp) {
 			$receptorModal.addEventListener('hidden.bs.modal', actualizarBotonCliente);
 		}
 
+		// Precuenta desactualizada (feature 049, FR-024): el cliente revisó una cifra y se le va a
+		// cobrar otra. Se avisa con los dos importes que manda el servidor —nunca uno calculado aquí
+		// (Principio III)— y sin bloquear "Emitir".
+		var $avisoPrecuenta = document.getElementById('pos-cobro-aviso-precuenta');
+		var $avisoPrecuentaTexto = document.getElementById('pos-cobro-aviso-precuenta-texto');
+		if ($cobroModalEl && $avisoPrecuenta) {
+			$cobroModalEl.addEventListener('show.bs.modal', function () {
+				var cuenta = PosApp.state.cuenta;
+				var precuenta = cuenta && cuenta.precuenta;
+				var desactualizada = !!(precuenta && precuenta.estado === 'desactualizada' && precuenta.ultima && precuenta.total_actual);
+
+				$avisoPrecuenta.classList.toggle('d-none', !desactualizada);
+				if (desactualizada) {
+					$avisoPrecuentaTexto.textContent =
+						'Precuenta entregada: ' + PosApp.format(parseFloat(precuenta.ultima.total)) + ' € · ' +
+						'Total actual: ' + PosApp.format(parseFloat(precuenta.total_actual)) + ' €';
+				}
+			});
+		}
+
 		if ($cobroModalEl) {
 			$cobroModalEl.addEventListener('show.bs.modal', function () {
 				// Tras abrir la caja por un 409 al emitir (feature 048), se vuelve al cobro con los
